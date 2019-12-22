@@ -1,5 +1,7 @@
 from scipy.integrate import solve_ivp
 import matplotlib.pyplot as plt
+import numpy as np
+from scipy.stats import norm
 from typing import Callable, List
 
 class Solution:
@@ -40,7 +42,18 @@ class Solution:
         return [sol for i, sol in enumerate(self.y) if i in vars]
 
     def plot_gaussian(self):
-        pass
+        final_state = self.final_state()
+        sigma = 0.75 * np.sqrt(2) / (np.sqrt(2 * np.log(2)) * 2)
+        
+        #TODO(rithvik): take in wavelengths
+        x_axis = np.arange(-5, len(final_state)+5, 0.001)
+        for i, s in enumerate(final_state):
+            plt.plot(x_axis, s*norm.pdf(x_axis, i, sigma))
+        plt.show()
+
+    def __repr__(self):
+        shortened_y = [sol[:10] for sol in self.y]
+        return 'Solution('+self.t[:10]+'..., '+shortened_y[:10]+'...'
 
 
 def solve_ode(odes: List[Callable[[float, List[float]], List[float]]],
