@@ -19,6 +19,8 @@ import sympy as sym
 import abc
 from typing import List, Tuple, Set
 
+from process_sympy_eqs import process_sympy_eqs
+
 # *** Constants ***
 T = sym.Symbol('t') # time
 
