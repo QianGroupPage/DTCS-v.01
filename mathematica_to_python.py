@@ -29,14 +29,7 @@ with open("H2O_CRN_output_results.csv","w+") as my_csv:
 """
 
 import re, sys, os
-
-
-def multiple_replace(dict, text):
-  # Create a regular expression  from the dictionary keys
-  regex = re.compile("(%s)" % "|".join(map(re.escape, dict.keys())))
-
-  # For each match, look-up corresponding value in dictionary
-  return regex.sub(lambda mo: dict[mo.string[mo.start():mo.end()]], text)
+from util import multiple_replace
 
 
 def transform_to_mathematica(filename):
