@@ -46,12 +46,12 @@ def process_sympy_eqs(eqs):
             # be a combination of uppercase and lowercase letters and the underscore character _,
             # and a digit as long as it's not the first character.
             lambda_expr = get_formula_from_lambstr(lambdastr(rhs_symbols, eq.rhs))
-            functions[lhs_symbols[0]] = (rhs_symbols, lambda_expr)
+            functions[repr(lhs_symbols[0])] = (rhs_symbols, lambda_expr)
         elif is_initial_value(eq):
             #TODO: solve a system of equations for initial values
-            initial_values[lhs_symbols[0]] = sym.core.sympify(eq.rhs).evalf
+            initial_values[repr(lhs_symbols[0])] = sym.core.sympify(eq.rhs).evalf
         elif is_schedule(eq):
-            schedules[lhs_symbols[0]] = to_tuple(eq.rhs)
+            schedules[repr(lhs_symbols[0])] = to_tuple(eq.rhs)
         else:
             raise ValueError("Your equation is in the wrong format.")
 
@@ -59,18 +59,21 @@ def process_sympy_eqs(eqs):
     all_rhs_symbols.sort()
     all_lhs_symbols = [repr(s) for s in list(set(all_lhs_symbols)) if s != 't']
     all_lhs_symbols.sort()
-    # assert len(all_lhs_symbols) == len(all_rhs_symbols), "Symbols with no default values are not supported."
+    assert len(all_lhs_symbols) == len(all_rhs_symbols), "Symbols with no default values are not supported."
 
     syntactical_dict = {}
     for i in range(len(all_rhs_symbols)):
         syntactical_dict[all_rhs_symbols[i]] = "y[{}]".format(str(i))
 
-    callable_functions = {}
-    for key, lambda_expr in functions.items():
-        replaced_lambda_expr = "lambda t, y: {}".format(multiple_replace(syntactical_dict, lambda_expr[1][1]))
-        callable_functions[key] = eval(replaced_lambda_expr, None, None)
+    return_values = []
+    for key in all_rhs_symbols:
+        replaced_lambda_expr = multiple_replace(syntactical_dict, functions[key][1][1])
+        return_values.append(replaced_lambda_expr)
 
-    return callable_functions, initial_values, schedules
+    derivative_function_str = "lambda t, y: [{}]".format(','.join(return_values))
+    derivative_function = eval(derivative_function_str, None, None)
+
+    return derivative_function, initial_values, schedules
 
 
 ###### Helper methods. ######
