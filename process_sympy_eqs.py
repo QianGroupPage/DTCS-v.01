@@ -2,7 +2,7 @@ import sympy as sym
 from sympy.utilities.lambdify import lambdastr
 from util import multiple_replace
 
-def process_sympy_eqs(eqs):
+def process_sympy_eqs(eqs, species_ordering = None):
     # Process a list of eqs consisting of eqs of the following types.
 
     # 1. Initial concentrations:
@@ -61,13 +61,19 @@ def process_sympy_eqs(eqs):
     all_lhs_symbols.sort()
     assert len(all_lhs_symbols) == len(all_rhs_symbols), "Symbols with no default values are not supported."
 
+    if species_ordering is None:
+        all_symbols = all_rhs_symbols
+    else:
+        assert len(all_rhs_symbols) == len(species_ordering), "The optional argument is incomplete"
+        all_symbols = species_ordering
+
     syntactical_dict = {}
-    for i in range(len(all_rhs_symbols)):
-        syntactical_dict[all_rhs_symbols[i]] = "y[{}]".format(str(i))
+    for i in range(len(all_symbols)):
+        syntactical_dict[all_symbols[i]] = "y[{}]".format(str(i))
 
     return_values = []
-    for key in all_rhs_symbols:
-        replaced_lambda_expr = multiple_replace(syntactical_dict, functions[key][1][1])
+    for i in range(len(all_symbols)):
+        replaced_lambda_expr = multiple_replace(syntactical_dict, functions[all_symbols[i]][1][1])
         return_values.append(replaced_lambda_expr)
 
     derivative_function_str = "lambda t, y: [{}]".format(','.join(return_values))
