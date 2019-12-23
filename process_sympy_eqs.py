@@ -1,3 +1,5 @@
+import sympy as sym
+
 def process_sympy_eqs(eqs):
     # Process a list of eqs consisting of eqs of the following types.
 
@@ -25,9 +27,10 @@ def process_sympy_eqs(eqs):
     schedules = {}  #  A dictionary that maps variable names to a list of (time, concentration) tuples.
 
     for eq in eqs:
+        # free_symbols in sympy/core/basic returns a set.
+        rhs_symbols = list(eq.rhs.free_symbols)
+        lhs_symbols = list(eq.lhs.free_symbols)
         if is_function(eq):
-            # free_symbols in sympy/core/basic returns a set.
-            symbols = list(eq.rhs.free_symbols)
             # Lamdify is in sympy.utilities.lambdify
             # The regular format for a python lambda is lambda x, y, z: x + 5.
             # This assumes no ':' in any variable name. Python variable names have to
@@ -35,15 +38,15 @@ def process_sympy_eqs(eqs):
             # and a digit as long as it's not the first character.
             # lambda_expr = get_formula_from_lambstr(lambdastr(symbols, eq.rhs))
 
-            lambda_func = sym.utilities.lambdify.lambdify(symbols, eq.rhs)
+            lambda_func = sym.utilities.lambdify(rhs_symbols, eq.rhs)
 
             # functions[eq.lhs.free_symbols[0]] = (symbols, lambda_expr)
-            functions[eq.lhs.free_symbols[0]] = lambda_func
+            functions[lhs_symbols[0]] = lambda_func
         elif is_initial_value(eq):
             #TODO: solve a system of equations for initial values
-            initial_values[eq.lhs.free_symbols[0]] = sym.core.sympify(eq.rhs).evalf
+            initial_values[lhs_symbols[0]] = sym.core.sympify(eq.rhs).evalf
         elif is_schedule(eq):
-            schedules[eq.lhs.free_symbols[0]] = to_tuple(eq.rhs)
+            schedules[lhs_symbols[0]] = to_tuple(eq.rhs)
         else:
             raise ValueError("Your equation is in the wrong format.")
 
@@ -96,4 +99,4 @@ def expr_is_time_seq(expr):
 def expr_is_one_symbol(expr):
     # Atoms is in sympy/core/ basic.py
     # atoms return a set ... as of now; if their code changes, we may have to follow suit.
-    return len(expr.atoms) == 1 and len(expr.free_symbols) == 1
+    return len(expr.atoms()) == 1 and len(expr.free_symbols) == 1
