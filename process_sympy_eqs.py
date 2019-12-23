@@ -1,4 +1,6 @@
 import sympy as sym
+from sympy.utilities.lambdify import lambdastr
+from util import multiple_replace
 
 def process_sympy_eqs(eqs):
     # Process a list of eqs consisting of eqs of the following types.
@@ -26,22 +28,25 @@ def process_sympy_eqs(eqs):
     initial_values = {}  #  A dictionary that maps variable names to numbers.
     schedules = {}  #  A dictionary that maps variable names to a list of (time, concentration) tuples.
 
+    all_rhs_symbols = []
+    all_lhs_symbols = []
+
     for eq in eqs:
         # free_symbols in sympy/core/basic returns a set.
         rhs_symbols = list(eq.rhs.free_symbols)
         lhs_symbols = list(eq.lhs.free_symbols)
+
+        all_rhs_symbols.extend(rhs_symbols)
+        all_lhs_symbols.extend(lhs_symbols)
+
         if is_function(eq):
             # Lamdify is in sympy.utilities.lambdify
             # The regular format for a python lambda is lambda x, y, z: x + 5.
             # This assumes no ':' in any variable name. Python variable names have to
             # be a combination of uppercase and lowercase letters and the underscore character _,
             # and a digit as long as it's not the first character.
-            # lambda_expr = get_formula_from_lambstr(lambdastr(symbols, eq.rhs))
-
-            lambda_func = sym.utilities.lambdify(rhs_symbols, eq.rhs)
-
-            # functions[eq.lhs.free_symbols[0]] = (symbols, lambda_expr)
-            functions[lhs_symbols[0]] = lambda_func
+            lambda_expr = get_formula_from_lambstr(lambdastr(rhs_symbols, eq.rhs))
+            functions[lhs_symbols[0]] = (rhs_symbols, lambda_expr)
         elif is_initial_value(eq):
             #TODO: solve a system of equations for initial values
             initial_values[lhs_symbols[0]] = sym.core.sympify(eq.rhs).evalf
@@ -50,7 +55,22 @@ def process_sympy_eqs(eqs):
         else:
             raise ValueError("Your equation is in the wrong format.")
 
-        return functions, initial_values, schedules
+    all_rhs_symbols = [repr(s) for s in list(set(all_rhs_symbols)) if s != 't']
+    all_rhs_symbols.sort()
+    all_lhs_symbols = [repr(s) for s in list(set(all_lhs_symbols)) if s != 't']
+    all_lhs_symbols.sort()
+    # assert len(all_lhs_symbols) == len(all_rhs_symbols), "Symbols with no default values are not supported."
+
+    syntactical_dict = {}
+    for i in range(len(all_rhs_symbols)):
+        syntactical_dict[all_rhs_symbols[i]] = "y[{}]".format(str(i))
+
+    callable_functions = {}
+    for key, lambda_expr in functions.items():
+        replaced_lambda_expr = "lambda t, y: {}".format(multiple_replace(syntactical_dict, lambda_expr[1][1]))
+        callable_functions[key] = eval(replaced_lambda_expr, None, None)
+
+    return callable_functions, initial_values, schedules
 
 
 ###### Helper methods. ######
