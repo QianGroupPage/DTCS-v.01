@@ -1,8 +1,9 @@
+from typing import Callable, Mapping, Collection, Sequence, Mapping, List, Tuple, Collection
 import sympy as sym
 from sympy.utilities.lambdify import lambdastr
 from util import multiple_replace
 
-def process_sympy_eqs(eqs, species_ordering = None):
+def process_sympy_eqs(eqs: Sequence[sym.Eq] , species_ordering: Sequence[str] = None) -> Tuple[Callable, Mapping, Mapping]:
     # Process a list of eqs consisting of eqs of the following types.
 
     # 1. Initial concentrations:
@@ -77,13 +78,14 @@ def process_sympy_eqs(eqs, species_ordering = None):
         return_values.append(replaced_lambda_expr)
 
     derivative_function_str = "lambda t, y: [{}]".format(','.join(return_values))
+    print(derivative_function_str)
     derivative_function = eval(derivative_function_str, None, None)
 
     return derivative_function, initial_values, schedules
 
 
 ###### Helper methods. ######
-def get_formula_from_lambstr(lambstr):
+def get_formula_from_lambstr(lambstr: str):
     #  Here's lambdastr's return statement "lambda %s: (%s)" % (args, expr)"
     #  This function takes the returned string, grabs the expr, and return it.
 
@@ -94,10 +96,11 @@ def get_formula_from_lambstr(lambstr):
     return lambstr.split(':', 1)
 
 
-def to_tuple(collections):
+def to_tuple(collections: Collection) -> List[Tuple]:
     if isinstance(collections, list):
         return collections
     elif isinstance(collections, dict):
+        result = []
         result = []
         for k, v in collections.items():
             result.append((k, v))
@@ -107,25 +110,25 @@ def to_tuple(collections):
 
 
 ###### Criteria for separating Sympy equations. ######
-def is_function(eq):
+def is_function(eq: sym.Eq) -> bool:
     return expr_is_one_symbol(eq.lhs) and not is_schedule(eq)
 
 
-def is_initial_value(eq):
+def is_initial_value(eq: sym.Eq) -> bool:
     # eq(a b c, 0.001) sets all initial values to 0.0001
     return eq.rhs.is_number
 
 
-def is_schedule(eq):
+def is_schedule(eq: sym.Eq) -> bool:
     return expr_is_one_symbol(eq.lhs) and expr_is_time_seq(eq.rhs)
 
 
-def expr_is_time_seq(expr):
+def expr_is_time_seq(expr: sym.Expr) -> bool:
     # If the right side is a dictionary or a list, it represents the sequence.
     return isinstance(expr, list) or isinstance(expr, dict)
 
 
-def expr_is_one_symbol(expr):
+def expr_is_one_symbol(expr: sym.Expr) -> bool:
     # Atoms is in sympy/core/ basic.py
     # atoms return a set ... as of now; if their code changes, we may have to follow suit.
     return len(expr.atoms()) == 1 and len(expr.free_symbols) == 1
