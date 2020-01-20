@@ -31,7 +31,6 @@ with open("H2O_CRN_output_results.csv","w+") as my_csv:
 import re, sys, os
 from util import multiple_replace
 
-
 def transform_to_mathematica(filename):
     """
     Parse Mathematica notebook to Python and save to a Python file with the same name.
@@ -41,7 +40,7 @@ def transform_to_mathematica(filename):
     """
     f = open(filename, "r")
     name = os.path.splitext(filename)[0]
-    new_file = open("%s.py" % name, "w")
+    new_file = open("{}.py".format(name), "w")
 
     text = multiple_replace(syntactical_dict, f.read())
 

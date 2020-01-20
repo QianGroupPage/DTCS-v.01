@@ -16,8 +16,8 @@ Dr. Jin Qian, Domas Buracas, Ye Wang, Andrew Bogdan, Rithvik Panchapakesan
 import numpy as np
 import sympy as sym
 
-import abc
 from typing import List, Tuple, Set
+import abc
 
 from process_sympy_eqs import process_sympy_eqs
 
@@ -208,6 +208,7 @@ class RevRxn(Rxn):
     
     def __str__(self):
         return str(self.reactants) + ' ↔ ' + str(self.products) + ' @ k1=' + str(self.rate_constant) + ', k2=' + str(self.rate_constant_reverse)
+
     def __repr__(self):
         return 'Revrxn(reactants=' + repr(self.reactants) + ', products=' + repr(self.products) + ', k1=' + str(self.rate_constant) + ', k2=' + str(self.rate_constant_reverse) + ')'
 
