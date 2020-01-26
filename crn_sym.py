@@ -136,7 +136,7 @@ class Rxn:
         lefts = self.reactants.as_coefficients_dict()
         rights = self.products.as_coefficients_dict()
 
-        # Make a dict (species : term), initilizing each to 0.
+        # Make a dict (species : term), initializing each to 0.
         term_dict = {}
         for species in self.get_species():
             term_dict[species] = sym.sympify(0)
@@ -221,12 +221,12 @@ class Schedule:
         """
         Create a new schedule given a species and a description of the schedule.
 
-        The scheduel can be either a dictionary or a list. Internally, it will keep
+        The schedule can be either a dictionary or a list. Internally, it will keep
         the dictionary format.
 
         The dictionary format is {time: amount,}, where at time, it will add amount.
 
-        The list format is [(time_differnece, amount), ] where it will wait each
+        The list format is [(time_difference, amount), ] where it will wait each
         time_difference and then add the amount. You can convert it to the dictionary
         format with a cumulative sum of time_differences.
 
