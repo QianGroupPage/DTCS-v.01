@@ -73,6 +73,7 @@ class ConcDiffEq(ChemExpression):
     """
     An equation which describes the derivative of the concentration of a species.
 
+    # TODO: are these really initial value?
     This guarantees that the derivative of the concentration of the species will always 
     be exactly equal to the expression, regardless of what any terms dictate.
     """
@@ -317,6 +318,7 @@ class RxnSystem:
         self.components = flatter_components
 
         # Split into terms, schedules, and conc (diff.) eq.s
+        # These are not sorted by the species index.
         self.terms = []
         self.schedules = []
         self.conc_eqs = []
@@ -334,7 +336,7 @@ class RxnSystem:
             elif isinstance(component, ConcDiffEq):
                 self.conc_diffeqs.append(component)
             else:
-                assert False # !!! make an eeror?
+                assert False # !!! make an error?
 
         # Pick an order for the species
         self._species = set()

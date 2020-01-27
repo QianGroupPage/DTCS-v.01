@@ -5,6 +5,7 @@ import numpy as np
 from scipy.stats import norm
 from typing import Callable, List, Dict, Tuple
 import substance
+from process_sympy_eqs import rxns_to_python_derivative_function, rxns_to_substances, rxns_to_initial_values
 
 class Solution:
     """
@@ -93,3 +94,6 @@ def solve_ode(ode: Callable[[float, List[float]], List[float]], substances: List
     """
     sol = solve_ivp(ode, (0, time), init_vals, max_step=max_step)
     return Solution(sol.t, sol.y, substances)
+
+def solve(rxns, time: float = 1, max_step: float = 0.1) -> Solution:
+    return solve_ode(rxns_to_python_derivative_function(rxns), rxns_to_substances(rxns), time, rxns_to_initial_values(rxns), max_step)
