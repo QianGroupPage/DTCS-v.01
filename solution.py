@@ -88,11 +88,11 @@ class Solution:
 
 
 def solve_ode(ode: Callable[[float, List[float]], List[float]], substances: List[substance.Substance],
-    time: float, init_vals: List[float], max_step: float = 0.1) -> Solution:
+        time: float, init_vals: List[float], max_step: float = 0.1, atol: float = 1e-6) -> Solution:
     """
     Solves a system of ordinary differential equations (described by a function) over a specified range of time.
     """
-    sol = solve_ivp(ode, (0, time), init_vals, max_step=max_step)
+    sol = solve_ivp(ode, (0, time), init_vals, max_step=max_step, atol=atol)
     return Solution(sol.t, sol.y, substances)
 
 def solve(rxns, time: float = 1, max_step: float = 0.1) -> Solution:
