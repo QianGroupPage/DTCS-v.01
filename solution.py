@@ -24,7 +24,7 @@ class Solution:
             self.states[substances[i].symbol] = y[i]
 
     def sols(self) -> List[List[float]]:
-        return self.states.values()
+        return list(self.states.values())
 
     def time_steps(self) -> List[float]:
         return self.t
@@ -82,18 +82,19 @@ class Solution:
 
         plt.show()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         shortened_sols = [sol[:10] for sol in self.states.values()]
         return 'Solution('+self.t[:10]+'..., '+shortened_sols[:10]+'...'
 
 
 def solve_ode(ode: Callable[[float, List[float]], List[float]], substances: List[substance.Substance],
-        time: float, init_vals: List[float], max_step: float = 0.1, atol: float = 1e-6) -> Solution:
+        time: float, init_vals: List[float], rtol: float = 1e-3, atol: float = 1e-6) -> Solution:
     """
     Solves a system of ordinary differential equations (described by a function) over a specified range of time.
     """
-    sol = solve_ivp(ode, (0, time), init_vals, max_step=max_step, atol=atol)
+    sol = solve_ivp(ode, (0, time), init_vals, rtol=rtol, atol=atol)
     return Solution(sol.t, sol.y, substances)
 
-def solve(rxns, time: float = 1, max_step: float = 0.1) -> Solution:
-    return solve_ode(rxns_to_python_derivative_function(rxns), rxns_to_substances(rxns), time, rxns_to_initial_values(rxns), max_step)
+def solve(rxns, time: float = 1, rtol: float = 1e-3, atol: float = 1e-6) -> Solution:
+    return solve_ode(rxns_to_python_derivative_function(rxns), rxns_to_substances(rxns), time,
+            rxns_to_initial_values(rxns), rtol=rtol, atol=atol)
