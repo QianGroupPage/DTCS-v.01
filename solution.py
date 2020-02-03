@@ -89,7 +89,7 @@ class Solution:
 
 
 def solve_ode(ode: Callable[[float, List[float]], List[float]], substances: List[substance.Substance],
-        time: float, schedule, rtol: float = 1e-3, atol: float = 1e-6) -> Solution:
+        time: float, rtol: float = 1e-3, atol: float = 1e-6) -> Solution:
     """
     Solves a system of ordinary differential equations (described by a function) over a specified range of time.
 
@@ -97,6 +97,15 @@ def solve_ode(ode: Callable[[float, List[float]], List[float]], substances: List
     in the nested list is the time at which the changes should be made and the second list in the
     nested list is the changes to be made.
     """
+    scheduleMap = {}
+    for i, s in enumerate(substances):
+        for state in s.schedule:
+            if state[0] not in scheduleMap:
+                scheduleMap[state[0]] = [0] * len(substances)
+            scheduleMap[state[0]][i] = state[1]
+
+    schedule = sorted(scheduleMap.items(), key=lambda x: x[0])
+
     concs = list(schedule[0][1])
     if len(schedule) == 1:
         sol = solve_ivp(ode, (0, time), concs, rtol=rtol, atol=atol)
