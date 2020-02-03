@@ -124,6 +124,11 @@ def rxns_to_initial_values(rxns):
          init_vals[species_index[conc_eq.species]] = sym.sympify(conc_eq.expression).evalf()
      return init_vals
 
+# def rxns_to_schedule(rxns):
+    # i
+    # for schedule in rxns.schedule:
+
+
 
 ###### Helper methods. ######
 def get_formula_from_lambstr(lambstr: str):
