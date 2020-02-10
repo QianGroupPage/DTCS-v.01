@@ -52,7 +52,7 @@ class Solution:
         """
         return {name: sol for name, sol in self.states.items() if name in vars}
 
-    def plot_gaussian(self, show_envelope: bool = False):
+    def plot_gaussian(self, envelope: bool = False, overlay: bool = False):
         """
         Plots a gaussian distribution of the final species concentrations. FWHM is set at 0.75
         If specified, an envelope curve is also plotted
@@ -70,16 +70,31 @@ class Solution:
                 max_be = substance.binding_energy
         x_axis = np.arange(min_be - 5, max_be + 5, .001)
 
-        envelope = np.zeros(x_axis.size)
+        envelope_vals = np.zeros(x_axis.size)
+
+        dists = []
         # plot a curve for each substance
         for name, sol in self.final_state().items():
             be = self.substances[name].binding_energy
-            distribution = sol * norm.pdf(x_axis, be, sigma)
-            envelope += distribution
-            plt.plot(x_axis, distribution)
+            dist = sol * norm.pdf(x_axis, be, sigma)
+            envelope_vals += dist
+            dists.append(dist)
 
-        if show_envelope:
-            plt.plot(x_axis, envelope)
+
+        for dist in sorted(dists, key=lambda x: max(x), reverse=True):
+            plt.fill(x_axis, dist)
+
+        if envelope:
+            plt.plot(x_axis, envelope_vals, linewidth=4, color='black')
+        
+        if overlay:
+            overlay_envelope = np.zeros(x_axis.size)
+            for s in self.substances.values():
+                be = s.binding_energy
+                distribution = s.final_val * norm.pdf(x_axis, be, sigma)
+                overlay_envelope += distribution
+                # plt.plot(x_axis, distribution)
+            plt.plot(x_axis, overlay_envelope, alpha=0.7, color='black')
 
         plt.show()
 
