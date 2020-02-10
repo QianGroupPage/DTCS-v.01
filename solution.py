@@ -12,16 +12,18 @@ class Solution:
     Defines a solution to a system of differential equations, providing a variety of
     functions to manipulate and visualize the results
     """
-    def __init__(self, t: List[float], y: List[List[float]], substances: List[substance.Substance]):
+    def __init__(self, t: List[float], y: List[List[float]], rxns):
         # The time range of the reaction
+
         self.t = t
         # A map of symbols to concentrations over time
         self.states: Dict[str, List[float]] = {}
         # A map of symbols to substance information
-        self.substances: Dict[str, substance.Substance] = {}
-        for i in range(len(y)):
-            self.substances[substances[i].symbol] = substances[i]
-            self.states[substances[i].symbol] = y[i]
+        self.substances = dict(zip(rxns.get_symbols(), rxns.get_species()))
+        #self.substances: Dict[str, species.Species] = {}
+        #for i in range(len(y)):
+        #    self.substances[substances[i].symbol] = substances[i]
+        #    self.states[substances[i].symbol] = y[i]
 
     def sols(self) -> List[List[float]]:
         return list(self.states.values())
@@ -58,22 +60,22 @@ class Solution:
         """
         sigma = 0.75 * np.sqrt(2) / (np.sqrt(2 * np.log(2)) * 2)
         
-        min_binding_energy = float('inf')
-        max_binding_energy = float('-inf')
+        min_be = float('inf')
+        max_be = float('-inf')
         
         # determine x axis bounds
         for substance in self.substances.values():
-            if substance.binding_energy < min_binding_energy:
-                min_binding_energy = substance.binding_energy
-            if substance.binding_energy > max_binding_energy:
-                max_binding_energy = substance.binding_energy
-        x_axis = np.arange(min_binding_energy- 5, max_binding_energy + 5, .001)
+            if substance.orbitals[0].binding_energy < min_be:
+                min_be = substance.orbitals[0].binding_energy
+            if substance.orbitals[0].binding_energy > max_be:
+                max_be = substance.orbitals[0].binding_energy
+        x_axis = np.arange(min_be - 5, max_be + 5, .001)
 
         envelope = np.zeros(x_axis.size)
         # plot a curve for each substance
         for name, sol in self.final_state().items():
-            binding_energy = self.substances[name].binding_energy
-            distribution = sol * norm.pdf(x_axis, binding_energy, sigma)
+            be = self.substances[name].orbitals[0].binding_energy
+            distribution = sol * norm.pdf(x_axis, be, sigma)
             envelope += distribution
             plt.plot(x_axis, distribution)
 
@@ -87,14 +89,55 @@ class Solution:
         return 'Solution('+self.t[:10]+'..., '+shortened_sols[:10]+'...'
 
 
-def solve_ode(ode: Callable[[float, List[float]], List[float]], substances: List[substance.Substance],
-        time: float, init_vals: List[float], rtol: float = 1e-3, atol: float = 1e-6) -> Solution:
+def solve_ode(ode: Callable[[float, List[float]], List[float]], rxns,
+        time: float, rtol: float = 1e-3, atol: float = 1e-6) -> Solution:
     """
     Solves a system of ordinary differential equations (described by a function) over a specified range of time.
+
+    Schedules should be constructed as follows: [[0, [1, 2]], [10, [3, 4]]], where the first number
+    in the nested list is the time at which the changes should be made and the second list in the
+    nested list is the changes to be made.
     """
-    sol = solve_ivp(ode, (0, time), init_vals, rtol=rtol, atol=atol)
-    return Solution(sol.t, sol.y, substances)
+    substances = rxns.get_species()
+
+    # TODO: fix schedule!
+    scheduleMap = {}
+    for i, s in enumerate(substances):
+        for state in s.schedule:
+            if state[0] not in scheduleMap:
+                scheduleMap[state[0]] = [0] * len(substances)
+            scheduleMap[state[0]][i] = state[1]
+
+    schedule = sorted(scheduleMap.items(), key=lambda x: x[0])
+    print(schedule)
+    # ****
+
+    concs = list(schedule[0][1])
+    if len(schedule) == 1:
+        sol = solve_ivp(ode, (0, time), concs, rtol=rtol, atol=atol)
+        y = sol.y
+        t = sol.t
+    else:
+        t = np.empty(0)
+        current_time = 0
+        for s in schedule:
+            for i, c in enumerate(s[1]):
+                concs[i] += c
+
+            sol = solve_ivp(ode, (current_time, s[0]), concs, rtol=rtol, atol=atol)
+            if current_time == 0:
+                t = sol.t
+                y = sol.y
+            else:
+                t = np.append(t, sol.t)
+                y = np.append(y, sol.y, axis=1)
+
+            for i in range(len(concs)):
+                concs[i] = y[i][len(y[i]) - 1]
+            current_time = s[0]
+
+    return Solution(t, y, rxns)
 
 def solve(rxns, time: float = 1, rtol: float = 1e-3, atol: float = 1e-6) -> Solution:
-    return solve_ode(rxns_to_python_derivative_function(rxns), rxns_to_substances(rxns), time,
-            rxns_to_initial_values(rxns), rtol=rtol, atol=atol)
+    return solve_ode(rxns_to_python_derivative_function(rxns), rxns, time,
+            rtol=rtol, atol=atol)

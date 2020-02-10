@@ -18,8 +18,11 @@ import sympy as sym
 
 from typing import List, Tuple, Set
 import abc
+import copy
 
 from process_sympy_eqs import process_sympy_eqs
+from species import SpeciesManager, Species
+from solution import solve, Solution
 
 # *** Constants ***
 T = sym.Symbol('t') # time
@@ -27,61 +30,61 @@ T = sym.Symbol('t') # time
 # *** Classes ***
 class ChemExpression(abc.ABC):
     """
-    A pair of a species and an expression (about that species)
+    A pair of a symbol and an expression (about that symbol)
 
-    This class is an abstract superclass for structures of the form (species, expression), where
+    This class is an abstract superclass for structures of the form (symbol, expression), where
     the subclass gives meaning to the pair.
     """
 
-    def __init__(self, species: sym.Symbol, expression: sym.Expr):
-        self.species = species
+    def __init__(self, symbol: sym.Symbol, expression: sym.Expr):
+        self.symbol = symbol
         self.expression = sym.sympify(expression)
 
-    def get_species(self) -> Set[sym.Symbol]:
-        species = self.species.free_symbols
-        species.update(self.expression.free_symbols)
-        species.discard(T) # time is not a species
-        return species
+    def get_symbols(self) -> Set[sym.Symbol]:
+        symbol = self.symbol.free_symbols
+        symbol.update(self.expression.free_symbols)
+        symbol.discard(T) # time is not a symbol
+        return symbol
 
 class Term(ChemExpression):
     """
-    An additive term in the ODE for a species.
+    An additive term in the ODE for a symbol.
 
     If x' = ... + 2 and x' = ... + y*t are terms, then the ODE for x
     should look something like x' ... + 2 + y*t, for example.
     """
 
     def __str__(self):
-        return 'term: [' + str(self.species) + ']\' = ... + ' + str(self.expression)
+        return 'term: [' + str(self.symbol) + ']\' = ... + ' + str(self.expression)
     def __repr__(self):
-        return 'Term(species=' + repr(self.species) + ', expression=' + str(self.expression) + ')'
+        return 'Term(symbol=' + repr(self.symbol) + ', expression=' + str(self.expression) + ')'
 
 class ConcEq(ChemExpression):
     """
-    An equation which describes the concentration of a species.
+    An equation which describes the concentration of a symbol.
 
-    This guarantees that the concentration of the species will always be exactly equal
+    This guarantees that the concentration of the symbol will always be exactly equal
     to the expression, regardless of what any terms dictate.
     """
 
     def __str__(self):
-        return '[' + str(self.species) + '] = ' + str(self.expression)
+        return '[' + str(self.symbol) + '] = ' + str(self.expression)
     def __repr__(self):
-        return 'ConcEq(species=' + repr(self.species) + ', expression=' + str(self.expression) + ')'
+        return 'ConcEq(symbol=' + repr(self.symbol) + ', expression=' + str(self.expression) + ')'
 
 class ConcDiffEq(ChemExpression):
     """
-    An equation which describes the derivative of the concentration of a species.
+    An equation which describes the derivative of the concentration of a symbol.
 
     # TODO: are these really initial value?
-    This guarantees that the derivative of the concentration of the species will always 
+    This guarantees that the derivative of the concentration of the symbol will always 
     be exactly equal to the expression, regardless of what any terms dictate.
     """
 
     def __str__(self):
-        return '[' + str(self.species) + ']\' = ' + str(self.expression)
+        return '[' + str(self.symbol) + ']\' = ' + str(self.expression)
     def __repr__(self):
-        return 'ConcDiffEq(species=' + repr(self.species) + ', expression=' + str(self.expression) + ')'
+        return 'ConcDiffEq(symbol=' + repr(self.symbol) + ', expression=' + str(self.expression) + ')'
 
 class Rxn:
     """
@@ -115,11 +118,11 @@ class Rxn:
 
         self.rate_constant = k
 
-    def get_species(self) -> Set[sym.Symbol]:
-        species = set()
-        species.update(self.reactants.free_symbols)
-        species.update(self.products.free_symbols)
-        return species
+    def get_symbols(self) -> Set[sym.Symbol]:
+        symbol = set()
+        symbol.update(self.reactants.free_symbols)
+        symbol.update(self.products.free_symbols)
+        return symbol
 
     def to_terms(self) -> List[Term]:
         """
@@ -137,28 +140,28 @@ class Rxn:
         lefts = self.reactants.as_coefficients_dict()
         rights = self.products.as_coefficients_dict()
 
-        # Make a dict (species : term), initializing each to 0.
+        # Make a dict (symbol : term), initializing each to 0.
         term_dict = {}
-        for species in self.get_species():
-            term_dict[species] = sym.sympify(0)
+        for symbol in self.get_symbols():
+            term_dict[symbol] = sym.sympify(0)
         
         # Make the common part of all the terms
         common_part = self.rate_constant
-        for species in self.reactants.free_symbols:
-            common_part *= (species ** lefts[species])
+        for symbol in self.reactants.free_symbols:
+            common_part *= (symbol ** lefts[symbol])
         
         # Populate the lefts
-        for species in self.reactants.free_symbols:
-            term_dict[species] += -1 * lefts[species] * common_part
+        for symbol in self.reactants.free_symbols:
+            term_dict[symbol] += -1 * lefts[symbol] * common_part
             
         # Populate the rights
-        for species in self.products.free_symbols:
-            term_dict[species] += rights[species] * common_part
+        for symbol in self.products.free_symbols:
+            term_dict[symbol] += rights[symbol] * common_part
             
         # Make it into terms
         terms = []
-        for species in term_dict.keys():
-            terms.append(Term(species, term_dict[species]))
+        for symbol in term_dict.keys():
+            terms.append(Term(symbol, term_dict[symbol]))
             
         return terms
 
@@ -194,11 +197,11 @@ class RevRxn(Rxn):
         else:
             self.rate_constant_reverse = k2
 
-    def get_species(self) -> Set[sym.Symbol]:
-        species = set()
-        species.update(self.reactants.free_symbols)
-        species.update(self.products.free_symbols)
-        return species
+    def get_symbols(self) -> Set[sym.Symbol]:
+        symbol = set()
+        symbol.update(self.reactants.free_symbols)
+        symbol.update(self.products.free_symbols)
+        return symbol
 
     def to_rxns(self) -> Tuple[Rxn]:
         return Rxn(self.reactants, self.products, k=self.rate_constant), Rxn(self.products, self.reactants, k=self.rate_constant_reverse)
@@ -215,12 +218,12 @@ class RevRxn(Rxn):
 
 class Schedule:
     """
-    A schedule describing when amounts of a species are added and removed.
+    A schedule describing when amounts of a symbol are added and removed.
     """
 
-    def __init__(self, species: sym.Symbol, schedule={}):
+    def __init__(self, symbol: sym.Symbol, schedule={}):
         """
-        Create a new schedule given a species and a description of the schedule.
+        Create a new schedule given a symbol and a description of the schedule.
 
         The schedule can be either a dictionary or a list. Internally, it will keep
         the dictionary format.
@@ -235,7 +238,7 @@ class Schedule:
         time 0 you want concentration 0.
         """
 
-        self.species = species
+        self.symbol = symbol
 
         # Handle schedule if it's a dict
         if isinstance(schedule, dict):
@@ -255,8 +258,16 @@ class Schedule:
         if not 0 in self.schedule:
             self.schedule[0] = 0
 
+    def as_list(self):
+        """
+        Get a represtation of the schedule as a list of 2uples.
+
+        You can also use this represetation to initialize Schedules.
+        """
+
+
     def __str__(self):
-        s = 'schedule: [' + str(self.species) + ']:\n'
+        s = 'schedule: [' + str(self.symbol) + ']:\n'
 
         kvp = [pair for pair in self.schedule.items()]
         kvp.sort(key=lambda pair: pair[0])
@@ -266,27 +277,27 @@ class Schedule:
         return s[:-1]
 
     def __repr__(self):
-        return 'Schedule(species=' + repr(self.species) + ', schedule=' + repr(self.schedule) + ')'
+        return 'Schedule(symbol=' + repr(self.symbol) + ', schedule=' + repr(self.schedule) + ')'
 
 class Conc(Schedule):
     """
-    Specify the initial concentration of a species.
+    Specify the initial concentration of a symbol.
 
-    Internally, it is a schedule where the species gets its initial concentration added at t=0.
+    Internally, it is a schedule where the symbol gets its initial concentration added at t=0.
     """
 
-    def __init__(self, species, concentration):
+    def __init__(self, symbol, concentration):
         """
         Make a new Conc: it's a Schedule where it all gets added at t=0.
         """
         
-        Schedule.__init__(self, species, {0: concentration})
+        Schedule.__init__(self, symbol, {0: concentration})
         self.concentration = concentration
 
     def __str__(self):
-        return '[' + str(self.species) + '] (@ t=0) = ' + str(self.concentration)
+        return '[' + str(self.symbol) + '] (@ t=0) = ' + str(self.concentration)
     def __repr__(self):
-        return 'Conc(species=' + repr(self.species) + ', concentration=' + repr(self.concentration) + ')'
+        return 'Conc(symbol=' + repr(self.symbol) + ', concentration=' + repr(self.concentration) + ')'
 
 class RxnSystem:
     """
@@ -318,11 +329,12 @@ class RxnSystem:
         self.components = flatter_components
 
         # Split into terms, schedules, and conc (diff.) eq.s
-        # These are not sorted by the species index.
+        # These are not sorted by the symbol index.
         self.terms = []
         self.schedules = []
         self.conc_eqs = []
         self.conc_diffeqs = []
+        self.species_manager = None
 
         for component in self.components:
             if isinstance(component, Schedule):
@@ -335,53 +347,63 @@ class RxnSystem:
                 self.conc_eqs.append(component)
             elif isinstance(component, ConcDiffEq):
                 self.conc_diffeqs.append(component)
+            elif isinstance(component, SpeciesManager):
+                self.species_manager = component
             else:
-                assert False # !!! make an error?
+                assert False, 'Unknown input type ' + str(type(component))
 
-        # Pick an order for the species
-        self._species = set()
+        # Pick an order for the symbol
+        self._symbols = set()
         for term in self.terms:
-            self._species.update(term.get_species())
+            self._symbols.update(term.get_symbols())
         for schedule in self.schedules:
-            self._species.add(schedule.species)
+            self._symbols.add(schedule.symbol)
         for equation in self.conc_eqs:
-            self._species.update(equation.get_species())
+            self._symbols.update(equation.get_symbols())
         for equation in self.conc_diffeqs:
-            self._species.update(equation.get_species())
-        self._species = list(self._species)
+            self._symbols.update(equation.get_symbols())
+        self._symbols = list(self._symbols)
 
         # Make an indexing dictionary
-        self.species_index = {}
-        for index, species in enumerate(self._species):
-            self.species_index[species] = index
+        self.symbol_index = {}
+        for index, symbol in enumerate(self._symbols):
+            self.symbol_index[symbol] = index
 
     def get_ode_expressions(self) -> List[sym.Expr]:
         """
         Return a list of expressions, corresponding to the derivative of the concentration of
-        each species in the reaction system.
+        each symbol in the reaction system.
 
-        The collection is ordered, and that order is accessible through species_index or
-        through get_species.
+        The collection is ordered, and that order is accessible through symbol_index or
+        through get_symbols.
         """
         
         # Make an emtpy ODE list
-        odes = [sym.sympify(0)] * len(self._species)
+        odes = [sym.sympify(0)] * len(self._symbols)
         
-        # Sum all terms for each species
+        # Sum all terms for each symbol
         for term in self.terms:
-            odes[self.species_index[term.species]] += term.expression
+            odes[self.symbol_index[term.symbol]] += term.expression
 
         # Set the conc diffeqs
         for equation in self.conc_diffeqs:
-            odes[self.species_index[equation.species]] = equation.expression
+            odes[self.symbol_index[equation.symbol]] = equation.expression
 
         return odes
 
     def get_ode_functions(self):
         pass
 
-    def get_species(self) -> List[sym.Symbol]:
-        return self._species
+    def get_species(self) -> List[Species]:
+        species = []
+
+        for symbol in self._symbols:
+            species.append(self.species_manager[symbol])
+
+        return species
+
+    def get_symbols(self) -> List[sym.Symbol]:
+        return copy.copy(self._symbols)
 
     def __str__(self):
         s = 'rxn system with components:\n'
@@ -393,6 +415,6 @@ class RxnSystem:
         return 'RxnSystem(components=' + repr(self.components) + ')'
 
 # *** Functions ***
-def species(names: str) -> Tuple[sym.Symbol]:
+def symbol(names: str) -> Tuple[sym.Symbol]:
     """A wrapper for sym.symbols"""
     return sym.symbols(names)

@@ -2,7 +2,7 @@ from typing import Callable, Mapping, Collection, Sequence, Mapping, List, Tuple
 import sympy as sym
 from sympy.utilities.lambdify import lambdastr
 from util import multiple_replace
-from species import Substance
+from species import Species
 
 def process_sympy_eqs(eqs: Sequence[sym.Eq] , species_ordering: Sequence[str] = None) -> Tuple[Callable, Mapping, Mapping]:
     # Process a list of eqs consisting of eqs of the following types.
@@ -89,7 +89,7 @@ def rxns_to_python_derivative_function(rxns):
     Return a Python ode function corresponding to the reaction system interpretable.
     """
     # A dictionary that maps species names to its index
-    species_ordering = rxns.species_index
+    species_ordering = rxns.symbol_index
 
     # A list of ode formulas following the expressions.
     odes = rxns.get_ode_expressions()
@@ -98,7 +98,7 @@ def rxns_to_python_derivative_function(rxns):
     for species, i in species_ordering.items():
         syntactical_dict[str(species)] = "y[{}]".format(str(i))
 
-    return_values = [None for _ in range(len(rxns.species_index))]
+    return_values = [None for _ in range(len(rxns.symbol_index))]
     for species, i in species_ordering.items():
         symbols = list(odes[i].free_symbols)
         lambda_expr = get_formula_from_lambstr(lambdastr(symbols, odes[i]))
@@ -112,17 +112,22 @@ def rxns_to_python_derivative_function(rxns):
     return derivative_function
 
 def rxns_to_substances(rxns):
-    substances = [None for _ in range(len(rxns.species_index))]
-    for species, i in rxns.species_index.items():
-        substances[i] = Substance(str(species), None)
+    substances = [None for _ in range(len(rxns.symbol_index))]
+    for species, i in rxns.symbol_index.items():
+        substances[i] = Species(str(species), None)
     return substances
 
 def rxns_to_initial_values(rxns):
-     species_index = rxns.species_index
-     init_vals = [0.0 for _ in range(len(species_index))]
+     symbol_index = rxns.symbol_index
+     init_vals = [0.0 for _ in range(len(symbol_index))]
      for conc_eq in rxns.conc_eqs:
-         init_vals[species_index[conc_eq.species]] = sym.sympify(conc_eq.expression).evalf()
+         init_vals[symbol_index[conc_eq.species]] = sym.sympify(conc_eq.expression).evalf()
      return init_vals
+
+# def rxns_to_schedule(rxns):
+    # i
+    # for schedule in rxns.schedule:
+
 
 
 ###### Helper methods. ######
