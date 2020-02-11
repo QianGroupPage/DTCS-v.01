@@ -359,10 +359,16 @@ class RxnSystem:
         for index, symbol in enumerate(self._symbols):
             self.symbol_index[symbol] = index
 
-        # Make empty schedules
-        self.schedule
+        # Make symbol:concentration/scheudle/equation list
+        # Make default (Conc 0 @ t=0 for each species) scheduler list
+        self.scheduler = [Conc(symbol, 0) for symbol in self._symbols]
+        # Overwrite scheduler with Concs, Schedules, ConcEqs, and ConcDiffEqs
         for schedule in self.schedules:
-            if schedule.symbol
+            self.scheduler[self.symbol_index[schedule.symbol]] = schedule
+        for conc_eq in self.conc_eqs:
+            self.scheduler[self.symbol_index[conc_eq.symbol]] = conc_eq
+        for conc_diffeq in self.conc_diffeqs:
+            self.scheduler[self.symbol_index[conc_diffeq.symbol]] = conc_diffeq
 
     def get_ode_expressions(self) -> List[sym.Expr]:
         """
