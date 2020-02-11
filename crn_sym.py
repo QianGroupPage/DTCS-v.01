@@ -22,8 +22,6 @@ import copy
 
 from process_sympy_eqs import process_sympy_eqs
 from species import SpeciesManager, Species
-from solution import solve, Solution
-
 # *** Constants ***
 T = sym.Symbol('t') # time
 
@@ -258,14 +256,6 @@ class Schedule:
         if not 0 in self.schedule:
             self.schedule[0] = 0
 
-    def as_list(self):
-        """
-        Get a represtation of the schedule as a list of 2uples.
-
-        You can also use this represetation to initialize Schedules.
-        """
-
-
     def __str__(self):
         s = 'schedule: [' + str(self.symbol) + ']:\n'
 
@@ -368,6 +358,11 @@ class RxnSystem:
         self.symbol_index = {}
         for index, symbol in enumerate(self._symbols):
             self.symbol_index[symbol] = index
+
+        # Make empty schedules
+        self.schedule
+        for schedule in self.schedules:
+            if schedule.symbol
 
     def get_ode_expressions(self) -> List[sym.Expr]:
         """
