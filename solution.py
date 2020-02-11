@@ -65,10 +65,8 @@ class Solution:
         
         # determine x axis bounds
         for substance in self.substances.values():
-            if substance.orbitals[0].binding_energy < min_be:
-                min_be = substance.orbitals[0].binding_energy
-            if substance.orbitals[0].binding_energy > max_be:
-                max_be = substance.orbitals[0].binding_energy
+                min_be = min(substance.orbitals[0].binding_energy, min_be)
+                max_be = max(substance.orbitals[0].binding_energy, max_be)
 
         x_axis = np.arange(min_be - 5, max_be + 5, .001)
         envelope_vals = np.zeros(x_axis.size)
@@ -77,9 +75,9 @@ class Solution:
         # plot a curve for each substance
         for name, sol in self.final_state().items():
             be = self.substances[name].orbitals[0].binding_energy
-            distribution = sol * norm.pdf(x_axis, be, sigma)
-            envelope += distribution
-            plt.plot(x_axis, distribution)
+            dist = sol * norm.pdf(x_axis, be, sigma)
+            envelope += dist
+            dists.append(dist)
 
         for dist in sorted(dists, key=lambda x: max(x), reverse=True):
             plt.fill(x_axis, dist)
@@ -91,10 +89,10 @@ class Solution:
             overlay_envelope = np.zeros(x_axis.size)
             for s in self.substances.values():
                 be = s.binding_energy
-                distribution = s.final_val * norm.pdf(x_axis, be, sigma)
-                overlay_envelope += distribution
-                # plt.plot(x_axis, distribution)
-            plt.plot(x_axis, overlay_envelope, alpha=0.7, color='black')
+                dist = s.final_val * norm.pdf(x_axis, be, sigma)
+                overlay_envelope += dist
+
+            plt.plot(x_axis, overlay_envelope, color='black')
 
         plt.show()
 
