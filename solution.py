@@ -64,15 +64,13 @@ class Solution:
         
         # determine x axis bounds
         for substance in self.substances.values():
-            if substance.binding_energy < min_be:
-                min_be = substance.binding_energy
-            if substance.binding_energy > max_be:
-                max_be = substance.binding_energy
+            min_be = min(substance.binding_energy, min_be)
+            max_be = max(substance.binding_energy, max_be)
+
         x_axis = np.arange(min_be - 5, max_be + 5, .001)
-
         envelope_vals = np.zeros(x_axis.size)
-
         dists = []
+
         # plot a curve for each substance
         for name, sol in self.final_state().items():
             be = self.substances[name].binding_energy
