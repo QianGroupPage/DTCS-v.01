@@ -74,10 +74,11 @@ class Solution:
 
         # plot a curve for each substance
         for name, sol in self.final_state().items():
-            be = self.substances[name].orbitals[0].binding_energy
-            dist = sol * norm.pdf(x_axis, be, sigma)
-            envelope += dist
-            dists.append(dist)
+            for o in self.substances[name].orbitals:
+                be = o.binding_energy
+                dist = sol * norm.pdf(x_axis, be, sigma)
+                envelope_vals += dist
+                dists.append(dist)
 
         for dist in sorted(dists, key=lambda x: max(x), reverse=True):
             plt.fill(x_axis, dist)
@@ -88,9 +89,10 @@ class Solution:
         if overlay:
             overlay_envelope = np.zeros(x_axis.size)
             for s in self.substances.values():
-                be = s.binding_energy
-                dist = s.final_val * norm.pdf(x_axis, be, sigma)
-                overlay_envelope += dist
+                for o in s.orbitals:
+                    be = o.binding_energy
+                    dist = s.experimental_val * norm.pdf(x_axis, be, sigma)
+                    overlay_envelope += dist
 
             plt.plot(x_axis, overlay_envelope, color='black')
 
@@ -102,7 +104,7 @@ class Solution:
 
 
 def solve_ode(ode: Callable[[float, List[float]], List[float]], rxns,
-        time: float, rtol: float = 1e-3, atol: float = 1e-6) -> Solution:
+        time: float, rtol: float = 1e-3, atol: float = 1e-6, max_step: float = None) -> Solution:
     """
     Solves a system of ordinary differential equations (described by a function) over a specified range of time.
 
@@ -115,10 +117,10 @@ def solve_ode(ode: Callable[[float, List[float]], List[float]], rxns,
     # TODO: fix schedule!
     scheduleMap = {}
     for i, s in enumerate(substances):
-        for time, state in s.schedule.schedule.items():
-            if time not in scheduleMap:
-                scheduleMap[time] = [0] * len(substances)
-            scheduleMap[time][i] = state
+        for t, state in s.schedule.schedule.items():
+            if t not in scheduleMap:
+                scheduleMap[t] = [0] * len(substances)
+            scheduleMap[t][i] = state
 
     schedule = sorted(scheduleMap.items(), key=lambda x: x[0])
     #print(schedule)
@@ -126,7 +128,11 @@ def solve_ode(ode: Callable[[float, List[float]], List[float]], rxns,
 
     concs = list(schedule[0][1])
     if len(schedule) == 1:
-        sol = solve_ivp(ode, (0, time), concs, rtol=rtol, atol=atol)
+        if (max_step):
+            sol = solve_ivp(ode, (0, time), concs, rtol=rtol, atol=atol, max_step=max_step)
+        else:
+            sol = solve_ivp(ode, (0, time), concs, rtol=rtol, atol=atol)
+
         y = sol.y
         t = sol.t
     else:
@@ -151,6 +157,6 @@ def solve_ode(ode: Callable[[float, List[float]], List[float]], rxns,
     #print(y)
     return Solution(t, y, rxns)
 
-def solve(rxns, time: float = 1, rtol: float = 1e-3, atol: float = 1e-6) -> Solution:
+def solve(rxns, time: float = 1, rtol: float = 1e-3, atol: float = 1e-6, max_step: float = None) -> Solution:
     return solve_ode(rxns_to_python_derivative_function(rxns), rxns, time,
-            rtol=rtol, atol=atol)
+            rtol=rtol, atol=atol, max_step=max_step)
