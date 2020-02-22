@@ -16,6 +16,8 @@ import copy
 
 from typing import List, Tuple, Union, Set
 
+# *** Constants ***
+T = sym.Symbol('t') # time
 
 # *** Classes ***
 class ChemExpression(abc.ABC):

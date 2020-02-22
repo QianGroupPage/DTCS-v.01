@@ -115,10 +115,10 @@ def solve_ode(ode: Callable[[float, List[float]], List[float]], rxns,
     # TODO: fix schedule!
     scheduleMap = {}
     for i, s in enumerate(substances):
-        for state in s.schedule:
-            if state[0] not in scheduleMap:
-                scheduleMap[state[0]] = [0] * len(substances)
-            scheduleMap[state[0]][i] = state[1]
+        for time, state in s.schedule.schedule.items():
+            if time not in scheduleMap:
+                scheduleMap[time] = [0] * len(substances)
+            scheduleMap[time][i] = state
 
     schedule = sorted(scheduleMap.items(), key=lambda x: x[0])
     print(schedule)
