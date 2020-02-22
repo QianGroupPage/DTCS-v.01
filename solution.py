@@ -21,9 +21,9 @@ class Solution:
         # A map of symbols to substance information
         self.substances = dict(zip(rxns.get_symbols(), rxns.get_species()))
         #self.substances: Dict[str, species.Species] = {}
-        #for i in range(len(y)):
+        for symbol, sub in self.substances.items():
         #    self.substances[substances[i].symbol] = substances[i]
-        #    self.states[substances[i].symbol] = y[i]
+            self.states[symbol] = y[rxns.symbol_index[symbol]]
 
     def sols(self) -> List[List[float]]:
         return list(self.states.values())
@@ -121,7 +121,7 @@ def solve_ode(ode: Callable[[float, List[float]], List[float]], rxns,
             scheduleMap[time][i] = state
 
     schedule = sorted(scheduleMap.items(), key=lambda x: x[0])
-    print(schedule)
+    #print(schedule)
     # ****
 
     concs = list(schedule[0][1])
@@ -148,6 +148,7 @@ def solve_ode(ode: Callable[[float, List[float]], List[float]], rxns,
                 concs[i] = y[i][len(y[i]) - 1]
             current_time = s[0]
 
+    #print(y)
     return Solution(t, y, rxns)
 
 def solve(rxns, time: float = 1, rtol: float = 1e-3, atol: float = 1e-6) -> Solution:
