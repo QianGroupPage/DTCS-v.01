@@ -6,6 +6,7 @@ clone then
 `pip3 install -r requitements.txt`
 
 ## Structure
+``` bash
 lbl_crn/
 ├── common/ # code used by all submodules
 │   ├── utils.py # miscellaneous functions
@@ -27,6 +28,7 @@ lbl_crn/
 ├── script.sh
 ├── otherscript.sh
 └── requirements.txt
+```
 
 ## TODO
   - Decide on repo structure
