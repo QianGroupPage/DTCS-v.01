@@ -1,3 +1,4 @@
+ase
 scipy
 numpy
 matplotlib
