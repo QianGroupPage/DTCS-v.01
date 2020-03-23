@@ -5,7 +5,7 @@ import numpy as np
 from scipy.stats import norm
 from typing import Callable, List, Dict, Tuple
 import species
-from process_sympy_eqs import rxns_to_python_derivative_function, rxns_to_substances, rxns_to_initial_values
+froem process_sympy_eqs import rxns_to_python_derivative_function, rxns_to_substances, rxns_to_initial_values
 
 class Solution:
     """
@@ -24,6 +24,17 @@ class Solution:
         for symbol, sub in self.substances.items():
         #    self.substances[substances[i].symbol] = substances[i]
             self.states[symbol] = y[rxns.symbol_index[symbol]]
+        self.xps = None
+
+        self.intensity = []
+
+    def set_experimental(self, xps):
+        """
+        Takes an xps object contain experimental data, and scales the simulated solution
+        to match.
+        """
+        self.xps = xps
+        self.scaled_xps_intensity = []
 
     def sols(self) -> List[List[float]]:
         return list(self.states.values())
@@ -87,15 +98,9 @@ class Solution:
             plt.plot(x_axis, envelope_vals, linewidth=4, color='black')
         
         if overlay:
-            overlay_envelope = np.zeros(x_axis.size)
-            for s in self.substances.values():
-                for o in s.orbitals:
-                    be = o.binding_energy
-                    dist = s.experimental_val * norm.pdf(x_axis, be, sigma)
-                    overlay_envelope += dist
+            plt.plot(self.xps.binding_energy, self.xps.intensity, color='black')
 
-            plt.plot(x_axis, overlay_envelope, color='black')
-
+        plt.gca().invert_xaxis()
         plt.show()
 
     def __repr__(self) -> str:

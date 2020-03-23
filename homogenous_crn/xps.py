@@ -5,12 +5,8 @@ info_keys = {'region name', 'center energy'}
 
 def read_data(filename):
     f = open(filename)
-    lines = []
-    for l in f:
-        lines.append(l)
-    f.close()
 
-    it = iter(lines)
+    it = file_iter(f)
     line = next(it, None)
 
     data = []
@@ -22,7 +18,11 @@ def read_data(filename):
         data.append(parse_region(it))
         line = next(it, None)
 
+    f.close()
     return data
+
+def file_iter(f):
+    yield from f
 
 def parse_region(it):
     info = {}
