@@ -1,3 +1,15 @@
+Surface Chemical Reaction Networks with Jupyter Notebook
+============================================================
+This repository is a fork of Samuel Clamson's Surface CRN code as
+described below.
+
+To use the Jupyter notebook, run `jupyter notebook` in your terminal and open `SCRN Pipeline`. Follow
+the directions in the notebook.
+
+This Surface CRN can simulate a 10 x 10 surface with fast speed. It's a good idea to use 
+a grid of this size to develop a new surface or test your ideas. A 20 x 20 surface is recommended for your final results.
+
+
 Simulation of Chemical Reaction Networks (CRNs) on a surface
 ============================================================
 
