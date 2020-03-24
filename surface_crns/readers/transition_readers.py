@@ -110,6 +110,7 @@ def parse_rule(line):
 
 def parse_species(species_string):
     species_string = species_string.strip()
-    if not re.match('^[,_a-zA-Z0-9]+$', species_string):
+    # TODO: verif
+    if not re.match('^[,_a-zA-Z0-9\*]+$', species_string):
         raise SyntaxError()
     return species_string
