@@ -88,7 +88,7 @@ def parse_new_data(it):
         nums = line.split()
 
         x.append(float(nums[0]))
-        y.append(float(nums[8]))
+        y.append(float(nums[8]) - float(nums[7]))
         line = next(it, None)
 
     return x, y

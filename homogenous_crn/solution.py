@@ -68,9 +68,16 @@ class Solution:
         max_to_scale = max(to_scale[1])
         max_exp = max(exp[1])
         new_envelope = []
+        new_dists = []
+        scaling = max_exp / max_to_scale
+
         for v in to_scale[1]:
-            new_envelope.append(v * (max_exp / max_to_scale))
-        return new_envelope
+            new_envelope.append(v * scaling)
+
+        for d in to_scale[2]:
+            new_dists.append(d * scaling)
+
+        return new_envelope, new_dists
 
 
     def plot_gaussian(self, envelope: bool = False, overlay: bool = False, ignore: List[str] = []):
@@ -102,12 +109,12 @@ class Solution:
                     envelope_vals += dist
                     dists.append(dist)
 
-        for dist in sorted(dists, key=lambda x: max(x), reverse=True):
-            plt.fill(x_axis, dist)
-
         if overlay:
             plt.plot(self.xps.binding_energy, self.xps.intensity, color='green')
-            envelope_vals = self.scale((x_axis, envelope_vals), (self.xps.binding_energy, self.xps.intensity))
+            envelope_vals, dists = self.scale((x_axis, envelope_vals, dists), (self.xps.binding_energy, self.xps.intensity))
+
+        for dist in sorted(dists, key=lambda x: max(x), reverse=True):
+            plt.fill(x_axis, dist)
 
         if envelope:
             plt.plot(x_axis, envelope_vals, linewidth=4, color='black')
