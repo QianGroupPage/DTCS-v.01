@@ -1,0 +1,76 @@
+
+# Run settings
+pixels_per_node    = 50
+speedup_factor     = 0.5
+debug              = True
+rng_seed           = 923123122
+max_duration       = 10000
+fps                = 60
+node_display       = text
+wrap               = false
+
+!START_TRANSITION_RULES
+# Condition 1:
+# Temperature = 298K, Pressure = 1E-6 torr = 1.33E-6 mbar
+# Binding energy:  
+# H2O* = 532.2
+# OH* = 530.9 
+# O* = 530.0
+# H2O_OH_hb = 531.6
+# H2O_O_hb = 531.6
+# H2Omulti = 533.2
+
+(0.000010) O*    -> H2O_O_hb
+(0.000004) OH* -> H2O_OH_hb
+
+# Reversible reaction
+(6.220646) H2O_O_hb + Ni -> OH* + OH*
+(0.160755) OH* + OH* -> H2O_O_hb + Ni
+
+(0.299507) H2O_OH_hb + Ni -> H2O* + OH* 
+(0.167130) H2O_O_hb + Ni -> H2O* + O* 
+# Main reaction 1
+(6.123512) H2O* -> Ni
+(0.000002) Ni -> H2O*
+
+(2.316049) H2O_OH_hb ->  OH*
+(0.984385) H2O_O_hb ->  O*
+
+(0.000003) H2O_OH_hb  ->  H2Omulti
+
+(3.040734) H2Omulti -> H2O_OH_hb
+
+# Reversible reaction
+(0.007396) O* + O* ->   Ni + Ni
+# Main reaction 2
+(135.206273) Ni + Ni -> O* + O*
+
+
+# TODO: The following lines are tentative. Make sure these are correct.
+
+# Additional diffusion specific for the surface CRN
+(3) Ni + O* -> Ni + O*
+(3) Ni + OH* -> Ni + OH*
+(3) Ni + H2O* -> Ni + H2O*
+
+# The following rules are specific for the 3F sites.
+(10) OH*_top + 3F -> Ni + OH*_3F
+(0.5) Ni + OH*_3F -> OH*_top + 3F
+
+(10) O*_top + 3F -> Ni + O*_3F
+(0.5) Ni + O*_3F -> O*_top + 3F
+
+!END_TRANSITION_RULES
+
+# Initial state
+!START_INIT_STATE
+# TO BE HARD CODED AND RETURNED BY CODE
+Ni Ni
+!END_INIT_STATE
+
+# Colormap
+!START_COLORMAP
+Ni: (160,160,160)
+{Intersection}   I: (200, 200, 0)
+!END_COLORMAP
+
