@@ -64,7 +64,16 @@ class Solution:
         """
         return {name: sol for name, sol in self.states.items() if name in vars}
 
-    def plot_gaussian(self, envelope: bool = False, overlay: bool = False):
+    def scale(self, to_scale, exp):
+        max_to_scale = max(to_scale[1])
+        max_exp = max(exp[1])
+        new_envelope = []
+        for v in to_scale[1]:
+            new_envelope.append(v * (max_exp / max_to_scale))
+        return new_envelope
+
+
+    def plot_gaussian(self, envelope: bool = False, overlay: bool = False, ignore: List[str] = []):
         """
         Plots a gaussian distribution of the final species concentrations. FWHM is set at 0.75
         If specified, an envelope curve is also plotted
@@ -75,7 +84,8 @@ class Solution:
         max_be = float('-inf')
         
         # determine x axis bounds
-        for substance in self.substances.values():
+        for name, substance in self.substances.items():
+            if name not in ignore:
                 min_be = min(substance.orbitals[0].binding_energy, min_be)
                 max_be = max(substance.orbitals[0].binding_energy, max_be)
 
@@ -85,21 +95,23 @@ class Solution:
 
         # plot a curve for each substance
         for name, sol in self.final_state().items():
-            for o in self.substances[name].orbitals:
-                be = o.binding_energy
-                dist = sol * norm.pdf(x_axis, be, sigma)
-                envelope_vals += dist
-                dists.append(dist)
+            if name not in ignore:
+                for o in self.substances[name].orbitals:
+                    be = o.binding_energy
+                    dist = sol * norm.pdf(x_axis, be, sigma)
+                    envelope_vals += dist
+                    dists.append(dist)
 
         for dist in sorted(dists, key=lambda x: max(x), reverse=True):
             plt.fill(x_axis, dist)
 
+        if overlay:
+            plt.plot(self.xps.binding_energy, self.xps.intensity, color='green')
+            envelope_vals = self.scale((x_axis, envelope_vals), (self.xps.binding_energy, self.xps.intensity))
+
         if envelope:
             plt.plot(x_axis, envelope_vals, linewidth=4, color='black')
         
-        if overlay:
-            plt.plot(self.xps.binding_energy, self.xps.intensity, color='black')
-
         plt.gca().invert_xaxis()
         plt.show()
 
@@ -159,7 +171,6 @@ def solve_ode(ode: Callable[[float, List[float]], List[float]], rxns,
                 concs[i] = y[i][len(y[i]) - 1]
             current_time = s[0]
 
-    #print(y)
     return Solution(t, y, rxns)
 
 def solve(rxns, time: float = 1, rtol: float = 1e-3, atol: float = 1e-6, max_step: float = None) -> Solution:

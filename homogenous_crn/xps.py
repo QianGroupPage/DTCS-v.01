@@ -21,6 +21,14 @@ def read_data(filename):
     f.close()
     return data
 
+def read_new_data(filename):
+    f = open(filename)
+
+    it = file_iter(f)
+    next(it, None)
+    x, y = parse_new_data(it)
+    return [XPSData({}, x, y)]
+
 def file_iter(f):
     yield from f
 
@@ -64,6 +72,23 @@ def parse_data(it):
 
         x.append(float(nums[0]))
         y.append(float(nums[1]))
+        line = next(it, None)
+
+    return x, y
+
+def parse_new_data(it):
+    x, y = [], []
+    line = next(it, None)
+
+    while line is not None:
+        line = line.strip()
+        if not line:
+           break 
+
+        nums = line.split()
+
+        x.append(float(nums[0]))
+        y.append(float(nums[8]))
         line = next(it, None)
 
     return x, y
