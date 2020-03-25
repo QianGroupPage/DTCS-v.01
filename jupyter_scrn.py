@@ -4,34 +4,7 @@ from surface_crns.base.node import *
 from surface_crns.views.grid_display import *
 from surface_crns.simulators.queue_simulator import *
 import pygame, math, random, sys
-import matplotlib.pyplot as plt
 
-# def main():
-#     manifest_file = "co_reduction.txt"
-#     if len(sys.argv) > 1 and sys.argv[1] == "headless":
-#         lattice = HexGridPlusIntersections(10, 10)
-#         for n in lattice:
-#             if n.is_intersection:
-#                 if random.random() < 0.1:
-#                     n.state = "O"
-#                 else:
-#                     n.state = "3F"
-#             else:
-#                 n.state = "Ag"
-#         simulate_without_display(manifest_file, lattice)
-#     else:
-#         lattice = HexGridPlusIntersections(10, 10)
-#         for n in lattice:
-#             if n.is_intersection:
-#                 if random.random() < 0.25:
-#                     n.state = "O"
-#                 else:
-#                     n.state = "3F"
-#             else:
-#                 n.state = "Ag"
-#         SurfaceCRNQueueSimulator.simulate_surface_crn(manifest_file,
-#                                 display_class = HexGridPlusIntersectionDisplay,
-#                                 init_state = lattice)
 
 def simulate_without_display(manifest_file, lattice, species_tracked = ["O", "OH_3F", "OH_top", "H2O"]):
     '''
@@ -39,7 +12,6 @@ def simulate_without_display(manifest_file, lattice, species_tracked = ["O", "OH
     the times of each reaction, along with an array of times. At the end,
     display a graph of species concentrations as they change.
     '''
-    # TODO after first run: move these to the top
     from surface_crns.readers.manifest_readers import read_manifest
     from surface_crns.options.option_processor import SurfaceCRNOptionParser
 
@@ -73,14 +45,7 @@ def simulate_without_display(manifest_file, lattice, species_tracked = ["O", "OH
                 concs[product][-1] += 1
 
     return times, concs
-    # for species in species_tracked:
-        # plt.plot(times, concs[species], label = species)
-    # plt.plot(times, np.array(concs["OH_top"]) + np.array(concs["OH_3F"]), label = "OH")
-    # plt.legend()
-    # plt.xlabel("Time (s)")
-    # plt.ylabel("Molecule Count (#)")
-    # plt.title("Evolution of CO reduction system with OH poisoning")
-    # plt.show()
+
 
 class HexGridPlusIntersections(HexGrid):
     '''
