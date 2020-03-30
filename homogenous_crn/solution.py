@@ -46,8 +46,9 @@ class Solution:
         """
         Draws a basic plot over the time domain
         """
-        for sol in self.states.values():
-            plt.plot(self.t, sol)
+        for name, sol in self.states.items():
+            plt.plot(self.t, sol, label=name)
+        plt.legend()
 
     def final_state(self) -> Dict[str, float]:
         """
@@ -99,6 +100,7 @@ class Solution:
         x_axis = np.arange(min_be - 5, max_be + 5, .001)
         envelope_vals = np.zeros(x_axis.size)
         dists = []
+        names = []
 
         # plot a curve for each substance
         for name, sol in self.final_state().items():
@@ -108,13 +110,15 @@ class Solution:
                     dist = sol * norm.pdf(x_axis, be, sigma)
                     envelope_vals += dist
                     dists.append(dist)
+                    names.append(name)
 
         if overlay:
             plt.plot(self.xps.binding_energy, self.xps.intensity, color='green')
             envelope_vals, dists = self.scale((x_axis, envelope_vals, dists), (self.xps.binding_energy, self.xps.intensity))
 
-        for dist in sorted(dists, key=lambda x: max(x), reverse=True):
-            plt.fill(x_axis, dist)
+        for i, dist in enumerate(sorted(dists, key=lambda x: max(x), reverse=True)):
+            plt.fill(x_axis, dist, label=names[i])
+        plt.legend()
 
         if envelope:
             plt.plot(x_axis, envelope_vals, linewidth=4, color='black')
