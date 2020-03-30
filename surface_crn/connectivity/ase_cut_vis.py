@@ -9,7 +9,7 @@ from ase.build import bcc100, bcc110, bcc111
 import matplotlib.pyplot as plt
 
 
-def connectivity(positions: np.ndarray, max_dist=None, deg=2, max_deg=4):
+def connectivity(positions: np.ndarray, max_dist=None, deg=2, max_deg=3):
     position_dict = {deg - 1: positions}
 
     n = positions.shape[0]
@@ -108,7 +108,7 @@ if __name__ == '__main__':
     cv2.namedWindow('img')
     cv2.createTrackbar('X', 'img', 0, 100, na)
 
-    size=(5,5,2)
+    size=(5,5,1)
     atoms = fcc111('Al', size=size)
     # atoms = bcc111('Fe', size=size)
     view(atoms)
