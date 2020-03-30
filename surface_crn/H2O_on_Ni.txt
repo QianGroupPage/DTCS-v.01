@@ -1,0 +1,60 @@
+# Run settings
+pixels_per_node    = 50
+speedup_factor     = .5
+debug              = True
+rng_seed           = 123123122
+max_duration       = 298.15
+fps                = 60
+node_display       = text
+wrap               = false
+
+!START_TRANSITION_RULES
+# _s replaces *
+# T=298.15
+# conc[O*, 0.25]}
+# tmax = 10000;
+
+# Adsorbtion
+Ni + Ni -> O_s + O_s (135.206273)
+
+# Reaction
+O_s -> H2O_O_hb (0.000010)
+OH_s -> H2O_OH_hb (0.000004)
+H2O_O_hb + Ni -> OH_s + OH_s (6.220646)
+OH_s + OH_s -> H2O_O_hb + Ni (0.160755)
+
+H2O_OH_hb + Ni -> H2O_s + OH_s (0.299507)
+H2O_O_hb + Ni -> H2O_s + O_s (0.167130)
+H2O_s -> Ni (6.123512)
+Ni -> H2O_s (0.000002)
+H2O_OH_hb -> OH_s (2.316049)
+H2O_O_hb -> O_s (0.984385)
+H2O_OH_hb -> H2Omulti (0.000003)
+H2Omulti -> H2O_OH_hb (3.040734)
+
+# Diffusion
+Ni + O_s -> O_s + Ni (1)
+Ni + OH_s -> OH_s + Ni (1)
+Ni + H2O_s ->  H2O_s + Ni (1)
+
+# Desorbtion
+O_s + O_s -> Ni + Ni (0.007396)
+
+!END_TRANSITION_RULES
+
+# Initial state
+!START_INIT_STATE
+Ni Ni Ni Ni Ni Ni Ni Ni Ni Ni
+Ni Ni Ni Ni Ni Ni Ni Ni Ni Ni
+Ni Ni Ni Ni Ni Ni Ni Ni Ni Ni
+Ni Ni Ni Ni Ni Ni Ni Ni Ni Ni
+Ni Ni Ni Ni Ni Ni Ni Ni Ni Ni
+Ni Ni Ni Ni Ni Ni Ni Ni Ni Ni
+Ni Ni Ni Ni Ni Ni Ni Ni Ni Ni
+!END_INIT_STATE
+
+# Colormap
+!START_COLORMAP
+Ni: (160,160,160)
+{Intersection}   I: (200, 200, 0)
+!END_COLORMAP
