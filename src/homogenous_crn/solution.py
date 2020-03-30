@@ -4,8 +4,7 @@ from matplotlib.widgets import CheckButtons
 import numpy as np
 from scipy.stats import norm
 from typing import Callable, List, Dict, Tuple
-import species
-from process_sympy_eqs import rxns_to_python_derivative_function, rxns_to_substances, rxns_to_initial_values
+from .process_sympy_eqs import rxns_to_python_derivative_function, rxns_to_substances, rxns_to_initial_values
 
 class Solution:
     """

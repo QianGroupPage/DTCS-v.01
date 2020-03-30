@@ -20,8 +20,8 @@ from typing import List, Tuple, Set
 import abc
 import copy
 
-from process_sympy_eqs import process_sympy_eqs
-from species import *
+from .process_sympy_eqs import process_sympy_eqs
+from .species import *
 
 
 # *** Classes ***

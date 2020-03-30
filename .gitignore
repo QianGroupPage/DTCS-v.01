@@ -1,7 +1,7 @@
 __pycache__/
 .ipynb_checkpoints/
 .mypy_cache/
-
 .idea
-
 data/
+venv/
+*.egg-info

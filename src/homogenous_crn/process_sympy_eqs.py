@@ -1,8 +1,8 @@
 from typing import Callable, Mapping, Collection, Sequence, Mapping, List, Tuple, Collection
 import sympy as sym
 from sympy.utilities.lambdify import lambdastr
-from util import multiple_replace
-from species import Species
+from .util import multiple_replace
+from .species import Species
 
 def process_sympy_eqs(eqs: Sequence[sym.Eq] , species_ordering: Sequence[str] = None) -> Tuple[Callable, Mapping, Mapping]:
     # Process a list of eqs consisting of eqs of the following types.
