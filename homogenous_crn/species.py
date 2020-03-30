@@ -187,10 +187,9 @@ class Species:
     A chemical species with a name and orbitals, which are triples of (orbital name, binding energy, proportion)
     """
 
-    def __init__(self, name: str, orbitals: List[Orbital], experimental_val: float, schedule):
+    def __init__(self, name: str, orbitals: List[Orbital], schedule):
         self.name = name
         self.orbitals = orbitals
-        self.experimental_val = experimental_val
         self.schedule = schedule
 
     def __str__(self):
@@ -212,7 +211,7 @@ class SpeciesManager:
     def __init__(self):
         self._species = {} # As of current, initializes empty
 
-    def make_species(self, name: str, orbitals: Union[Orbital, List[Orbital]], experimental_val: float, schedule) -> sym.Symbol:
+    def make_species(self, name: str, orbitals: Union[Orbital, List[Orbital]], schedule) -> sym.Symbol:
         """
         Makes a sym.Symbol and a corresponding Species and keeps track of their correspondence.
         Returns the symbol.
@@ -224,7 +223,7 @@ class SpeciesManager:
         if not isinstance(orbitals, list):
             orbitals = [orbitals]
 
-        self._species[symbol] = Species(name, orbitals, experimental_val, Schedule(symbol, schedule))
+        self._species[symbol] = Species(name, orbitals, Schedule(symbol, schedule))
         return symbol
 
     def species_from_symbol(self, key: sym.Symbol) -> Species:
