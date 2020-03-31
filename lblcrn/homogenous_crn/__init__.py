@@ -5,5 +5,4 @@ I'm tired of importing everything every time
 
 from .crn_sym import *
 from .solution import *
-from .species import *
 from .xps import *
