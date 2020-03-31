@@ -5,7 +5,7 @@ with open('README.md', 'r') as readme_file:
 
 setup(name='crnsim',
 	version='0.1',
-	packages=['homogenous_crn'],
+	packages=['homogenous_crn', 'surface_crn'],
 	package_dir={'': 'src'},
 	requires=[
 		'jupyterlab',
