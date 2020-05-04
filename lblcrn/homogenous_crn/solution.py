@@ -127,7 +127,7 @@ class Solution:
 
     def __repr__(self) -> str:
         shortened_sols = [sol[:10] for sol in self.states.values()]
-        return 'Solution('+self.t[:10]+'..., '+shortened_sols[:10]+'...'
+        return 'Solution('+str(self.t[:10])+'..., '+str(shortened_sols[:10])+'...'
 
 
 def solve_ode(ode: Callable[[float, List[float]], List[float]], rxns,
