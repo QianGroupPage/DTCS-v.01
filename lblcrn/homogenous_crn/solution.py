@@ -1,5 +1,8 @@
-from scipy.integrate import solve_ivp
+from scipy.integrate import solve_ivp, trapz
 import matplotlib.pyplot as plt
+from sklearn.metrics import mean_squared_error
+from math import sqrt
+
 from matplotlib.widgets import CheckButtons
 import numpy as np
 from scipy.stats import norm
@@ -23,9 +26,13 @@ class Solution:
         for symbol, sub in self.substances.items():
         #    self.substances[substances[i].symbol] = substances[i]
             self.states[symbol] = y[rxns.symbol_index[symbol]]
-        self.xps = None
 
-        self.intensity = []
+        self.envelope = []
+        self.binding_energies = []
+        self.resampled_intensity = []
+        self.distributions = []
+        self.ignore = []
+        self.xps = None
 
     def set_experimental(self, xps):
         """
@@ -33,7 +40,6 @@ class Solution:
         to match.
         """
         self.xps = xps
-        self.scaled_xps_intensity = []
 
     def sols(self) -> List[List[float]]:
         return list(self.states.values())
@@ -63,6 +69,12 @@ class Solution:
         Returns a list of solutions for the specified variables passed in as arguments
         """
         return {name: sol for name, sol in self.states.items() if name in vars}
+    
+    def set_ignore(self, ignore):
+        """
+        Set species to be ignored
+        """
+        self.ignore = list(ignore)
 
     def scale(self, to_scale, exp):
         max_to_scale = max(to_scale[1])
@@ -79,11 +91,21 @@ class Solution:
 
         return new_envelope, new_dists
 
+    def resample(self):
+        rei = []
+        i = 0
+        bes = self.binding_energies
+        for intensity, be in zip(list(reversed(self.xps.intensity)), list(reversed(self.xps.binding_energy))):
+            while i < len(bes) and be > bes[i]:
+                rei.append(intensity)
+                i += 1
+            if i >= len(bes):
+                break
+        self.resampled_intensity = rei
 
-    def plot_gaussian(self, envelope: bool = False, overlay: bool = False, ignore: List[str] = []):
+    def process(self): 
         """
-        Plots a gaussian distribution of the final species concentrations. FWHM is set at 0.75
-        If specified, an envelope curve is also plotted
+        Resample, scale, and calculate envelopes and other characteristics of the data.
         """
         sigma = 0.75 * np.sqrt(2) / (np.sqrt(2 * np.log(2)) * 2)
         
@@ -92,38 +114,59 @@ class Solution:
         
         # determine x axis bounds
         for name, substance in self.substances.items():
-            if name not in ignore:
+            if name not in self.ignore:
                 min_be = min(substance.orbitals[0].binding_energy, min_be)
                 max_be = max(substance.orbitals[0].binding_energy, max_be)
 
-        x_axis = np.arange(min_be - 5, max_be + 5, .001)
-        envelope_vals = np.zeros(x_axis.size)
-        dists = []
-        names = []
+        self.binding_energies = np.arange(min_be - 5, max_be + 5, .001)
+        self.envelope = np.zeros(self.binding_energies.size)
+        self.distributions = []
+        self.names = []
 
+        # TODO: move this processing to a separate function
         # plot a curve for each substance
         for name, sol in self.final_state().items():
-            if name not in ignore:
+            if name not in self.ignore:
                 for o in self.substances[name].orbitals:
                     be = o.binding_energy
-                    dist = sol * norm.pdf(x_axis, be, sigma)
-                    envelope_vals += dist
-                    dists.append(dist)
-                    names.append(name)
+                    dist = sol * norm.pdf(self.binding_energies, be, sigma)
+                    self.envelope += dist
+                    self.distributions.append(dist)
+                    self.names.append(name)
 
-        if overlay:
-            plt.plot(self.xps.binding_energy, self.xps.intensity, color='green')
-            envelope_vals, dists = self.scale((x_axis, envelope_vals, dists), (self.xps.binding_energy, self.xps.intensity))
+        if self.xps:
+            self.resample()
+            self.envelope, self.distributions = self.scale((self.binding_energies, self.envelope,
+                self.distributions), (self.xps.binding_energy, self.xps.intensity))
 
-        for i, dist in enumerate(sorted(dists, key=lambda x: max(x), reverse=True)):
-            plt.fill(x_axis, dist, label=names[i])
+    def plot_gaussian(self, envelope: bool = False, overlay: bool = False, resample_envelope: bool = False):
+        """
+        Plots a gaussian distribution of the final species concentrations. FWHM is set at 0.75
+        If specified, an envelope curve is also plotted
+        """
+
+        for i, dist in enumerate(sorted(self.distributions, key=lambda x: max(x), reverse=True)):
+            plt.fill(self.binding_energies, dist, label=self.names[i])
         plt.legend()
 
+        if overlay:
+            if resample_envelope:
+                plt.plot(self.binding_energies, self.resampled_intensity, color='green')
+            else:
+                plt.plot(self.xps.binding_energy, self.xps.intensity, color='green')
+
         if envelope:
-            plt.plot(x_axis, envelope_vals, linewidth=4, color='black')
+            plt.plot(self.binding_energies, self.envelope, linewidth=4, color='black')
         
         plt.gca().invert_xaxis()
         plt.show()
+
+    def rmse(self):
+        return sqrt(mean_squared_error(self.resampled_intensity, self.envelope))
+    
+    def integral_diff(self):
+        return abs(trapz(self.resampled_intensity, self.binding_energies) -
+                trapz(self.envelope, self.binding_energies))
 
     def __repr__(self) -> str:
         shortened_sols = [sol[:10] for sol in self.states.values()]
