@@ -21,12 +21,12 @@ def read_data(filename):
     f.close()
     return data
 
-def read_new_data(filename):
+def read_new_data(filename, be=0):
     f = open(filename)
 
     it = file_iter(f)
     next(it, None)
-    x, y = parse_new_data(it)
+    x, y = parse_new_data(it, be)
     return [XPSData({}, x, y)]
 
 def file_iter(f):
@@ -76,7 +76,7 @@ def parse_data(it):
 
     return x, y
 
-def parse_new_data(it):
+def parse_new_data(it, be):
     x, y = [], []
     line = next(it, None)
 
@@ -87,7 +87,7 @@ def parse_new_data(it):
 
         nums = line.split()
 
-        x.append(float(nums[0]))
+        x.append(float(nums[be]))
         y.append(float(nums[8]) - float(nums[7]))
         line = next(it, None)
 
