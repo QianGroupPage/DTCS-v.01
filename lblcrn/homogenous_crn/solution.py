@@ -110,7 +110,7 @@ class Solution:
         r_e, r_bes = [], []
         i = 0
         for b in list(reversed(xbes)):
-            while bes[i] < b:
+            while i < len(e) and bes[i] < b:
                 i += 1
             r_e.append(e[i])
             r_bes.append(b)
