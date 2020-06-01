@@ -35,9 +35,7 @@ class Solution:
         self.xps = None
 
     def set_experimental(self, xps):
-        """
-        Takes an xps object contain experimental data, and scales the simulated solution
-        to match.
+        """Takes an xps object contain experimental data, and scales the simulated solution.
         """
         self.xps = xps
 
@@ -48,16 +46,14 @@ class Solution:
         return self.t
     
     def basic_plot(self):
-        """
-        Draws a basic plot over the time domain
+        """Draws a basic plot over the time domain
         """
         for name, sol in self.states.items():
             plt.plot(self.t, sol, label=name)
         plt.legend()
 
     def final_state(self) -> Dict[str, float]:
-        """
-        Returns the final state of the system of equations
+        """Returns the final state of the system of equations
         """
         final_state: Dict[str, float] = {}
         for name, sol in self.states.items():
@@ -65,8 +61,7 @@ class Solution:
         return final_state
 
     def var_sols(self, *vars) -> Dict[str, List[float]]:
-        """
-        Returns a list of solutions for the specified variables passed in as arguments
+        """Returns a list of solutions for the specified variables passed in as arguments
         """
         return {name: sol for name, sol in self.states.items() if name in vars}
     
@@ -77,6 +72,11 @@ class Solution:
         self.ignore = list(ignore)
 
     def scale(self, to_scale, exp):
+        """Scale experimental data intensity to match that of the experimental data.
+
+        The largest value of the simulated data is scaled to match the largest value of the
+        experimental data, and this scaling factor is then applied across all simulated data.
+        """
         max_to_scale = max(to_scale[1])
         max_exp = max(exp[1])
         new_envelope = []
@@ -92,6 +92,8 @@ class Solution:
         return new_envelope, new_dists
 
     def resample(self):
+        """Resample the simulated data, reducing its size to match that of the experimental data.
+        """
         # rei = []
         # i = 0
         # bes = self.binding_energies
@@ -110,7 +112,7 @@ class Solution:
         r_e, r_bes = [], []
         i = 0
         for b in list(reversed(xbes)):
-            while i < len(e) and bes[i] < b:
+            while  i < len(e) and bes[i] < b:
                 i += 1
             r_e.append(e[i])
             r_bes.append(b)
@@ -119,9 +121,12 @@ class Solution:
         self.resampled_intensity = list(reversed(xi))
 
 
-    def process(self): 
-        """
-        Resample, scale, and calculate envelopes and other characteristics of the data.
+    def process(self, gas_range=()): 
+        """Resample, scale, and calculate envelopes and other characteristics of the data.
+
+        First the binding energy bounds are found, the envelope curve and individual species
+        gaussians are then computed. Finally, if an experimental data object has been set, the
+        simulated data is resampled and sacled.
         """
         sigma = 0.75 * np.sqrt(2) / (np.sqrt(2 * np.log(2)) * 2)
         
@@ -148,10 +153,40 @@ class Solution:
                     self.distributions.append(dist)
                     self.names.append(name)
 
+        self.resampled_binding_energies = self.binding_energies
+
         if self.xps:
             self.resample()
             self.envelope, self.distributions = self.scale((self.resampled_binding_energies, self.envelope,
                 self.distributions), (self.xps.binding_energy, self.xps.intensity))
+
+            # If a valid gas range is specified, create a fake peak
+            if len(gas_range) == 2:
+                start = gas_range[0]
+                end = gas_range[1]
+                intensities = list(reversed(self.xps.intensity))
+                bes = list(reversed(self.xps.binding_energy))
+
+                i = 0
+                while i < len(bes) and bes[i] < start:
+                    i += 1
+
+                if i < len(bes):
+                    max_intensity = intensities[i]
+                    be = i
+                    while i < len(bes) and i < bes[i] < end:
+                        if intensities[i] > max_intensity:
+                            max_intensity = intensities[i]
+                            be = bes[i]
+                        i += 1
+                    if i < len(bes):
+                        dist = max_intensity * norm.pdf(self.binding_energies, be, sigma)
+                        resampled_dist = max_intensity * norm.pdf(self.resampled_binding_energies, be, sigma)
+                        self.envelope += resampled_dist
+                        self.distributions.append(dist)
+                        self.names.append('gas phase')
+
+
 
     def plot_gaussian(self, envelope: bool = False, overlay: bool = False, resample_envelope: bool =
             False, ax=None, title=''):
