@@ -1,7 +1,10 @@
 """
-Root src?
+lblcrn.__init__.py
+------------------
+
+Package root initializer.
 """
 
-#from .homogenous_crn import *
-#from .surface_crn import *
+from ._version import __version__
+
 from .common import *

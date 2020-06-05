@@ -1,19 +1,39 @@
+"""
+setup.py
+--------
+
+For package lblcrn.
+"""
+
+import re
 from setuptools import setup, find_packages
 
-with open('README.md', 'r') as readme_file:
-	readme=readme_file.read()
+# Collection version information
+version_info = open('lblcrn/_version.py').read()
 
+pattern = r'__version__\s?=\s?[\'\"](.*)[\'"]'
+match = re.search(pattern, version_info)
+if match:
+    __version__ = match.group(1)
+
+# Collect readme file
+with open('README.md', 'r') as readme_file:
+    readme = readme_file.read()
+
+# Setup
 setup(name='lblcrn',
-	version='0.1',
-	package_data={'lblcrn': ['resources/*.csv']},
-	packages=find_packages(),
-	install_requires=[
-		'jupyterlab',
-		'matplotlib',
-		'numpy',
-		'pandas',
-		'scipy',
-		'sympy',
-		'sklearn',],
-	long_description=readme,
-)
+      version=__version__,
+      package_data={'lblcrn': ['resources/*.csv']},
+      packages=find_packages(),
+      install_requires=[
+          'matplotlib',
+          'numpy',
+          'pandas',
+          'scipy',
+          'sympy',
+          'sklearn', ],
+      requires=[
+          'jupyterlab',
+      ],
+      long_description=readme,
+      )

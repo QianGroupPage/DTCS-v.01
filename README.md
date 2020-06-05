@@ -5,8 +5,12 @@ A chemical reaction network solver
 The easy install is just
 `pip install git+https://github.com/rithvikp/lbl-crn`
 
-## Testing
-To test if everything is working properly
+Once it's installed (it might take a while), run
+`python -m lblcrn --test`
+to test if everything is working properly.
+
+## Example
+Running the example, Predator-Prey
 1. Download this [example](https://github.com/rithvikp/lbl-crn/blob/master/examples/predator_prey.ipynb)
 2. Open the file in Jupyter Notebook and run it - if you see all the graphs and
 whatnot, the install worked.
