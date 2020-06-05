@@ -7,12 +7,12 @@ setup(name='lblcrn',
 	version='0.1',
 	package_data={'lblcrn': ['resources/*.csv']},
 	packages=find_packages(),
-	requires=[
+	install_requires=[
 		'jupyterlab',
 		'matplotlib',
 		'numpy',
 		'pandas',
-		'scipy'
+		'scipy',
 		'sympy',
 		'sklearn',],
 	long_description=readme,
