@@ -2,8 +2,14 @@
 A chemical reaction network solver
 
 ## How to Install
-clone then 
-`pip3 install -r requitements.txt`
+The easy install is just
+`pip install git+https://github.com/rithvikp/lbl-crn`
+
+## Testing
+To test if everything is working properly
+1. Download this [example](https://github.com/rithvikp/lbl-crn/blob/master/examples/predator_prey.ipynb)
+2. Open the file in Jupyter Notebook and run it - if you see all the graphs and
+whatnot, the install worked.
 
 ## Structure
 ``` bash
