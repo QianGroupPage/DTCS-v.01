@@ -9,7 +9,7 @@ import re
 from setuptools import setup, find_packages
 
 # Collection version information
-version_info = open('lblcrn/_version.py').read()
+version_info = open('lblcrn/__init__.py').read()
 
 pattern = r'__version__\s?=\s?[\'\"](.*)[\'"]'
 match = re.search(pattern, version_info)

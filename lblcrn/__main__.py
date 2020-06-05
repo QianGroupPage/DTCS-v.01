@@ -25,14 +25,6 @@ def cmd_help():
 
     print(help)
 
-def cmd_test():
-    """
-    Test successful installation.
-    """
-
-    # TODO: Tests
-    print('Working fine!')
-
 def cmd_version():
     """
     Gives the version of the package.
@@ -50,8 +42,6 @@ if __name__ == '__main__':
 
     if '-h' in opts or '--help' in opts:
         cmd_help()
-    elif '-t' in opts or '--test' in opts:
-        cmd_test()
     elif '-V' in opts or '--version' in opts:
         cmd_version()
     else:

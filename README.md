@@ -6,8 +6,8 @@ The easy install is just
 `pip install git+https://github.com/rithvikp/lbl-crn`
 
 Once it's installed (it might take a while), run
-`python -m lblcrn --test`
-to test if everything is working properly.
+`python -m lblcrn --version`
+to check if everything installed.
 
 ## Example
 Running the example, Predator-Prey

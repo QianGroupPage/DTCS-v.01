@@ -5,6 +5,6 @@ lblcrn.__init__.py
 Package root initializer.
 """
 
-from ._version import __version__
+__version__ = '0.1'
 
 from .common import *
