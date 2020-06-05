@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 with open('README.md', 'r') as readme_file:
 	readme=readme_file.read()
 
-setup(name='crnsim',
+setup(name='lblcrn',
 	version='0.1',
 	package_data={'lblcrn': ['resources/*.csv']},
 	packages=find_packages(),
@@ -11,6 +11,7 @@ setup(name='crnsim',
 		'jupyterlab',
 		'matplotlib',
 		'numpy',
+		'pandas',
 		'scipy'
 		'sympy',
 		'sklearn',],
