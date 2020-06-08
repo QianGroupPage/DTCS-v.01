@@ -5,6 +5,10 @@ from surface_crns.views.grid_display import *
 from surface_crns.simulators.queue_simulator import *
 import pygame, math, random, sys
 
+def simulate_with_display(manifest_file, lattice):
+    SurfaceCRNQueueSimulator.simulate_surface_crn(manifest_file,
+                                display_class = HexGridPlusIntersectionDisplay,
+                                init_state = lattice)
 
 def simulate_without_display(manifest_file, lattice, species_tracked = ["O", "OH_3F", "OH_top", "H2O"]):
     '''
@@ -14,7 +18,6 @@ def simulate_without_display(manifest_file, lattice, species_tracked = ["O", "OH
     '''
     from surface_crns.readers.manifest_readers import read_manifest
     from surface_crns.options.option_processor import SurfaceCRNOptionParser
-
 
     manifest_options = read_manifest(manifest_file)
     opts = SurfaceCRNOptionParser(manifest_options)
