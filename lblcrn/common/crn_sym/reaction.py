@@ -249,7 +249,19 @@ class RxnSystem:
         return odes
 
     def get_ode_functions(self):
-        pass
+        """
+        Return a function with signature func(t, y) representing the reaction system.
+        """
+
+        symbols = self.get_symbols()
+        odes = self.get_ode_expressions()
+        time = sym.symbols('t')
+
+        # This following line does a lot, so let me explain it. It makes a function with signature
+        # f((specie1, specie2, ...), time) -> (specie1, specie2, ...)
+        # Where 'specieN' is the concentration before then after the timestep time.
+        # This is meant to be fed into SciPy's ODEINT package.
+        return sym.lambdify((time, symbols), odes)
 
     def get_species(self) -> List[Species]:
         species = []
@@ -260,6 +272,9 @@ class RxnSystem:
         return species
 
     def get_symbols(self) -> List[sym.Symbol]:
+        """
+        Give all the symbols in the reaction system in a fixed order.
+        """
         return copy.copy(self._symbols)
 
     def __str__(self):

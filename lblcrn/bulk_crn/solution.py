@@ -298,5 +298,5 @@ def solve_ode(ode: Callable[[float, List[float]], List[float]], rxns,
     return Solution(t, y, rxns)
 
 def solve(rxns, time: float = 1, rtol: float = 1e-3, atol: float = 1e-6, max_step: float = None) -> Solution:
-    return solve_ode(rxns_to_python_derivative_function(rxns), rxns, time,
+    return solve_ode(rxns.get_ode_functions(), rxns, time,
             rtol=rtol, atol=atol, max_step=max_step)

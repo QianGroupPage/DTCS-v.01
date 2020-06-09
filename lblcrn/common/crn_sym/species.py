@@ -16,6 +16,8 @@ import copy
 
 from typing import List, Tuple, Union, Set
 
+from .conditions import Schedule
+
 # *** Classes ***
 class Orbital:
     """
