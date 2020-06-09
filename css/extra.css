@@ -1,0 +1,20 @@
+.bg-dark {
+    background: #404040 !important;
+}
+
+.bs-sidebar {
+    display: none;
+}
+
+body::before {
+    background: white;
+}
+
+div[role=main] {
+    max-width: 100%;
+    min-width: 100%;
+}
+
+a[rel=next], a[rel=prev] {
+    display: none;
+}
