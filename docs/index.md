@@ -27,9 +27,9 @@ Then, you can create some species.
 Then, you define your reaction system.
 
     rsys = RxnSystem(
-        Rxn(x1 + x2, 2 * x2, 1.5),
-        Rxn(x1, 2 * x1, 1),
-        Rxn(x2, 1, 1),
+        Rxn(prey + pred, 2 * pred, 1.5),
+        Rxn(prey, 2 * prey, 1),
+        Rxn(pred, 1, 1),
         sm
     )
 
