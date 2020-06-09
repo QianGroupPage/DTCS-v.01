@@ -1,6 +1,6 @@
 # API Documentation
 
-## Module Index: `lblcrn`
+## Module Index: `lblcrn.homogenous_crn`
 
     [lblcrn](.)
         common
