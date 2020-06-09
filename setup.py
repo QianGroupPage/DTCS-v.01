@@ -20,20 +20,21 @@ if match:
 with open('README.md', 'r') as readme_file:
     readme = readme_file.read()
 
-# Setup
-setup(name='lblcrn',
-      version=__version__,
-      package_data={'lblcrn': ['resources/*.csv']},
-      packages=find_packages(),
-      install_requires=[
-          'matplotlib',
-          'numpy',
-          'pandas',
-          'scipy',
-          'sympy',
-          'sklearn', ],
-      requires=[
-          'jupyterlab',
-      ],
-      long_description=readme,
-      )
+if __name__ == '__main__':
+    # Setup
+    setup(name='lblcrn',
+          version=__version__,
+          package_data={'lblcrn': ['resources/*.csv']},
+          packages=find_packages(),
+          install_requires=[
+              'matplotlib',
+              'numpy',
+              'pandas',
+              'scipy',
+              'sympy',
+              'sklearn', ],
+          requires=[
+              'jupyterlab',
+          ],
+          long_description=readme,
+          )

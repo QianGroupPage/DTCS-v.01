@@ -1,8 +1,9 @@
 __pycache__/
 .ipynb_checkpoints/
 .mypy_cache/
-.idea
+.idea/
 data/
 venv/
+site/
 *.egg-info
 .DS_Store

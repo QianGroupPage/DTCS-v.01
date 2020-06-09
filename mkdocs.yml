@@ -1,0 +1,14 @@
+site_name: LBL Chemical Reaction Network
+
+nav:
+  - Getting Started: 'getting-started.md'
+  - Examples: 'examples.md'
+
+theme:
+  name: mkdocs
+  nav_style: dark
+
+extra_css:
+  - css/extra.css
+
+site_dir: site/
