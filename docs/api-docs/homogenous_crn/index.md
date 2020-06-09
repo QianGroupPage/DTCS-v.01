@@ -2,7 +2,10 @@
 
 ## Module Index: `lblcrn.homogenous_crn`
 
-    [lblcrn](.)
-        common
-        [homogenous_crn](./homogenous_crn)
-        surface_crn
+    [homogenous_crn](.)
+        Orbital
+        [Solution](solution)
+        Species
+        SpeciesManager
+        RxnSystem
+        Rxn

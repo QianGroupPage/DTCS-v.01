@@ -5,8 +5,14 @@
 ...TODO
 
 ## How to Install
-The easy install is just
-`pip install git+https://github.com/rithvikp/lbl-crn`
+if you are using Anaconda:
+
+    conda install git
+    conda install git+https://github.com/rithvikp/lbl-crn
+
+if you are using normal Python:
+
+    pip install git+https://github.com/rithvikp/lbl-crn
 
 Once it's installed (it might take a while), run
 `python -m lblcrn --version`

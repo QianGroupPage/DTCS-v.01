@@ -2,8 +2,14 @@
 A chemical reaction network solver
 
 ## How to Install
-The easy install is just
-`pip install git+https://github.com/rithvikp/lbl-crn`
+if you are using Anaconda:
+
+    conda install git
+    conda install git+https://github.com/rithvikp/lbl-crn
+
+if you are using normal Python:
+
+    pip install git+https://github.com/rithvikp/lbl-crn
 
 Once it's installed (it might take a while), run
 `python -m lblcrn --version`
@@ -24,9 +30,9 @@ Then, you can create some species.
 Then, you define your reaction system.
 
     rsys = RxnSystem(
-        Rxn(x1 + x2, 2 * x2, 1.5),
-        Rxn(x1, 2 * x1, 1),
-        Rxn(x2, 1, 1),
+        Rxn(prey + pred, 2 * pred, 1.5),
+        Rxn(prey, 2 * prey, 1),
+        Rxn(pred, 1, 1),
         sm
     )
 
