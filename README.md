@@ -9,36 +9,39 @@ Once it's installed (it might take a while), run
 `python -m lblcrn --version`
 to check if everything installed.
 
-## Example
-Running the example, Predator-Prey
-1. Download this [example](https://github.com/rithvikp/lbl-crn/blob/master/examples/predator_prey.ipynb)
-2. Open the file in Jupyter Notebook and run it - if you see all the graphs and
-whatnot, the install worked.
+## Walkthrough
+This will walk you through the workflow of a predator-prey system.
 
-## Structure
-``` bash
-lbl_crn/
-├── common/ # code used by all submodules
-│   ├── utils.py # miscellaneous functions
-│   └── b.py
-│   
-├── surface_crn/
-│   ├── examples/
-│   │   ├── a.ipynb
-│   │   └── b.py
-│   ├── a.py
-│   └── b.py
-│   
-├── homogenous_crn/
-│   ├── examples/
-│   │   ├── a.ipynb
-│   │   └── b.py
-│   └── b.py
-│   
-├── script.sh
-├── otherscript.sh
-└── requirements.txt
-```
+    from lblcrn.homogenous_crn import *
+    
+First, you need to make a SpeciesManager to keep track of all your species.
+Then, you can create some species.
 
-## TODO
-  - Decide on repo structure
+    sm = SpeciesManager()
+    prey = sm.sp('rabbit', Orbital('1s', 535.0), {0:2})
+    pred = sm.sp('fox', Orbital('1s', 535.5), {0:1})
+    
+Then, you define your reaction system.
+
+    rsys = RxnSystem(
+        Rxn(x1 + x2, 2 * x2, 1.5),
+        Rxn(x1, 2 * x1, 1),
+        Rxn(x2, 1, 1),
+        sm
+    )
+
+Then, you solve the system. This simulates the system for `time`.
+
+    solution = solve(rsys, time=45, max_step=0.01)
+    solution.process()
+    solution.basic_plot()
+    
+And then to plot the gaussian:
+
+    solution.plot_gaussian(envelope=True)
+
+You can download this example [here](https://github.com/rithvikp/lbl-crn/blob/master/examples/predator_prey.ipynb).
+
+## More Information
+For more information, a quickstart guide, examples, and the api reference, 
+please refer to the [documentation]()

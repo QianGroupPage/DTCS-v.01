@@ -1,8 +1,12 @@
 site_name: LBL Chemical Reaction Network
 
 nav:
-  - Getting Started: 'getting-started.md'
+  - About: 'index.md'
+  - Quickstart: 'quickstart.md'
   - Examples: 'examples.md'
+  - License: 'license.md'
+  - Contact: 'contact.md'
+  - API Docs: 'api-docs.md'
 
 theme:
   name: mkdocs

@@ -1,20 +1,56 @@
 # LBL CRN - Chemical Reaction Simulator in Python
-<br/>
 
-### CRN
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
-incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
-exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure
-dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
-Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt
-mollit anim id est laborum.
+## Introduction
 
-<br/>
+...TODO
 
-### <this crn name\>
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
-incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
-exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure
-dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
-Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt
-mollit anim id est laborum.
+## How to Install
+The easy install is just
+`pip install git+https://github.com/rithvikp/lbl-crn`
+
+Once it's installed (it might take a while), run
+`python -m lblcrn --version`
+to check if everything installed.
+
+## Walkthrough
+This will walk you through the workflow of a predator-prey system.
+
+    from lblcrn.homogenous_crn import *
+    
+First, you need to make a SpeciesManager to keep track of all your species.
+Then, you can create some species.
+
+    sm = SpeciesManager()
+    prey = sm.sp('rabbit', Orbital('1s', 535.0), {0:2})
+    pred = sm.sp('fox', Orbital('1s', 535.5), {0:1})
+    
+Then, you define your reaction system.
+
+    rsys = RxnSystem(
+        Rxn(x1 + x2, 2 * x2, 1.5),
+        Rxn(x1, 2 * x1, 1),
+        Rxn(x2, 1, 1),
+        sm
+    )
+
+Then, you solve the system. This simulates the system for `time`.
+
+    solution = solve(rsys, time=45, max_step=0.01)
+    solution.process()
+    solution.basic_plot()
+    
+And then to plot the gaussian:
+
+    solution.plot_gaussian(envelope=True)
+
+You can download this example [here](https://github.com/rithvikp/lbl-crn/blob/master/examples/predator_prey.ipynb).
+
+## Citation Information
+
+...TODO
+
+## More Information
+- [Quickstart](quickstart) and [Examples](examples)
+- [License](license) information
+- [Contact](contact) us for issues, bugs, and contributing.
+- [API Documentation](api-docs)
