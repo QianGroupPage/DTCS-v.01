@@ -103,26 +103,33 @@ class Schedule:
 
         # Handle schedule if it's a dict
         if isinstance(schedule, dict):
-            self.schedule = schedule
+            self._schedule = schedule  # TODO: Get a better name for this
 
         # Handle schedule if it's a list or tuple
         elif isinstance(schedule, list):
-            self.schedule = {}
+            self._schedule = {}
 
             # Sum the times
             time = 0
             for time_diff, amount in schedule:
                 time += time_diff
-                self.schedule[time] = amount
+                self._schedule[time] = amount
 
         # Add the initial if it's not specified.
-        if not 0 in self.schedule:
-            self.schedule[0] = 0
+        if not 0 in self._schedule:
+            self._schedule[0] = 0
+
+    def items(self):
+        """
+        So that you can do schedule.items() as if it's a dict.
+        """
+
+        return self._schedule.items()
 
     def __str__(self):
         s = 'schedule: [' + str(self.symbol) + ']:\n'
 
-        kvp = [pair for pair in self.schedule.items()]
+        kvp = [pair for pair in self._schedule.items()]
         kvp.sort(key=lambda pair: pair[0])
 
         for time, amount in kvp:
@@ -130,7 +137,7 @@ class Schedule:
         return s[:-1]
 
     def __repr__(self):
-        return 'Schedule(symbol=' + repr(self.symbol) + ', schedule=' + repr(self.schedule) + ')'
+        return 'Schedule(symbol=' + repr(self.symbol) + ', schedule=' + repr(self._schedule) + ')'
 
 
 class Conc(Schedule):

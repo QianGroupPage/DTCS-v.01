@@ -16,8 +16,6 @@ import copy
 
 from typing import List, Tuple, Union, Set
 
-from .conditions import Schedule
-
 # *** Classes ***
 class Orbital:
     """
@@ -47,10 +45,9 @@ class Species:
     A chemical species with a name and orbitals, which are triples of (orbital name, binding energy, proportion)
     """
 
-    def __init__(self, name: str, orbitals: List[Orbital], schedule):
+    def __init__(self, name: str, orbitals: List[Orbital]):
         self.name = name
         self.orbitals = orbitals
-        self.schedule = schedule
 
     def __str__(self):
         return self.name + ", orbitals: " + str(self.orbitals)
@@ -71,7 +68,7 @@ class SpeciesManager:
     def __init__(self):
         self._species = {} # As of current, initializes empty
 
-    def make_species(self, name: str, orbitals: Union[Orbital, List[Orbital]], schedule) -> sym.Symbol:
+    def make_species(self, name: str, orbitals: Union[Orbital, List[Orbital]]) -> sym.Symbol:
         """
         Makes a sym.Symbol and a corresponding Species and keeps track of their correspondence.
         Returns the symbol.
@@ -83,17 +80,17 @@ class SpeciesManager:
         if not isinstance(orbitals, list):
             orbitals = [orbitals]
 
-        self._species[symbol] = Species(name, orbitals, Schedule(symbol, schedule))
+        self._species[symbol] = Species(name, orbitals)
         return symbol
 
     def species_from_symbol(self, key: sym.Symbol) -> Species:
         return self._species[key]
 
     def __str__(self):
-        return str(self._species) # TODO
+        return str(self._species)  # TODO
 
     def __repr__(self):
-        pass # TODO
+        pass  # TODO
 
     sp = make_species
     __getitem__ = species_from_symbol
