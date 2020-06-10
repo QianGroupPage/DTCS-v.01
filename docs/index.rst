@@ -33,27 +33,30 @@ Walkthrough
 -----------
 This will walk you through the workflow of a predator-prey system. Import::
 
-    from lblcrn.homogenous_crn import *
+    from lblcrn import *
 
 First, you need to make a SpeciesManager to keep track of all your species.
 Then, you can create some species::
 
     sm = SpeciesManager()
-    prey = sm.sp('rabbit', Orbital('1s', 535.0), {0:2})
-    pred = sm.sp('fox', Orbital('1s', 535.5), {0:1})
+    prey = sm.sp('rabbit', Orbital('1s', 535.0))
+    pred = sm.sp('fox', Orbital('1s', 535.5))
 
 Then, you define your reaction system::
 
     rsys = RxnSystem(
+        sm,
+
         Rxn(prey + pred, 2 * pred, 1.5),
         Rxn(prey, 2 * prey, 1),
         Rxn(pred, 1, 1),
-        sm
-    )
 
+        Conc(prey, 100),
+        Conc(pred, 1),
+    )
 Then, you solve the system. This simulates the system for ``time``::
 
-    solution = solve(rsys, time=45, max_step=0.01)
+    solution = rsys.simulate(max_time=45, max_step=0.01)
     solution.process()
     solution.basic_plot()
 
