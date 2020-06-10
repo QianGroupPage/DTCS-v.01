@@ -1,7 +1,18 @@
-# Examples
+.. Examples
 
-## Setup and solve simple reaction equations
-#### Create a reaction system
+========
+Examples
+========
+
+Basic Example
+-------------
+
+More Advanced Example
+---------------------
+
+Create a reaction system
+^^^^^^^^^^^^^^^^^^^^^^^^
+
 Reaction systems are created from various species which have specified orbitals,
 names and schedules. These species are then combined into a reaction system. Below
 is a sample predator-prey system that is modeled through this system.
@@ -22,7 +33,9 @@ rsys = RxnSystem(
 )
 ```
 
-#### Solve the reaction system
+Solve the reaction system
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
 Simply specify the reaction system, the runtime, and other optional parameters for
 differential equation solving to simulate the system.
 ```python
