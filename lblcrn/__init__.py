@@ -8,4 +8,5 @@ Package root initializer.
 __version__ = 'dev0.1.2'
 
 from .common import *
+from .crn_sym import *
 from .bulk_crn import *
