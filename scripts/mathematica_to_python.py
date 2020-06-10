@@ -29,7 +29,8 @@ with open("H2O_CRN_output_results.csv","w+") as my_csv:
 """
 
 import re, sys, os
-from .util import multiple_replace
+from lblcrn.common.util import multiple_replace
+
 
 def transform_to_mathematica(filename):
     """
@@ -74,4 +75,4 @@ if __name__ == "__main__":
       if filename.endswith('.nb'):
           transform_to_mathematica(filename)
       else:
-          print "%s is not a Mathematica notebook" % filename
+          print("%s is not a Mathematica notebook" % filename)

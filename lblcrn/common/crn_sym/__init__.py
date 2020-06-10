@@ -15,4 +15,3 @@ Dr. Jin Qian, Domas Buracas, Ye Wang, Andrew Bogdan, Rithvik Panchapakesan
 from .species import *
 from .conditions import *
 from .reaction import *
-from .bindingenergy import *

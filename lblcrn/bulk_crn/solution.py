@@ -7,7 +7,6 @@ from matplotlib.widgets import CheckButtons
 import numpy as np
 from scipy.stats import norm
 from typing import Callable, List, Dict, Tuple
-from .process_sympy_eqs import rxns_to_python_derivative_function, rxns_to_substances, rxns_to_initial_values
 
 class Solution:
     """
@@ -120,7 +119,6 @@ class Solution:
         self.resampled_binding_energies = np.array(r_bes)
         self.resampled_intensity = list(reversed(xi))
 
-
     def process(self, gas_range=()): 
         """Resample, scale, and calculate envelopes and other characteristics of the data.
 
@@ -186,8 +184,6 @@ class Solution:
                         self.distributions.append(dist)
                         self.names.append('gas phase')
 
-
-
     def plot_gaussian(self, envelope: bool = False, overlay: bool = False, resample_envelope: bool =
             False, ax=None, title=''):
         """
@@ -227,7 +223,6 @@ class Solution:
             
             ax.set_xlim(max(self.resampled_binding_energies), min(self.resampled_binding_energies))
             ax.title.set_text(title)
-
 
     def rmse(self):
         return sqrt(mean_squared_error(self.resampled_intensity, self.envelope))
