@@ -54,6 +54,7 @@ Then, you define your reaction system::
         Conc(prey, 100),
         Conc(pred, 1),
     )
+
 Then, you solve the system. This simulates the system for ``time``::
 
     solution = rsys.simulate(max_time=45, max_step=0.01)
@@ -66,7 +67,7 @@ And then to plot the gaussian:
 
     solution.plot_gaussian(envelope=True)
 
-You can download this example `here <https://github.com/rithvikp/lbl-crn/blob/master/examples/predator_prey.ipynb>`
+You can download this example `here <https://github.com/rithvikp/lbl-crn/blob/master/examples/predator_prey.ipynb>`_.
 
 .. TODO Citation Information
 

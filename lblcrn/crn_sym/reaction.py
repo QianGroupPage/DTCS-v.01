@@ -1,17 +1,38 @@
+"""Classes for defining a chemical reaction system.
+
+Exports:
+    Rxn: A chemical reaction
+    RevRxn: A reversible chemical reaction
+    RxnSystem: A collection of reactions and conditions (e.g. initial
+        concentrations).
+
+Usage:
+    Usage essentially always looks like the following, where you make a
+    reaction system with other classes as inputs.
+
+    RxnSystem(
+        sm,
+
+        Rxn(x, y, k=3.2),
+        RevRxn(x + y, 2z, k1=0.01, k2=100),
+
+        Conc(x, 2),
+        ...
+    )
+
+    It looks like this because it was made to imitate the predecessor
+    mathematica project.
 """
-...
-"""
 
-# *** Libraries ***
-from collections import defaultdict
-from scipy.integrate import solve_ivp
+import copy
+import sympy as sym
+from typing import List, Set, Tuple
 
-from lblcrn.bulk_crn import Solution
-from .species import *
-from .conditions import *
+from lblcrn.crn_sym import species
+from lblcrn.crn_sym import conditions
 
-# *** Classes ***
-class Rxn:
+
+class Rxn:  # TODO(Andrew) Document here & beyond.
     """
     A chemical reaction with reactants, products, and a rate constant.
     """
@@ -49,7 +70,7 @@ class Rxn:
         symbol.update(self.products.free_symbols)
         return symbol
 
-    def to_terms(self) -> List[Term]:
+    def to_terms(self) -> List[conditions.Term]:
         """
         Create a list of terms from the reaction.
 
@@ -86,12 +107,13 @@ class Rxn:
         # Make it into terms
         terms = []
         for symbol in term_dict.keys():
-            terms.append(Term(symbol, term_dict[symbol]))
+            terms.append(conditions.Term(symbol, term_dict[symbol]))
             
         return terms
 
     def __str__(self):
         return str(self.reactants) + ' → ' + str(self.products) + ' @ k=' + str(self.rate_constant)
+
     def __repr__(self):
         return 'Rxn(reactants=' + repr(self.reactants) + ', products=' + repr(self.products) + ', k=' + str(self.rate_constant) + ')'
 
@@ -128,10 +150,10 @@ class RevRxn(Rxn):
         symbol.update(self.products.free_symbols)
         return symbol
 
-    def to_rxns(self) -> Tuple[Rxn]:
+    def to_rxns(self) -> Tuple[Rxn, Rxn]:
         return Rxn(self.reactants, self.products, k=self.rate_constant), Rxn(self.products, self.reactants, k=self.rate_constant_reverse)
 
-    def to_terms(self) -> List[Term]:
+    def to_terms(self) -> List[conditions.Term]:
         rxns = self.to_rxns()
         return [*rxns[0].to_terms(), *rxns[1].to_terms()]
     
@@ -168,7 +190,7 @@ class RxnSystem:
                 else:
                     flatter_components.append(component)
             components = flatter_components
-        self.components = flatter_components
+        self.components = flatter_components  # pyint: disable=
 
         # Split into terms, schedules, and conc (diff.) eq.s
         # These are not sorted by the symbol index.
@@ -179,17 +201,17 @@ class RxnSystem:
         self.species_manager = None
 
         for component in self.components:
-            if isinstance(component, Schedule):
+            if isinstance(component, conditions.Schedule):
                 self.schedules.append(component)
             elif isinstance(component, Rxn):
                 self.terms.extend(component.to_terms())
-            elif isinstance(component, Term):
+            elif isinstance(component, conditions.Term):
                 self.terms.append(component)
-            elif isinstance(component, ConcEq):
+            elif isinstance(component, conditions.ConcEq):
                 self.conc_eqs.append(component)
-            elif isinstance(component, ConcDiffEq):
+            elif isinstance(component, conditions.ConcDiffEq):
                 self.conc_diffeqs.append(component)
-            elif isinstance(component, SpeciesManager):
+            elif isinstance(component, species.SpeciesManager):
                 self.species_manager = component
             else:
                 assert False, 'Unknown input type ' + str(type(component))
@@ -213,7 +235,7 @@ class RxnSystem:
 
         # Make symbol:concentration/scheudle/equation list
         # Make default (Conc 0 @ t=0 for each species) scheduler list
-        self.scheduler = [Conc(symbol, 0) for symbol in self._symbols]
+        self.scheduler = [conditions.Conc(symbol, 0) for symbol in self._symbols]
         # Overwrite scheduler with Concs, Schedules, ConcEqs, and ConcDiffEqs
         for schedule in self.schedules:
             self.scheduler[self.symbol_index[schedule.symbol]] = schedule
@@ -259,7 +281,7 @@ class RxnSystem:
         # This is meant to be fed into SciPy's ODEINT package.
         return sym.lambdify((time, symbols), odes)
 
-    def get_species(self) -> List[Species]:
+    def get_species(self) -> List[species.Species]:
         species = []
 
         for symbol in self._symbols:
@@ -272,61 +294,6 @@ class RxnSystem:
         Give all the symbols in the reaction system in a fixed order.
         """
         return copy.copy(self._symbols)
-
-    def simulate(self, max_time: float = 1, **options):
-        """
-        TODO
-
-        :param max_time: float, the time to simulate until.
-        :param rtol: passed to the solver
-        :param atol: passed to the solver
-        :param max_step: passed to the solver
-        :return:
-        """
-
-        ode_func = self.get_ode_functions()
-        num_species = len(self._symbols)
-
-        # Make schedule_map, a dictionary {time : [amount to add for species no. index]}
-        schedule = defaultdict(lambda: [0] * num_species)
-        for index in range(num_species):
-            for time, amount in self.scheduler[index].items():
-                schedule[time][index] += amount
-
-        # This is an ordered list of all the times at which we add/remove stuff.
-        time_breaks = sorted(schedule.keys())
-
-        # Do the simulation in broken pieces
-        current_concs = schedule[0]
-        current_time = time_breaks.pop(0) # Guaranteed to be 0
-
-        while current_time < max_time:
-            # Get next_time, the later part of the interval we're simulating this step.
-            if len(time_breaks) > 0:
-                next_time = time_breaks.pop(0)
-            else:
-                next_time = max_time
-
-            # Add the respective amounts. Note that current_time can never equal max_time.
-            for index, amount in enumerate(schedule[current_time]):
-                current_concs[index] += amount
-
-            partial_sol = solve_ivp(ode_func, (current_time, next_time), current_concs, **options)
-
-            # Add the partial solution to the solution.
-            if current_time == 0:
-                sol_t = partial_sol.t
-                sol_y = partial_sol.y
-            else:
-                sol_t = np.append(sol_t, partial_sol.t)
-                sol_y = np.append(sol_y, partial_sol.y, axis=1)
-
-            # Loop; set current_concs to the new ones and curren_time to the next one
-            for index in range(num_species):
-                current_concs[index] = sol_y[index][len(sol_y[index]) - 1]
-            current_time = next_time
-
-        return Solution(sol_t, sol_y, self)
 
     def __str__(self):
         s = 'rxn system with components:\n'

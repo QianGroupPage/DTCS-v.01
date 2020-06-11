@@ -4,6 +4,7 @@ __pycache__/
 .idea/
 data/
 venv/
+dist/
 *.egg-info
 .DS_Store
 /docs/_build/

@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 lblcrn.__main__.py
 ------------------

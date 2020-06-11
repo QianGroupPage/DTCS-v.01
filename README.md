@@ -42,9 +42,9 @@ Then, you define your reaction system.
 
 Then, you solve the system. This simulates the system for `time`.
 
-    solution = rsys.simulate(max_time=45, max_step=0.01)
+    solution = rsys.simulate(time_max=45, max_step=0.01)
     solution.process()
-    solution.basic_plot()
+    solution.plot()
     
 And then to plot the gaussian:
 

@@ -1,26 +1,40 @@
-"""
-...
-"""
+"""Classes for describing the conditions of an reaction system experiment.
 
-# *** Libraries ***
-import sympy as sym
-import numpy as np
+Exports:
+    T: Time, accessible anywhere through sym.Symbol('t').
+    ChemExpression: Abstract base class for classes in this module.
+    Term: Apply a constant rate of change to a species.
+    ConcEq: Set a species' concentration to be exactly this equation.
+    ConcDiffEq: Set a species' rate of change to be exactly this equation.
+    Conc: Define the initial concentration for a species.
+    Schedule: Define amounts of a species to be added at a given time.
+
+Usage:
+    These classes are all created with the intention of passing it into a
+    RxnSystem. For example:
+
+    RxnSystem(
+        ...
+        Conc(x, 20)
+        Schedule(y, {2: 30})
+    )
+
+    Use only one per species, as they don't logically collide (You can't fix
+    two initial concentrations, that's a contradiction).
+"""
 
 import abc
-import copy
+import sympy as sym
+from typing import Set
 
-from typing import List, Tuple, Union, Set
+T = sym.Symbol('t')  # Time
 
-# *** Constants ***
-T = sym.Symbol('t') # time
 
-# *** Classes ***
 class ChemExpression(abc.ABC):
-    """
-    A pair of a symbol and an expression (about that symbol)
+    """Abstract base class for classes in this module.
 
-    This class is an abstract superclass for structures of the form (symbol, expression), where
-    the subclass gives meaning to the pair.
+    It is essentially a pair of a symbol/species and an expression which
+    conveys information about that species.
     """
 
     def __init__(self, symbol: sym.Symbol, expression: sym.Expr):
@@ -28,15 +42,16 @@ class ChemExpression(abc.ABC):
         self.expression = sym.sympify(expression)
 
     def get_symbols(self) -> Set[sym.Symbol]:
-        symbol = self.symbol.free_symbols
-        symbol.update(self.expression.free_symbols)
-        symbol.discard(T) # time is not a symbol
-        return symbol
+        """Get all of the symbols in the ChemExpression (except for time)."""
+
+        symbols = self.symbol.free_symbols
+        symbols.update(self.expression.free_symbols)
+        symbols.discard(T)  # Time is not a species
+        return symbols
 
 
-class Term(ChemExpression):
-    """
-    An additive term in the ODE for a symbol.
+class Term(ChemExpression):  # TODO(Andrew) Document here & beyond.
+    """An additive term in the ODE for a symbol.
 
     If x' = ... + 2 and x' = ... + y*t are terms, then the ODE for x
     should look something like x' ... + 2 + y*t, for example.
@@ -44,6 +59,7 @@ class Term(ChemExpression):
 
     def __str__(self):
         return 'term: [' + str(self.symbol) + ']\' = ... + ' + str(self.expression)
+
     def __repr__(self):
         return 'Term(symbol=' + repr(self.symbol) + ', expression=' + str(self.expression) + ')'
 
@@ -58,6 +74,7 @@ class ConcEq(ChemExpression):
 
     def __str__(self):
         return '[' + str(self.symbol) + '] = ' + str(self.expression)
+
     def __repr__(self):
         return 'ConcEq(symbol=' + repr(self.symbol) + ', expression=' + str(self.expression) + ')'
 
@@ -73,6 +90,7 @@ class ConcDiffEq(ChemExpression):
 
     def __str__(self):
         return '[' + str(self.symbol) + ']\' = ' + str(self.expression)
+
     def __repr__(self):
         return 'ConcDiffEq(symbol=' + repr(self.symbol) + ', expression=' + str(self.expression) + ')'
 
@@ -151,11 +169,12 @@ class Conc(Schedule):
         """
         Make a new Conc: it's a Schedule where it all gets added at t=0.
         """
-        
+
         Schedule.__init__(self, symbol, {0: concentration})
         self.concentration = concentration
 
     def __str__(self):
         return '[' + str(self.symbol) + '] (@ t=0) = ' + str(self.concentration)
+
     def __repr__(self):
         return 'Conc(symbol=' + repr(self.symbol) + ', concentration=' + repr(self.concentration) + ')'
