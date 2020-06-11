@@ -5,7 +5,7 @@ lblcrn.__init__.py
 Package root initializer.
 """
 
-__version__ = 'dev0.1.2'
+__version__ = 'dev0.1.2.1'
 
 from .common import *
 from .crn_sym import *

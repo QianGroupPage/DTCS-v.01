@@ -10,6 +10,8 @@ from scipy import stats
 from sklearn import metrics
 import sympy as sym
 
+SIGMA = 0.75 * np.sqrt(2) / (np.sqrt(2 * np.log(2)) * 2)
+
 class Solution:
     """A time series solution of an chemical reaction ODE, with utilities.
 
@@ -76,7 +78,7 @@ class Solution:
         """Mark species to be ignored by the plotter by default."""
         self._default_ignore = species
 
-    def _not_ignored(self, ignored: List[sym.Symbol]) -> List[sym.Symbol]:
+    def _get_not_ignored(self, ignored: List[sym.Symbol]) -> List[sym.Symbol]:
         """Get all the species not in ignored"""
         return [symbol for symbol in self.species if symbol not in ignored]
 
@@ -99,9 +101,9 @@ class Solution:
         if species:
             pass
         elif ignore:
-            species = self._not_ignored(ignore)
+            species = self._get_not_ignored(ignore)
         else:
-            species = self._not_ignored(self._default_ignore)
+            species = self._get_not_ignored(self._default_ignore)
 
         # Assume negative time means time-max
         if t < 0:
@@ -135,28 +137,22 @@ class Solution:
         RESOLUTION = 0.001
         COLORS = ['red', 'green', 'orange', 'blue', 'purple', 'pink', 'yellow', 'gray', 'cyan']
 
-        # Gets binding energy data, format {species: [(energy, splitting), ...]}
-        binding_energies = self._get_binding_energies(species)
+        binding_energies = []
+        for specie in species:
+            binding_energies.extend(self._get_binding_energies(specie))
 
-        all_energies = []
-        for orbitals in binding_energies.values():
-            for orbital in orbitals:  # These are not orbital objects, just pairs.
-                all_energies.append(orbital[0])
-
-        x_lower = min(all_energies) - MARGIN
-        x_upper = max(all_energies) + MARGIN
+        x_lower = min(binding_energies) - MARGIN
+        x_upper = max(binding_energies) + MARGIN
         x_range = np.arange(x_lower, x_upper, RESOLUTION)
 
-        # Get that what I am going to plot.
-        gaussians, envelope = self._calculate_gaussians(species, binding_energies, x_range, t)
+        gaussians = [self._calculate_gaussian(specie, x_range, t) for specie in species]
+        envelope = sum(gaussians)
 
-        # Plot all the gaussians
         for index, gauss in enumerate(gaussians):
             name = self.species_manager[species[index]].name
             plt.fill(x_range, gauss, label=name, color=COLORS[index])
 
-        # Plot the envelope
-        plt.plot(self.resampled_binding_energies, self.envelope, linewidth=4, color='black')
+        plt.plot(x_range, envelope, linewidth=4, color='black')
 
         plt.legend()
         plt.gca().invert_xaxis()
@@ -165,44 +161,22 @@ class Solution:
     def _plot_spectro_with_xps(self, species: List[sym.Symbol], t: float, **kwargs):
         pass
 
-    def _get_binding_energies(self, species: List[sym.Symbol], bounds=()):
-        """Get the binding energies for the given species.
-
-        Args:
-            species: A list of sym.Symbols, the species to get the binding
-                energies from.
-            bounds: Optionally restrict energies to interval (lower, upper).
-
-        Returns:
-            A dictionary {symbol: binding energy info} for each specie given.
-            The binding energy info is a list of pairs (energy, splitting).
-        """
-        bes = collections.defaultdict(list)
-        for symbol in species:
-            for orbital in self.species_manager[symbol].orbitals:
-                if not bounds or bounds[0] < orbital.binding_energy < bounds[1]:
-                    bes[symbol].append((orbital.binding_energy, orbital.splitting))
+    def _get_binding_energies(self, specie: sym.Symbol):
+        bes = []
+        for orbital in self.species_manager[specie].orbitals:
+            bes.append(orbital.binding_energy)
         return bes
 
-    def _calculate_gaussians(self, species, binding_energies, x_range, t):
+    def _calculate_gaussian(self, specie, x_range, t):
 
-        SIGMA = 0.75 * np.sqrt(2) / (np.sqrt(2 * np.log(2)) * 2)
+        gaussian = np.zeros(x_range.size)
+        concentration = self.at(t)[specie]
 
-        # The envelope is the sum of all gaussians
-        envelope = np.zeros(x_range.size)
-        # A list of gaussians
-        gaussians = []
-        concentrations = self.at(t)
+        for orbital in self.species_manager[specie].orbitals:
+            gaussian += concentration * orbital.splitting * \
+                    stats.norm.pdf(x_range, orbital.binding_energy, SIGMA)
 
-        print(binding_energies)
-
-        for specie in species:
-            for energy, splitting in binding_energies[specie]:
-                gauss = concentrations[specie] * splitting * stats.norm.pdf(x_range, energy, SIGMA)
-                envelope += gauss
-                gaussians.append(gauss)
-
-        return gaussians, envelope
+        return gaussian
 
 # TODO ------------------------------------------------------------------- (TEMP) --------------------------------
 
@@ -302,7 +276,6 @@ class Solution:
         gaussians are then computed. Finally, if an experimental data object has been set, the
         simulated data is resampled and sacled.
         """
-        SIGMA = 0.75 * np.sqrt(2) / (np.sqrt(2 * np.log(2)) * 2)
 
         min_be = float('inf')
         max_be = float('-inf')

@@ -3,6 +3,7 @@ __pycache__/
 .mypy_cache/
 .idea/
 data/
+!examples/data/
 venv/
 dist/
 *.egg-info
