@@ -1,3 +1,5 @@
+import numpy as np
+
 first_line = '[region 2]'
 start_info = '[info'
 start_data = '[data'
@@ -27,6 +29,8 @@ def read_new_data(filename, be=0):
     it = file_iter(f)
     next(it, None)
     x, y = parse_new_data(it, be)
+    x.reverse()
+    y.reverse()
     return [XPSData({}, x, y)]
 
 def file_iter(f):
@@ -96,5 +100,5 @@ def parse_new_data(it, be):
 class XPSData:
     def __init__(self, info, binding_energy, intensity):
         self.info = info
-        self.binding_energy = binding_energy
-        self.intensity = intensity
+        self.binding_energy = np.asarray(binding_energy)
+        self.intensity = np.asarray(intensity)

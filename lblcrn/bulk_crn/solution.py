@@ -10,7 +10,11 @@ from scipy import stats
 from sklearn import metrics
 import sympy as sym
 
-SIGMA = 0.75 * np.sqrt(2) / (np.sqrt(2 * np.log(2)) * 2)
+_SIGMA = 0.75 * np.sqrt(2) / (np.sqrt(2 * np.log(2)) * 2)
+_COLORS = ['red', 'green', 'orange', 'blue', 'purple', 'pink', 'yellow', 'gray', 'cyan']
+_PLOT_MARGIN = 5
+_PLOT_RESOLUTION = 0.001
+
 
 class Solution:
     """A time series solution of an chemical reaction ODE, with utilities.
@@ -58,14 +62,6 @@ class Solution:
         if t < 0:
             t = self.t[-1]
         return self.df.iloc[self._time_to_index(t)]
-    
-    def at_ini(self):
-        """Gives the initial state."""
-        return self.at(0)
-    
-    def at_end(self):
-        """Gives the end state."""
-        return self.at(-1)
 
     @property
     def species(self) -> List[sym.Symbol]:
@@ -113,9 +109,9 @@ class Solution:
             self._plot_time_series(species, **kwargs)
         elif exp_type == 'spectro':
             if self.xps:
-                self._plot_spectro_with_xps(species, t, **kwargs)
+                self._plot_spectro_with_xps(species, t=t, **kwargs)
             else:
-                self._plot_spectro(species, t, **kwargs)
+                self._plot_spectro(species, t=t, **kwargs)
         else:
             raise ValueError(f'{exp_type} not a valid plot type.')
 
@@ -126,57 +122,97 @@ class Solution:
     # --- Spectro Plotting Methods --------------------------------------------
 
     def _plot_spectro(self, species: List[sym.Symbol], t: float, **kwargs):
-        """Plots spectrum without XPS
-
-        Args:
-            species:
-            t:
-            **kwargs:
-        """
-        MARGIN = 5
-        RESOLUTION = 0.001
-        COLORS = ['red', 'green', 'orange', 'blue', 'purple', 'pink', 'yellow', 'gray', 'cyan']
 
         binding_energies = []
         for specie in species:
             binding_energies.extend(self._get_binding_energies(specie))
 
-        x_lower = min(binding_energies) - MARGIN
-        x_upper = max(binding_energies) + MARGIN
-        x_range = np.arange(x_lower, x_upper, RESOLUTION)
+        x_lower = min(binding_energies) - _PLOT_MARGIN
+        x_upper = max(binding_energies) + _PLOT_MARGIN
+        x_range = np.arange(x_lower, x_upper, _PLOT_RESOLUTION)
 
-        gaussians = [self._calculate_gaussian(specie, x_range, t) for specie in species]
+        gaussians = [self._calc_species_gauss(x_range, specie, t) for specie in species]
         envelope = sum(gaussians)
 
         for index, gauss in enumerate(gaussians):
             name = self.species_manager[species[index]].name
-            plt.fill(x_range, gauss, label=name, color=COLORS[index])
+            plt.fill(x_range, gauss, label=name, color=_COLORS[index])
 
         plt.plot(x_range, envelope, linewidth=4, color='black')
 
         plt.legend()
-        plt.gca().invert_xaxis()
+        plt.title(f'time={t}')
+        plt.gca().invert_xaxis()  # Spectroscopy plots
         plt.show()
 
-    def _plot_spectro_with_xps(self, species: List[sym.Symbol], t: float, **kwargs):
-        pass
+    def _plot_spectro_with_xps(self, species: List[sym.Symbol],
+                               gas_interval=(), t: float = -1, **kwargs):
+
+        # We plot on the same range that the XPS does
+        x_range = self.xps.binding_energy
+
+        gaussians = [self._calc_species_gauss(x_range, specie, t) for specie in species]
+        envelope = sum(gaussians)
+
+        # Scale: max(envelope) should equal max(self.xps.intensity).
+        factor = max(self.xps.intensity) / max(envelope)
+        envelope *= factor
+        gaussians = [gauss * factor for gauss in gaussians]
+
+        if gas_interval:
+            gas_phase = self._calc_gas_phase_gauss(x_range, gas_interval)
+            envelope += gas_phase
+
+        for index, gauss in enumerate(gaussians):
+            name = self.species_manager[species[index]].name
+            plt.fill(x_range, gauss, label=name, color=_COLORS[index])
+
+        plt.plot(x_range, self.xps.intensity, color='green')
+        plt.plot(x_range, envelope, linewidth=4, color='black')
+        if gas_interval:
+            plt.fill(x_range, gas_phase, label='gas phase', color='gray')
+
+        plt.legend()
+        plt.title(f'time={t}')
+        plt.gca().invert_xaxis()  # Spectroscopy plots
+        plt.show()
 
     def _get_binding_energies(self, specie: sym.Symbol):
+
         bes = []
         for orbital in self.species_manager[specie].orbitals:
             bes.append(orbital.binding_energy)
         return bes
 
-    def _calculate_gaussian(self, specie, x_range, t):
+    def _calc_species_gauss(self, x_range, specie, t):
 
         gaussian = np.zeros(x_range.size)
         concentration = self.at(t)[specie]
 
         for orbital in self.species_manager[specie].orbitals:
             gaussian += concentration * orbital.splitting * \
-                    stats.norm.pdf(x_range, orbital.binding_energy, SIGMA)
+                    stats.norm.pdf(x_range, orbital.binding_energy, _SIGMA)
 
         return gaussian
+
+    def _calc_gas_phase_gauss(self, x_range, gas_interval):
+
+        # Get the part of the x_range that the gas_interval corresponds to
+        # i.e., x_range[lower_index] will be very close to gas_interval[0]
+        # bisect is a standard library binary search function.
+        lower_index = bisect.bisect(x_range, gas_interval[0])
+        upper_index = bisect.bisect(x_range, gas_interval[1])
+
+        # Get the location of the highest part of the xps data in range
+        peak_index = max(range(lower_index, upper_index),
+                         key=lambda index: self.xps.intensity[index])
+        peak = self.xps.intensity[peak_index]
+
+        # Make a gaussian the same height as the experimental gas phase peak
+        gas_gaussian = stats.norm.pdf(x_range, x_range[peak_index], _SIGMA)
+        gas_gaussian *= (peak / max(gas_gaussian))
+
+        return gas_gaussian
 
 # TODO ------------------------------------------------------------------- (TEMP) --------------------------------
 
@@ -295,7 +331,7 @@ class Solution:
             if name not in self._default_ignore:
                 for o in self.substances[name].orbitals:
                     be = o.binding_energy
-                    dist = sol * stats.norm.pdf(self.binding_energies, be, SIGMA)
+                    dist = sol * stats.norm.pdf(self.binding_energies, be, _SIGMA)
                     self.envelope += dist
                     self.distributions.append(dist)
                     self.names.append(name)
@@ -329,15 +365,15 @@ class Solution:
                             be = bes[i]
                         i += 1
                     if i < len(bes):
-                        dist = max_intensity * stats.norm.pdf(self.binding_energies, be, SIGMA)
-                        resampled_dist = max_intensity * stats.norm.pdf(self.resampled_binding_energies, be, SIGMA)
+                        dist = max_intensity * stats.norm.pdf(self.binding_energies, be, _SIGMA)
+                        resampled_dist = max_intensity * stats.norm.pdf(self.resampled_binding_energies, be, _SIGMA)
                         self.envelope += resampled_dist
                         self.distributions.append(dist)
                         self.names.append('gas phase')
 
 # TODO ------------------------------------------------------------------- (TEMP) --------------------------------
 
-    def set_experimental(self, xps):
+    def set_experimental(self, xps):  # TODO
         """Takes an xps object contain experimental data, and scales the simulated solution.
         """
         self.xps = xps
