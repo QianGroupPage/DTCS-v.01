@@ -4,11 +4,45 @@
 Examples
 ========
 
-Basic Example
--------------
+In-Depth Example
+----------------
 
-More Advanced Example
----------------------
+This will be a step-by step explanation of what's going on with each command.
+First, import the library::
+
+    from lblcrn import *
+
+Make your species manager. This is the object that keeps track of all
+the information relating to species. See the docs here (TODO).
+
+Reaction Conditions
+-------------------
+
+
+
+    from lblcrn import *
+    import sympy as sym
+
+    sm = SpeciesManager()
+    x1 = sm.sp('sinewave', Orbital('1s', 1))
+    x2 = sm.sp('lagged', Orbital('1s', 2))
+    x3 = sm.sp('laggy chem', Orbital('1s', 2))
+    x4 = sm.sp('chemical', Orbital('1s', 2))
+
+    rsys = RxnSystem(
+        sm,
+
+        Rxn(x1, x4, k=0.01),
+        Rxn(x2, x4, k=0.01),
+        Rxn(x3, x4, k=0.1),
+
+        ConcEq(x1, -sym.sin(T)),
+        Conc(x2, 0.5),
+        ConcDiffEq(x2, x1),
+        Term(x3, x1),
+    )
+
+solution = simulate(rsys, time_max=45, max_step=0.01)
 
 Create a reaction system
 ^^^^^^^^^^^^^^^^^^^^^^^^

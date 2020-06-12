@@ -24,31 +24,30 @@ First, you need to make a SpeciesManager to keep track of all your species.
 Then, you can create some species.
 
     sm = SpeciesManager()
-    prey = sm.sp('rabbit', Orbital('1s', 535.0))
-    pred = sm.sp('fox', Orbital('1s', 535.5))
+    prey = sm.sp('rabbit', Orbital('1s', 1.0))
+    pred = sm.sp('fox', Orbital('1s', 2))
     
 Then, you define your reaction system.
 
     rsys = RxnSystem(
         sm,
-        
-        Rxn(prey + pred, 2 * pred, 1.5),
+
+        Rxn(prey + pred, 2 * pred, 2),
         Rxn(prey, 2 * prey, 1),
-        Rxn(pred, 1, 1),
-        
-        Conc(prey, 100),
+        Rxn(pred, None, 1),
+
         Conc(pred, 1),
+        Conc(prey, 1),
     )
 
 Then, you solve the system. This simulates the system for `time`.
 
-    solution = rsys.simulate(time_max=45, max_step=0.01)
-    solution.process()
+    solution = simulate(rsys, time_max=45, max_step=0.01)
     solution.plot()
     
 And then to plot the gaussian:
 
-    solution.plot_gaussian(envelope=True)
+    solution.plot(exp_type='spectro')
 
 You can download this example [here](https://github.com/rithvikp/lbl-crn/blob/master/examples/predator_prey.ipynb).
 

@@ -70,18 +70,10 @@ class Solution:
 
     # --- Plotting Methods ---------------------------------------------------
 
-    def ignore(self, species: List[sym.Symbol]):
-        """Mark species to be ignored by the plotter by default."""
-        self._default_ignore = species
-
-    def _get_not_ignored(self, ignored: List[sym.Symbol]) -> List[sym.Symbol]:
-        """Get all the species not in ignored"""
-        return [symbol for symbol in self.species if symbol not in ignored]
-
     def plot(self, exp_type='timeseries',
              species: List[sym.Symbol] = None,
              ignore: List[sym.Symbol] = None,
-            t=-1, **kwargs):
+             t=-1, **kwargs):
         """Plot the solution as if it's a (specified) experimental observable.
 
         Args:
@@ -119,8 +111,6 @@ class Solution:
         """Plots the species specified as a time series."""
         self.df[species].plot(**kwargs)
 
-    # --- Spectro Plotting Methods --------------------------------------------
-
     def _plot_spectro(self, species: List[sym.Symbol], t: float, **kwargs):
 
         binding_energies = []
@@ -138,7 +128,7 @@ class Solution:
             name = self.species_manager[species[index]].name
             plt.fill(x_range, gauss, label=name, color=_COLORS[index])
 
-        plt.plot(x_range, envelope, linewidth=4, color='black')
+        plt.plot(x_range, envelope, color='black', linewidth=4)
 
         plt.legend()
         plt.title(f'time={t}')
@@ -167,15 +157,17 @@ class Solution:
             name = self.species_manager[species[index]].name
             plt.fill(x_range, gauss, label=name, color=_COLORS[index])
 
-        plt.plot(x_range, self.xps.intensity, color='green')
-        plt.plot(x_range, envelope, linewidth=4, color='black')
         if gas_interval:
             plt.fill(x_range, gas_phase, label='gas phase', color='gray')
+        plt.plot(x_range, self.xps.intensity, color='green')
+        plt.plot(x_range, envelope, color='black', linewidth=4)
 
         plt.legend()
         plt.title(f'time={t}')
         plt.gca().invert_xaxis()  # Spectroscopy plots
         plt.show()
+
+    # --- Spectro Plotting Helpers -------------------------------------------
 
     def _get_binding_energies(self, specie: sym.Symbol):
 
@@ -215,6 +207,14 @@ class Solution:
         return gas_gaussian
 
 # TODO ------------------------------------------------------------------- (TEMP) --------------------------------
+
+    def ignore(self, species: List[sym.Symbol]):
+        """Mark species to be ignored by the plotter by default."""
+        self._default_ignore = species
+
+    def _get_not_ignored(self, ignored: List[sym.Symbol]) -> List[sym.Symbol]:
+        """Get all the species not in ignored"""
+        return [symbol for symbol in self.species if symbol not in ignored]
 
     def plot_gaussian(self, envelope: bool = False, overlay: bool = False, resample_envelope: bool =
     False, ax=None, title=''):
