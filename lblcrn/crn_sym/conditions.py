@@ -25,7 +25,7 @@ Usage:
 
 import abc
 import sympy as sym
-from typing import Set
+from typing import List, Set
 
 T = sym.Symbol('t')  # Time
 
@@ -55,6 +55,8 @@ class Term(ChemExpression):  # TODO(Andrew) Document here & beyond.
 
     If x' = ... + 2 and x' = ... + y*t are terms, then the ODE for x
     should look something like x' ... + 2 + y*t, for example.
+
+    Incompatible with: ConcEq, ConcDiffEq
     """
 
     def __str__(self):
@@ -70,6 +72,8 @@ class ConcEq(ChemExpression):
 
     This guarantees that the concentration of the symbol will always be exactly equal
     to the expression, regardless of what any terms dictate.
+
+    Incompatible with: Term, ConcDiffEq, Schedule, Conc
     """
 
     def __str__(self):

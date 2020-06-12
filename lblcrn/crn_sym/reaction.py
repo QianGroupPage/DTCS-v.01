@@ -233,16 +233,12 @@ class RxnSystem:
         for index, symbol in enumerate(self._symbols):
             self.symbol_index[symbol] = index
 
-        # Make symbol:concentration/scheudle/equation list
+        # Make symbol:concentration/scheudle list
         # Make default (Conc 0 @ t=0 for each species) scheduler list
         self.scheduler = [conditions.Conc(symbol, 0) for symbol in self._symbols]
-        # Overwrite scheduler with Concs, Schedules, ConcEqs, and ConcDiffEqs
+        # Overwrite scheduler with Concs and Schedules
         for schedule in self.schedules:
             self.scheduler[self.symbol_index[schedule.symbol]] = schedule
-        for conc_eq in self.conc_eqs:
-            self.scheduler[self.symbol_index[conc_eq.symbol]] = conc_eq
-        for conc_diffeq in self.conc_diffeqs:
-            self.scheduler[self.symbol_index[conc_diffeq.symbol]] = conc_diffeq
 
     def get_ode_expressions(self) -> List[sym.Expr]:
         """
@@ -274,12 +270,37 @@ class RxnSystem:
         symbols = self.get_symbols()
         odes = self.get_ode_expressions()
         time = sym.symbols('t')
+        conc_eq_funcs = self.get_conc_functions()
 
-        # This following line does a lot, so let me explain it. It makes a function with signature
+        # This makes a function with signature
         # f((specie1, specie2, ...), time) -> (specie1, specie2, ...)
-        # Where 'specieN' is the concentration before then after the timestep time.
-        # This is meant to be fed into SciPy's ODEINT package.
-        return sym.lambdify((time, symbols), odes)
+        # Where 'specieN' is the concentration at that timestep.
+        # This is meant to be decorated and fed into SciPy's ODEINT solver.
+        undecorated_ode = sym.lambdify((time, symbols), odes)
+
+        # Decorate the function to add fixed conc equations
+        def decorated_ode(time: float, concs: List[float]):
+            for index, func in conc_eq_funcs.items():
+                concs[index] = func(time, concs)
+
+            return undecorated_ode(time, concs)
+        return decorated_ode
+
+    def get_conc_functions(self):
+        """
+        TODO
+        Returns:
+        """
+        symbols = self.get_symbols()
+        time = sym.symbols('t')
+
+        conc_eq_funcs = {}
+        for conc_eq in self.conc_eqs:
+            index = self.symbol_index[conc_eq.symbol]
+            func = sym.lambdify((time, symbols), conc_eq.expression)
+            conc_eq_funcs[index] = func
+
+        return conc_eq_funcs
 
     def get_species(self) -> List[species.Species]:
         species = []

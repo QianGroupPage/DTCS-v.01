@@ -489,4 +489,9 @@ def _solve_rsys_ode(rsys, time_max: float = 1, **options):
             current_concs[index] = sol_y[index][len(sol_y[index]) - 1]
         current_time = next_time
 
+    # Set y for concentration equations, which the ODE solver does't calculate.
+    for index, func in rsys.get_conc_functions().items():
+        for tindex in range(sol_t.size):
+            sol_y[index][tindex] = func(sol_t[tindex], sol_y[:, tindex])
+
     return sol_t, sol_y
