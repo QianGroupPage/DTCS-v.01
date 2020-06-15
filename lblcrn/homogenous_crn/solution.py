@@ -28,6 +28,7 @@ class Solution:
             self.states[symbol] = y[rxns.symbol_index[symbol]]
 
         self.envelope = []
+        self.resampled_envelope = [] 
         self.binding_energies = []
         self.resampled_intensity = []
         self.distributions = []
@@ -114,14 +115,16 @@ class Solution:
         for b in list(reversed(xbes)):
             while  i < len(e) and bes[i] < b:
                 i += 1
+            if i >= len(e):
+                i = len(e) - 1
             r_e.append(e[i])
             r_bes.append(b)
         self.envelope = r_e
         self.resampled_binding_energies = np.array(r_bes)
-        self.resampled_intensity = list(reversed(xi))
+        self.resampled_intensity = np.array(list(reversed(xi)))
 
 
-    def process(self, gas_range=()): 
+    def process(self, gas_range=(), scale=True): 
         """Resample, scale, and calculate envelopes and other characteristics of the data.
 
         First the binding energy bounds are found, the envelope curve and individual species
@@ -157,34 +160,37 @@ class Solution:
 
         if self.xps:
             self.resample()
-            self.envelope, self.distributions = self.scale((self.resampled_binding_energies, self.envelope,
-                self.distributions), (self.xps.binding_energy, self.xps.intensity))
+            if scale:
+                self.envelope, self.distributions = self.scale((self.resampled_binding_energies, self.envelope,
+                    self.distributions), (self.xps.binding_energy, self.xps.intensity))
 
-            # If a valid gas range is specified, create a fake peak
-            if len(gas_range) == 2:
-                start = gas_range[0]
-                end = gas_range[1]
-                intensities = list(reversed(self.xps.intensity))
-                bes = list(reversed(self.xps.binding_energy))
+                # If a valid gas range is specified, create a fake peak
+                if len(gas_range) == 2:
+                    start = gas_range[0]
+                    end = gas_range[1]
+                    intensities = list(reversed(self.xps.intensity))
+                    bes = list(reversed(self.xps.binding_energy))
 
-                i = 0
-                while i < len(bes) and bes[i] < start:
-                    i += 1
-
-                if i < len(bes):
-                    max_intensity = intensities[i]
-                    be = i
-                    while i < len(bes) and i < bes[i] < end:
-                        if intensities[i] > max_intensity:
-                            max_intensity = intensities[i]
-                            be = bes[i]
+                    i = 0
+                    while i < len(bes) and bes[i] < start:
                         i += 1
+
                     if i < len(bes):
-                        dist = max_intensity * norm.pdf(self.binding_energies, be, sigma)
-                        resampled_dist = max_intensity * norm.pdf(self.resampled_binding_energies, be, sigma)
-                        self.envelope += resampled_dist
-                        self.distributions.append(dist)
-                        self.names.append('gas phase')
+                        max_intensity = intensities[i]
+                        be = i
+                        while i < len(bes) and i < bes[i] < end:
+                            if intensities[i] > max_intensity:
+                                max_intensity = intensities[i]
+                                be = bes[i]
+                            i += 1
+                        if i < len(bes):
+                            dist = max_intensity * norm.pdf(self.binding_energies, be, sigma)
+                            resampled_dist = max_intensity * norm.pdf(self.resampled_binding_energies, be, sigma)
+                            self.envelope += resampled_dist
+                            self.distributions.append(dist)
+                            self.names.append('gas phase')
+
+        self.resampled_envelope = np.array(self.envelope)
 
 
 
@@ -207,7 +213,7 @@ class Solution:
                     plt.plot(self.xps.binding_energy, self.xps.intensity, color='green')
 
             if envelope:
-                plt.plot(self.resampled_binding_energies, self.envelope, linewidth=4, color='black')
+                plt.plot(self.resampled_binding_energies, self.resampled_envelope, linewidth=4, color='black')
             
             plt.gca().invert_xaxis()
             plt.show()
@@ -223,21 +229,29 @@ class Solution:
                     ax.plot(self.xps.binding_energy, self.xps.intensity, color='green')
 
             if envelope:
-                ax.plot(self.resampled_binding_energies, self.envelope, linewidth=4, color='black')
+                ax.plot(self.resampled_binding_energies, self.resampled_envelope, linewidth=4, color='black')
             
             ax.set_xlim(max(self.resampled_binding_energies), min(self.resampled_binding_energies))
             ax.title.set_text(title)
 
 
     def rmse(self):
-        return sqrt(mean_squared_error(self.resampled_intensity, self.envelope))
+        return sqrt(mean_squared_error(self.resampled_intensity, self.resampled_envelope))
 
     def mae(self):
-        return mean_absolute_error(self.resampled_intensity, self.envelope)
+        return mean_absolute_error(self.resampled_intensity, self.resampled_envelope)
     
-    def integral_diff(self):
-        return abs(trapz(self.resampled_intensity, self.resampled_binding_energies) -
-                trapz(self.envelope, self.resampled_binding_energies))
+    def integral_diff_outside_experimental(self):
+        return trapz(self.resampled_envelope - self.resampled_intensity, self.resampled_binding_energies)
+
+    def integral_diff_inside_experimental(self):
+        return trapz(self.resampled_intensity - self.resampled_envelope, self.resampled_binding_energies)
+
+    def integral_diff_between(self):
+        return trapz(np.absolute(self.resampled_intensity - self.resampled_envelope), self.resampled_binding_energies)
+
+    def envelope_integral(self):
+        return trapz(self.resampled_envelope, self.resampled_binding_energies)
 
     def __repr__(self) -> str:
         shortened_sols = [sol[:10] for sol in self.states.values()]
