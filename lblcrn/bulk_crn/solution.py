@@ -1,6 +1,7 @@
 import bisect
 import collections
-from typing import List, Dict
+from typing import Dict, List, Tuple, Union
+import warnings
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -16,6 +17,252 @@ _PLOT_MARGIN = 5
 _PLOT_RESOLUTION = 0.001
 
 
+class XPSObservable:
+    """A container for a simulated observable of an XPS experiment.
+
+    Attributes:
+        title: A str used for the title during plotting.
+    """
+
+    _RESERVED_COLUMNS = ['envelope', 'experimental', 'gas_phase']
+
+    def __init__(self, sim=None):
+        """Initializes everything to none; won't work until you call update."""
+        self.title = ''
+        self._df = None
+        self._gas_interval = ()
+        self._sim = sim
+
+    @property
+    def df(self) -> pd.DataFrame:
+        """The pandas DataFrame describing the observable.
+
+        Columns 'envelope', 'experimental', and 'gas_phase' are not gaussians,
+        but everything else is.
+
+        Note: Accessing it might prompt the DataFrame to be re-evaluated.
+        """
+        self._check_resim()
+        return self._df
+
+    @property
+    def envelope(self):
+        """The simulated envelope, the sum of all species' gaussians.
+
+        Note: Accessing it might prompt the DataFrame to be re-evaluated.
+        """
+        self._check_resim()
+        return self._df.envelope
+
+    @property
+    def experimental(self) -> Union[pd.Series, None]:
+        """The experimental data. Might be None."""
+        if self._df is not None and 'experimental' in self._df:
+            return self._df.experimental
+        return None
+
+    @experimental.setter
+    def experimental(self, experimental: pd.Series):
+        """Sets the experimental data, updating the simulated data if necessary.
+
+        If you give a x-range or DataFrame with index different from that of
+        the simulated data, it will drop the simulated data and throw a
+        warning, resetting to zeroes on that x-range.
+
+        Args:
+            experimental: An ndarray of the experimental spectrum, with index.
+        """
+        x_range = np.asarray(experimental.index)
+
+        # Reset self._df if it has never been initialized.
+        if self._df is None:
+            self._reset_df(x_range)
+
+        # If the x-axes are irreconcilable, reset and throw a warning.
+        if self.x_range.size != x_range.size or (self.x_range != x_range).any():
+            self._reset_df(x_range)
+            warnings.warn('x-ranges differ, dropped existing data.')
+
+        self._df['experimental'] = experimental
+
+        self._scale_gaussians()
+        self._calc_gas_phase()
+
+    @experimental.deleter
+    def experimental(self):
+        """Deletes experimental but also gas_phase."""
+        del self._df['experimental']
+        del self._df['gas_phase']
+
+    @property
+    def gas_phase(self) -> Union[pd.Series, None]:
+        """The gas phase part of the spectrum. Might be None."""
+        if self._df is not None and 'gas_phase' in self._df:
+            return self._df.gas_phase
+        return None
+
+    @property
+    def gas_interval(self) -> Tuple:
+        """The interval in which the gas phase peak should be."""
+        return self._gas_interval
+
+    @gas_interval.setter
+    def gas_interval(self, interval):
+        """Sets the interval in which the gas phase peak should be.
+
+        Give bounds for where the _peak_ is: if your bounds are too broad, it
+        will get greedy, as it assumes that that interval is dominated by the
+        gas phase. You can make lower equal to upper if you know the peak.
+
+        Args:
+            interval: a 2-tuple, with interval[0] <= interval[1].
+        """
+        if len(interval) != 2 or interval[0] > integrate[1]:
+            raise ValueError(f'Invalid interval {interval}')
+        self._gas_interval = interval
+        self._calc_gas_phase()
+
+    @property
+    def gaussians(self) -> pd.DataFrame:
+        """The gaussians of the XPS observable.
+
+        Doesn't include the envelope, experimental, or the gas phase.
+
+        Note: Accessing it might prompt the DataFrame to be re-evaluated.
+        """
+        self._check_resim()
+        gauss_cols = [col for col in self._df.columns
+                      if col not in self._RESERVED_COLUMNS]
+        return self._df[gauss_cols]
+
+    @gaussians.setter
+    def gaussians(self, gaussians: pd.DataFrame):
+        """Sets the simulated gaussians.
+
+        This will prompt a calculation of the envelope. Don't use the names
+        'envelope', 'experimental', or 'gas_phase' in your DataFrame.
+
+        Args:
+            gaussians: a DataFrame of all the gaussians.
+
+        Raises:
+            ValueError: if you give a DataFrame with an index which doesn't
+                match the experimental data.
+        """
+        experimental = self.experimental
+        self._df = gaussians
+        if experimental:
+            self._df['experimental'] = experimental
+
+        self._scale_gaussians()
+        self._calc_gas_phase()
+
+    @property
+    def x_range(self) -> np.ndarray:
+        """The x-values, energies, on which there is data.
+
+        Note: Accessing it might prompt the DataFrame to be re-evaluated.
+        """
+        if self._df is None:
+            self._proper_resim()
+        return np.asarray(self._df.index)
+
+    def plot(self, species: List[sym.Symbol] = None,
+             ignore: List[sym.Symbol] = None, t=-1):
+        """ TODO
+
+        Args:
+            species:
+            ignore:
+            t:
+        """
+        # Handles parameters that sim might have to take.
+        self._prompt_resim(species=species, ignore=ignore, t=t)
+
+        # Plot everything which is defined.
+        for index, specie in enumerate(self.gaussians):
+            plt.fill(self.x_range, self.gaussians[specie], label=specie,
+                     color=_COLORS[index])
+
+        if self.gas_phase is not None:
+            plt.fill(self.x_range, self.gas_phase, label='gas phase', color='gray')
+
+        plt.plot(self.x_range, self.envelope, color='black', linewidth=4)
+
+        if self.experimental is not None:
+            plt.plot(self.x_range, self.experimental, color='green')
+
+        plt.legend()
+        plt.title(self.title)
+        plt.gca().invert_xaxis()  # XPS Plots are backwards
+        plt.show()
+
+    def _calc_envelope(self):
+        """Sets self._df['envelope'] to be the sum of the gaussians."""
+        self._df['envelope'] = self.gaussians.sum(axis=1)
+
+    def _calc_gas_phase(self):
+        """Calculates the gas phase given the current experimental."""
+        # If there is no gas interval or experimental, do nothing.
+        if not (self._gas_interval and self.experimental is not None):
+            return
+
+        # Get the part of the x_range that the gas_interval corresponds to
+        # i.e., x_range[lower_index] will be very close to gas_interval[0]
+        # bisect is a standard library binary search function.
+        lower_index = bisect.bisect_left(self.x_range, self._gas_interval[0])
+        upper_index = bisect.bisect_left(self.x_range, self._gas_interval[1]) + 1
+
+        # Get the location of the highest part of the experimental data in range
+        peak_index = max(range(lower_index, upper_index),
+                         key=lambda index: self.experimental[index])
+        peak = self.experimental[peak_index]
+
+        # Make a gaussian the same height as the experimental gas phase peak
+        gas_gaussian = stats.norm.pdf(self.x_range, self.x_range[peak_index],
+                                      _SIGMA)
+        gas_gaussian *= (peak / max(gas_gaussian))
+
+        self._df['gas_phase'] = gas_gaussian
+
+    def _scale_gaussians(self):
+        """Scale the gaussians so that the envelope and experimental have the
+        same maximum. Also calculates envelope."""
+        self._calc_envelope()
+
+        # Prevent a division by zero error.
+        if (self.envelope == 0).all():
+            return
+
+        # Scale it to the max of experimental, or 1.
+        scale = 1 / max(self.envelope)
+        if self.experimental:
+            scale = max(self.experimental) / max(self.envelope)
+
+        gauss_cols = [col for col in self._df.columns
+                      if col not in self._RESERVED_COLUMNS]
+        self._df[gauss_cols] = self._df[gauss_cols] * scale
+
+        # Recalculate envelope to deal with new gaussians
+        self._calc_envelope()
+
+    def _check_resim(self, **kwargs):  # TODO
+        if self._df is None or (self.envelope == 0).all():
+            self._prompt_resim(**kwargs)
+
+    def _prompt_resim(self, **kwargs):  # TODO
+        if self._sim:
+            self._sim.calc_xps(**kwargs)
+
+    def _reset_df(self, x_range: np.ndarray):
+        """Resets the dataframe to zeros to maintain invariants.
+
+        Args:
+            x_range: A float index, representing energies on the x-axis.
+        """
+
+        self._df = pd.DataFrame(data=0, index=x_range, columns=['envelope'])
+
 class Solution:
     """A time series solution of an chemical reaction ODE, with utilities.
 
@@ -24,6 +271,8 @@ class Solution:
 
     Attributes:
         df: The pandas DataFrame associated with the time series.
+        xps: An XPSObservable object. It will prompt the Solution to update it
+            if you ask for something that doesn't exist yet.
     """
     
     def __init__(self, t: List[float], y: List[List[float]], rsys):
@@ -32,11 +281,14 @@ class Solution:
                                index=pd.Index(t, name='time'),
                                columns=pd.Index(rsys.get_symbols(),
                                                 name='species'))
+        self.xps = XPSObservable(sim=self)
+
         self.rsys = rsys
         self.species_manager = rsys.species_manager
-        self._default_ignore = []
 
         # TODO ---------------------------------------------------------------
+
+        self._default_ignore = []
 
         # The time range of the reaction
         self.t = t
@@ -53,7 +305,7 @@ class Solution:
         self.binding_energies = []
         self.resampled_intensity = []
         self.distributions = []
-        self.xps = None
+        #self.xps = None
 
     # --- Accessor Methods ---------------------------------------------------
 
@@ -68,11 +320,65 @@ class Solution:
         """Give the species' symbols in this solution."""
         return self.rsys.get_symbols()
 
+    # --- Calculating Observables --------------------------------------------
+
+    def calc_xps(self, species: List[sym.Symbol] = None,
+                 ignore: List[sym.Symbol] = None, t: float = -1):
+        """Calculates a simulated XPS observable at time t.
+
+        Doesn't return; instead, saves the information into self.xps.
+
+        Args:
+            species: The speices to include in the caluclation.
+            t: The time at which to take a snapshot.
+        """
+        species = self._get_species_not_ignored(species, ignore)
+
+        # Pick x_range: if there is experimental data, use that. Otherwise,
+        # pick it so that it contains just the binding energies of the species
+        # in question.
+        if self.xps.experimental is not None:
+            x_range = self.xps.x_range
+        else:
+            binding_energies = []
+            for specie in species:
+                binding_energies.extend(self._get_binding_energies(specie))
+
+            x_lower = min(binding_energies) - _PLOT_MARGIN
+            x_upper = max(binding_energies) + _PLOT_MARGIN
+            x_range = np.arange(x_lower, x_upper, _PLOT_RESOLUTION)
+
+        # Make a gaussian for each specie in question.
+        gaussians = [self._get_species_gauss(specie, x_range, t) for specie
+                     in self.species]
+        names = [self.species_manager[specie].name for specie in self.species]
+
+        xps_df = pd.DataFrame(data=np.transpose(gaussians), index=x_range, columns=names)
+        self.xps.gaussians = xps_df
+
+    def _get_binding_energies(self, specie: sym.Symbol):
+
+        bes = []
+        for orbital in self.species_manager[specie].orbitals:
+            bes.append(orbital.binding_energy)
+        return bes
+
+    def _get_species_gauss(self, specie, x_range, t):
+
+        gaussian = np.zeros(x_range.size)
+        concentration = self.at(t)[specie]
+
+        for orbital in self.species_manager[specie].orbitals:
+            gaussian += concentration * orbital.splitting * \
+                    stats.norm.pdf(x_range, orbital.binding_energy, _SIGMA)
+
+        return gaussian
+
     # --- Plotting Methods ---------------------------------------------------
 
     def plot(self, exp_type='timeseries',
-             species: List[sym.Symbol] = None,
-             ignore: List[sym.Symbol] = None,
+             species: List[sym.Symbol] = [],
+             ignore: List[sym.Symbol] = [],
              t=-1, **kwargs):
         """Plot the solution as if it's a (specified) experimental observable.
 
@@ -85,13 +391,7 @@ class Solution:
             t: The snapshot in time to plot (if applicable)
             **kwargs: Forwarded to DataFrame.plot/plt.plot
         """
-        # Decide which species to plot
-        if species:
-            pass
-        elif ignore:
-            species = self._get_not_ignored(ignore)
-        else:
-            species = self._get_not_ignored(self._default_ignore)
+        species = self._get_species_not_ignored(species, ignore)
 
         # Assume negative time means time-max
         if t < 0:
@@ -121,7 +421,7 @@ class Solution:
         x_upper = max(binding_energies) + _PLOT_MARGIN
         x_range = np.arange(x_lower, x_upper, _PLOT_RESOLUTION)
 
-        gaussians = [self._calc_species_gauss(x_range, specie, t) for specie in species]
+        gaussians = [self._get_species_gauss(x_range, specie, t) for specie in species]
         envelope = sum(gaussians)
 
         for index, gauss in enumerate(gaussians):
@@ -141,7 +441,7 @@ class Solution:
         # We plot on the same range that the XPS does
         x_range = self.xps.binding_energy
 
-        gaussians = [self._calc_species_gauss(x_range, specie, t) for specie in species]
+        gaussians = [self._get_species_gauss(x_range, specie, t) for specie in species]
         envelope = sum(gaussians)
 
         # Scale: max(envelope) should equal max(self.xps.intensity).
@@ -150,7 +450,7 @@ class Solution:
         gaussians = [gauss * factor for gauss in gaussians]
 
         if gas_interval:
-            gas_phase = self._calc_gas_phase_gauss(x_range, gas_interval)
+            gas_phase = self._get_gas_phase_gauss(x_range, gas_interval)
             envelope += gas_phase
 
         for index, gauss in enumerate(gaussians):
@@ -167,252 +467,15 @@ class Solution:
         plt.gca().invert_xaxis()  # Spectroscopy plots
         plt.show()
 
-    # --- Spectro Plotting Helpers -------------------------------------------
-
-    def _get_binding_energies(self, specie: sym.Symbol):
-
-        bes = []
-        for orbital in self.species_manager[specie].orbitals:
-            bes.append(orbital.binding_energy)
-        return bes
-
-    def _calc_species_gauss(self, x_range, specie, t):
-
-        gaussian = np.zeros(x_range.size)
-        concentration = self.at(t)[specie]
-
-        for orbital in self.species_manager[specie].orbitals:
-            gaussian += concentration * orbital.splitting * \
-                    stats.norm.pdf(x_range, orbital.binding_energy, _SIGMA)
-
-        return gaussian
-
-    def _calc_gas_phase_gauss(self, x_range, gas_interval):
-
-        # Get the part of the x_range that the gas_interval corresponds to
-        # i.e., x_range[lower_index] will be very close to gas_interval[0]
-        # bisect is a standard library binary search function.
-        lower_index = bisect.bisect(x_range, gas_interval[0])
-        upper_index = bisect.bisect(x_range, gas_interval[1])
-
-        # Get the location of the highest part of the xps data in range
-        peak_index = max(range(lower_index, upper_index),
-                         key=lambda index: self.xps.intensity[index])
-        peak = self.xps.intensity[peak_index]
-
-        # Make a gaussian the same height as the experimental gas phase peak
-        gas_gaussian = stats.norm.pdf(x_range, x_range[peak_index], _SIGMA)
-        gas_gaussian *= (peak / max(gas_gaussian))
-
-        return gas_gaussian
-
-# TODO ------------------------------------------------------------------- (TEMP) --------------------------------
-
-    def ignore(self, species: List[sym.Symbol]):
-        """Mark species to be ignored by the plotter by default."""
-        self._default_ignore = species
-
-    def _get_not_ignored(self, ignored: List[sym.Symbol]) -> List[sym.Symbol]:
-        """Get all the species not in ignored"""
-        return [symbol for symbol in self.species if symbol not in ignored]
-
-    def plot_gaussian(self, envelope: bool = False, overlay: bool = False, resample_envelope: bool =
-    False, ax=None, title=''):
-        """
-        Plots a gaussian distribution of the final species concentrations. FWHM is set at 0.75
-        If specified, an envelope curve is also plotted
-        """
-        colors = ['red', 'green', 'orange', 'blue', 'purple', 'pink', 'yellow', 'gray', 'cyan']
-        if not ax:
-            for i, dist in sorted(enumerate(self.distributions), key=lambda x: max(x[1]), reverse=True):
-                plt.fill(self.binding_energies, dist, label=self.names[i], color=colors[i])
-            plt.legend()
-
-            if overlay:
-                if resample_envelope:
-                    plt.plot(self.resampled_binding_energies, self.resampled_intensity, color='green')
-                else:
-                    plt.plot(self.xps.binding_energy, self.xps.intensity, color='green')
-
-            if envelope:
-                plt.plot(self.resampled_binding_energies, self.envelope, linewidth=4, color='black')
-
-            plt.gca().invert_xaxis()
-            plt.show()
-        else:
-            for i, dist in sorted(enumerate(self.distributions), key=lambda x: max(x[1]), reverse=True):
-                ax.fill(self.binding_energies, dist, label=self.names[i], color=colors[i])
-            ax.legend()
-
-            if overlay:
-                if resample_envelope:
-                    ax.plot(self.resampled_binding_energies, self.resampled_intensity, color='green')
-                else:
-                    ax.plot(self.xps.binding_energy, self.xps.intensity, color='green')
-
-            if envelope:
-                ax.plot(self.resampled_binding_energies, self.envelope, linewidth=4, color='black')
-
-            ax.set_xlim(max(self.resampled_binding_energies), min(self.resampled_binding_energies))
-            ax.title.set_text(title)
-
-    def scale(self, to_scale, exp):
-        """Scale experimental data intensity to match that of the experimental data.
-
-        The largest value of the simulated data is scaled to match the largest value of the
-        experimental data, and this scaling factor is then applied across all simulated data.
-        """
-        max_to_scale = max(to_scale[1])
-        max_exp = max(exp[1])
-        new_envelope = []
-        new_dists = []
-        scaling = max_exp / max_to_scale
-
-        for v in to_scale[1]:
-            new_envelope.append(v * scaling)
-
-        for d in to_scale[2]:
-            new_dists.append(d * scaling)
-
-        return new_envelope, new_dists
-
-    def resample(self):
-        """Resample the simulated data, reducing its size to match that of the experimental data.
-        """
-        # rei = []
-        # i = 0
-        # bes = self.binding_energies
-        # for intensity, be in zip(list(reversed(self.xps.intensity)), list(reversed(self.xps.binding_energy))):
-        # while i < len(bes) and be > bes[i]:
-        # rei.append(intensity)
-        # i += 1
-        # if i >= len(bes):
-        # break
-        # self.resampled_intensity = rei
-        e = self.envelope
-        bes = self.binding_energies
-        xbes = self.xps.binding_energy
-        xi = self.xps.intensity
-
-        r_e, r_bes = [], []
-        i = 0
-        for b in list(reversed(xbes)): # TODO: reverse it automatically
-            while i < len(e) - 1 and bes[i] < b:
-                i += 1
-            r_e.append(e[i])
-            r_bes.append(b)
-        self.envelope = r_e
-        self.resampled_binding_energies = np.array(r_bes)
-        self.resampled_intensity = list(reversed(xi))
-
-    def process(self, gas_range=()):
-        """Resample, scale, and calculate envelopes and other characteristics of the data.
-
-        First the binding energy bounds are found, the envelope curve and individual species
-        gaussians are then computed. Finally, if an experimental data object has been set, the
-        simulated data is resampled and sacled.
-        """
-
-        min_be = float('inf')
-        max_be = float('-inf')
-
-        # determine x axis bounds
-        for name, substance in self.substances.items():
-            if name not in self._default_ignore:
-                min_be = min(substance.orbitals[0].binding_energy, min_be)
-                max_be = max(substance.orbitals[0].binding_energy, max_be)
-
-        self.binding_energies = np.arange(min_be - 5, max_be + 5, .001)
-        self.envelope = np.zeros(self.binding_energies.size)
-        self.distributions = []
-        self.names = []
-
-        for name, sol in self.final_state().items():
-            if name not in self._default_ignore:
-                for o in self.substances[name].orbitals:
-                    be = o.binding_energy
-                    dist = sol * stats.norm.pdf(self.binding_energies, be, _SIGMA)
-                    self.envelope += dist
-                    self.distributions.append(dist)
-                    self.names.append(name)
-
-        self.resampled_binding_energies = self.binding_energies
-
-        if self.xps:
-            self.resample()
-            self.envelope, self.distributions = self.scale((self.resampled_binding_energies, self.envelope,
-                                                            self.distributions),
-                                                           (self.xps.binding_energy, self.xps.intensity))
-
-            # If a valid gas range is specified, create a fake peak
-            if len(gas_range) == 2:
-                start = gas_range[0]
-                end = gas_range[1]
-                intensities = list(reversed(self.xps.intensity))
-                bes = list(reversed(self.xps.binding_energy))
-                print(bes)
-
-                i = 0
-                while i < len(bes) and bes[i] < start:
-                    i += 1
-
-                if i < len(bes):
-                    max_intensity = intensities[i]
-                    be = i
-                    while i < len(bes) and i < bes[i] < end:
-                        if intensities[i] > max_intensity:
-                            max_intensity = intensities[i]
-                            be = bes[i]
-                        i += 1
-                    if i < len(bes):
-                        dist = max_intensity * stats.norm.pdf(self.binding_energies, be, _SIGMA)
-                        resampled_dist = max_intensity * stats.norm.pdf(self.resampled_binding_energies, be, _SIGMA)
-                        self.envelope += resampled_dist
-                        self.distributions.append(dist)
-                        self.names.append('gas phase')
-
-# TODO ------------------------------------------------------------------- (TEMP) --------------------------------
-
-    def set_experimental(self, xps):  # TODO
-        """Takes an xps object contain experimental data, and scales the simulated solution.
-        """
-        self.xps = xps
-
-    def sols(self) -> List[List[float]]:  # TODO
-        return list(self.states.values())
-
-    def time_steps(self) -> List[float]:  # TODO
-        return self.t
-    
-    def basic_plot(self):  # TODO
-        """Draws a basic plot over the time domain
-        """
-        for name, sol in self.states.items():
-            plt.plot(self.t, sol, label=name)
-        plt.legend()
-
-    def final_state(self) -> Dict[str, float]: # TODO
-        """Returns the final state of the system of equations
-        """
-        final_state: Dict[str, float] = {}
-        for name, sol in self.states.items():
-            final_state[name] = sol[len(sol) - 1]
-        return final_state
-
-    def var_sols(self, *vars) -> Dict[str, List[float]]:  # TODO
-        """Returns a list of solutions for the specified variables passed in as arguments
-        """
-        return {name: sol for name, sol in self.states.items() if name in vars}
-
-    def rmse(self):
-        return np.sqrt(metrics.mean_squared_error(self.resampled_intensity, self.envelope))
-
-    def mae(self):
-        return metrics.mean_absolute_error(self.resampled_intensity, self.envelope)
-    
-    def integral_diff(self):
-        return abs(integrate.trapz(self.resampled_intensity, self.resampled_binding_energies) -
-                integrate.trapz(self.envelope, self.resampled_binding_energies))
+    def _get_species_not_ignored(self, species: List[sym.Symbol] = None,
+                                 ignore: List[sym.Symbol] = None):
+        """A helper method to return species - ignored. If species is none,
+        considers all species."""
+        if not species:
+            species = self.species
+        if not ignore:
+            ignore = []
+        return [specie for specie in species if specie not in ignore]
 
     def _time_to_index(self, time):
         """Takes a time and returns the highest index <= that time.
