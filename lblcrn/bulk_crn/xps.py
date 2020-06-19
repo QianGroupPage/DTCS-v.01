@@ -90,7 +90,7 @@ class XPSExperiment:
     # --- Accessors ----------------------------------------------------------
 
     @property
-    def envelope(self):
+    def envelope(self) -> pd.Series:
         """The simulated envelope, the sum of all species' gaussians."""
         return self.df.envelope
 
