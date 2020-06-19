@@ -324,8 +324,3 @@ class RxnSystem:
 
     def __repr__(self):
         return 'RxnSystem(components=' + repr(self.components) + ')'
-
-# *** Functions ***
-def symbol(names: str) -> Tuple[sym.Symbol]:
-    """A wrapper for sym.symbols"""
-    return sym.symbols(names)

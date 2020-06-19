@@ -12,6 +12,6 @@ Credits:
 Dr. Jin Qian, Domas Buracas, Ye Wang, Andrew Bogdan, Rithvik Panchapakesan
 """
 
-from .species import *
-from .conditions import *
-from .reaction import *
+from lblcrn.crn_sym.species import *
+from lblcrn.crn_sym.conditions import *
+from lblcrn.crn_sym.reaction import *

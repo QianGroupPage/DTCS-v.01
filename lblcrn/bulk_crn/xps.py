@@ -1,28 +1,27 @@
 """Utilities for manipulating XPS data.
 
 Exports:
-    XPSObservable: a container for simulated and experimental xps observables.
+    XPSExperiment: a container for simulated and experimental xps observables.
 
 Example:
     Say you have a normal setup with a species manager, species x, y, and some
     experimental data in a pd.Series. The following is preferred:
 
-    xps = XPSObservable({x: 2.1, y: 3.4}, sm, experimental=experimental_data,
+    xps = XPSExperiment({x: 2.1, y: 3.4}, sm, experimental=experimental_data,
                         gas_interval=(-1, 0), scale_factor=0.1)
     xps.plot()
 
     but is equivalent to the following, which resamples with each assignment:
 
-    xps = XPSObservable({x: 2.1, y: 3.4}, sm)
+    xps = XPSExperiment({x: 2.1, y: 3.4}, sm)
     xps.experimental = experimental_data
     xps.gas_interval = (-1, 0)
     xps.scale_factor = 0.1
     xps.plot()
 """
 
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
-import copy
 from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
@@ -31,10 +30,13 @@ from scipy import stats
 from sklearn import metrics
 import sympy as sym
 
+from lblcrn.bulk_crn import common
+from lblcrn.bulk_crn import time_series
+from lblcrn.crn_sym import reaction
 from lblcrn.crn_sym import species
 
 
-class XPSObservable:
+class XPSExperiment:
     """A container for a simulated observable of an XPS experiment.
 
     Attributes:
@@ -93,7 +95,7 @@ class XPSObservable:
         return self.df.envelope
 
     @property
-    def experimental(self) -> Union[pd.Series, None]:
+    def experimental(self) -> Optional[pd.Series]:
         """The experimental data. Might be None."""
         return self._experimental
 
@@ -112,7 +114,7 @@ class XPSObservable:
         self.resample()
 
     @property
-    def gas_interval(self) -> Union[Tuple[float, float], None]:
+    def gas_interval(self) -> Optional[Tuple[float, float]]:
         """The interval in which the gas phase peak should be. May be None."""
         return self._gas_interval
 
@@ -140,7 +142,7 @@ class XPSObservable:
         self.resample()
 
     @property
-    def gas_phase(self) -> Union[pd.Series, None]:
+    def gas_phase(self) -> Optional[pd.Series]:
         """The gas phase part of the spectrum. Might be None."""
         if 'gas_phase' in self.df:
             return self.df.gas_phase
@@ -228,7 +230,7 @@ class XPSObservable:
             return max(self.experimental) / raw_max
         return 1.0
 
-    def _get_gas_phase(self) -> Union[np.ndarray, None]:
+    def _get_gas_phase(self) -> Optional[np.ndarray]:
         """Calculates the gas phase given the current experimental.
 
         Returns:
@@ -291,7 +293,7 @@ class XPSObservable:
 
     # --- Plotting -----------------------------------------------------------
 
-    def plot(self, show=True):
+    def plot(self, show: bool = True):
         """Plot the XPS observable."""
         for index, specie in enumerate(self.gaussians):
             plt.fill(self.x_range, self.gaussians[specie], label=specie,
@@ -337,8 +339,30 @@ class XPSObservable:
 
     # --- Utility ------------------------------------------------------------
 
-    def _repr_html(self):
+    def _repr_html_(self) -> Optional[str]:
         """For iPython, mostly just gives the DataFrame."""
         # TODO: do this without accessing private member?
-        # TODO: Also it doesn't appera to get called.
-        return self.df._repr_html_()
+        df_html = self.df.head()._repr_html_()
+
+        html = f"""<pre>{self.__class__.__name__} with head:</pre>
+        {df_html}"""
+
+        return html
+
+def simulate_xps(rsys: reaction.RxnSystem, time: float = 1,
+                 **options) -> XPSExperiment:
+    """Simulate the given reaction system over time.
+
+    Args:
+        rsys: ReactionsSystem, the reaction system to simulate
+        time: The time until which to simulate.
+        **options: Forwarded to scipy.integrate.solve_ivp
+
+    Returns:
+        A Solution object describing the solution.
+    """
+
+    # TODO(Andrew): This can be improved a _lot_, right now it's just a shell.
+    sol_t, sol_y = common.solve_rsys_ode(rsys, time, **options)
+    sol = time_series.CRNTimeSeries(sol_t, sol_y, rsys)
+    return sol.xps_with(**options)

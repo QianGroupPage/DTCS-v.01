@@ -1,42 +1,42 @@
 """Utilities for simulating reaction systems over time.
 
 Exports:
-    Solution: A time-series solution of a chemical reaction system.
+    CRNTimeSeries: A time-series solution of a chemical reaction system.
     simulate(): Simulate a given reaction system over time.
 
 Example:
     Once you have your reaction system rsys set up, you can proceed as
     follows:
 
-    solution = simulate(rsys, time_max=20)
-    solution.df  # Shows the DataFrame of the solution.
-    solution.plot()  # Plots the solution as a time series.
-    solution.at(t=2)  # Shows the state near time=2
+    time_series = simulate_crn(rsys, time_max=20)
+    time_series.df  # Shows the DataFrame of the time series.
+    time_series.plot()  # Plots the network's time series.
+    time_series.at(t=2)  # Shows the state near time=2
 
-    Solution also has experiment-specific members. You can use them to show
-    simulated observables. For example, x-ray spectroscopy:
+    CRNTimeSeries also has experiment-specific members. You can use them to
+    show simulated observables. For example, x-ray spectroscopy:
 
-    solution.calc_xps(ignore=[species1], t=12)
-    solution.xps.experimental = experimental_data
-    solution.xps.gas_interval = (500, 510)
-    solution.xps.plot()
+    time_series.xps_with(ignore=[species1], t=12)
+    time_series.xps.experimental = experimental_data
+    time_series.xps.gas_interval = (500, 510)
+    time_series.xps.plot()
 
     For more information, see xps.py.
 """
 
 import bisect
-import collections
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
-from scipy import integrate
 import sympy as sym
 
 from lblcrn.bulk_crn import xps
+from lblcrn.bulk_crn import common
+from lblcrn.crn_sym import reaction
 
 
-class Solution:
+class CRNTimeSeries:
     """A time series solution of an chemical reaction ODE, with utilities.
 
     Defines a solution to a system of differential equations, providing a
@@ -80,22 +80,21 @@ class Solution:
     # --- Experiment Simulation -----------------------------------------------
 
     @property
-    def xps(self) -> xps.XPSObservable:
+    def xps(self) -> xps.XPSExperiment:
         """Gives the xps observable you've calculating, calculating a default
         if you haven't run calc_xps yet."""
         if self._xps is None:
-            self.calc_xps()
+            self.xps_with()
         return self._xps
 
-    def calc_xps(self, t: float = -1, species: List[sym.Symbol] = None,
+    def xps_with(self, t: float = -1, species: List[sym.Symbol] = None,
                  ignore: List[sym.Symbol] = None,
                  experimental: pd.Series = None,
                  gas_interval: Tuple[float, float] = None,
-                 scale_factor: float = 0,
-                 ):
+                 scale_factor: float = 0):
         """Calculates a simulated XPS observable at time t.
 
-        Doesn't return; instead, saves the information into self.xps.
+        In addition to returning, saves the information into self.xps.
 
         Args:
             t: The time at which to take a snapshot. Defaults to the max time.
@@ -106,6 +105,9 @@ class Solution:
                 in the XPS.
             scale_factor: The scale factor by which to scale the simulated
                 gaussians in the XPS.
+
+        Returns:
+            An XPSExperiment object with the parameters you specified.
         """
         species = self._get_species_not_ignored(species, ignore)
         snapshot = self.at(t)
@@ -113,17 +115,18 @@ class Solution:
         for specie, conc in snapshot.items():
             if specie in species:
                 species_concs[specie] = conc
-        self._xps = xps.XPSObservable(species_concs, self.species_manager,
+        self._xps = xps.XPSExperiment(species_concs, self.species_manager,
                                       experimental=experimental,
                                       gas_interval=gas_interval,
                                       scale_factor=scale_factor,
                                       title=f'time={snapshot.name}')
+        return self._xps
 
     # --- Plotting -----------------------------------------------------------
 
     def plot(self, species: List[sym.Symbol] = [],
              ignore: List[sym.Symbol] = [], **kwargs):
-        """Plot the solution as a time-series.
+        """Plot the reaction network time series.
 
         Args:
             species: A list of sym.Symbols. the species to plot. If None,
@@ -161,14 +164,19 @@ class Solution:
             raise IndexError('time cannot be below 0.')
         return bisect.bisect_right(self.t, time) - 1
 
-    def _repr_html(self):
+    def _repr_html_(self) -> Optional[str]:
         """For iPython, mostly just gives the DataFrame."""
-        # TODO: do this without accessing private member?
-        # TODO: Also it doesn't appera to get called.
-        return self.df._repr_html_()
+        # TODO: do this without accessing private member?\
+        df_html = self.df.head()._repr_html_()
+
+        html = f"""<pre>{self.__class__.__name__} with head:</pre>
+        {df_html}"""
+
+        return html
 
 
-def simulate(rsys, time_max: float = 1, **options):
+def simulate_crn(rsys: reaction.RxnSystem, time_max: float = 1,
+                 **options) -> CRNTimeSeries:
     """Simulate the given reaction system over time.
 
     Args:
@@ -177,73 +185,10 @@ def simulate(rsys, time_max: float = 1, **options):
         **options: Forwarded to scipy.integrate.solve_ivp
 
     Returns:
-        A Solution object describing the solution.
+        A CRNTimeSeries object with the concentrations over time.
     """
 
-    sol_t, sol_y = _solve_rsys_ode(rsys, time_max, **options)
-    return Solution(sol_t, sol_y, rsys)
+    sol_t, sol_y = common.solve_rsys_ode(rsys, time_max, **options)
+    return CRNTimeSeries(sol_t, sol_y, rsys)
 
 
-def _solve_rsys_ode(rsys, time_max: float = 1, **options):
-    """Simulate the given reaction system over time.
-
-    Private in case we want to add multiple possible solving methods.
-
-    Args:
-        rsys: ReactionsSystem, the reaction system to simulate
-        time_max: The time until which to simulate.
-        **options: Forwarded to scipy.integrate.solve_ivp
-
-    Returns:
-        A Solution object describing the solution.
-    """
-
-    ode_func = rsys.get_ode_functions()
-    num_species = len(rsys._symbols)
-
-    # schedule, a dictionary {time : [amount to add for species no. index]}
-    schedule = collections.defaultdict(lambda: [0] * num_species)
-    for index in range(num_species):
-        for time, amount in rsys.scheduler[index].items():
-            schedule[time][index] += amount
-
-    # This is an ordered list of all the times at which we add/remove stuff.
-    time_breaks = sorted(schedule.keys())
-
-    # Do the simulation in broken pieces
-    current_concs = [0] * num_species
-    current_time = time_breaks.pop(0)  # Guaranteed to be 0
-
-    while current_time < time_max:
-        # Get next_time, the end of the interval we're simulating this step.
-        if len(time_breaks) > 0:
-            next_time = time_breaks.pop(0)
-        else:
-            next_time = time_max
-
-        # Add the respective amounts for this timestep.
-        for index, amount in enumerate(schedule[current_time]):
-            current_concs[index] += amount
-
-        partial_sol = integrate.solve_ivp(ode_func, (current_time, next_time),
-                                          current_concs, **options)
-
-        # Add the partial solution to the whole solution.
-        if current_time == 0:
-            sol_t = partial_sol.t
-            sol_y = partial_sol.y
-        else:
-            sol_t = np.append(sol_t, partial_sol.t)
-            sol_y = np.append(sol_y, partial_sol.y, axis=1)
-
-        # Loop; set current_concs to the new ones and curren_time to the next one
-        for index in range(num_species):
-            current_concs[index] = sol_y[index][len(sol_y[index]) - 1]
-        current_time = next_time
-
-    # Set y for concentration equations, which the ODE solver does't calculate.
-    for index, func in rsys.get_conc_functions().items():
-        for tindex in range(sol_t.size):
-            sol_y[index][tindex] = func(sol_t[tindex], sol_y[:, tindex])
-
-    return sol_t, sol_y

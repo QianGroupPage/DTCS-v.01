@@ -9,12 +9,8 @@ Dr. Jin Qian, Domas Buracas, Ye Wang, Andrew Bogdan, Rithvik Panchapakesan
 
 # *** Libraries ***
 import sympy as sym
-import numpy as np
 
-import abc
-import copy
-
-from typing import List, Tuple, Union, Set
+from typing import List, Union
 
 # *** Classes ***
 class Orbital:

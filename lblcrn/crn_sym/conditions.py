@@ -23,14 +23,13 @@ Usage:
     two initial concentrations, that's a contradiction).
 """
 
-import abc
 import sympy as sym
-from typing import List, Set
+from typing import Set
 
 T = sym.Symbol('t')  # Time
 
 
-class ChemExpression(abc.ABC):
+class ChemExpression:
     """Abstract base class for classes in this module.
 
     It is essentially a pair of a symbol/species and an expression which
