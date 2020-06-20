@@ -10,6 +10,4 @@ Exposes:
 def lblcrn_help():
     """TODO
     """
-
-    from lblcrn import echo
-    print('TODO')  # TODO
+    print('What do you want to be in the help function?')  # TODO
