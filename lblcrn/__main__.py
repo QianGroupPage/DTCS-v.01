@@ -14,7 +14,7 @@ def cmd_help():
 
     help = """
     Basic CLI for lblcrn; for more information, refer to the docs and tutorial 
-    at <https://github.com/rithvikp/lbl-crn>.
+    at <https://github.com/rithvikp/lbl-crn> or run lblcrn.lblcrn_help().
     
     Usage: `python -m lblcrn [options]`
 
@@ -25,6 +25,7 @@ def cmd_help():
     """
 
     print(help)
+
 
 def cmd_version():
     """
