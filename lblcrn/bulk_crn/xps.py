@@ -38,75 +38,21 @@ from lblcrn.crn_sym import species
 from lblcrn import _echo
 
 
-class XPSExperiment(experiment.Experiment):
-    """A container for a simulated observable of an XPS experiment.
+class XPSObservable:
+    """A wrapper around a dataframe, formatted to act like an XPS observable.
 
     Attributes:
-        autoscale: Defaults to true, decides if it will automatically scale
-            the gaussians and envelope to match the experimental data.
         df: The pandas DataFrame in which the observables are stored.
-        species_concs: The concentrations of each species, for the creation of
-            simulated data.
-        species_manager: The SpeciesManager in use.
         title: A str used for the title during plotting.
     """
 
     _COLORS = ['red', 'green', 'orange', 'blue', 'purple', 'pink', 'yellow',
                'gray', 'cyan']
-    _PLOT_MARGIN = 5
-    _PLOT_RESOLUTION = 0.001
     _RESERVED_COLUMNS = ['envelope', 'experimental', 'gas_phase']
-    _SIGMA = 0.75 * np.sqrt(2) / (np.sqrt(2 * np.log(2)) * 2)
 
-    def __init__(self,  # TODO: xps from df
-                 species_concs: Dict[sym.Symbol, float],
-                 species_manager: species.SpeciesManager,
-                 autoscale: bool = False,
-                 autoresample: bool = True,
-                 experimental: pd.Series = None,
-                 gas_interval: Tuple[float, float] = None,
-                 scale_factor: float = 0,
-                 title: str = ''):
-        """Initialze the XPSObserable.
-
-        Pass arguments instead of setting to prevent excessive re-sampling.
-
-        Args:
-            species_concs: A dictionary {specie: concentration} of the species
-                and their concentrations.
-            species_manager: A SpeciesManager, for binding energies.
-            experimental: Optional, the experimental data.
-            gas_interval: Optional, the interval in which to find the peak of
-                the gas phase's gaussian.
-            autoscale: Defaults to true, decides if it will automatically scale
-                the gaussians and envelope to match the experimental data.
-            scale_factor: Optional, the factor by which to scale the gaussians.
-            title: The title to name the default plot.
-        """
-        # TODO(Andrew): Clean this up
-        super().__init__()
-
-        self.species_concs = species_concs
-        self.species_manager = species_manager
-
+    def __init__(self, df: pd.DataFrame, title: str = ''):
+        self.df = df
         self.title = title
-        self.autoresample = autoresample
-
-        # Experimental data-related
-        self._experimental = None
-        if experimental is not None:
-            self._experimental = experimental.copy()
-        self._gas_interval = gas_interval
-
-        # Scaling-related
-        self.autoscale = autoscale  # TODO(Andrew) perhaps make property?
-        self._scale_factor = scale_factor
-        if scale_factor == 0:
-            self.autoscale = True
-
-        self.resample()
-
-    # --- Accessors ----------------------------------------------------------
 
     @property
     def envelope(self) -> pd.Series:
@@ -116,9 +62,144 @@ class XPSExperiment(experiment.Experiment):
     @property
     def experimental(self) -> Optional[pd.Series]:
         """The experimental data. Might be None."""
-        return self._experimental
+        if 'experimental' in self.df:
+            return self.df.experimental
+        else:
+            return None
 
-    @experimental.setter
+    @property
+    def gas_phase(self) -> Optional[pd.Series]:
+        """The gas phase part of the spectrum. Might be None."""
+        if 'gas_phase' in self.df:
+            return self.df.gas_phase
+        else:
+            return None
+
+    @property
+    def gaussians(self) -> pd.DataFrame:
+        """The gaussians of the XPS observable."""
+        gauss_cols = [col for col in self.df.columns
+                      if col not in self._RESERVED_COLUMNS]
+        return self.df[gauss_cols]
+
+    @property
+    def x_range(self) -> np.ndarray:
+        """The x-values, energies, on which there is data."""
+        return np.asarray(self.df.index)
+
+    def plot(self, ax: plt.Axes, **kwargs):
+        """Plot the XPS observable.
+
+        Args:
+            ax: The plt.Axes on which to plot.
+            **kwargs: Forwarded.
+        """
+        for index, specie in enumerate(self.gaussians):
+            ax.fill(self.x_range, self.gaussians[specie], label=specie,
+                    color=self._COLORS[index])
+
+        if self.gas_phase is not None:
+            ax.fill(self.x_range, self.gas_phase, label='gas phase',
+                    color='gray')
+
+        ax.plot(self.x_range, self.envelope, color='black', linewidth=4)
+
+        if self.experimental is not None:
+            ax.plot(self.x_range, self.experimental, color='green')
+
+        ax.legend()
+        ax.set_title(self.title)
+        ax.invert_xaxis()  # XPS Plots are backwards
+
+    # --- Data Analysis ------------------------------------------------------
+
+    def rmse(self):
+        return np.sqrt(metrics.mean_squared_error(self.experimental,
+                                                  self.envelope))
+
+    def mae(self):
+        return metrics.mean_absolute_error(self.experimental, self.envelope)
+
+    def integral_diff_outside_experimental(self):
+        return integrate.trapz(self.envelope - self.experimental, self.x_range)
+
+    def integral_diff_inside_experimental(self):
+        return integrate.trapz(self.experimental - self.envelope, self.x_range)
+
+    def integral_diff_between(self):
+        return integrate.trapz(np.absolute(self.experimental - self.envelope),
+                               self.x_range)
+
+    def envelope_integral(self):
+        return integrate.trapz(self.envelope, self.x_range)
+
+
+class XPSExperiment(experiment.Experiment, XPSObservable):
+    """A container for a simulated observable of an XPS experiment.
+
+    Attributes:
+        autoresample: Defaults to true, decides if it resamples on edits.
+        autoscale: Defaults to true, decides if it will automatically scale
+            the gaussians and envelope to match the experimental data.
+        species_concs: The concentrations of each species, for the creation of
+            simulated data.
+        species_manager: The SpeciesManager in use.
+    """
+
+    _PLOT_MARGIN = 5
+    _PLOT_RESOLUTION = 0.001
+    _SIGMA = 0.75 * np.sqrt(2) / (np.sqrt(2 * np.log(2)) * 2)
+
+    def __init__(self,
+                 species_concs: Dict[sym.Symbol, float],
+                 species_manager: species.SpeciesManager,
+                 autoresample: bool = True,
+                 autoscale: bool = True,
+                 experimental: pd.Series = None,
+                 gas_interval: Tuple[float, float] = None,
+                 scale_factor: float = 0.0,
+                 title: str = ''):
+        """Initialze the XPSExperiment.
+
+        Pass arguments instead of setting to prevent excessive re-sampling.
+
+        Args:
+            species_concs: A dictionary {specie: concentration} of the species
+                and their concentrations.
+            species_manager: A SpeciesManager, for binding energies.
+            autoresample: Defaults to true, decides if it resamples on edits.
+            autoscale: Defaults to true, decides if it will automatically scale
+                the gaussians and envelope to match the experimental data.
+            experimental: Optional, the experimental data.
+            gas_interval: Optional, the interval in which to find the peak of
+                the gas phase's gaussian.
+            scale_factor: Optional, the factor by which to scale the gaussians.
+            title: The title to name the default plot.
+        """
+        # This doesn't call XPSObservable.__init__(), which is correct.
+        super().__init__()
+        self.species_concs = species_concs
+        self.species_manager = species_manager
+        self.autoresample = autoresample
+        self.autoscale = autoscale
+        self.title = title
+
+        # Experimental data-related
+        self._experimental = None
+        if experimental is not None:
+            self._experimental = experimental.copy()
+        self._gas_interval = gas_interval
+
+        # Scaling-related
+        self._scale_factor = scale_factor
+        if scale_factor != 0.0:
+            self.autoscale = False
+
+        self._autoresample()
+
+    # --- Accessors ----------------------------------------------------------
+
+    @XPSObservable.experimental.setter
     def experimental(self, experimental: pd.Series):
         """Forwards to self.set_experimental."""
         self.set_experimental(experimental)
@@ -146,21 +227,6 @@ class XPSExperiment(experiment.Experiment):
         self.del_gas_interval()
 
     @property
-    def gas_phase(self) -> Optional[pd.Series]:
-        """The gas phase part of the spectrum. Might be None."""
-        if 'gas_phase' in self.df:
-            return self.df.gas_phase
-        else:
-            return None
-
-    @property
-    def gaussians(self) -> pd.DataFrame:
-        """The gaussians of the XPS observable."""
-        gauss_cols = [col for col in self.df.columns
-                      if col not in self._RESERVED_COLUMNS]
-        return self.df[gauss_cols]
-
-    @property
     def scale_factor(self) -> float:
         """The factor by which to scale the simulated data."""
         return self._scale_factor
@@ -179,11 +245,6 @@ class XPSExperiment(experiment.Experiment):
     def species(self) -> List[sym.Symbol]:
         """Give the species' symbols in this solution."""
         return list(self.species_concs.keys())
-
-    @property
-    def x_range(self) -> np.ndarray:
-        """The x-values, energies, on which there is data."""
-        return np.asarray(self.df.index)
 
     # --- Mutators -----------------------------------------------------------
     # If autoresample is on, these will prompt an overwriting resample.
@@ -246,7 +307,8 @@ class XPSExperiment(experiment.Experiment):
     # Note that the only function in this section which modifies the state is
     # self.resample(), and that's only if overwrite=True.
 
-    def resample(self, overwrite=True, species=None, ignore=None):
+    def resample(self, overwrite=True, species=None,
+                 ignore=None) -> XPSObservable:
         """Recalculates the dataframe in case anything updated.
 
         Args:
@@ -256,7 +318,7 @@ class XPSExperiment(experiment.Experiment):
             ignore: A list of sym.Symbols to not include.
 
         Returns:
-            A pd.DataFrame with the resampled data.
+            An XPSObservable with the resampled data.
         """  # TODO(Andrew) Typehints?
         species = self._get_species_not_ignored(species, ignore)
 
@@ -287,7 +349,7 @@ class XPSExperiment(experiment.Experiment):
 
         if overwrite:
             self.df = df
-        return df
+        return XPSObservable(df)
 
     def _get_autoscale(self, df: pd.DataFrame,
                        species: List[sym.Symbol]) -> float:
@@ -396,46 +458,8 @@ class XPSExperiment(experiment.Experiment):
             species: A list of sym.Symbols, the species to plot.
             **kwargs: Forwarded.
         """
-        self.resample(species=species)
-
-        for index, specie in enumerate(species):
-            ax.fill(self.x_range, self.gaussians[specie], label=specie,
-                    color=self._COLORS[index])
-
-        if self.gas_phase is not None:
-            ax.fill(self.x_range, self.gas_phase, label='gas phase',
-                    color='gray')
-
-        ax.plot(self.x_range, self.envelope, color='black', linewidth=4)
-
-        if self.experimental is not None:
-            ax.plot(self.x_range, self.experimental, color='green')
-
-        ax.legend()
-        ax.set_title(self.title)
-        ax.invert_xaxis()  # XPS Plots are backwards
-
-    # --- Data Analysis ------------------------------------------------------
-
-    def rmse(self):
-        return np.sqrt(metrics.mean_squared_error(self.experimental,
-                                                  self.envelope))
-
-    def mae(self):
-        return metrics.mean_absolute_error(self.experimental, self.envelope)
-
-    def integral_diff_outside_experimental(self):
-        return integrate.trapz(self.envelope - self.experimental, self.x_range)
-
-    def integral_diff_inside_experimental(self):
-        return integrate.trapz(self.experimental - self.envelope, self.x_range)
-
-    def integral_diff_between(self):
-        return integrate.trapz(np.absolute(self.experimental - self.envelope),
-                               self.x_range)
-
-    def envelope_integral(self):
-        return integrate.trapz(self.envelope, self.x_range)
+        xps_obs = self.resample(overwrite=False, species=species)
+        xps_obs.plot(ax=ax, **kwargs)
 
 
 def simulate_xps(rsys: reaction.RxnSystem, time: float = 1,
