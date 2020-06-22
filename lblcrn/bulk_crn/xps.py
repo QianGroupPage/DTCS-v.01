@@ -20,7 +20,7 @@ Example:
     xps.plot()
 """
 
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
 from matplotlib import pyplot as plt
 import numpy as np
@@ -62,8 +62,8 @@ class XPSExperiment(experiment.Experiment):
                  species_manager: species.SpeciesManager,
                  experimental: pd.Series = None,
                  gas_interval: Tuple[float, float] = None,
-                 autoscale: bool = True,
-                 scale_factor: float = 1,
+                 autoscale: bool = False,
+                 scale_factor: float = 0,
                  title: str = ''):
         """Initialze the XPSObserable.
 
@@ -83,20 +83,22 @@ class XPSExperiment(experiment.Experiment):
         """
         super().__init__()
 
-        self.df = None
         self.species_concs = species_concs
         self.species_manager = species_manager
 
         self.title = title
 
+        # Experimental data-related
         self._experimental = None
         if experimental is not None:
             self._experimental = experimental.copy()
         self._gas_interval = gas_interval
 
-        self.autoscale = autoscale
+        # Scaling-related
+        self.autoscale = autoscale  # TODO(Andrew) perhaps make property?
         self._scale_factor = scale_factor
-        # TODO: If scale factor is specified, don't autoscale
+        if scale_factor == 0:
+            self.autoscale = True
 
         self.resample()
 
@@ -187,6 +189,7 @@ class XPSExperiment(experiment.Experiment):
     @scale_factor.deleter
     def scale_factor(self):
         """Deletes the scale factor, prompting a resample."""
+        self.autoscale = True
         self._scale_factor = 0
         self.resample()
 
@@ -201,15 +204,19 @@ class XPSExperiment(experiment.Experiment):
         return np.asarray(self.df.index)
 
     # --- Calculations -------------------------------------------------------
+    # Note that all of the private functions in this section are only for use
+    # by self.resample(). Otherwise, they might create unexpected behavior.
 
-    def resample(self):
+    def resample(self, species=None, ignore=None):  # TODO: typehints?
         """Recalculates the dataframe, in case anything updated.
 
-        This is the only method which mutates self.df. It decides what to do
-        based on:
-        - if there's a experimental defined.
-        - if there's a gas_interval defined.
+        Args:
+            species: A list of sym.Symbols, if you only want to sample for
+                those species.
+            ignore: A list of sym.Symbols to not include.
         """
+        species = self._get_species_not_ignored(species, ignore)
+
         x_range = self._get_x_range()
         self.df = pd.DataFrame(data=0, index=x_range, columns=['envelope'])
 
@@ -222,43 +229,39 @@ class XPSExperiment(experiment.Experiment):
                 self.df['gas_phase'] = gas_phase
 
         # Make the gaussians on the new x-range
-        for specie in self.species:
+        for specie in species:
             self.df[specie] = self._get_gaussian(specie)
 
-        # Add the envelope
-        self.df['envelope'] = self.gaussians.sum(axis=1)
-
-        # Scale
+        # Scale; this also makes the envelope.
         self._scale()
 
     def _scale(self):
-        """Scales the gaussians and envelop by self._scale_factor.
+        """Scales the gaussians and envelope by self._scale_factor.
 
-        If self.autoscale, then it sets _scale_factor to _get_autoscale().
+        If self.autoscale, then scales it to to self._get_autoscale().
         """
-
+        scale = self._scale_factor
         if self.autoscale:
-            self._scale_factor = self._get_autoscale()
+            scale = self._get_autoscale()
 
-        for specie in self.species:
-            self.df[specie] *= self._scale_factor
+        for specie in self.gaussians:
+            self.df[specie] *= scale
         self.df['envelope'] = self.gaussians.sum(axis=1)
 
     def _get_autoscale(self) -> float:
         """Gets the factor by which to automatically scale.
 
         Currently, gives one unless there's an experimental, in which case it
-        makes the peak experimental equal the peak envelope."""
+        makes the peak experimental equal the peak envelope.
+
+        Doesn't work right if it's called outside of self.resample()
+        """
         scale = 1.0
         if self.experimental is not None:
-
-            # Make an unscaled envelope
-            # TODO: move this to a function
-            for specie in self.species:
-                self.df[specie] = self._get_gaussian(specie)
-            self.df['envelope'] = self.gaussians.sum(axis=1)
-
-            raw_max = max(self.envelope)
+            # Make an unscaled envelope; this only works if it's called from
+            # self.resample(), as otherwise self.gaussians might be scaled.
+            envelope = self.gaussians.sum(axis=1)
+            raw_max = max(envelope)
             scale = max(self.experimental) / raw_max
 
         _echo.echo(f'Auto-scaling data to {scale}...')
@@ -335,14 +338,15 @@ class XPSExperiment(experiment.Experiment):
             species: A list of sym.Symbols, the species to plot.
             **kwargs: Forwarded.
         """
-        # TODO re-calc envelope for just the given species.
+        self.resample(species=species)
+
         for index, specie in enumerate(species):
             ax.fill(self.x_range, self.gaussians[specie], label=specie,
-                     color=self._COLORS[index])
+                    color=self._COLORS[index])
 
         if self.gas_phase is not None:
             ax.fill(self.x_range, self.gas_phase, label='gas phase',
-                     color='gray')
+                    color='gray')
 
         ax.plot(self.x_range, self.envelope, color='black', linewidth=4)
 

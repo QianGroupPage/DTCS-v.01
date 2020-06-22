@@ -10,14 +10,14 @@ import sympy as sym
 
 
 class Experiment(abc.ABC):
-    """TODO
+    """A base class for experiments.
 
+    Attributes:
+        df: The pd.DataFrame representing the experiment.
     """
 
     def __init__(self):
-        """TODO
-
-        """
+        """Initialize required instance variables."""
         self.df = None
 
     @property
@@ -45,7 +45,7 @@ class Experiment(abc.ABC):
         if ax is None:
             ax = plt.gca()
 
-        self._plot(species=species, ax=ax)
+        self._plot(species=species, ax=ax, **kwargs)
 
     @abc.abstractmethod
     def _plot(self, ax: plt.Axes, species: List[sym.Symbol], **kwargs):
@@ -82,8 +82,8 @@ class Experiment(abc.ABC):
         # Wrap everything to be a list
         if isinstance(species, sym.Symbol):
             species = [species]
-        if isinstance(species, sym.Symbol):
-            species = [species]
+        if isinstance(ignore, sym.Symbol):
+            ignore = [ignore]
 
         # Default values
         if not species:
