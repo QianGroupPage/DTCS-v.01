@@ -204,71 +204,77 @@ class XPSExperiment(experiment.Experiment):
         return np.asarray(self.df.index)
 
     # --- Calculations -------------------------------------------------------
-    # Note that all of the private functions in this section are only for use
-    # by self.resample(). Otherwise, they might create unexpected behavior.
+    # Note that the only function in this section which modifies the state is
+    # self.resample(), and that's only if overwrite=True.
 
-    def resample(self, species=None, ignore=None):  # TODO: typehints?
-        """Recalculates the dataframe, in case anything updated.
+    def resample(self, overwrite=True, species=None, ignore=None):
+        """Recalculates the dataframe in case anything updated.
 
         Args:
+            overwrite: If true, overwrites self.df with the resampled df.
             species: A list of sym.Symbols, if you only want to sample for
                 those species.
             ignore: A list of sym.Symbols to not include.
-        """
+            
+        Returns:
+            A pd.DataFrame with the resampled data.
+        """  # TODO(Andrew) Typehints?
         species = self._get_species_not_ignored(species, ignore)
 
-        x_range = self._get_x_range()
-        self.df = pd.DataFrame(data=0, index=x_range, columns=['envelope'])
+        x_range = self._get_x_range(species)
+        df = pd.DataFrame(data=0, index=x_range, columns=['envelope'])
 
         # Add the experimental data and gas phase if possible.
         if self._experimental is not None:
-            self.df['experimental'] = self._experimental
+            df['experimental'] = self._experimental
 
-            gas_phase = self._get_gas_phase()
+            gas_phase = self._get_gas_phase(x_range)
             if gas_phase is not None:
-                self.df['gas_phase'] = gas_phase
+                df['gas_phase'] = gas_phase
 
         # Make the gaussians on the new x-range
         for specie in species:
-            self.df[specie] = self._get_gaussian(specie)
+            df[specie] = self._get_gaussian(specie, x_range)
 
-        # Scale; this also makes the envelope.
-        self._scale()
-
-    def _scale(self):
-        """Scales the gaussians and envelope by self._scale_factor.
-
-        If self.autoscale, then scales it to to self._get_autoscale().
-        """
+        # Scales the gaussians and envelope by self._scale_factor
+        # If self.autoscale, scale it to to self._get_autoscale()
         scale = self._scale_factor
         if self.autoscale:
-            scale = self._get_autoscale()
+            scale = self._get_autoscale(df, species)
+        for specie in species:
+            df[specie] *= scale
 
-        for specie in self.gaussians:
-            self.df[specie] *= scale
-        self.df['envelope'] = self.gaussians.sum(axis=1)
+        df['envelope'] = df[species].sum(axis=1)
 
-    def _get_autoscale(self) -> float:
+        if overwrite:
+            self.df = df
+        return df
+
+    def _get_autoscale(self, df: pd.DataFrame,
+                       species: List[sym.Symbol]) -> float:
         """Gets the factor by which to automatically scale.
 
-        Currently, gives one unless there's an experimental, in which case it
+        Currently, gives 1.0 unless there's an experimental, in which case it
         makes the peak experimental equal the peak envelope.
 
-        Doesn't work right if it's called outside of self.resample()
+        Args:
+            df: The pd.DataFrame with the gaussians to scale.
+            species: The columns of df which are scale-able gaussians.
         """
         scale = 1.0
-        if self.experimental is not None:
-            # Make an unscaled envelope; this only works if it's called from
-            # self.resample(), as otherwise self.gaussians might be scaled.
-            envelope = self.gaussians.sum(axis=1)
+        if self._experimental is not None:
+            envelope = df[species].sum(axis=1)
             raw_max = max(envelope)
-            scale = max(self.experimental) / raw_max
+            scale = max(self._experimental) / raw_max
 
         _echo.echo(f'Auto-scaling data to {scale}...')
         return scale
 
-    def _get_gas_phase(self) -> Optional[np.ndarray]:
+    def _get_gas_phase(self, x_range: np.ndarray) -> Optional[np.ndarray]:
         """Calculates the gas phase given the current experimental.
+
+        Args:
+            x_range: The x-values on which to caluclate the gaussian.
 
         Returns:
             None, if there isn't a gas interval or experimental, or an ndarray
@@ -279,35 +285,48 @@ class XPSExperiment(experiment.Experiment):
             return
 
         # Get the range to search for the gas peak in.
-        search = self.experimental[self._gas_interval[0]:self._gas_interval[1]]
+        search = self._experimental[self._gas_interval[0]:self._gas_interval[1]]
 
         # Get the location of the highest part of the experimental data in range
         peak_x = max(search.index, key=lambda index: search[index])
-        peak = self.experimental[peak_x]
+        peak = self._experimental[peak_x]
 
         # Make a gaussian the same height as the experimental gas phase peak
-        gas_gaussian = stats.norm.pdf(self.x_range, peak_x, self._SIGMA)
+        gas_gaussian = stats.norm.pdf(x_range, peak_x, self._SIGMA)
         gas_gaussian *= (peak / max(gas_gaussian))
 
         return gas_gaussian
 
-    def _get_gaussian(self, specie: sym.Symbol) -> np.ndarray:
-        """Calculates the (unscaled) gaussian for the given species."""
-        gaussian = np.zeros(self.x_range.size)
+    def _get_gaussian(self, specie: sym.Symbol,
+                      x_range: np.ndarray) -> np.ndarray:
+        """Calculates the (unscaled) gaussian for the given species.
+
+        Args:
+            specie: The specie for which to get the gaussian.
+            x_range: The x-values on which to caluclate the gaussian.
+
+        Returns:
+            A x_range-sized ndarray with a normal distribtuion centered at the
+            binding energy of specie, with st.dev _SIGMA.
+        """
+        gaussian = np.zeros(x_range.size)
 
         for orbital in self.species_manager[specie].orbitals:
             gaussian += self.species_concs[specie] * orbital.splitting * \
-                stats.norm.pdf(self.x_range, orbital.binding_energy,
+                stats.norm.pdf(x_range, orbital.binding_energy,
                                self._SIGMA)
 
         return gaussian
 
-    def _get_x_range(self) -> np.ndarray:
+    def _get_x_range(self, species: List[sym.Symbol]) -> np.ndarray:
         """Gets an adequate x-range on which to calculate gaussians.
 
         If there's experimental data, it'll just return the x-range of it. If
         there isn't, then it will pick a range which contains all the binding
         energies in question.
+
+        Args:
+            species: The species to include in the x_range.
 
         Returns:
             An ndarray on which we're going to calculate gaussians.
@@ -318,7 +337,7 @@ class XPSExperiment(experiment.Experiment):
 
         # Otherwise, pick intelligently based on binding energies.
         binding_energies = []
-        for specie in self.species:
+        for specie in species:
             for orbital in self.species_manager[specie].orbitals:
                 binding_energies.append(orbital.binding_energy)
 
