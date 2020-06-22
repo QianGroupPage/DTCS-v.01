@@ -2,7 +2,7 @@
 
 """
 
-from typing import List, Optional
+from typing import List, Optional, Union
 
 import abc
 from matplotlib import pyplot as plt
@@ -22,53 +22,79 @@ class Experiment(abc.ABC):
 
     @property
     @abc.abstractmethod
-    def species(self):
-        """TODO
+    def species(self) -> List[sym.Symbol]:
+        """All the species in the experiment."""
+        return []
 
-        """
-        pass
+    # --- Plotting -----------------------------------------------------------
 
-    def plot(self, show: bool = True,
-             species: List[sym.Symbol] = [],
-             ignore: List[sym.Symbol] = [],
+    def plot(self, ax: Optional[plt.Axes] = None,
+             species: Union[sym.Symbol, List[sym.Symbol], None] = None,
+             ignore: Union[sym.Symbol, List[sym.Symbol], None] = None,
              **kwargs):
-        """TODO
-        """
-        species = self._get_species_not_ignored(species, ignore)
-
-        self._plot(species)
-
-        if show:
-            plt.show()
-
-    @abc.abstractmethod
-    def _plot(self, species):  # TODO: Add type hints
-        """TODO
-
-        This method should _not_ call plt.show().
+        """Plot the experiment.
 
         Args:
-            species:
+            ax: Optional, the axis on which to plot.
+            species: Optional, the species you want to plot. Defaults to all.
+            ignore: Optional, the species you don't want to plot. Defaults to
+                none.
+            **kwargs: Extra arguments, forwarded many places.
+        """
+        species = self._get_species_not_ignored(species, ignore)
+        if ax is None:
+            ax = plt.gca()
 
-        Returns:
+        self._plot(species=species, ax=ax)
 
+    @abc.abstractmethod
+    def _plot(self, ax: plt.Axes, species: List[sym.Symbol], **kwargs):
+        """Do the actual plotting legwork.
+
+        In general, this shouldn't call plt.show(), as that screws up axes.
+
+        Args:
+            ax: The plt.Axes on which to plot.
+            species: A list of sym.Symbols, the species to plot.
+            **kwargs: Forwarded.
         """
         pass
 
     # --- Utility ------------------------------------------------------------
 
-    def _get_species_not_ignored(self, species: List[sym.Symbol] = None,
-                                 ignore: List[sym.Symbol] = None):
-        """A helper method to return species - ignored. If species is none,
-        considers all species."""
+    def _get_species_not_ignored(self,
+                                 species: Union[sym.Symbol,
+                                                List[sym.Symbol], None] = None,
+                                 ignore: Union[sym.Symbol,
+                                               List[sym.Symbol], None] = None):
+        """Get the specified subset of species.
+
+        Gets [species...] less [ignored...]. If speices is None, defaults to
+        all species.
+
+        Args:
+            species: A list of (or single) symbol representing a species.
+            ignore: A list of (or single) symbol representing a species.
+
+        Returns:
+            Species - ignored, with species defaulting to self.species.
+        """
+        # Wrap everything to be a list
+        if isinstance(species, sym.Symbol):
+            species = [species]
+        if isinstance(species, sym.Symbol):
+            species = [species]
+
+        # Default values
         if not species:
             species = self.species
         if not ignore:
             ignore = []
+
         return [specie for specie in species if specie not in ignore]
 
     def _repr_html_(self) -> Optional[str]:
-        """For iPython, mostly just gives the DataFrame."""
+        """For iPython; mostly just gives the DataFrame."""
         # TODO: do this without accessing private member?
         df_html = self.df.head()._repr_html_()
 

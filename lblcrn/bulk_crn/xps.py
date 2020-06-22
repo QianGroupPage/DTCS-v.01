@@ -327,25 +327,31 @@ class XPSExperiment(experiment.Experiment):
 
     # --- Plotting -----------------------------------------------------------
 
-    def _plot(self, species):
-        """Plot the XPS observable."""
+    def _plot(self, species: List[sym.Symbol], ax: plt.Axes, **kwargs):
+        """Plot the XPS observable.
+
+        Args:
+            ax: The plt.Axes on which to plot.
+            species: A list of sym.Symbols, the species to plot.
+            **kwargs: Forwarded.
+        """
         # TODO re-calc envelope for just the given species.
         for index, specie in enumerate(species):
-            plt.fill(self.x_range, self.gaussians[specie], label=specie,
+            ax.fill(self.x_range, self.gaussians[specie], label=specie,
                      color=self._COLORS[index])
 
         if self.gas_phase is not None:
-            plt.fill(self.x_range, self.gas_phase, label='gas phase',
+            ax.fill(self.x_range, self.gas_phase, label='gas phase',
                      color='gray')
 
-        plt.plot(self.x_range, self.envelope, color='black', linewidth=4)
+        ax.plot(self.x_range, self.envelope, color='black', linewidth=4)
 
         if self.experimental is not None:
-            plt.plot(self.x_range, self.experimental, color='green')
+            ax.plot(self.x_range, self.experimental, color='green')
 
-        plt.legend()
-        plt.title(self.title)
-        plt.gca().invert_xaxis()  # XPS Plots are backwards
+        ax.legend()
+        ax.set_title(self.title)
+        ax.invert_xaxis()  # XPS Plots are backwards
 
     # --- Data Analysis ------------------------------------------------------
 

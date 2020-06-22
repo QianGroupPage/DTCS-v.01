@@ -27,6 +27,7 @@ Example:
 import bisect
 from typing import List, Optional, Tuple
 
+from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
 import sympy as sym
@@ -128,15 +129,15 @@ class CRNTimeSeries(experiment.Experiment):
 
     # --- Plotting -----------------------------------------------------------
 
-    def _plot(self, species: List[sym.Symbol] = [], **kwargs):
+    def _plot(self, species: List[sym.Symbol], ax: plt.Axes, **kwargs):
         """Plot the reaction network time series.
 
         Args:
-            species: A list of sym.Symbols. the species to plot.
-            **kwargs: Forwarded to DataFrame.plot/plt.plot
+            ax: The plt.Axes on which to plot.
+            species: A list of sym.Symbols, the species to plot.
+            **kwargs: Forwarded.
         """
-        # TODO: This calls plt.plot(), which it shouldn't.
-        self.df[species].plot(**kwargs)
+        self.df[species].plot(ax=ax, **kwargs)
 
     # --- Utility -------------------------------------------------------------
 
