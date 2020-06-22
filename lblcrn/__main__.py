@@ -8,9 +8,7 @@ lblcrn is run as a module with `python -m lblcrn`.
 """
 
 def cmd_help():
-    """
-    Show the help string.
-    """
+    """Show the help string."""
 
     help = """
     Basic CLI for lblcrn; for more information, refer to the docs and tutorial 
@@ -28,9 +26,7 @@ def cmd_help():
 
 
 def cmd_version():
-    """
-    Gives the version of the package.
-    """
+    """Gives the version of the package."""
 
     import lblcrn
     print(f'lblcrn version {lblcrn.__version__}')

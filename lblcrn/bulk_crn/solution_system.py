@@ -47,7 +47,7 @@ class SolutionSystem:
 
         for jndex, ax in enumerate(fig.axes):
             plt.sca(ax)
-            self.systems[index][jndex].xps.plot()
+            self.systems[index][jndex].xps.plot(show=False)
             # TODO(Rithvik) I might have broken this line, sorry.
             plt.title(f'Eq: {str(int(jndex / rows))} Const: {str(jndex % cols)}')
         plt.show()

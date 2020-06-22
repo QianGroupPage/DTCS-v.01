@@ -34,12 +34,15 @@ from lblcrn.bulk_crn import common
 from lblcrn.bulk_crn import time_series
 from lblcrn.crn_sym import reaction
 from lblcrn.crn_sym import species
+from lblcrn import _echo
 
 
 class XPSExperiment:
     """A container for a simulated observable of an XPS experiment.
 
     Attributes:
+        autoscale: Defaults to true, decides if it will automatically scale
+            the gaussians and envelope to match the experimental data.
         df: The pandas DataFrame in which the observables are stored.
         species_concs: The concentrations of each species, for the creation of
             simulated data.
@@ -58,7 +61,8 @@ class XPSExperiment:
                  species_manager: species.SpeciesManager,
                  experimental: pd.Series = None,
                  gas_interval: Tuple[float, float] = None,
-                 scale_factor: float = 0,
+                 autoscale: bool = True,
+                 scale_factor: float = 1,
                  title: str = ''):
         """Initialze the XPSObserable.
 
@@ -71,19 +75,25 @@ class XPSExperiment:
             experimental: Optional, the experimental data.
             gas_interval: Optional, the interval in which to find the peak of
                 the gas phase's gaussian.
+            autoscale: Defaults to true, decides if it will automatically scale
+                the gaussians and envelope to match the experimental data.
             scale_factor: Optional, the factor by which to scale the gaussians.
             title: The title to name the default plot.
         """
         self.df = None
         self.species_concs = species_concs
         self.species_manager = species_manager
+
         self.title = title
 
         self._experimental = None
         if experimental is not None:
             self._experimental = experimental.copy()
         self._gas_interval = gas_interval
+
+        self.autoscale = autoscale
         self._scale_factor = scale_factor
+        # TODO: If scale factor is specified, don't autoscale
 
         self.resample()
 
@@ -167,6 +177,7 @@ class XPSExperiment:
     @scale_factor.setter
     def scale_factor(self, factor: float):
         """Sets the scale factor, prompting a resample."""
+        self.autoscale = False
         self._scale_factor = factor
         self.resample()
 
@@ -211,13 +222,23 @@ class XPSExperiment:
         for specie in self.species:
             self.df[specie] = self._get_gaussian(specie)
 
-        # Scale the gaussians
-        if self._scale_factor <= 0:
+        # Add the envelope
+        self.df['envelope'] = self.gaussians.sum(axis=1)
+
+        # Scale
+        self._scale()
+
+    def _scale(self):
+        """Scales the gaussians and envelop by self._scale_factor.
+
+        If self.autoscale, then it sets _scale_factor to _get_autoscale().
+        """
+
+        if self.autoscale:
             self._scale_factor = self._get_autoscale()
+
         for specie in self.species:
             self.df[specie] *= self._scale_factor
-
-        # Add the scaled envelope
         self.df['envelope'] = self.gaussians.sum(axis=1)
 
     def _get_autoscale(self) -> float:
@@ -225,10 +246,20 @@ class XPSExperiment:
 
         Currently, gives one unless there's an experimental, in which case it
         makes the peak experimental equal the peak envelope."""
+        scale = 1.0
         if self.experimental is not None:
-            raw_max = max(self.envelope) / self.scale_factor
-            return max(self.experimental) / raw_max
-        return 1.0
+
+            # Make an unscaled envelope
+            # TODO: move this to a function
+            for specie in self.species:
+                self.df[specie] = self._get_gaussian(specie)
+            self.df['envelope'] = self.gaussians.sum(axis=1)
+
+            raw_max = max(self.envelope)
+            scale = max(self.experimental) / raw_max
+
+        _echo.echo(f'Auto-scaling data to {scale}...')
+        return scale
 
     def _get_gas_phase(self) -> Optional[np.ndarray]:
         """Calculates the gas phase given the current experimental.
