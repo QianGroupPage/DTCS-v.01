@@ -40,16 +40,17 @@ Then, you define your reaction system.
         Conc(prey, 1),
     )
 
-Then, you solve the system. This simulates the system for `time`.
+Then, you solve the system. This simulates the system for 45 time units.
 
-    solution = simulate(rsys, time_max=45, max_step=0.01)
-    solution.plot()
+    time_series = simulate_crn(rsys, time_max=45, max_step=0.01)
+    time_series.plot()
     
 And then to plot the gaussian:
 
-    solution.plot(exp_type='spectro')
+    time_series.xps.plot()
 
-You can download this example [here](https://github.com/rithvikp/lbl-crn/blob/master/examples/predator_prey.ipynb).
+You can download this example [here](https://github.com/rithvikp/lbl-crn/blob/master/examples/predator_prey.ipynb)
+(except not right now you can't because we're editing stuff).
 
 ## More Information
 For more information, a quickstart guide, examples, and the api reference, 
