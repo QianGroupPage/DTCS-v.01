@@ -58,11 +58,13 @@ class XPSExperiment(experiment.Experiment):
     _RESERVED_COLUMNS = ['envelope', 'experimental', 'gas_phase']
     _SIGMA = 0.75 * np.sqrt(2) / (np.sqrt(2 * np.log(2)) * 2)
 
-    def __init__(self, species_concs: Dict[sym.Symbol, float],
+    def __init__(self,  # TODO: xps from df
+                 species_concs: Dict[sym.Symbol, float],
                  species_manager: species.SpeciesManager,
+                 autoscale: bool = False,
+                 autoresample: bool = True,
                  experimental: pd.Series = None,
                  gas_interval: Tuple[float, float] = None,
-                 autoscale: bool = False,
                  scale_factor: float = 0,
                  title: str = ''):
         """Initialze the XPSObserable.
@@ -81,12 +83,14 @@ class XPSExperiment(experiment.Experiment):
             scale_factor: Optional, the factor by which to scale the gaussians.
             title: The title to name the default plot.
         """
+        # TODO(Andrew): Clean this up
         super().__init__()
 
         self.species_concs = species_concs
         self.species_manager = species_manager
 
         self.title = title
+        self.autoresample = autoresample
 
         # Experimental data-related
         self._experimental = None
@@ -116,17 +120,13 @@ class XPSExperiment(experiment.Experiment):
 
     @experimental.setter
     def experimental(self, experimental: pd.Series):
-        """Set the experimental data, prompting a resample."""
-        self._experimental = experimental
-        self.resample()
+        """Forwards to self.set_experimental."""
+        self.set_experimental(experimental)
 
     @experimental.deleter
     def experimental(self):
-        """Deletes experimental, prompting a resample."""
-        self._experimental = None
-        del self.df['experimental']
-        del self.df['gas_phase']
-        self.resample()
+        """Forwards to self.del_experimental."""
+        self.del_experimental()
 
     @property
     def gas_interval(self) -> Optional[Tuple[float, float]]:
@@ -135,26 +135,15 @@ class XPSExperiment(experiment.Experiment):
 
     @gas_interval.setter
     def gas_interval(self, interval: Tuple[float, float]):
-        """Sets the interval in which the gas phase peak should be.
-
-        Give bounds for where the _peak_ is: if your bounds are too broad, it
-        will get greedy, as it assumes that that interval is dominated by the
-        gas phase. You can make lower equal to upper if you know the peak.
-
-        Args:
-            interval: a 2-tuple, with interval[0] <= interval[1].
-        """
-        if len(interval) != 2 or interval[0] > interval[1]:
+        """Forwards to self.set_gas_interval."""
+        if len(interval) != 2:
             raise ValueError(f'Invalid interval {interval}')
-        self._gas_interval = interval
-        self.resample()
+        self.set_gas_interval(lower=interval[0], upper=interval[1])
 
     @gas_interval.deleter
     def gas_interval(self):
-        """Deletes the gas interval, prompting a resample."""
-        self._gas_interval = None
-        del self.df['gas_phase']
-        self.resample()
+        """Forwards to self.del_gas_interval"""
+        self.del_gas_interval()
 
     @property
     def gas_phase(self) -> Optional[pd.Series]:
@@ -166,10 +155,7 @@ class XPSExperiment(experiment.Experiment):
 
     @property
     def gaussians(self) -> pd.DataFrame:
-        """The gaussians of the XPS observable.
-
-        Doesn't include the envelope, experimental, or the gas phase.
-        """
+        """The gaussians of the XPS observable."""
         gauss_cols = [col for col in self.df.columns
                       if col not in self._RESERVED_COLUMNS]
         return self.df[gauss_cols]
@@ -181,17 +167,13 @@ class XPSExperiment(experiment.Experiment):
 
     @scale_factor.setter
     def scale_factor(self, factor: float):
-        """Sets the scale factor, prompting a resample."""
-        self.autoscale = False
-        self._scale_factor = factor
-        self.resample()
+        """Forwards to self.set_scale_factor."""
+        self.set_scale_factor(factor)
 
     @scale_factor.deleter
     def scale_factor(self):
-        """Deletes the scale factor, prompting a resample."""
-        self.autoscale = True
-        self._scale_factor = 0
-        self.resample()
+        """Forwards to self.del_scale_factor."""
+        self.del_scale_factor()
 
     @property
     def species(self) -> List[sym.Symbol]:
@@ -202,6 +184,63 @@ class XPSExperiment(experiment.Experiment):
     def x_range(self) -> np.ndarray:
         """The x-values, energies, on which there is data."""
         return np.asarray(self.df.index)
+
+    # --- Mutators -----------------------------------------------------------
+    # If autoresample is on, these will prompt an overwriting resample.
+
+    def set_experimental(self, experimental: pd.Series):
+        """Set the experimental data, prompting an autoresample."""
+        self._experimental = experimental
+        self._autoresample()
+
+    def del_experimental(self):
+        """Deletes experimental, prompting an autoresample.."""
+        self._experimental = None
+        del self.df['experimental']
+        del self.df['gas_phase']
+        self._autoresample()
+
+    def set_gas_interval(self, lower: float, upper: float):
+        """Sets the interval in which the gas phase peak should be.
+
+        Give bounds for where the _peak_ is: if your bounds are too broad, it
+        will get greedy, as it assumes that that interval is dominated by the
+        gas phase. You can make lower equal to upper if you know the peak.
+
+        Args:
+            lower: float, the lower bound.
+            upper: float, the upper bound.
+        """
+        if lower > upper:
+            raise ValueError(f'Invalid interval ({lower}, {upper})')
+        self._gas_interval = (lower, upper)
+        self._autoresample()
+
+    def del_gas_interval(self):
+        """Deletes the gas interval, prompting a resample."""
+        self._gas_interval = None
+        del self.df['gas_phase']
+        self._autoresample()
+
+    def set_scale_factor(self, factor: float):
+        """Sets the scale factor, disabling autoscale and prompting an
+        autoresample."""
+        self.autoscale = False
+        self._scale_factor = factor
+        self._autoresample()
+
+    def del_scale_factor(self):
+        """Deletes the scale factor, enabling autoscale and prompting an
+        autoresample."""
+        self.autoscale = True
+        self._scale_factor = 0
+        self._autoresample()
+
+    def _autoresample(self):
+        """Does an overwriting resample, if necessary."""
+        if self.autoresample:
+            _echo.echo('Auto-resampling data...')
+            self.resample(overwrite=True)
 
     # --- Calculations -------------------------------------------------------
     # Note that the only function in this section which modifies the state is
@@ -215,7 +254,7 @@ class XPSExperiment(experiment.Experiment):
             species: A list of sym.Symbols, if you only want to sample for
                 those species.
             ignore: A list of sym.Symbols to not include.
-            
+
         Returns:
             A pd.DataFrame with the resampled data.
         """  # TODO(Andrew) Typehints?
@@ -313,8 +352,8 @@ class XPSExperiment(experiment.Experiment):
 
         for orbital in self.species_manager[specie].orbitals:
             gaussian += self.species_concs[specie] * orbital.splitting * \
-                stats.norm.pdf(x_range, orbital.binding_energy,
-                               self._SIGMA)
+                        stats.norm.pdf(x_range, orbital.binding_energy,
+                                       self._SIGMA)
 
         return gaussian
 
