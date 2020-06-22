@@ -31,12 +31,13 @@ import numpy as np
 import pandas as pd
 import sympy as sym
 
-from lblcrn.bulk_crn import xps
 from lblcrn.bulk_crn import common
+from lblcrn.bulk_crn import experiment
+from lblcrn.bulk_crn import xps
 from lblcrn.crn_sym import reaction
 
 
-class CRNTimeSeries:
+class CRNTimeSeries(experiment.Experiment):
     """A time series solution of an chemical reaction ODE, with utilities.
 
     Defines a solution to a system of differential equations, providing a
@@ -49,6 +50,9 @@ class CRNTimeSeries:
     """
     
     def __init__(self, t: List[float], y: List[List[float]], rsys):
+        """Translates a t, y pair from solve_ivp into a df and initializes."""
+        # TODO: Doc args
+        super().__init__()
 
         self.df = pd.DataFrame(data=np.transpose(y),
                                index=pd.Index(t, name='time'),
@@ -124,31 +128,17 @@ class CRNTimeSeries:
 
     # --- Plotting -----------------------------------------------------------
 
-    def plot(self, species: List[sym.Symbol] = [],
-             ignore: List[sym.Symbol] = [], **kwargs):
+    def _plot(self, species: List[sym.Symbol] = [], **kwargs):
         """Plot the reaction network time series.
 
         Args:
-            species: A list of sym.Symbols. the species to plot. If None,
-                will resort to what you specify with ignore.
-            ignore: A list of sym.Symbols you don't want to plot. Won't matter
-                if you specify species.
+            species: A list of sym.Symbols. the species to plot.
             **kwargs: Forwarded to DataFrame.plot/plt.plot
         """
-        species = self._get_species_not_ignored(species, ignore)
+        # TODO: This calls plt.plot(), which it shouldn't.
         self.df[species].plot(**kwargs)
 
     # --- Utility -------------------------------------------------------------
-
-    def _get_species_not_ignored(self, species: List[sym.Symbol] = None,
-                                 ignore: List[sym.Symbol] = None):
-        """A helper method to return species - ignored. If species is none,
-        considers all species."""
-        if not species:
-            species = self.species
-        if not ignore:
-            ignore = []
-        return [specie for specie in species if specie not in ignore]
 
     def _time_to_index(self, time):
         """Takes a time and returns the highest index <= that time.
@@ -163,16 +153,6 @@ class CRNTimeSeries:
         if time < 0:
             raise IndexError('time cannot be below 0.')
         return bisect.bisect_right(self.t, time) - 1
-
-    def _repr_html_(self) -> Optional[str]:
-        """For iPython, mostly just gives the DataFrame."""
-        # TODO: do this without accessing private member?\
-        df_html = self.df.head()._repr_html_()
-
-        html = f"""<pre>{self.__class__.__name__} with head:</pre>
-        {df_html}"""
-
-        return html
 
 
 def simulate_crn(rsys: reaction.RxnSystem, time_max: float = 1,

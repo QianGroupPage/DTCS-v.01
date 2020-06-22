@@ -20,7 +20,7 @@ Example:
     xps.plot()
 """
 
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple
 
 from matplotlib import pyplot as plt
 import numpy as np
@@ -31,13 +31,14 @@ from sklearn import metrics
 import sympy as sym
 
 from lblcrn.bulk_crn import common
+from lblcrn.bulk_crn import experiment
 from lblcrn.bulk_crn import time_series
 from lblcrn.crn_sym import reaction
 from lblcrn.crn_sym import species
 from lblcrn import _echo
 
 
-class XPSExperiment:
+class XPSExperiment(experiment.Experiment):
     """A container for a simulated observable of an XPS experiment.
 
     Attributes:
@@ -80,6 +81,8 @@ class XPSExperiment:
             scale_factor: Optional, the factor by which to scale the gaussians.
             title: The title to name the default plot.
         """
+        super().__init__()
+
         self.df = None
         self.species_concs = species_concs
         self.species_manager = species_manager
@@ -324,9 +327,10 @@ class XPSExperiment:
 
     # --- Plotting -----------------------------------------------------------
 
-    def plot(self, show: bool = True):
+    def _plot(self, species):
         """Plot the XPS observable."""
-        for index, specie in enumerate(self.gaussians):
+        # TODO re-calc envelope for just the given species.
+        for index, specie in enumerate(species):
             plt.fill(self.x_range, self.gaussians[specie], label=specie,
                      color=self._COLORS[index])
 
@@ -342,9 +346,6 @@ class XPSExperiment:
         plt.legend()
         plt.title(self.title)
         plt.gca().invert_xaxis()  # XPS Plots are backwards
-
-        if show:
-            plt.show()
 
     # --- Data Analysis ------------------------------------------------------
 
@@ -368,17 +369,6 @@ class XPSExperiment:
     def envelope_integral(self):
         return integrate.trapz(self.envelope, self.x_range)
 
-    # --- Utility ------------------------------------------------------------
-
-    def _repr_html_(self) -> Optional[str]:
-        """For iPython, mostly just gives the DataFrame."""
-        # TODO: do this without accessing private member?
-        df_html = self.df.head()._repr_html_()
-
-        html = f"""<pre>{self.__class__.__name__} with head:</pre>
-        {df_html}"""
-
-        return html
 
 def simulate_xps(rsys: reaction.RxnSystem, time: float = 1,
                  **options) -> XPSExperiment:
