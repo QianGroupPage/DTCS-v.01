@@ -1,9 +1,12 @@
-from surface_crns import SurfaceCRNQueueSimulator
-from surface_crns.models.grids import *
-from surface_crns.base.node import *
-from surface_crns.views.grid_display import *
-from surface_crns.simulators.queue_simulator import *
-import pygame, math, random, sys
+from lblcrn.surface_crn.surface_crns import SurfaceCRNQueueSimulator
+from lblcrn.surface_crn.surface_crns.models.grids import *
+from lblcrn.surface_crn.surface_crns.base.node import *
+from lblcrn.surface_crn.surface_crns.views.grid_display import *
+from lblcrn.surface_crn.surface_crns.simulators.queue_simulator import *
+from lblcrn.surface_crn.surface_crns.readers.manifest_readers import read_manifest
+from lblcrn.surface_crn.surface_crns.options.option_processor import SurfaceCRNOptionParser
+import pygame
+import math
 
 def simulate_with_display(manifest_file, lattice):
     SurfaceCRNQueueSimulator.simulate_surface_crn(manifest_file,
@@ -16,8 +19,6 @@ def simulate_without_display(manifest_file, lattice, species_tracked = ["O", "OH
     the times of each reaction, along with an array of times. At the end,
     display a graph of species concentrations as they change.
     '''
-    from surface_crns.readers.manifest_readers import read_manifest
-    from surface_crns.options.option_processor import SurfaceCRNOptionParser
 
     manifest_options = read_manifest(manifest_file)
     opts = SurfaceCRNOptionParser(manifest_options)
