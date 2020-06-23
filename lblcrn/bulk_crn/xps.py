@@ -463,19 +463,44 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
 
 
 def simulate_xps(rsys: reaction.RxnSystem, time: float = 1,
+                 species: List[sym.Symbol] = None,
+                 ignore: List[sym.Symbol] = None,
+                 autoresample: bool = True,
+                 autoscale: bool = True,
+                 experimental: pd.Series = None,
+                 gas_interval: Tuple[float, float] = None,
+                 scale_factor: float = 0.0,
+                 title: str = '',
                  **options) -> XPSExperiment:
     """Simulate the given reaction system over time.
 
     Args:
         rsys: ReactionsSystem, the reaction system to simulate
         time: The time until which to simulate.
+        species: The species to include in the XPS.
+        ignore: The species to not include in the XPS.
+        autoresample: Decides if the XPS resamples on edits.
+        autoscale: Decides if the XPS will automatically scale
+            the gaussians and envelope to match the experimental data.
+        experimental: The experimental value of the XPS.
+        gas_interval: The interval in which the peak of the gas phase is
+            in the XPS.
+        scale_factor: The scale factor by which to scale the simulated
+            gaussians in the XPS.
+        title: The name to give the XPS, used in plotting.
         **options: Forwarded to scipy.integrate.solve_ivp
 
     Returns:
         A Solution object describing the solution.
     """
-
-    # TODO(Andrew): This can be improved a _lot_, right now it's just a shell.
+    # TODO(Andrew): Solve at equilibrium when no time is specified.
     sol_t, sol_y = common.solve_rsys_ode(rsys, time, **options)
     sol = time_series.CRNTimeSeries(sol_t, sol_y, rsys)
-    return sol.xps_with(**options)
+    return sol.xps_with(species=species,
+                        ignore=ignore,
+                        autoresample=autoresample,
+                        autoscale=autoscale,
+                        experimental=experimental,
+                        gas_interval=gas_interval,
+                        scale_factor=scale_factor,
+                        title=title)
