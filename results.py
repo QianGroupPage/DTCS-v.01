@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import csv
 import numpy as np
 from scipy.stats import norm
+import xps
+import os
 
 
 class Results:
@@ -17,9 +19,24 @@ class Results:
         self.manifest_file = manifest_file
         self.df = df
 
+        self.xps_df = None # The xps dataframe we have for reference
+
         self.species_ordering = None  # The ordering of species as they appear in our figures.
         self.species_colors = {}  # A dictionary from species names to their colors
-        self.substances = dict(zip([repr(s) for s in rxns.get_symbols()], rxns.get_species()))
+        self.substances = dict(zip([repr(s) for s in rxns.get_symbols()], rxns.get_species())) if rxns else {}
+
+    @staticmethod
+    def from_directory(path, rxns):
+        """
+        Construct a results object from based on a directory.
+        :param path:
+        :param rxns:
+        :return:
+        """
+        if os.path.isfile(f"{path}/Data.gz"):
+            return Results(f"{path}/reaction_rules.txt", rxns, pd.read_csv(f"{path}/Data.gz"))
+        else:
+            return Results(f"{path}/reaction_rules.txt", rxns, pd.read_csv(f"{path}/Data.csv"))
 
     @staticmethod
     def from_concs_times(manifest_file, rxns, concs, times):
@@ -145,44 +162,21 @@ class Results:
         plt.close()
         return fig
 
-    def plot_gaussian(self, t=-1, path="", save=False, fig_size="Default"):
-        """
-        Plot the Gaussian function from time t to time t + 1.
-        """
+    def reference_with_xps(self, path="", scaling_factor=1):
+        self.xps_df = xps.read_and_process(path, round=1) / scaling_factor
+
+    def gaussian_df(self, t=-1, scaling_factor=1):
         if t == -1:
             t = self.df.index.max()
-        s = self.average_values(t, t + 1)
+        s = self.average_values(t, t + 1) / scaling_factor
 
         sigma = 0.75 * np.sqrt(2) / (np.sqrt(2 * np.log(2)) * 2)
-
-        min_be = float('inf')
-        max_be = float('-inf')
-
-        # determine x axis bounds
-        for name in self.species_ordering:
-            min_be = min(self.substances[name].orbitals[0].binding_energy, min_be)
-            max_be = max(self.substances[name].orbitals[0].binding_energy, max_be)
-
-        x_axis = np.arange(min_be - 5, max_be + 5, .1)
+        bes = [self.substances[name].orbitals[0].binding_energy for name in self.species_ordering]
+        x_axis = np.arange(min(bes) - 5, max(bes) + 5, .1)
         envelope_vals = np.zeros(x_axis.size)
 
-        dists = []
-        names, bes = [], []
+        res = {}
 
-        if fig_size == "Default":
-            plt.rcParams['figure.figsize'] = [27 / 2.54, 18 / 2.54]
-        elif fig_size == "Small":
-            plt.rcParams['figure.figsize'] = [0.6 * 27 / 2.54, 0.6 * 18 / 2.54]
-        else:
-            plt.rcParams['figure.figsize'] = fig_size
-
-        curves = []
-        fig, ax = plt.subplots()
-        plt.style.use('seaborn-white')
-        ax.tick_params(axis="x", direction="out", length=8, width=2)
-        plt.tick_params(axis='both', which='minor', labelsize=36)
-
-        # plot a curve for each substance
         for name in self.species_ordering:
             sol = s[name]
             for o in self.substances[name].orbitals:
@@ -190,33 +184,87 @@ class Results:
                 dist = sol * norm.pdf(x_axis, be, sigma)
 
                 envelope_vals += dist
-                dists.append(dist)
-                names.append(name)
-                bes.append(be)
+                res[name] = dist
+        res["Envelope"] = envelope_vals
+        res = pd.DataFrame.from_dict(res)
+        res = res.set_index(x_axis)
+        return res
+
+    def bes(self):
+        bes = {}
+        for name in self.species_ordering:
+            for o in self.substances[name].orbitals:
+                bes[name] = o.binding_energy
+        return bes
+
+    @staticmethod
+    def sample_for_xps(gaussian, xps_df):
+        min_be = min(gaussian.index.min(), xps_df.index.min())
+        max_be = max(gaussian.index.max(), xps_df.index.max())
+        return xps.fill_zeros(gaussian, min_be, max_be), xps.fill_zeros(xps_df, min_be, max_be)
+
+    def plot_gaussian(self, t=-1, path="", xps_path="", xps_scaling=1, save=False, show_fig=True, fig_size="Default",
+                      scaling_factor=1,
+                      ax=None):
+        """
+        Plot the Gaussian function from time t to time t + 1.
+        """
+        # if fig_size == "Default":
+        #     plt.rcParams['figure.figsize'] = [27 / 2.54, 18 / 2.54]
+        # elif fig_size == "Small":
+        #     plt.rcParams['figure.figsize'] = [0.6 * 27 / 2.54, 0.6 * 18 / 2.54]
+        # else:
+        #     plt.rcParams['figure.figsize'] = fig_size
+        gaussian = self.gaussian_df(t, scaling_factor)
+        min_be = gaussian.index.min()
+        max_be = gaussian.index.max()
+        bes = self.bes()
+
+        curves = []
+        if not ax:
+            fig, ax = plt.subplots()
+        plt.style.use('seaborn-white')
+        # ax.tick_params(axis="x", direction="out", length=8, width=2)
+        # plt.tick_params(axis='both', which='minor', labelsize=36)
 
         gaussian_peaks = {}
-        for i in sorted(range(len(dists)), key=lambda x: max(dists[x]), reverse=True):
-            color = self.species_colors[names[i]]
-            peaks = ax.fill(x_axis, dists[i], label=names[i], color=color)
-            gaussian_peaks[names[i]] = peaks
+        for n in sorted([n for n in gaussian.columns if n != "Envelope"],
+                        key=lambda x: max(gaussian[x]), reverse=True):
+            color = self.species_colors[n]
+            peaks = ax.fill(gaussian.index, gaussian[n], label=n, color=color)
+            gaussian_peaks[n] = peaks
             # Plot the Peak of the Gaussian
-            ax.axvline(x=bes[i], ymin=0, ymax=1, color=color, linestyle='dashed', lw=1)
+            ax.axvline(x=bes[n], ymin=0, ymax=1, color=color, linestyle='dashed', lw=1)
 
-        curve = ax.plot(x_axis, envelope_vals, linewidth=4, color='black', label="CRN", alpha=0.8)
+        legend_labels = []
+        if xps_path:
+            self.reference_with_xps(xps_path, xps_scaling)
+            gaussian, xps_df = Results.sample_for_xps(gaussian, self.xps_df)
+            min_be = min(gaussian.index.min(), xps_df.index.min())
+            max_be = max(gaussian.index.max(), xps_df.index.max())
+
+            curve = ax.plot(xps_df.index, xps_df["Envelope"], color='green', label="Experiment", alpha=0.5)
+            curves.append(curve)
+            legend_labels += ["Experiment"] + legend_labels
+
+        curve = ax.plot(gaussian.index, gaussian["Envelope"], linewidth=4, color='black', label="CRN", alpha=0.8)
         curves.append(curve)
+        legend_labels += ["CRN"] + [gaussian_peaks[n][0].get_label() for n in self.species_ordering]
 
-        legend_labels = ["CRN"] + [gaussian_peaks[n][0].get_label() for n in names]
-        if fig_size == "Default":
-            ax.legend([c[0] for c in curves] + [gaussian_peaks[n][0] for n in names], legend_labels,
-                      fontsize=14)
-        elif fig_size == "Small":
-            ax.legend([c[0] for c in curves] + [gaussian_peaks[n][0] for n in names], legend_labels,
-                      fontsize=12)
+        ax.legend([c[0] for c in curves] + [gaussian_peaks[n][0] for n in self.species_ordering], legend_labels)
+        # if fig_size == "Default":
+        #     ax.legend([c[0] for c in curves] + [gaussian_peaks[n][0] for n in names], legend_labels,
+        #               fontsize=14)
+        # elif fig_size == "Small":
+        #     ax.legend([c[0] for c in curves] + [gaussian_peaks[n][0] for n in names], legend_labels,
+        #               fontsize=12)
 
-        ax.set_xlim(np.max(x_axis), np.min(x_axis))
-        plt.show()
+        ax.set_xlim(max_be, min_be)
+        if show_fig:
+            plt.show()
         if save:
-            fig.savefig("{}/spectrum.png".format(path))
+            ax.figure.savefig("{}/spectrum.png".format(path))
+        return ax.figure
 
     def save(self, directory=None):
         """
