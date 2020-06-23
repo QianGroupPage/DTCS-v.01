@@ -1,0 +1,152 @@
+# sCRN implementation of Rule 110 space-time history
+#
+# Rule table: new state based on left, self, right
+# 111 110 101 100 011 010 001 000
+#  0   1   1   0   1   1   1   0
+#
+# Uses three stages:
+#   first, alternating pairs of cells share information
+#   second, with data from their other neighbor, rule 110 is applied
+#   third, the result is transferred to the layer below
+#
+# The background A B C D repeat allows deterministic orientation.
+
+# Run settings
+pixels_per_node    = 5 # A comment
+speedup_factor     = 5
+#rng_seed           = 123123123
+max_duration       = 1000
+node_display       = Color
+
+# Transition rules
+!START_TRANSITION_RULES
+
+### alternate pairs consolidate state
+0A + 0B -> 00A + 00B (1)
+0A + 1B -> 01A + 01B (1)
+1A + 0B -> 10A + 10B (1)
+1A + 1B -> 11A + 11B (1)
+0C + 0D -> 00C + 00D (1)
+0C + 1D -> 01C + 01D (1)
+1C + 0D -> 10C + 10D (1)
+1C + 1D -> 11C + 11D (1)
+
+### pairs of consolidated state perform two parallel updates
+00B+00C -> _0B + _0C (1)
+00B+01C -> _0B + _1C (1)
+00B+10C -> _1B + _1C (1)
+00B+11C -> _1B + _1C (1)
+01B+00C -> _1B + _0C (1)
+01B+01C -> _1B + _1C (1)
+01B+10C -> _1B + _1C (1)
+01B+11C -> _1B + _0C (1)
+10B+00C -> _0B + _0C (1)
+10B+01C -> _0B + _1C (1)
+10B+10C -> _1B + _1C (1)
+10B+11C -> _1B + _1C (1)
+11B+00C -> _1B + _0C (1)
+11B+01C -> _1B + _1C (1)
+11B+10C -> _0B + _1C (1)
+11B+11C -> _0B + _0C (1)
+
+00D+00A -> _0D + _0A (1)
+00D+01A -> _0D + _1A (1)
+00D+10A -> _1D + _1A (1)
+00D+11A -> _1D + _1A (1)
+01D+00A -> _1D + _0A (1)
+01D+01A -> _1D + _1A (1)
+01D+10A -> _1D + _1A (1)
+01D+11A -> _1D + _0A (1)
+10D+00A -> _0D + _0A (1)
+10D+01A -> _0D + _1A (1)
+10D+10A -> _1D + _1A (1)
+10D+11A -> _1D + _1A (1)
+11D+00A -> _1D + _0A (1)
+11D+01A -> _1D + _1A (1)
+11D+10A -> _0D + _1A (1)
+11D+11A -> _0D + _0A (1)
+
+### boundary is interpreted as 0
+V+00A -> V + _0A (1)
+V+01A -> V + _1A (1)
+V+10A -> V + _1A (1)
+V+11A -> V + _1A (1)
+00D+V -> _0D + V (1)
+01D+V -> _1D + V (1)
+10D+V -> _0D + V (1)
+11D+V -> _1D + V (1)
+
+### computed value is copied to layer below
+_0A + A -> _0A + 0A (1)
+_1A + A -> _1A + 1A (1)
+_0B + B -> _0B + 0B (1)
+_1B + B -> _1B + 1B (1)
+_0C + C -> _0C + 0C (1)
+_1C + C -> _1C + 1C (1)
+_0D + D -> _0D + 0D (1)
+_1D + D -> _1D + 1D (1)
+
+!END_TRANSITION_RULES
+
+!START_COLORMAP
+{unassigned} A, B, C, D : (128,128,128)
+{boundary} V : (0,255,0)
+{0 bits} 0A, 0B, 0C, 0D, _0A, _0B, _0C, _0D : (255,255,255)
+{1 bits} 1A, 1B, 1C, 1D, _1A, _1B, _1C, _1D : (0,0,0)
+{computing} 00A, 00B, 00C, 00D, 01A, 01B, 01C, 01D, 10A, 10B, 10C, 10D, 11A, 11B, 11C, 11D : (255,0,0)
+!END_COLORMAP
+
+### initial state must have an integral number of repeats of A B C D flanked by V
+!START_INIT_STATE
+V _0A _0B _0C _0D _0A _0B _0C _0D _0A _0B _0C _0D _0A _0B _0C _0D _0A _0B _0C _0D _0A _0B _0C _0D _0A _0B _0C _0D _0A _0B _0C _0D _0A _0B _0C _0D _0A _0B _0C _0D _1A _0B _0C _0D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+V  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D  A  B  C  D V
+!END_INIT_STATE
+

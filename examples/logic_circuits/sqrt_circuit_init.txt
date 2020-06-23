@@ -1,0 +1,17 @@
+0,B,BRx,BRz,B,B,B,BNx,BNy,B,BF,BFx,B,B,B,I,I,I,I
+I,I,I,BRy,I,I,I,I,I,I,BFy,I,I,I,B,I,I,I,I
+0,B,B,B,I,I,I,I,I,I,B,I,I,I,B,I,I,I,I
+I,I,I,I,I,I,I,I,I,I,BCx,I,I,I,BAx,I,I,I,I
+I,I,I,I,I,B,BAx,BAz,B,BCy,BC,BCz,B,BAy,BAz,B,BNx,I,I
+I,I,I,B,B,B,I,BAy,I,I,BCw,I,I,I,I,I,BNy,B,B
+I,I,I,BCz,I,I,I,B,I,I,B,B,I,I,I,I,I,I,B
+1,B,BCx,BC,BCw,B,I,BFx3,I,I,I,B,B,B,B,B,I,I,B
+I,I,I,BCy,I,B,B,BF3,BFz3,B,I,I,I,I,I,BRx,I,I,BAx
+I,I,B,B,I,I,I,BFy3,I,B,B,BAx,BAz,B,BRy,BRz,B,BAy,BAz
+I,I,B,I,I,I,I,B,B,I,I,I,BAy,I,I,I,I,I,B
+I,I,BFx3,I,I,I,I,I,BCx,I,BNx,BNy,B,I,I,I,I,I,BNx
+1,B,BF3,BFz3,B,B,B,BCy,BC,BCz,B,I,I,I,I,I,I,I,BNy
+I,I,BFy3,I,I,I,I,I,BCw,I,I,I,I,I,I,I,I,I,B
+I,I,B,I,I,I,I,I,B,I,I,I,I,I,I,I,I,I,I
+I,I,B,I,I,I,I,I,BRy,I,I,I,I,I,I,I,I,I,I
+I,I,B,B,B,B,B,BRx,BRz,B,I,I,I,I,I,I,I,I,I

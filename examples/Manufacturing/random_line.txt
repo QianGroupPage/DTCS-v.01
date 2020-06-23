@@ -1,0 +1,36 @@
+# sCRN showing how to build a random-walking 1D curve.
+
+pixels_per_node    = 25
+speedup_factor     = 25
+max_duration       = 200
+node_display       = Color
+wrap               = False
+
+!START_TRANSITION_RULES
+S + O -> L + S (1)
+!END_TRANSITION_RULES
+
+!START_INIT_STATE
+O O O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O
+O O O O O O O O S O O O O O O O O
+O O O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O
+
+!END_INIT_STATE
+
+!START_COLORMAP
+{Background (O)} O: (200, 200, 200)
+{Head (S)} S: (27, 148, 119)
+{Line (L)} L:(217, 95, 2)
+!END_COLORMAP

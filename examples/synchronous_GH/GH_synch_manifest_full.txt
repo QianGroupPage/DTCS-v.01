@@ -1,0 +1,34 @@
+# GH excitable media test
+
+# Run settings
+pixels_per_node    = 9
+speedup_factor     = 10
+debug              = False
+rng_seed           = 123123123
+max_duration       = 3000
+fps                = 60
+node_display       = Color
+
+# Transition rules
+!START_TRANSITION_RULES
+!INCLUDE GH_spinning_arrow_rules.txt
+!END_TRANSITION_RULES
+
+# Initial state
+!START_INIT_STATE
+
+# Spiral wave
+!INCLUDE GH_spinning_arrow_init.txt
+
+# Single pulse
+#!INCLUDE GH_spinning_arrow_pulse_init.txt
+
+# Random start
+#!INCLUDE GH_spinning_arrow_random_init.txt
+
+!END_INIT_STATE
+
+# Colormap
+!START_COLORMAP
+!INCLUDE GH_spinning_arrow_colormap.txt
+!END_COLORMAP

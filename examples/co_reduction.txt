@@ -1,0 +1,48 @@
+# Run settings
+pixels_per_node    = 50
+speedup_factor     = 0.5
+debug              = True
+rng_seed           = 123123122
+max_duration       = 50
+fps                = 60
+node_display       = text
+wrap               = false
+
+!START_TRANSITION_RULES
+# Adsorption
+(3.341) O + Ag -> O + H2O
+(0.537) Ag -> H2O
+(1.419) OH_3F + Ag -> OH_3F + H2O
+
+# Reaction
+(6.226) O + H2O -> OH_3F + OH_top
+
+# Diffusion
+(0.2) H2O + Ag -> Ag + H2O
+(10) OH_top + 3F -> Ag + OH_3F
+(0.5) Ag + OH_3F -> OH_top + 3F
+
+# Desorption
+(1.864) H2O -> Ag
+(0.705) OH_3F + H2O -> OH_3F + Ag
+(0.299) O + H2O -> O + Ag
+
+
+!END_TRANSITION_RULES
+
+# Initial state
+!START_INIT_STATE
+Ag Ag Ag Ag Ag Ag Ag Ag Ag Ag 
+Ag Ag Ag Ag Ag Ag Ag Ag Ag Ag
+Ag Ag Ag Ag Ag Ag Ag Ag Ag Ag
+Ag Ag Ag Ag Ag Ag Ag Ag Ag Ag
+Ag Ag Ag Ag Ag Ag Ag Ag Ag Ag
+Ag Ag Ag Ag Ag Ag Ag Ag Ag Ag
+Ag Ag Ag Ag Ag Ag Ag Ag Ag Ag
+!END_INIT_STATE
+
+# Colormap
+!START_COLORMAP
+Ag: (160,160,160)
+{Intersection}   I: (200, 200, 0)
+!END_COLORMAP

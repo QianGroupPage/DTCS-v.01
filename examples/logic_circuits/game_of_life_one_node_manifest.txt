@@ -1,0 +1,21 @@
+# Single-node example of a locally-synchronous Game of Life implementation.
+
+# The cell's current value is held in the center loop.
+
+pixels_per_node    = 10
+speedup_factor     = 10
+debug              = False
+rng_seed           = 123123123
+max_duration       = 1000
+
+!START_TRANSITION_RULES
+!INCLUDE logic_circuit_transition_rules.txt
+!END_TRANSITION_RULES
+
+!START_COLORMAP
+!INCLUDE logic_gate_colormap.txt
+!END_COLORMAP
+
+!START_INIT_STATE
+!INCLUDE game_of_life_one_cell_init.csv
+!END_INIT_STATE

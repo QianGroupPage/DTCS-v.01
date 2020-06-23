@@ -1,0 +1,49 @@
+# sCRN implementation of a scout ant finding food and returning home
+#
+# Erik's (very dumb) scount ant
+#
+# A = scount ant
+# O = empty
+# P = path
+# F = food
+# H = food-carrying and going home
+
+# Run settings
+pixels_per_node    = 10
+speedup_factor     = 5
+#rng_seed           = 123123123
+max_duration       = 100
+node_display       = Color
+
+# Transition rules
+!START_TRANSITION_RULES
+A + O -> P + A (1)
+A + F -> P + H (1)
+H + P -> O + H (1)
+A + P -> O + A (0.05)
+H + O -> P + H (0.1)
+!END_TRANSITION_RULES
+
+!START_INIT_STATE
+O O O O O O F O O O O O O
+O O O O O O O O O O O O O
+O O O O O O O O O O O O O
+O O O O O O O O O O O O O
+O O O O O O O O O O O O O
+O O O O O O O O O O O O O
+O O O O O O O O O O O O O
+O O O O O O O O O O O O O
+O O O O O O O O O O O O O
+O O O O O O O O O O O O O
+O O O O O O O O O O O O O
+O O O O O O O O O O O O O
+O O O O O O A O O O O O O
+!END_INIT_STATE
+
+!START_COLORMAP
+{Empty} O: (240, 240, 240)
+{Ant} A: (175, 175, 255)
+{Ant with Food} H: (1, 100, 255)
+{Food} F: (140,81, 10)
+{Path} P: (200, 0, 0)
+!END_COLORMAP

@@ -1,0 +1,129 @@
+# sCRN for a molecular game of rugby
+#
+# The background is 0...9, initially set to 0.
+# Team X has seven X's, Team Y has seven Y's.
+# The ball starts in the center.
+# The rugby gods (you all) can edit the rules for X's and Y's interacting with background.
+# X's and Y's interactions with each other, and with the ball, are fixed.
+
+pixels_per_node    = 25
+speedup_factor     = 5
+max_duration       = 200
+node_display       = Color
+
+!START_COLORMAP
+{background 0} 0: (255,255,255)
+{background 1} 1: (245,245,245)
+{background 2} 2: (235,235,235)
+{background 3} 3: (225,225,225)
+{background 4} 4: (215,215,215)
+{background 5} 5: (205,205,205)
+{background 6} 6: (195,195,195)
+{background 7} 7: (185,185,185)
+{background 8} 8: (175,175,175)
+{background 9} 9: (165,165,165)
+{X team goal} GX: (252,141,98)
+{Y team goal} GY: (102,194,165)
+{X wins goal} WX: (255,140,40)
+{Y wins goal} WY: (140,255,40)
+{Losing team} LX, LY: (0,0,0)
+{ball} B: (0, 0,0)
+{X} X: (217,95,2)
+{X w/ ball} XB: (158,66,75)
+{Y} Y: (27,158,119)
+{Y w/ ball} YB: (21, 98, 150)
+!END_COLORMAP
+
+
+!START_TRANSITION_RULES
+# Picking up the ball, tackling & grabbing the ball [fixed rules]
+X + B -> XB + 0 (10)
+Y + B -> YB + 0 (10)
+XB + Y -> X + YB (10)
+YB + X -> Y + XB (10)
+
+# Making a goal, declaring the winner [fixed rules]
+XB + GY -> 0 + WX (10)
+GY + WX -> WX + WX (10)
+YB + GX -> 0 + WY (10)
+GX + WY -> WY + WY (10)
+X + WX -> WX + WX (10)
+Y + WX -> LY + WX (10)
+X + WY -> LX + WY (10)
+Y + WY -> WY + WY (10)
+
+# Movement and strategy for team X [rugby gods edit here]
+#    all rules must have exactly one X or XB on LHS and on RHS
+#    and exactly one 0...9 on LHS and on RHS
+#    with maximum rate 10
+X + 0 -> 0 + X (1)
+X + 1 -> 1 + X (1)
+X + 2 -> 2 + X (1)
+X + 3 -> 3 + X (1)
+X + 4 -> 4 + X (1)
+X + 5 -> 5 + X (1)
+X + 6 -> 6 + X (1)
+X + 7 -> 7 + X (1)
+X + 8 -> 8 + X (1)
+X + 9 -> 9 + X (1)
+XB + 0 -> 0 + XB (1)
+XB + 1 -> 1 + XB (1)
+XB + 2 -> 2 + XB (1)
+XB + 3 -> 3 + XB (1)
+XB + 4 -> 4 + XB (1)
+XB + 5 -> 5 + XB (1)
+XB + 6 -> 6 + XB (1)
+XB + 7 -> 7 + XB (1)
+XB + 8 -> 8 + XB (1)
+XB + 9 -> 9 + XB (1)
+# This strategy is just random walking, plain and simple... and slow, at that.
+
+# Movement and strategy for team Y [rugby gods edit here]
+#    all rules must have exactly one Y or YB on LHS and on RHS
+#    and exactly one 0...9 on LHS and on RHS
+#    with maximum rate 10
+Y + 0 -> 1 + Y (10)
+Y + 1 -> 2 + Y (9)
+Y + 2 -> 3 + Y (8)
+Y + 3 -> 4 + Y (7)
+Y + 4 -> 5 + Y (6)
+Y + 5 -> 6 + Y (5)
+Y + 6 -> 7 + Y (4)
+Y + 7 -> 8 + Y (3)
+Y + 8 -> 9 + Y (2)
+Y + 9 -> 9 + Y (1)
+YB + 0 -> 0 + YB (10)
+YB + 1 -> 1 + YB (9)
+YB + 2 -> 2 + YB (8)
+YB + 3 -> 3 + YB (7)
+YB + 4 -> 4 + YB (6)
+YB + 5 -> 5 + YB (5)
+YB + 6 -> 6 + YB (4)
+YB + 7 -> 7 + YB (3)
+YB + 8 -> 8 + YB (2)
+YB + 9 -> 9 + YB (1)
+# This strategy changes the markings on the field... to what effect?
+
+!END_TRANSITION_RULES
+
+!START_INIT_STATE
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 X 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 Y 0 0 0 0 0
+0 GX GX GX 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 GY GY GY 0
+0 GX 0 0 0 0 X 0 0 0 0 0 0 0 0 0 0 0 0 0 Y 0 0 0 0 GY 0
+0 GX 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 GY 0
+0 GX 0 0 0 0 0 X 0 0 0 0 0 0 0 0 0 0 0 Y 0 0 0 0 0 GY 0
+0 GX 0 0 0 X 0 0 0 0 0 0 0 B 0 0 0 0 0 0 0 Y 0 0 0 GY 0
+0 GX 0 0 0 0 0 X 0 0 0 0 0 0 0 0 0 0 0 Y 0 0 0 0 0 GY 0
+0 GX 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 GY 0
+0 GX 0 0 0 0 X 0 0 0 0 0 0 0 0 0 0 0 0 0 Y 0 0 0 0 GY 0
+0 GX GX GX 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 GY GY GY 0
+0 0 0 0 0 X 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 Y 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+!END_INIT_STATE

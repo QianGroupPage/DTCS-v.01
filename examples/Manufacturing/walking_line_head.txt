@@ -1,0 +1,59 @@
+# sCRN showing how to move in a straight line
+#
+# This is a challenge because the background is unstructured,
+# so a single reaction doesn't know which direction is "straight".
+# Random trials are made, racheting forward
+# by recognizing the correct local configuration.
+
+pixels_per_node    = 25
+speedup_factor     = 100
+max_duration       = 2000
+node_display       = Color
+wrap               = true
+geometry           = hex
+debug = True
+
+!START_TRANSITION_RULES
+A + O -> X + x (1)
+X + x -> A + O (1)
+B + O -> Y + y (1)
+Y + y -> B + O (1)
+x + y -> a + b (1)
+a + X -> a + c (1)
+b + Y -> b + d (1)
+c + C -> C + O (1)
+d + D -> D + O (1)
+a + C -> A + C (1)
+b + D -> B + D (1)
+!END_TRANSITION_RULES
+
+!START_INIT_STATE
+O O O O O O O O O O O O O O O O O O O O O O O O O O
+O C A O O O O O O O O O O O O O O O O O O O O O O O
+O D B O O O O O O O O O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O O O O O O B D O O
+O O O O O O O O O O O O O O O O O O O O O O A C O O
+O O O O O O O O O O O O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O O O O O O O O O O
+O O O O O O O O A B O O O O O O O O O O O O O O O O
+O O O O O O O O C D O O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O O O O O O O O O O
+!END_INIT_STATE

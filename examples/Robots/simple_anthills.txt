@@ -1,0 +1,91 @@
+# Run settings
+pixels_per_node    = 10
+speedup_factor     = 500
+debug              = False
+rng_seed           = 123123123
+max_duration       = 10000
+fps                = 60
+node_display       = color
+geometry           = square
+wrap               = true
+
+!START_TRANSITION_RULES
+(1) As + O -> O + As
+(1) Ad + O -> O + Ad
+(1) As + D -> Ad + O
+(1) Ad + D -> AdD + D
+(1) AdD + O -> D + As
+!END_TRANSITION_RULES
+
+# Initial state
+!START_INIT_STATE
+O O O O O O O O O D O O O O O O O O O O O O O O O O O D D O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O
+O O O O O D O O O O O O O O O D O O O O O D O O O O O O O O O D O O O O O O O O O O O O O O O O O O O O O O O O O O O O
+O O O O D O O D O O O O O O O O O D O D O O O O D O O O D O O O O O O O D O D O O O O O O O O O D O O O O O O O O O D O
+O O O O D O O O O O O O O O O D O O O O D O O O O O O O O O O O O O O O O O O D D O O O O D O O O O O O O O O O O O O O
+D O O O D D O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O D O O O O O O O O O D O O O O
+O O O O D O O O D O O O O O D O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O D O O D O O O O O O
+D O O O O O D D O O O O O D O O O O O O O O O O O O D O O O O O O D O O O D O O O O O O O O O O O O O O O O O O O O O O
+D O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O D O O O O O O O O O O O O O O O O D O O O O O O O O O O O
+D O O O O O O O O O O O O D O O O O O O O O O D O O O O O O O O O O O O O O D O O O O O D O O O D O O O O O O O O O O O
+O O D O O O O O O O O O O O O O O O O O O O O D O O O O O O O O O O O O O D O O O D O D O D O D O D O O O O O O O O O O
+O D O O O O O O O O O O O O O O O O O O O D O O O D D O O O O O O O O D O O O O O O O D O O O O O O O D O O D O O O O O
+O O O O O O O O O O O O O O O O O O O D O O O O O O D O O O O O O O O O O O O O O O O O O O O D O O O O O O O O D O O O
+O O O O O O O O O O O O O O O O O O D O O O O O O O O O O O O O O O O O O O O O O O O O D D O O O D O D O O O O D D D O
+O O O O O O O O O O O O D O O O O O O O O O O O O O O O O O D O O O O O O O O O O O D O O O O O O O D O O O O O O O O O
+O O O O O O O O O O D O As O O O O D D O O O O D O O O O O O O O D O O O O O O D O O D O O O O O O O O O D O O O D O O O
+O O O O O D O O O O O O O O O O O O O O D O O O D O O O O O O O O O O D O O O D O O O O O O O O O O O O O O O O O D O O
+O O O O O O O D O O O O D O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O D O D O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O O O O O O O O O O O O O D O D O O O O O O O O O O O D O O O O O O O O D O O O O D O D
+O O O O O O O D O O O O O O O O O O O O O O O O D O O O O O O O As O O D O D O O O O O O D O D O O O O O O O O O O O O O
+O O O O O O D O D O O O O O O O O O O O D D O O O O O O O O O O O O O O O D O O O O O O O O O O O O O O O O O O O O O O
+O O O O O O O O D O O O O O D O O O O O O O D O O O O O O O O O O D O O O O O O O O O O O O O O O O O O O O O O O O O O
+O O O O O O O O O O O D O O O O O O D O O O D O O O O O O O O O O O O O O O D O O O O O O O O O O D O O O O O O O O O O
+O O O D O D O O O O O O O O O O O O O O O O O O As O O O O D O O O O O O O O O D O O O O O D O O D O O O O O O O O O D O
+O O O D O O O O O O D O O O O O O O O O O D O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O D O O O O O O
+O O O D D O O O O O O O O O O As O D O O O O O O O O O O O O O O O O O O O O O O O O O O O D O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O D O O O O O D O O D O O O O O O O O O O O O O O O O O O D O O O O O O O O O O O O O O O O O
+O O O O O D O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O D O O O O O O O O O O O O O O O O O O D O D O O
+O O O O D O O O O D O O O O As D O O O O O O O O O O O O O O O O O O O D O O O O O O As D O O O O O D O O O O O O O O O O
+O O D D D O O O O O O O O O O O O D O O O O O O O O O O O O O D O O O O O O D O O O D O O O O O O O O O O O O O O O O D
+O O O O O O O O O O O O O O O O O O O O O D O O D O O D O O O O O O O O O O O O O O O O O O O O O O O O O O D O O O O O
+O O O O O O O O O O D O O O O O D O O O O O O O O O O D O D O O O O O O O O O D D O O D O O O O O O O D O O O O O O O D
+O O O O O O O O O O O O O O O O O O D O O O D O D O O O O O O O O O D O O O D O O O O O O D D O O O O O O O O O O O O O
+O O O O O O O O O O O D O O O O O O O O O O O O O O O O O O O O D O O O O O O O D O O O O O O O O O O O O O O O O O O O
+O O O O O O D O O O O O O D O O O O D O O O O O O O D O O O O O O O O O O O O D O O O O O O O O D O O O O O O O O O D O
+O O O O O O O O O O O O O O D O O O O O O O O O O O D D O O O O O O O O O O O O O O O O O D O O O O D O O O O O O O O O
+O O O O O D O O O O O O O O O O O O D O O O D O O O O O O O O O O O O O O O O O O O O O O O O O O O O D O D O O O O O O
+O O O D O O O O O O O O O O D O O O O O O O O O O O O D D O O O O O D O O O O O O O O O D O D O O O O O O O O O O O O O
+O O O O O O O D O O O O O D O O O O O O D O O D O O O O O O D O O O O O O O O D O D O O O O O O O O O O O O O O O O O O
+O D O O O O O O O D O O O O O O O O O D O O O O O O O O O O O O O O O O O D O O D O O O O O O O O O O O O O O O D O O O
+O O O O O O O O O O O O O O O O O O D O O D O O O O O O O O O D O O O O O O O O O O O O D O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O O O O O O O D O D D O O O O O D O O O O O O O O O O O O O O O O O O O O D O O O O O O
+O O O O O O O O O O O O O O O O D O O O D O O O O O O O O O O O O O O D O O O O O O O O O O O O O O O O O O D O O O O O
+O O D O O O O O O O O O O O O O O O D D D O O O O O O O O D O O O O O O O D O O O O O O O O O O O D O O O O O O O O O O
+O O O O O O O O O O O O O O D O O O O O O O O O O O O O O O O O D O O O O O O O O O O O O O O D O O O O O O O O O O O O
+O O O O O O O O D O O O O O O O O O O O O O O As O O O O O O O D O O O D O O O O O O O O O O O O O O O O D O O O O O O O
+O O O O O O O O O O D O O O O O O O D O O O O O O O O O D O O O O O O O O O O O O O D O O O O O O O O O O O O D O O O O
+O O O O D O O O O O O O O D O O O O O O O O O D O O O D O O O O D O O O O O O O O O O D D O O O O O O O As O O D O O O O
+O O O D O O O O O D O O O O O O O O O O O O O O O O O O O O O O O O O O O D O D O O O O O O D O O O O O O O O O O O O O
+O O O O O O O O O O O O O O D O O O O O O O O O O O O O O O D O O O O O O O O O O O O O O O O O O O O O O D O O O O O O
+O O D O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O D O O O O O O O O O O O O O O O O O D O O O D
+O O O O O O O O O O O O O O D O D O O O O O O O D O O O O O O O O O O O D O O O O O O O O O D O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O D O O O O O O D O O O O O O O O O O O O O D O O O O O O O O O D O O O O O D O O O O O O O
+O O O O O O O O O O O O O O O O O O O O O O O O D D O O O O O O O O O O O O O O D O O D O O O O O O O O O O D O O O O O
+O O O O O O O O O O O O O O D O O O D O O D O O O O O O O O O O O O O O O D O O D O O O D O D O O O O O O O O O O O D O
+O O D O O O O O O D O D O O O O O O O O O O O O O O O O O O O D O O O O O O O O D O O D O O O O O O O O O O O O O O O D
+O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O D O O O O O O O O O O O O O O D O O O O D O O O O O O O O O
+O O O O O D O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O D O O O O O O O O O O O O O O O O O O D
+O O O O O O O O O O D O O D O O O O O O O D O O O O O O O O O O O O O O O O O O O D O O O O O O O O O O O O D O D O O O
+O O O As O D O O O O O O O O O D D O O D O D O O O O O O O O O O O O O O O O O O O D O O O O O D As O O O D D O O O O D O
+O O O O O O O D O D D O O O O O O D O D O O O O D O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O
+!END_INIT_STATE
+
+# Colormap
+!START_COLORMAP
+{Background} O: (240, 240, 240)
+{Dirt} D, Ds: (140,81, 10)
+{Wandering ant} As: (175, 175, 255)
+{Ant with dirt} Ad: (1, 100, 255)
+{Processing Ant} An, Add, Al, AdD, AdDD, Adm, AdDm: (255, 0, 0)
+!END_COLORMAP

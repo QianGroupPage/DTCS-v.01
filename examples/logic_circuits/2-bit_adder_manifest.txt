@@ -1,0 +1,22 @@
+# No-synch counter circuit test with 6 bits.
+
+pixels_per_node    = 20
+speedup_factor     = 100
+debug              = False
+rng_seed           = 4
+max_duration       = 1000
+fps                = 60
+frame_capture_rate = 2
+node_display       = Color
+
+!START_TRANSITION_RULES
+!INCLUDE logic_circuit_transition_rules.txt
+!END_TRANSITION_RULES
+
+!START_COLORMAP
+!INCLUDE logic_gate_colormap.txt
+!END_COLORMAP
+
+!START_INIT_STATE
+!INCLUDE 2-bit_adder_init.csv
+!END_INIT_STATE

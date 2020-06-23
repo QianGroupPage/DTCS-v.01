@@ -1,0 +1,160 @@
+# sCRN implementation of Greenberg-Hastings excitable media
+#
+# Starts with a truncated directed line,
+# and the spiral organizes around its end, near the center.
+# Reaction rates must be tuned carefully to prolong
+# the time before chaotic activity sets in.
+#
+# Q = quiescent, quiet, inactive
+# A = active, alive, infectious
+# R = refractory, resting, immune
+
+# Run settings
+pixels_per_node    = 10
+speedup_factor     = 5
+rng_seed           = 123123123
+max_duration       = 100
+node_display       = Color
+
+# Transition rules
+!START_TRANSITION_RULES
+A + Q -> A + A (1)
+A -> R (0.6)
+R -> Q (.03)
+!END_TRANSITION_RULES
+
+!START_COLORMAP
+Q: (230,230,230)
+A: (255, 0, 0)
+R: (0, 100, 255)
+!END_COLORMAP
+
+#!START_INIT_STATE
+#Q Q R Q Q Q Q Q Q Q R Q Q Q Q A Q Q Q A R R Q Q Q Q Q R Q Q Q Q Q Q Q Q R Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q R Q Q Q Q Q Q Q Q Q Q
+#Q Q Q Q A Q Q R Q Q Q Q Q A Q R Q Q Q A Q R Q Q Q Q Q Q Q Q R Q R R Q Q Q Q Q A Q Q Q Q Q A Q Q Q Q A R Q Q Q Q Q Q A Q Q R Q Q
+#Q Q Q Q Q Q Q Q A Q Q Q Q Q Q R A Q Q A Q A A Q Q Q Q Q Q Q Q Q R Q Q Q Q A Q Q Q Q Q Q Q Q Q Q A Q R Q Q Q R Q Q A Q Q Q Q Q Q
+#Q Q Q Q Q Q Q Q Q Q Q Q Q A Q Q Q Q A Q Q A Q Q Q Q A Q Q Q A Q Q R Q Q R Q Q Q Q Q A Q R Q R Q R Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+#Q Q Q Q Q Q Q Q Q A Q Q Q Q R Q A Q Q Q Q Q Q Q Q Q Q A R Q Q A Q R A Q Q Q Q Q A Q Q R Q A R Q Q Q Q Q Q R R Q Q Q Q Q Q Q A Q
+#Q A Q Q Q Q Q A R R A Q Q Q Q Q Q Q Q Q Q Q R A R R Q A Q Q Q A Q Q Q A Q Q Q R Q R Q Q Q Q Q Q Q Q Q Q Q Q R Q A A Q Q Q Q A Q
+#Q Q Q Q Q Q Q Q Q A Q Q Q Q Q Q Q Q Q Q Q Q A Q Q Q Q Q Q A R Q Q R R Q Q Q Q Q Q R R Q Q Q Q R Q Q Q Q Q Q Q Q Q A R Q Q A R Q
+#R Q Q Q R Q Q Q A A Q R R R Q R Q Q Q Q Q Q Q Q Q R Q Q A Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q R Q R A Q R Q A Q Q Q Q Q Q Q Q Q
+#Q Q Q Q Q Q Q Q Q A A Q Q Q Q Q A Q Q Q Q A Q Q Q R Q Q Q Q Q Q A R Q Q Q Q Q Q A Q Q Q Q Q R Q R R R Q Q Q Q Q Q A Q A Q Q R Q
+#Q R Q Q Q Q Q R Q Q Q Q Q R R Q Q Q Q Q Q Q Q Q Q R Q R Q Q R R R Q R Q Q Q Q Q Q Q Q R Q R Q Q Q Q Q R Q Q Q Q Q Q Q Q Q Q R Q
+#A Q Q Q Q Q Q Q Q A A Q Q Q Q A Q Q A Q Q Q Q Q Q A A Q Q Q Q Q Q Q Q Q Q R R Q Q Q A A A Q Q Q Q Q Q A Q Q Q Q Q Q Q A Q Q Q Q
+#Q Q R Q R Q Q Q Q Q Q A R R Q Q Q Q R Q Q Q Q Q Q Q Q R Q Q A Q Q Q R Q Q Q Q Q R Q Q Q Q Q Q Q Q Q Q A Q Q Q Q Q Q R A R Q Q Q
+#Q Q R Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q A Q A Q Q Q R A Q Q Q Q Q Q Q Q Q Q Q Q A Q A Q A Q Q Q A A Q Q Q Q Q A Q Q Q Q Q A R
+#Q Q R R Q Q Q R Q Q Q Q Q Q Q R Q R Q Q Q Q Q Q Q Q A Q Q Q Q Q Q Q Q R Q Q Q Q Q Q Q Q Q Q A Q Q Q A Q Q Q Q Q R Q Q Q Q Q Q Q
+#Q Q Q Q A Q Q R Q R Q R Q Q Q R Q A Q Q Q Q Q Q Q Q Q Q Q Q A Q Q R Q Q Q Q Q Q Q Q Q A Q R Q A Q R A Q Q Q Q Q Q R Q R Q Q Q Q
+#R R Q Q Q A Q Q Q Q Q Q R Q Q Q Q Q Q R Q Q Q Q Q Q Q Q Q R Q Q Q Q Q Q Q Q A Q Q Q Q Q Q R Q R Q Q A Q Q Q Q R Q Q Q R Q Q A Q
+#Q R Q Q Q Q Q Q Q Q Q Q Q Q Q Q R Q Q Q Q Q A Q Q Q Q Q R Q Q Q Q A R Q Q Q Q Q R Q Q Q Q Q Q Q Q Q Q Q Q Q Q R Q A Q Q Q Q Q Q
+#Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q A R Q Q Q Q A Q Q Q Q R Q R Q R Q Q Q Q Q R Q Q A Q Q Q R Q Q Q Q R R A Q Q A Q
+#Q Q Q Q Q Q R Q Q R Q Q Q Q Q Q Q Q Q Q Q Q Q Q R Q Q Q Q R Q A R R A Q Q Q A Q Q Q Q R Q Q A Q Q R Q A Q Q R Q Q R Q Q Q Q A Q
+#Q Q Q R Q A Q R A Q Q Q A Q A Q Q Q Q Q Q R Q Q Q Q A Q Q Q Q Q Q Q Q R Q Q Q Q Q Q R Q Q R Q Q Q R Q A R Q Q Q R Q Q Q Q Q Q Q
+#Q Q A Q Q Q Q Q Q Q Q A Q Q Q A Q Q Q Q Q Q Q Q Q R R Q Q Q Q Q Q Q Q Q Q Q A A Q A A Q R Q Q R Q Q Q Q Q Q Q R Q Q Q Q Q Q A Q
+#Q Q Q Q A Q Q Q Q Q Q Q Q Q Q R Q Q Q R A Q Q Q Q Q R R Q Q Q Q Q R Q Q Q Q Q Q Q A Q Q Q Q A Q Q Q Q Q Q Q Q Q Q Q R Q Q R Q Q
+#Q Q Q Q Q Q Q Q Q R Q Q Q Q Q Q Q R Q Q Q R Q Q A R Q A Q Q R Q Q Q R Q Q R A Q Q Q Q Q Q Q Q Q Q A Q Q Q A Q Q Q Q Q Q Q Q R A
+#Q Q A Q Q A Q Q Q A Q Q A A Q Q Q Q Q R Q Q Q R Q Q R Q Q Q Q R Q A R Q Q Q Q Q Q Q Q Q Q R Q Q R Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+#A Q R Q Q Q Q R Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q R A Q Q Q Q Q Q R A Q Q Q Q Q A Q Q Q Q Q Q Q Q Q R Q Q Q Q Q Q A Q R Q
+#Q Q Q Q Q Q Q R Q Q Q A A A A Q Q Q Q Q Q Q A Q A Q Q Q Q Q R Q Q Q Q Q R Q Q A Q Q Q Q Q Q A Q R Q A Q R Q Q Q Q Q A Q Q Q Q R
+#R Q Q Q Q Q Q Q Q R Q A Q A Q Q Q A Q R Q Q Q Q Q Q A Q A Q Q R Q Q A Q Q Q Q R Q Q Q Q A Q Q A R A Q Q Q Q Q Q A Q A A Q R Q Q
+#R R Q Q Q Q Q Q Q Q Q Q Q Q Q Q A Q Q Q A Q A A Q Q Q Q Q Q Q Q A Q Q Q Q Q Q A Q Q Q Q Q Q A R Q Q A A A Q Q Q Q Q Q Q Q R Q Q
+#Q Q R Q Q Q Q Q R Q Q Q Q Q Q Q Q Q Q R R Q Q Q Q Q Q R Q Q A Q Q Q Q Q Q A Q Q Q Q Q Q Q Q A Q Q Q R R Q Q Q Q Q Q Q Q Q Q Q Q
+#Q R Q A Q Q Q R Q Q Q A Q Q Q Q Q Q Q Q Q Q Q Q Q A R A Q Q Q R Q A Q Q Q Q Q Q R Q Q Q Q Q Q Q Q A Q Q Q Q Q A Q R Q A Q A Q R
+#Q Q Q Q Q Q R Q Q R A Q Q Q Q Q Q Q Q Q Q R Q Q Q Q Q A R Q Q Q Q Q Q Q Q Q Q Q R Q A Q Q Q Q Q Q R Q Q Q R Q Q A Q Q R Q Q Q Q
+#A Q Q Q Q R Q Q Q Q R Q Q R R A A Q Q Q Q Q Q Q Q Q Q R Q Q Q Q Q Q Q Q Q Q Q R Q Q A Q A A Q R Q Q Q R A Q R Q Q A Q Q Q Q Q Q
+#R Q A A Q R Q R Q Q Q A R Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q R Q Q Q Q Q Q Q R Q Q A A Q R A Q A Q R R Q Q Q Q Q Q Q Q Q Q Q A Q Q
+#Q R Q R Q Q Q Q Q R Q A Q Q Q Q R Q Q Q Q Q Q Q Q Q A Q A A Q A R R Q Q Q Q Q Q Q Q Q Q Q Q R Q Q Q A Q Q Q R Q Q R R Q Q Q Q Q
+#Q Q Q Q Q Q Q Q Q Q A Q Q R Q Q Q Q R Q Q Q A Q Q Q Q A Q Q Q Q Q Q Q Q Q R Q Q Q R Q Q Q Q Q Q Q A Q Q Q Q Q Q A Q Q R Q Q Q R
+#Q Q Q Q A Q Q Q Q Q Q Q Q Q R Q A Q Q Q Q Q Q Q Q Q Q Q A A Q R Q Q Q Q Q R Q Q A Q Q R Q A R Q Q R Q Q Q Q Q Q Q Q Q Q Q Q Q R
+#Q Q Q Q A Q Q Q Q R Q A Q Q Q Q R Q Q Q Q R Q Q A Q R Q Q Q A Q Q Q Q Q Q Q A Q Q R A Q Q Q R Q Q Q Q Q A Q Q Q Q Q Q Q R Q Q Q
+#Q Q Q A Q Q Q Q A Q A Q Q Q Q Q Q R Q R R Q Q Q R Q A Q Q Q Q Q Q A A Q Q A Q Q Q Q A R Q Q Q Q Q A Q Q Q A Q R Q Q Q Q R Q Q Q
+#R Q Q Q Q Q Q Q Q Q R Q Q A Q R Q Q Q Q Q Q Q Q R Q Q Q Q Q Q Q R R Q Q Q Q Q Q Q Q Q Q A Q Q Q Q Q A Q Q Q Q Q A Q Q Q Q Q A Q
+#Q Q Q R Q Q Q R Q Q Q Q Q Q Q Q Q Q Q A Q Q Q Q Q Q Q Q Q Q A Q Q A Q Q A Q R R Q A Q R Q Q Q R Q Q Q Q Q Q Q A Q Q Q Q Q Q Q Q
+#Q Q Q R Q Q Q Q Q Q Q Q R Q Q Q Q Q R Q Q Q Q R Q Q Q A Q R Q Q Q Q Q Q A Q Q R Q R Q Q Q Q Q Q A Q Q R A Q Q R Q Q R Q Q Q Q Q
+#Q R Q Q Q Q Q Q Q Q R R Q Q Q A Q Q Q Q Q Q Q Q A Q A Q Q R Q A Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q R Q Q Q A Q Q Q Q Q Q Q A Q Q
+#Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q A R Q A R Q Q Q Q Q Q Q Q Q Q Q Q Q Q A R Q A Q Q Q Q Q Q Q Q Q Q A A R Q A Q Q Q A A Q Q Q R
+#Q Q A Q Q Q Q Q Q Q Q Q A Q R Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q R Q Q Q A R R Q Q R Q Q Q Q A R Q Q Q Q Q Q Q Q Q Q R Q Q R A Q Q Q
+#Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q R Q Q A Q Q Q Q Q Q Q Q Q Q Q Q R Q Q Q Q R Q Q A Q R Q Q Q Q A Q Q Q A
+#Q Q Q Q Q Q Q R A Q Q Q A Q Q Q Q Q Q Q Q Q A A Q Q A Q Q R Q Q Q Q Q Q Q Q Q Q R Q Q A A Q Q R Q A Q A Q A Q Q Q Q Q A Q Q Q A
+#Q Q R Q Q R Q Q Q Q Q Q R R A Q Q Q Q Q Q Q Q Q Q Q R Q R Q Q A Q Q Q Q Q R Q Q Q Q Q R Q Q Q Q Q Q Q Q A R Q A Q Q Q Q Q A Q A
+#Q R Q Q Q Q Q A Q Q Q Q A Q Q Q Q Q Q Q Q R Q Q A R Q Q Q Q R A Q Q Q Q Q Q Q A R Q Q Q Q Q Q Q Q Q Q Q Q Q R Q Q R Q R R Q R Q
+#Q Q Q A Q A Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q A Q Q Q Q Q Q Q A Q Q Q A R Q Q Q Q Q Q R Q Q Q Q Q A Q R Q Q Q Q Q R Q A Q Q Q
+#Q Q A Q Q A Q Q Q Q Q Q Q Q Q Q Q A Q Q Q Q Q Q Q Q Q Q Q A Q Q Q Q R Q Q Q A A Q R Q Q Q A Q Q Q Q Q Q Q Q R Q R Q Q R R Q A Q
+#A Q Q Q Q R Q Q Q Q Q Q Q Q Q Q Q Q Q Q A Q Q Q Q Q A Q Q Q Q Q A Q Q Q A R Q Q A Q Q Q A Q Q Q A Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+#Q A Q Q R Q Q Q Q Q Q Q Q A Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q R Q Q Q Q Q Q R Q Q Q Q Q Q Q Q Q Q Q A Q Q Q Q Q Q Q Q
+#Q R Q Q Q Q Q Q Q Q A Q R Q R Q Q Q Q Q A Q Q R R R R Q Q Q Q A Q Q Q A Q Q Q Q Q Q Q Q A R Q Q Q Q A Q Q Q Q Q Q Q Q Q A Q Q Q
+#Q Q Q Q A Q Q Q Q Q Q Q Q R Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q A Q R Q Q Q Q Q Q Q Q R Q Q Q Q Q Q R Q A Q Q A Q Q Q Q A Q
+#R Q Q Q Q Q A Q Q Q Q Q Q Q Q Q Q Q Q A A R R Q Q Q Q Q A Q Q Q Q Q A A Q R Q R Q Q Q Q Q Q Q Q Q Q Q Q R Q Q Q Q Q Q Q Q Q A A
+#Q Q Q Q Q Q Q Q Q Q Q Q Q A A Q Q A Q Q Q Q Q A Q Q A A Q R Q Q Q Q Q Q Q Q R Q Q Q Q Q Q Q Q Q Q Q Q R Q R Q Q Q Q Q Q Q Q Q Q
+#Q Q Q R Q Q R A R R A Q Q Q Q Q Q Q R Q Q R Q A Q Q Q Q R A A Q R A A R Q Q Q R Q Q Q Q Q R Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q R Q
+#Q A Q R Q Q Q Q Q Q Q Q Q Q R R Q Q Q Q Q Q Q Q Q Q A Q Q Q Q Q Q Q Q A A Q A R Q Q Q R Q Q Q Q R Q Q Q Q R Q Q Q A Q Q Q R Q Q
+#Q Q Q Q Q Q Q Q Q Q Q Q A Q Q Q Q Q A Q Q Q Q Q Q Q R R Q Q Q Q Q Q Q R A Q Q Q Q Q A Q Q Q Q Q A Q Q Q A Q Q Q Q R Q Q R Q A Q
+#Q Q Q A Q Q Q Q A Q Q R Q A Q Q Q Q Q Q Q Q A Q R Q Q R Q A Q Q R Q Q Q Q Q A Q Q Q Q R A A Q Q Q Q Q Q Q Q Q Q Q Q Q A A Q A Q
+#Q Q A Q A Q Q Q Q Q Q R Q Q Q Q Q Q Q Q R Q Q Q Q A Q Q Q Q Q A Q Q Q A Q Q Q Q Q Q Q Q A Q Q Q Q Q Q A Q Q Q R Q Q R Q A A R Q
+#Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q R R Q Q Q Q Q Q Q R Q Q Q Q Q Q Q A Q R Q Q Q Q Q Q Q Q R Q Q R A Q R R Q Q R Q Q Q Q Q Q Q A
+#!END_INIT_STATE
+
+!START_INIT_STATE
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q R R R R R R R R R R R R R R R R R R R R R R R R R R R R R R R R
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q
+!END_INIT_STATE

@@ -1,0 +1,86 @@
+# sCRN implementation of cargo sorting
+#
+# Lulu's cargo-sorting robot
+#
+# O   = track site
+# C1  = cargo 1
+# C2  = cargo 2
+# R   = unencumbered robot
+# R1  = robot carrying cargo 1
+# R2  = robot carrying cargo 2
+# R1g = robot carrying cargo 1 after detecting the goal
+# R2g = robot carrying cargo 2 after detecting the goal
+#
+# GC1 = cargo 1 at its goal pile
+# GC2 = cargo 2 at its goal pile
+#
+# Try adding more robots!
+
+# Run settings
+pixels_per_node    = 5
+speedup_factor     = 500
+#rng_seed           = 123123123
+max_duration       = 10000
+node_display       = Color
+
+# Transition rules
+!START_TRANSITION_RULES
+R + O -> O + R (1)
+R + C1 -> R1 + O (1)
+R + C2 -> R2 + O (1)
+R1 + O -> O + R1 (1)
+R2 + O -> O + R2 (1)
+R1 + GC1 -> R1g + GC1 (1)
+R2 + GC2 -> R2g + GC2 (1)
+R1g + O -> GC1 + R (1)
+R2g + O -> GC2 + R (1)
+!END_TRANSITION_RULES
+
+!START_COLORMAP
+{Empty} O: (240, 240, 240)
+{Robot} R: (102,194,165)
+{Cargo 1} C1, GC1: (252,141,98)
+{Cargo 2} C2, GC2: (141,160,203)
+{Robot Carrying C1} R1, R1g: (217,95,2)
+{Robot Carrying C2} R2, R2g: (117,112,179)
+!END_COLORMAP
+
+
+!START_INIT_STATE
+
+O O O C1 O O C2 O O O O O O C1 O O O O C1 O O O C2 O O O O O O O O O O O O O C2 O O O C2 O O O O O O O O O O O O O O O O O O O O O O C2 O O O O O O O O O C1 O O C1 O O O O O O O O O O O O O O O O O O O O O O O
+O O O C1 C2 O O O O O O O O O O C1 O O O O C1 O O O O O O O O O O O C1 O O O C2 O O O O O O O O C2 O O O O O O O O O O O O O C2 O O O O O O O O O O O O C1 O O O O O O O O O O O O O O O O O C1 O O O O O O O O C2
+O O O O C1 O C1 O O O O O O O O O O O O O O O O O C2 O O O O O O O O O O O O O O O O O O C1 C2 O C2 O C2 C1 C2 O O O O O O C2 O O O O C2 O O O O O O O O C2 O O O O O O O O O O O O O C1 O O O O O O O O O O O O O O
+O O O O O C2 O O O O O O C1 O O O C1 O O O O O O O O O O O O O O C2 C1 O O O O C2 O O O O O O O O O C2 O O O O O O O O O C1 O C1 O O C2 C1 O O O O O O O O O O O O O O O O O O O O O C2 C2 O O O O O O O O O O O O O
+O O O O C1 C1 O O O O O O O O O O O O O O O C1 O O O C1 O O O O O O O O O O O O O O O C1 C2 O O O O O O O O O O O O O O O O O O C1 O O O O O O O O O O O O O O C1 O O O C1 O O O C1 O O O O O C1 O O O O O O O O O
+O O O O O O O O O C2 O O O O O O C2 O O O O O O O O O O O C2 O C2 O O O O O O O C2 O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O C1 O O O O O O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O C2 O O O C1 O O O C1 O O O O O O O O O O O C1 O C1 C1 O O C2 C2 O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O
+O O O O O C1 O O O O O O O O O O O O C1 O O O O O O O O O O O O O O O O O O O O O O C2 O O O O O O O O O O O O O O O O O O GC1 O O C1 O O O O O O O O O O O O O O C1 O O O O O O O O O O O C2 O O O O O O O O O
+O O O O O O O C2 O O O O O O O O O O O O O O O C1 C2 O O O O O O O O O C1 O O O O O O O O C2 O O C2 O O O O O O O O O O O O O O O O O O C2 O C1 O O O O O O O O O O O O O C2 O O C2 O O O O C2 O O O O O O O O O O
+O O O O O O O O O O O O O C1 O O O O O O O O O O O O C2 O O O O O O O O O C2 O O O O O O C2 O O O O O O O O O O O O O O O O O C2 O O C2 O C2 O O O O O O O O O O O O C2 O O O O O O C2 C1 O O O O O O O O O O O O
+O O O O O O O O O O O O O O C2 O O O O O O C1 O O C1 C2 O O O C1 O O O O O O O O O O O O O O O O O O O O O O O O O O C1 O O C1 O C1 O O O C1 O O O O O C1 O O O O O C2 O O O O O O O C1 O O O O O O O O C1 O O O O O
+O O O C1 O O O O C1 O O O O O C1 O O O O O O O O O O O O C1 O O O O O O O O O C2 O O C2 O C1 O O C1 O O O O O O O O O O O O O O O O O O O O O O O O O C1 O O O C1 O O O O O C1 O O O O O O O O O C1 O O C1 O O O O C2
+O O O O O O O O O O O O O O O O O O O O O C2 O O O C1 O O O O O C1 O O O O C2 O C1 O O O O O O O O O O O C2 O O C1 O O O O O O O O O C1 O O O O O O O O O O C1 C2 O C1 O O O O C2 O O C2 O O O O O O O O O O O O O C1
+O O O O O O O O C1 O C2 O C1 C1 O O O O O O O O O O O O O O O O O O O O O C1 O C2 O O O O O O O O O O O O O O O O O O O O O O O O O C2 O O O O O O C1 O O O O O O O O O O O O O C1 O O C2 C2 C2 O O O O O O O O O O
+O C1 O O O O O O O O C2 C2 O O O O O O O C1 O C2 O O O O O O C1 O O O O O O O O O O C1 O O O O O O O O C2 O C1 O C1 O O O O O O C2 O C2 O O O O O C2 O O O O O O O O O C2 O O O O O O O O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O R O O O O R O O O O C2 O O R O O O O O O O R C1 C2 O O C1 R O O R O O O O C1 O R O O C1 O O O C2 R O O O O R O O O O R O C1 O O O O O C1 R O C2 C2 O O R C2 O O O O R C1 O O O O O R O C2
+O O O O O O O O O C1 O C2 O O O O O O O C2 O C2 O O O C1 O O O O O O C1 C2 O O O C1 O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O C2 O O O O O O O O O O O O O O O O O C1 O O O
+O O O O C1 O C1 C2 O O O O O O C1 O O O O O O O O O O O O O O O O O C1 O O O O O O O O O O O O O O O O O O C1 O O O O O O O O O O O O O O O O O O O O O O O C1 O O O O O O O O O O O O O O O O O O O O O O O O
+O O C2 O O O O C1 O O C2 C2 O O O O O O O O O O C2 O O O C1 O C1 O O C2 O O O O O O O C1 O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O C1 O O O O O O O C1 O O C2 O O O O O O O O O C2 O C2 O O O O
+O O C1 O C2 O O O O O O O C1 O O O O C2 O O O O O O O O C2 O O O C2 O O O C1 O O O O O O O O O C1 C2 O O O O O C1 O O O O O O O O O O O O O O O O O O O O O O O O C1 O O O O O O O O O O O O O O O O O O O O O O C2
+O O O O O O O O O O O O O O O O O O C2 O O O O O O O O O O O O O C2 C2 C1 O O O O O O O O O C1 C2 O O O C2 O O O O C1 O O O C1 O O O C1 O O O O C1 O O O O O O O C1 O O O O O O O O C1 O C2 C1 O O O O O C1 O O O O O O
+O O O O O O O O O O O O O O O O C2 O O O O O O O O O C1 C1 O O O O O O O O O O O O O O O O O O O O O O C2 O O O O O O O O O O O O O O O O O C2 O O O O O O O O O O O O O O O O O O O O O O O O O O O C2 O O O
+O O C2 O O O O O O O O O O O O O C1 O O O O C2 O O O O O O O O O O O O O O O C1 O O O O O O O O O O O O O O O O O O O O O C2 O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O C2 O O O O O C2 O
+O O O O O O O O C2 O O O C2 O O O O O O O O O O O O O O O O O O O C2 O O C2 O O O O O O O O O O C1 O O O C1 O O O O O O O O O O O C2 O C1 O O O O O O O O O O O O O O O O O O O O C2 C2 O O O O O O O O O O C2 O O
+O O O O O O O O O O O O O O O O O C1 C2 O O O O O O O O O O O O O O O O O O C1 O O O O O O O C2 O O O O O O C1 O O O O O O O O O O O O O C2 O O O O O C1 O O O O O O O O O O O C1 O O C2 O O O O O O O O O O O O
+O O O O O O O C2 O O O O O O O O O O O O O O C2 O O O O O O O O C2 C2 O O O O O O O O O O O C2 O O O O O O O O O O C1 O C1 O O O O O O O O O O O O O O O C2 O O O O O O O O C2 O O O O O O O O O O O O O O O O O
+O O O O O O O O O O C2 O O O C2 O O O O O O O O O O O O O O O O O O O O O O O O O C1 O O O O O O O O O O C1 O O C1 O O O O O O O O O O O O O O O O C1 O O O O O O O O O O O O O O O O O O O O O O O O O O O O
+O O O O O O O C2 O C1 O O O C2 O O C1 O O O O O O O O O O O O O O C1 O O O O O O O O O O O O O O O O O O O O O O O O O O O O GC2 O C1 O O O O C1 O C1 O O C1 O O O O O O O O O O O O O O O O O O C1 O O O O O O O O
+O O O O O O O O C1 O O O O O O O O O O O O O O O O O O O O O O O O O O C1 C1 O O O O O O O O O C2 O O O O O O O O O O O O O O O O O O C1 O O O O O O O O O O O O O O O C1 O O O C1 O O O O O O O O O O O O O O
+O C2 O O O O O C1 O C1 O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O C2 C2 O O O O O O O O O O O O O C1 O O O O O O O C1 O O C1 O O O O O O O O O O
+O C1 O O O C1 O C1 O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O C1 O O O O C2 O C1 O O O O O O O O O O C1 O O O O O O O O O O O O C1 O O O O O O O O O O C2 O O O O O C1 O O O O O O O
+O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O C1 C2 C1 O O O C1 O O O O O O C1 O O O O O O O O O O O C2 O O O C1 O O O O O O O O O O C1 O O O C1 O C2 C1 O O O O O O O O O O C2 O O
+O O O O C2 O O O O O O O O O O O O O O O O O O O C2 O O O O O O O O O O O O O O O O O O O O O O O O O O O C2 O O O O O O O O O O O O C2 O O O O O O O O C1 O O O O C2 O O O O C2 O O O O O O O O O O O O O O O
+O O O O O O O O O C2 C1 O O O O O O O O O O O O O O O O C1 C2 O O O O O O C2 C1 O O O O O O O O O O O O O O O O O C1 C2 O C1 O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O
+O C2 O O O O O C1 O O O C2 O O O O O O C2 O O O C1 O C2 O O O O O C1 O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O C2 O O O O O O O O O O C2 C1 O O O O O O O O O O O O O O O O O O O O O O O O O
+!END_INIT_STATE

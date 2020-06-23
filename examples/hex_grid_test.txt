@@ -1,0 +1,90 @@
+# Run settings
+pixels_per_node    = 25
+speedup_factor     = 5
+debug              = True
+rng_seed           = 123123123
+max_duration       = 300
+fps                = 60
+node_display       = text
+geometry           = hex
+
+!START_TRANSITION_RULES
+(1) A + B -> B + A
+#(1) A -> A
+#(1) B -> B
+#(1) C -> C
+#(1) D -> D
+#(1) E -> E
+#(1) F -> F
+#(1) G -> G
+#(1) H -> H
+#(1) I -> I
+#(1) J -> J
+#(1) K -> K
+#(1) L -> L
+#(1) M -> M
+#(1) N -> N
+#(1) O -> O
+#(1) P -> P
+#(1) Q -> Q
+#(1) R -> R
+#(1) S -> S
+#(1) T -> T
+#(1) U -> U
+#(1) V -> V
+#(1) W -> W
+#(1) X -> X
+#(1) Y -> Y
+
+!END_TRANSITION_RULES
+
+# Initial state
+!START_INIT_STATE
+B A B B B
+A B B B B
+B B B B B
+B B B B B
+B B B B B
+
+#A B C D E
+#F G H I J
+#K L M N O
+#P Q R S T
+#U V W X Y
+
+
+
+#B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B
+#B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B
+#B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B
+#B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B
+#B B B B B B B B B B A B B B B B B B B B B B B B B B B B B B B B
+#B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B
+#B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B
+#B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B
+#B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B
+#B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B
+#B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B
+#B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B
+#B B B B B B B B B B B B B B B B B B B B B A B B B B B B B B B B
+#B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B
+#B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B
+#B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B
+#B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B
+#B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B
+#B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B
+#B B B B B B B B B B B A B B B B B B B B B B B B B B B B B B B B
+#B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B
+#B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B
+#B B B B B B B B B B B B B B B B B B B B B B B B B B B A B B B B
+#B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B
+#B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B B
+!END_INIT_STATE
+
+# Colormap
+!START_COLORMAP
+{Off}  B: (160,160,160)
+{Seed} A: (255, 0, 0)
+{On}   C: (0, 255, 0)
+{other} D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y: (255, 255, 0)
+!END_COLORMAP

@@ -1,0 +1,221 @@
+# sCRN implementing the Game of Life with a custom encoding
+#
+# Use a 3x3 block per cell, with the center encoding state.
+
+pixels_per_node    = 10
+speedup_factor     = 5
+max_duration       = 1000
+node_display       = Color
+
+!START_COLORMAP
+{zero boundary} Z: (117,112,179)
+{wires} A,B,C,D,F,G,H,I: (255, 255, 255)
+{0 state} E0, bE0, fE0, hE0, dE0: (174,76,2)
+{1 state} E1, bE1, fE1, hE1, dE1: (21,126,95)
+{0 signal} wB0, wD0, wF0, wH0, A0, B0, C0, D0, F0, G0, H0, I0, nA0, nB0, nC0, nD0, nF0, nG0, nH0, nI0, tA0, tB0, tC0, tD0, tF0, tG0, tH0, tI0: (255,195,175)
+{1 signal} wB1, wD1, wF1, wH1, A1, B1, C1, D1, F1, G1, H1, I1, nA1, nB1, nC1, nD1, nF1, nG1, nH1, nI1, tA1, tB1, tC1, tD1, tF1, tG1, tH1, tI1: (176,224,210)
+{sum=0} sB0, sC0, sD0, sF0, sG0, sH0, sI0: (220, 220, 220)
+{sum=1} sB1, sC1, sD1, sF1, sG1, sH1, sI1: (200, 200, 200)
+{sum=2} sB2, sC2, sD2, sF2, sG2, sH2, sI2: (185, 185, 185)
+{sum=3} sC3, sD3, sF3, sG3, sH3, sI3: (170,170,170)
+{sum=4} sD4, sF4, sG4, sH4, sI4: (150,150,150)
+!END_COLORMAP
+
+# stage 1:  E0 or E1 surrounded by A,B,C,F,I,H,G,D
+# stage 2:  dE0 surrounded by A0,B0,C0,F0,I0,H0,G0,D0 or dE1 surrounded by A1,B1,C1,F1,I1,H1,G1,D1 representing self
+# stage 3:  dE0 or dE1 surrounded by nA0 or nA1, nB0 or nB1, ..., nG0 or nG1, nD0 or nD1 representing neighbors
+# stage 4:  sums are accumulated in a circle as x0...x4 (x = a,b,c,d,f,g,h,i) and sites are restored to A,B,C,...
+# stage 5:  sum in d0...d4 combines with E0 or E1 to compute new cell state
+
+!START_TRANSITION_RULES
+# stage 1 to stage 2
+E0 + B -> bE0 + wB0 (1)
+E1 + B -> bE1 + wB1 (1)
+bE0 + F -> fE0 + wF0 (1)
+bE1 + F -> fE1 + wF1 (1)
+fE0 + H -> hE0 + wH0 (1)
+fE1 + H -> hE1 + wH1 (1)
+hE0 + D -> dE0 + wD0 (1)
+hE1 + D -> dE1 + wD1 (1)
+wB0 + A -> B0 + A0 (1)
+wB1 + A -> B1 + A1 (1)
+wF0 + C -> F0 + C0 (1)
+wF1 + C -> F1 + C1 (1)
+wH0 + I -> H0 + I0 (1)
+wH1 + I -> H1 + I1 (1)
+wD0 + G -> D0 + G0 (1)
+wD1 + G -> D1 + G1 (1)
+
+# stage 2 to stage 3
+F0 + D0 -> nF0 + nD0 (1)
+F0 + D1 -> nF1 + nD0 (1)
+F1 + D0 -> nF0 + nD1 (1)
+F1 + D1 -> nF1 + nD1 (1)
+H0 + B0 -> nH0 + nB0 (1)
+H0 + B1 -> nH1 + nB0 (1)
+H1 + B0 -> nH0 + nB1 (1)
+H1 + B1 -> nH1 + nB1 (1)
+
+I0 + G0 -> tI0 + tG0 (1)
+I0 + G1 -> tI1 + tG0 (1)
+I1 + G0 -> tI0 + tG1 (1)
+I1 + G1 -> tI1 + tG1 (1)
+C0 + A0 -> tC0 + tA0 (1)
+C0 + A1 -> tC1 + tA0 (1)
+C1 + A0 -> tC0 + tA1 (1)
+C1 + A1 -> tC1 + tA1 (1)
+
+tI0 + tC0 -> nI0 + nC0 (1)
+tI0 + tC1 -> nI1 + nC0 (1)
+tI1 + tC0 -> nI0 + nC1 (1)
+tI1 + tC1 -> nI1 + nC1 (1)
+tG0 + tA0 -> nG0 + nA0 (1)
+tG0 + tA1 -> nG1 + nA0 (1)
+tG1 + tA0 -> nG0 + nA1 (1)
+tG1 + tA1 -> nG1 + nA1 (1)
+
+# stage 3 to stage 4
+nA0 + nB0 -> A + sB0 (1)
+nA0 + nB1 -> A + sB1 (1)
+nA1 + nB0 -> A + sB1 (1)
+nA1 + nB1 -> A + sB2 (1)
+sB0 + nC0 -> B + sC0 (1)
+sB0 + nC1 -> B + sC1 (1)
+sB1 + nC0 -> B + sC1 (1)
+sB1 + nC1 -> B + sC2 (1)
+sB2 + nC0 -> B + sC2 (1)
+sB2 + nC1 -> B + sC3 (1)
+sC0 + nF0 -> C + sF0 (1)
+sC0 + nF1 -> C + sF1 (1)
+sC1 + nF0 -> C + sF1 (1)
+sC1 + nF1 -> C + sF2 (1)
+sC2 + nF0 -> C + sF2 (1)
+sC2 + nF1 -> C + sF3 (1)
+sC3 + nF0 -> C + sF3 (1)
+sC3 + nF1 -> C + sF4 (1)
+sF0 + nI0 -> F + sI0 (1)
+sF0 + nI1 -> F + sI1 (1)
+sF1 + nI0 -> F + sI1 (1)
+sF1 + nI1 -> F + sI2 (1)
+sF2 + nI0 -> F + sI2 (1)
+sF2 + nI1 -> F + sI3 (1)
+sF3 + nI0 -> F + sI3 (1)
+sF3 + nI1 -> F + sI4 (1)
+sF4 + nI0 -> F + sI4 (1)
+sF4 + nI1 -> F + sI4 (1)
+sI0 + nH0 -> I + sH0 (1)
+sI0 + nH1 -> I + sH1 (1)
+sI1 + nH0 -> I + sH1 (1)
+sI1 + nH1 -> I + sH2 (1)
+sI2 + nH0 -> I + sH2 (1)
+sI2 + nH1 -> I + sH3 (1)
+sI3 + nH0 -> I + sH3 (1)
+sI3 + nH1 -> I + sH4 (1)
+sI4 + nH0 -> I + sH4 (1)
+sI4 + nH1 -> I + sH4 (1)
+sH0 + nG0 -> H + sG0 (1)
+sH0 + nG1 -> H + sG1 (1)
+sH1 + nG0 -> H + sG1 (1)
+sH1 + nG1 -> H + sG2 (1)
+sH2 + nG0 -> H + sG2 (1)
+sH2 + nG1 -> H + sG3 (1)
+sH3 + nG0 -> H + sG3 (1)
+sH3 + nG1 -> H + sG4 (1)
+sH4 + nG0 -> H + sG4 (1)
+sH4 + nG1 -> H + sG4 (1)
+sG0 + nD0 -> G + sD0 (1)
+sG0 + nD1 -> G + sD1 (1)
+sG1 + nD0 -> G + sD1 (1)
+sG1 + nD1 -> G + sD2 (1)
+sG2 + nD0 -> G + sD2 (1)
+sG2 + nD1 -> G + sD3 (1)
+sG3 + nD0 -> G + sD3 (1)
+sG3 + nD1 -> G + sD4 (1)
+sG4 + nD0 -> G + sD4 (1)
+sG4 + nD1 -> G + sD4 (1)
+
+# stage 4 to stage 5 = 1
+sD0 + dE0 -> D + E0 (1)
+sD1 + dE0 -> D + E0 (1)
+sD2 + dE0 -> D + E0 (1)
+sD3 + dE0 -> D + E1 (1)
+sD4 + dE0 -> D + E0 (1)
+sD0 + dE1 -> D + E0 (1)
+sD1 + dE1 -> D + E0 (1)
+sD2 + dE1 -> D + E1 (1)
+sD3 + dE1 -> D + E1 (1)
+sD4 + dE1 -> D + E0 (1)
+
+# boundary conditions
+Z + A0 -> Z + nA0 (1)
+Z + A1 -> Z + nA0 (1)
+Z + B0 -> Z + nB0 (1)
+Z + B1 -> Z + nB0 (1)
+Z + C0 -> Z + nC0 (1)
+Z + C1 -> Z + nC0 (1)
+Z + D0 -> Z + nD0 (1)
+Z + D1 -> Z + nD0 (1)
+Z + F0 -> Z + nF0 (1)
+Z + F1 -> Z + nF0 (1)
+Z + G0 -> Z + nG0 (1)
+Z + G1 -> Z + nG0 (1)
+Z + H0 -> Z + nH0 (1)
+Z + H1 -> Z + nH0 (1)
+Z + I0 -> Z + nI0 (1)
+Z + I1 -> Z + nI0 (1)
+Z + tA0 -> Z + nA0 (1)
+Z + tA1 -> Z + nA1 (1)
+Z + tC0 -> Z + nC0 (1)
+Z + tC1 -> Z + nC1 (1)
+Z + tG0 -> Z + nG0 (1)
+Z + tG1 -> Z + nG1 (1)
+Z + tI0 -> Z + nI0 (1)
+Z + tI1 -> Z + nI1 (1)
+
+
+!END_TRANSITION_RULES
+
+!START_INIT_STATE
+Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z
+Z  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  Z
+Z  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  Z
+Z  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  Z
+Z  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  Z
+Z  D  E0 F  D  E0 F  D  E1 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  Z
+Z  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  Z
+Z  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  Z
+Z  D  E0 F  D  E0 F  D  E0 F  D  E1 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  Z
+Z  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  Z
+Z  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  Z
+Z  D  E0 F  D  E1 F  D  E1 F  D  E1 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  Z
+Z  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  Z
+Z  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  Z
+Z  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  Z
+Z  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  Z
+Z  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  Z
+Z  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  Z
+Z  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  Z
+Z  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  Z
+Z  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  Z
+Z  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  Z
+Z  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  Z
+Z  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  Z
+Z  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  Z
+Z  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  Z
+Z  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  Z
+Z  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  Z
+Z  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  Z
+Z  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  Z
+Z  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  Z
+Z  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  Z
+Z  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  Z
+Z  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  Z
+Z  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  Z
+Z  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  Z
+Z  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  Z
+Z  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  A  B  C  Z
+Z  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  D  E0 F  Z
+Z  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  G  H  I  Z
+Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z  Z
+!END_INIT_STATE
+

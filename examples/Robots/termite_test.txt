@@ -1,0 +1,99 @@
+# Run settings
+pixels_per_node    = 10
+speedup_factor     = 500
+debug              = False
+rng_seed           = 123123123
+max_duration       = 10000
+fps                = 60
+node_display       = color
+geometry           = square
+wrap               = true
+
+!START_TRANSITION_RULES
+# random walking to look for wood
+T + O -> O + T (1)
+# pick up wood rarely
+T + W -> O + TW (0.1)
+# random walking while carrying wood
+TW + O -> O + TW (1)
+# when encountering more wood, deposit it only if you see lots more wood
+TW + W -> TW1 + W (1)
+TW1 + W -> TW2 + W (1)
+TW2 + W -> TW3 + W (1)
+TW1 + O -> O + TW (1)
+TW2 + O -> O + TW (1)
+TW3 + O -> W + T (1)
+!END_TRANSITION_RULES
+
+# Initial state
+!START_INIT_STATE
+O O O O O O O O O W O O O O O O O O O O O O O O O O O W W O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O
+O O O O O W O O O O O O O O O W O O O O O W O O O O O O O O O W O O O O O O O O O O O O O O O O O O O O O O O O O O O O
+O O O O W O O W O O O O O O O O O W O W O O O O W O O O W O O O O O O O W O W O O O O O O O O O W O O O O O O O O O W O
+O O O O W O O O O O O O O O O W O O O O W O O O O O O O O O O O O O O O O O O W W O O O O W O O O O O O O O O O O O O O
+W O O O W W O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O W O O O O O O O O O W O O O O
+O O O O W O O O W O O O O O W O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O W O O W O O O O O O
+W O O O O O W W O O O O O W O O O O O O O O O O O O W O O O O O O W O O O W O O O O O O O O O O O O O O O O O O O O O O
+W O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O W O O O O O O O O O O O O O O O O W O O O O O O O O O O O
+W O O O O O O O O O O O O W O O O O O O O O O W O O O O O O O O O O O O O O W O O O O O W O O O W O O O O O O O O O O O
+O O W O O O O O O O O O O O O O O O O O O O O W O O O O O O O O O O O O O W O O O W O W O W O W O W O O O O O O O O O O
+O W O O O O O O O O O O O O O O O O O O O W O O O W W O O O O O O O O W O O O O O O O W O O O O O O O W O O W O O O O O
+O O O O O O O O O O O O O O O O O O O W O O O O O O W O O O O O O O O O O O O O O O O O O O O W O O O O O O O O W O O O
+O O O O O O O O O O O O O O O O O O W O O O O O O O O O O O O O O O O O O O O O O O O O W W O O O W O W O O O O W W W O
+O O O O O O O O O O O O W O O O O O O O O O O O O O O O O O W O O O O O O O O O O O W O O O O O O O W O O O O O O O O O
+O O O O O O O O O O W O T O O O O W W O O O O W O O O O O O O O W O O O O O O W O O W O O O O O O O O O W O O O W O O O
+O O O O O W O O O O O O O O O O O O O O W O O O W O O O O O O O O O O W O O O W O O O O O O O O O O O O O O O O O W O O
+O O O O O O O W O O O O W O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O W O W O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O O O O O O O O O O O O O W O W O O O O O O O O O O O W O O O O O O O O W O O O O W O W
+O O O O O O O W O O O O O O O O O O O O O O O O W O O O O O O O T O O W O W O O O O O O W O W O O O O O O O O O O O O O
+O O O O O O W O W O O O O O O O O O O O W W O O O O O O O O O O O O O O O W O O O O O O O O O O O O O O O O O O O O O O
+O O O O O O O O W O O O O O W O O O O O O O W O O O O O O O O O O W O O O O O O O O O O O O O O O O O O O O O O O O O O
+O O O O O O O O O O O W O O O O O O W O O O W O O O O O O O O O O O O O O O W O O O O O O O O O O W O O O O O O O O O O
+O O O W O W O O O O O O O O O O O O O O O O O O T O O O O W O O O O O O O O O W O O O O O W O O W O O O O O O O O O W O
+O O O W O O O O O O W O O O O O O O O O O W O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O W O O O O O O
+O O O W W O O O O O O O O O O T O W O O O O O O O O O O O O O O O O O O O O O O O O O O O W O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O W O O O O O W O O W O O O O O O O O O O O O O O O O O O W O O O O O O O O O O O O O O O O O
+O O O O O W O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O W O O O O O O O O O O O O O O O O O O W O W O O
+O O O O W O O O O W O O O O T W O O O O O O O O O O O O O O O O O O O W O O O O O O T W O O O O O W O O O O O O O O O O
+O O W W W O O O O O O O O O O O O W O O O O O O O O O O O O O W O O O O O O W O O O W O O O O O O O O O O O O O O O O W
+O O O O O O O O O O O O O O O O O O O O O W O O W O O W O O O O O O O O O O O O O O O O O O O O O O O O O O W O O O O O
+O O O O O O O O O O W O O O O O W O O O O O O O O O O W O W O O O O O O O O O W W O O W O O O O O O O W O O O O O O O W
+O O O O O O O O O O O O O O O O O O W O O O W O W O O O O O O O O O W O O O W O O O O O O W W O O O O O O O O O O O O O
+O O O O O O O O O O O W O O O O O O O O O O O O O O O O O O O O W O O O O O O O W O O O O O O O O O O O O O O O O O O O
+O O O O O O W O O O O O O W O O O O W O O O O O O O W O O O O O O O O O O O O W O O O O O O O O W O O O O O O O O O W O
+O O O O O O O O O O O O O O W O O O O O O O O O O O W W O O O O O O O O O O O O O O O O O W O O O O W O O O O O O O O O
+O O O O O W O O O O O O O O O O O O W O O O W O O O O O O O O O O O O O O O O O O O O O O O O O O O O W O W O O O O O O
+O O O W O O O O O O O O O O W O O O O O O O O O O O O W W O O O O O W O O O O O O O O O W O W O O O O O O O O O O O O O
+O O O O O O O W O O O O O W O O O O O O W O O W O O O O O O W O O O O O O O O W O W O O O O O O O O O O O O O O O O O O
+O W O O O O O O O W O O O O O O O O O W O O O O O O O O O O O O O O O O O W O O W O O O O O O O O O O O O O O O W O O O
+O O O O O O O O O O O O O O O O O O W O O W O O O O O O O O O W O O O O O O O O O O O O W O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O O O O O O O W O W W O O O O O W O O O O O O O O O O O O O O O O O O O O W O O O O O O
+O O O O O O O O O O O O O O O O W O O O W O O O O O O O O O O O O O O W O O O O O O O O O O O O O O O O O O W O O O O O
+O O W O O O O O O O O O O O O O O O W W W O O O O O O O O W O O O O O O O W O O O O O O O O O O O W O O O O O O O O O O
+O O O O O O O O O O O O O O W O O O O O O O O O O O O O O O O O W O O O O O O O O O O O O O O W O O O O O O O O O O O O
+O O O O O O O O W O O O O O O O O O O O O O O T O O O O O O O W O O O W O O O O O O O O O O O O O O O O W O O O O O O O
+O O O O O O O O O O W O O O O O O O W O O O O O O O O O W O O O O O O O O O O O O O W O O O O O O O O O O O O W O O O O
+O O O O W O O O O O O O O W O O O O O O O O O W O O O W O O O O W O O O O O O O O O O W W O O O O O O O T O O W O O O O
+O O O W O O O O O W O O O O O O O O O O O O O O O O O O O O O O O O O O O W O W O O O O O O W O O O O O O O O O O O O O
+O O O O O O O O O O O O O O W O O O O O O O O O O O O O O O W O O O O O O O O O O O O O O O O O O O O O O W O O O O O O
+O O W O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O W O O O O O O O O O O O O O O O O O W O O O W
+O O O O O O O O O O O O O O W O W O O O O O O O W O O O O O O O O O O O W O O O O O O O O O W O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O W O O O O O O W O O O O O O O O O O O O O W O O O O O O O O O W O O O O O W O O O O O O O
+O O O O O O O O O O O O O O O O O O O O O O O O W W O O O O O O O O O O O O O O W O O W O O O O O O O O O O W O O O O O
+O O O O O O O O O O O O O O W O O O W O O W O O O O O O O O O O O O O O O W O O W O O O W O W O O O O O O O O O O O W O
+O O W O O O O O O W O W O O O O O O O O O O O O O O O O O O O W O O O O O O O O W O O W O O O O O O O O O O O O O O O W
+O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O W O O O O O O O O O O O O O O W O O O O W O O O O O O O O O
+O O O O O W O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O W O O O O O O O O O O O O O O O O O O W
+O O O O O O O O O O W O O W O O O O O O O W O O O O O O O O O O O O O O O O O O O W O O O O O O O O O O O O W O W O O O
+O O O T O W O O O O O O O O O W W O O W O W O O O O O O O O O O O O O O O O O O O W O O O O O W T O O O W W O O O O W O
+O O O O O O O W O W W O O O O O O W O W O O O O W O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O
+!END_INIT_STATE
+
+# Colormap
+!START_COLORMAP
+{Background} O: (240, 240, 240)
+{Dirt} W: (140,81, 10)
+{Wandering Termite} T: (175, 175, 255)
+{Termite with dirt} TW: (1, 100, 255)
+{Processing Termite} TW1, TW2, TW3: (255, 0, 0)
+!END_COLORMAP

@@ -1,0 +1,79 @@
+# Ertl-style oscillator with Pt SC(111) crystal.
+
+
+# Run settings
+pixels_per_node    = 10
+speedup_factor     = 0.5
+debug              = True
+rng_seed           = 123123122
+max_duration       = 50
+fps                = 60
+node_display       = color
+wrap               = false
+geometry           = square
+
+
+!START_INIT_STATE
+Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt
+Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt
+Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt
+Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt
+Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt
+Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt
+Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt
+Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt
+Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt
+Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt
+Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt
+Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt
+Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt
+Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt
+Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt
+Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt
+Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt
+Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt
+Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt
+Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt
+Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt
+Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt
+Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt
+Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt
+Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt
+Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt
+Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt
+Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt
+Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt
+Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt
+Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt
+Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt
+Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt
+Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt
+Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt
+Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt
+Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt
+Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt
+Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt Pt
+!END_INIT_STATE
+
+
+!START_TRANSITION_RULES
+# Adsorption
+(1) Pt -> CO
+(0.3) Pt + Pt -> O + O
+
+# Reaction
+(1) CO + O -> CO2 + Pt
+
+# Diffusion
+(1) CO + Pt -> Pt + CO
+(1) O + Pt -> Pt + O
+
+# Desorption
+(2) CO2 -> Pt
+
+!END_TRANSITION_RULES
+
+# Colormap
+!START_COLORMAP
+
+!END_COLORMAP

@@ -1,0 +1,50 @@
+# sCRN showing how to build a straight line
+#
+# This is a challenge because the background is unstructured,
+# so each reaction doesn't know which orientation is which.
+# The system must break symmetry and then maintain directionality.
+# Growth is initially random, but rachets forward
+# by recognizing the correct local configuration.
+
+pixels_per_node    = 25
+speedup_factor     = 25
+max_duration       = 200
+node_display       = Color
+
+!START_TRANSITION_RULES
+S + O -> RH + LH (1)
+RH + O -> RB + RP (1)
+RB + RP -> RH + O (1)
+LH + O -> LB + LP (1)
+LB + LP -> LH + O (1)
+RP + LP -> RH + LH (1)
+!END_TRANSITION_RULES
+
+!START_INIT_STATE
+O O O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O
+O O O O O O O O S O O O O O O O O
+O O O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O
+O O O O O O O O O O O O O O O O O
+
+!END_INIT_STATE
+
+!START_COLORMAP
+{Background} O: (200, 200, 200)
+{Right Head (RH)} RH: (50, 50, 100)
+{Left Head (LH)} LH: (75, 75, 125)
+{Right Body (RB)} RB: (94, 46, 4)
+{Left Body (LB)} LB: (170, 94, 27)
+{Right Probe(RP)} RP: (255, 0, 0)
+{Left Probe (LP)} LP: (0, 0, 255)
+!END_COLORMAP
