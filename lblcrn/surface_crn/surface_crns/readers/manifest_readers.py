@@ -1,9 +1,9 @@
 import os
-from surface_crns.readers.statements import *
-import surface_crns.readers.transition_readers as transition_readers
-import surface_crns.readers.colormap_readers as colormap_readers
-import surface_crns.readers.grid_state_readers as grid_state_readers
-import surface_crns.readers.totalistic_readers as totalistic_readers
+from lblcrn.surface_crn.surface_crns.readers.statements import *
+import lblcrn.surface_crn.surface_crns.readers.transition_readers as transition_readers
+import lblcrn.surface_crn.surface_crns.readers.colormap_readers as colormap_readers
+import lblcrn.surface_crn.surface_crns.readers.grid_state_readers as grid_state_readers
+import lblcrn.surface_crn.surface_crns.readers.totalistic_readers as totalistic_readers
 '''
 For external use
 '''

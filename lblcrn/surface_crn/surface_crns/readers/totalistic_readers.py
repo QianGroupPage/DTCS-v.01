@@ -1,6 +1,6 @@
-from surface_crns.readers.statements import *
+from lblcrn.surface_crn.surface_crns.readers.statements import *
 import re
-from surface_crns.base.transition_rule import *
+from lblcrn.surface_crn.surface_crns.base.transition_rule import *
 
 '''
 For external use

@@ -2,7 +2,7 @@ import numpy as np
 import random
 import math
 from queue import *
-from surface_crns.simulators.event import Event
+from lblcrn.surface_crn.surface_crns.simulators.event import Event
 
 class QueueSimulator:
     '''

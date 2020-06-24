@@ -1,1 +1,1 @@
-from lblcrn.surface_crn.jupyter.scrn import *
+from lblcrn.surface_crn.scrn import *

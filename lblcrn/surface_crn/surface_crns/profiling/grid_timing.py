@@ -1,9 +1,9 @@
 from __future__ import print_function
-import surface_crns.models.grids as grids
-import surface_crns.readers.manifest_readers as manifest_readers
-import surface_crns.readers.grid_state_readers as init_readers
-import surface_crns.simulators.queue_simulator as simulators
-from surface_crns.profiling.timing import TimeProfiler
+import lblcrn.surface_crn.surface_crns.models.grids as grids
+import lblcrn.surface_crn.surface_crns.readers.manifest_readers as manifest_readers
+import lblcrn.surface_crn.surface_crns.readers.grid_state_readers as init_readers
+import lblcrn.surface_crn.surface_crns.simulators.queue_simulator as simulators
+from lblcrn.surface_crn.surface_crns.profiling.timing import TimeProfiler
 import cProfile
 import optparse
 import sys
