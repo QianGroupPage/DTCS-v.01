@@ -5,28 +5,44 @@ from lblcrn.surface_crn.surface_crns.views.grid_display import *
 from lblcrn.surface_crn.surface_crns.simulators.queue_simulator import *
 from lblcrn.surface_crn.surface_crns.readers.manifest_readers import read_manifest
 from lblcrn.surface_crn.surface_crns.options.option_processor import SurfaceCRNOptionParser
+from lblcrn.surface_crn.results import Results
 import pygame
 import math
 
-def simulate_with_display(manifest_file, lattice):
-    SurfaceCRNQueueSimulator.simulate_surface_crn(manifest_file,
-                                display_class = HexGridPlusIntersectionDisplay,
-                                init_state = lattice)
 
-def simulate_without_display(manifest_file, lattice, species_tracked = ["O", "OH_3F", "OH_top", "H2O"]):
+def scrn_simulate(manifest_file, rxns, time_max=-1, lattice=None, display_class=None, video=True, concentrations=True,
+             species_tracked=[]):
+    if video:
+        simulate_with_display(manifest_file, lattice, display_class)
+    if concentrations:
+        times, concs = simulate_without_display(manifest_file, lattice, species_tracked)
+        return Results.from_concs_times(manifest_file, rxns, concs, times)
+
+
+def simulate_with_display(manifest_file, lattice, display_class="Hex Grid"):
+    if display_class == "Hex Grid":
+        display_class = HexGridPlusIntersectionDisplay
+    else:
+        display_class = None
+    SurfaceCRNQueueSimulator.simulate_surface_crn(manifest_file, display_class, init_state=lattice)
+
+
+def simulate_without_display(manifest_file, lattice, species_tracked):
     '''
     Run until completion or max time, storing an array of species counts at
     the times of each reaction, along with an array of times. At the end,
     display a graph of species concentrations as they change.
     '''
-
     manifest_options = read_manifest(manifest_file)
     opts = SurfaceCRNOptionParser(manifest_options)
-    simulator = QueueSimulator(surface = lattice,
-                               transition_rules = opts.transition_rules,
-                               seed = opts.rng_seed,
-                               simulation_duration = opts.max_duration)
-    time = 0
+    if not lattice:
+        # If no grid is made, use the initial grid
+        lattice = opts.grid
+    simulator = QueueSimulator(surface=lattice,
+                               transition_rules=opts.transition_rules,
+                               seed=opts.rng_seed,
+                               simulation_duration=opts.max_duration)
+
     times = [0]
     concs = dict()
     for species in species_tracked:
@@ -36,7 +52,7 @@ def simulate_without_display(manifest_file, lattice, species_tracked = ["O", "OH
             concs[node.state][0] += 1
     while not simulator.done():
         next_rxn = simulator.process_next_reaction()
-        if next_rxn == None:
+        if next_rxn is None:
             break
         times.append(next_rxn.time)
         for species in species_tracked:
