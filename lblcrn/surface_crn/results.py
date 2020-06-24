@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import csv
 import numpy as np
 from scipy.stats import norm
-import xps
+import lblcrn.surface_crn.xps as xps
 import os
 
 
@@ -152,7 +152,7 @@ class Results:
             for j in range(i, len(species_in_figure)):
                 species = species_in_figure[j]
                 plt.tick_params(axis='both', which='both', labelsize=36)
-                plt.plot(df[species], self.species_colors[species], label=species, linewidth=5)
+                plt.plot(df[species], color=self.species_colors[species], label=species, linewidth=5)
                 plt.legend(fontsize=36, numpoints=30)
 
             plt.xlabel("Time (s)", fontsize=36)

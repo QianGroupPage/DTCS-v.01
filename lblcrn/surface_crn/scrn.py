@@ -6,18 +6,28 @@ from lblcrn.surface_crn.surface_crns.simulators.queue_simulator import *
 from lblcrn.surface_crn.surface_crns.readers.manifest_readers import read_manifest
 from lblcrn.surface_crn.surface_crns.options.option_processor import SurfaceCRNOptionParser
 from lblcrn.surface_crn.results import Results
+import lblcrn.surface_crn.color_gradient as color_gradient
+from lblcrn.surface_crn.surface_crns.random_color import get_random_color, generate_new_color
 import pygame
 import math
 
 
-def scrn_simulate(manifest_file, rxns, time_max=-1, lattice=None, display_class=None, video=True, concentrations=True,
+def scrn_simulate(manifest_file, rxns, time_max=-1, lattice=None, display_class=None, video=False, concentrations=False,
              species_tracked=[]):
     if video:
         simulate_with_display(manifest_file, lattice, display_class)
     if concentrations:
         times, concs = simulate_without_display(manifest_file, lattice, species_tracked)
-        return Results.from_concs_times(manifest_file, rxns, concs, times)
-
+        r = Results.from_concs_times(manifest_file, rxns, concs, times)
+        r.species_ordering = species_tracked
+        colors = []
+        for i, s in enumerate(r.species_ordering):
+            if i == 0:
+                colors.append(get_random_color())
+            else:
+                colors.append(generate_new_color(colors))
+        r.species_colors = {r.species_ordering[i]: color_gradient.RGB_to_hex(colors[i]) for i in range(len(r.species_ordering))}
+        return r
 
 def simulate_with_display(manifest_file, lattice, display_class="Hex Grid"):
     if display_class == "Hex Grid":
