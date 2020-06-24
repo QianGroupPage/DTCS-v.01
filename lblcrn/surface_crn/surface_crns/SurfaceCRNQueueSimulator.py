@@ -14,21 +14,21 @@ try:
 except ImportError:
     import sys
     sys.path.append("./")
-import surface_crns.readers as readers
+import lblcrn.surface_crn.surface_crns.readers as readers
 
 import os
 
-from surface_crns.options.option_processor import SurfaceCRNOptionParser
-from surface_crns.models.grids import SquareGrid, HexGrid
-from surface_crns.views.time_display import TimeDisplay
-from surface_crns.views.grid_display import SquareGridDisplay, HexGridDisplay
-from surface_crns.views.legend_display import LegendDisplay
-from surface_crns.simulators.queue_simulator import QueueSimulator
-from surface_crns.simulators.synchronous_simulator import SynchronousSimulator
-from surface_crns.simulators.event_history import EventHistory
-from surface_crns.simulators.event import Event
-from surface_crns.base.transition_rule import TransitionRule
-from surface_crns.pygbutton import *
+from lblcrn.surface_crn.surface_crns.options.option_processor import SurfaceCRNOptionParser
+from lblcrn.surface_crn.surface_crns.models.grids import SquareGrid, HexGrid
+from lblcrn.surface_crn.surface_crns.views.time_display import TimeDisplay
+from lblcrn.surface_crn.surface_crns.views.grid_display import SquareGridDisplay, HexGridDisplay
+from lblcrn.surface_crn.surface_crns.views.legend_display import LegendDisplay
+from lblcrn.surface_crn.surface_crns.simulators.queue_simulator import QueueSimulator
+from lblcrn.surface_crn.surface_crns.simulators.synchronous_simulator import SynchronousSimulator
+from lblcrn.surface_crn.surface_crns.simulators.event_history import EventHistory
+from lblcrn.surface_crn.surface_crns.simulators.event import Event
+from lblcrn.surface_crn.surface_crns.base.transition_rule import TransitionRule
+from lblcrn.surface_crn.surface_crns.pygbutton import *
 
 import numpy as np
 from queue import PriorityQueue

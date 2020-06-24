@@ -1,6 +1,6 @@
-from surface_crns.base import *
-from surface_crns.constants import *
-from surface_crns.ordered_dict import OrderedDict
+from lblcrn.surface_crn.surface_crns.base import *
+from lblcrn.surface_crn.surface_crns.constants import *
+from lblcrn.surface_crn.surface_crns.ordered_dict import OrderedDict
 import pygame
 
 class LegendDisplay:
