@@ -28,4 +28,4 @@ class Surface:
         return "\n".join([row] * self.size[0]) 
 
     def __repr__(self):
-        return "Surface(name=" + self.name + ', size=' + repr(self.size) + , ", color=" + repr(self.color)')'
+        return "Surface(name=" + self.name + ', size=' + repr(self.size) + " , color=" + repr(self.color) + ')'

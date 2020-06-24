@@ -10,7 +10,7 @@ Dr. Jin Qian, Domas Buracas, Ye Wang, Andrew Bogdan, Rithvik Panchapakesan
 # *** Libraries ***
 import sympy as sym
 
-from typing import List, Union
+from typing import List, Tuple, Union
 
 # *** Classes ***
 class Orbital:
