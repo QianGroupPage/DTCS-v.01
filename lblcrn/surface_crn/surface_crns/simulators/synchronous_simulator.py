@@ -1,7 +1,7 @@
 import copy
 import random
-from surface_crns.base.transition_rule import TransitionRule
-from surface_crns.simulators.event import Event
+from lblcrn.surface_crn.surface_crns.base.transition_rule import TransitionRule
+from lblcrn.surface_crn.surface_crns.simulators.event import Event
 
 class SynchronousSimulator:
     '''

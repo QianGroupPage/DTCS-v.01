@@ -1,7 +1,7 @@
-import surface_crns.readers as readers
-from surface_crns.constants import *
-from surface_crns.models.grids import SquareGrid, HexGrid
-from surface_crns import random_color as rcolor
+import lblcrn.surface_crn.surface_crns.readers as readers
+from lblcrn.surface_crn.surface_crns.constants import *
+from lblcrn.surface_crn.surface_crns.models.grids import SquareGrid, HexGrid
+from lblcrn.surface_crn.surface_crns import random_color as rcolor
 import numpy as np
 import random
 

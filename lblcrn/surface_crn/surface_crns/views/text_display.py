@@ -1,4 +1,4 @@
-from surface_crns.base import *
+from lblcrn.surface_crn.surface_crns.base import *
 import pygame
 
 class TextDisplay(object):

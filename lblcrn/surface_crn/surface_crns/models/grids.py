@@ -1,5 +1,5 @@
 import numpy as np
-from surface_crns.base.node import *
+from lblcrn.surface_crn.surface_crns.base.node import *
 from warnings import *
 
 class SquareGrid(object):
