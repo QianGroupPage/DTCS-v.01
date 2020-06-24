@@ -23,7 +23,9 @@ class Surface:
 
     def __str__(self):
         row = " ".join([self.name] * self.size[1])
-        return "\n".join(row, self.size[0]) 
+        if self.color:
+            return "\n".join([row] * self.size[0]) + f"\n color={self.color}\n" 
+        return "\n".join([row] * self.size[0]) 
 
     def __repr__(self):
-        return "Surface(name=" + self.name + ', size=' + str(self.size) + , ", color=" + str(self.color)')'
+        return "Surface(name=" + self.name + ', size=' + repr(self.size) + , ", color=" + repr(self.color)')'

@@ -41,15 +41,18 @@ class Species:
     A chemical species with a name and orbitals, which are triples of (orbital name, binding energy, proportion)
     """
 
-    def __init__(self, name: str, orbitals: List[Orbital]):
+    def __init__(self, name: str, orbitals: List[Orbital], color: Union[Tuple[int],List[int], str]=None):
         self.name = name
         self.orbitals = orbitals
+        self.color = color
 
     def __str__(self):
+        if self.color:
+            return  self.name + ", orbitals: " + str(self.orbitals) + ", color: " + str(self.color)
         return self.name + ", orbitals: " + str(self.orbitals)
 
     def __repr__(self):
-        return 'Species(name=' + self.name + ', orbitals=' + repr(self.orbitals) + ')'
+        return 'Species(name=' + self.name + ', orbitals=' + repr(self.orbitals) + ', size=' + repr(self.color) + ')'
 
 
 class SpeciesManager:
