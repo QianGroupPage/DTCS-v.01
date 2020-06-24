@@ -30,6 +30,7 @@ from typing import List, Set, Tuple
 
 from lblcrn.crn_sym import species
 from lblcrn.crn_sym import conditions
+from lblcrn.crn_sym import surface
 
 
 class Rxn:  # TODO(Andrew) Document here & beyond.
@@ -199,6 +200,7 @@ class RxnSystem:
         self.conc_eqs = []
         self.conc_diffeqs = []
         self.species_manager = None
+        self.surface = None
 
         for component in self.components:
             if isinstance(component, conditions.Schedule):
@@ -213,6 +215,8 @@ class RxnSystem:
                 self.conc_diffeqs.append(component)
             elif isinstance(component, species.SpeciesManager):
                 self.species_manager = component
+            elif isinstance(component, surface.Surface):
+                self.surface = component
             else:
                 assert False, 'Unknown input type ' + str(type(component))
 
