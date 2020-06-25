@@ -3,6 +3,9 @@
 TODO: A docstring
 """
 
+import os
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = 'hide'
+
 from lblcrn.common import *
 from lblcrn.crn_sym import *
 from lblcrn.bulk_crn import *
@@ -13,7 +16,7 @@ from lblcrn._help import *
 __version__ = 'dev0.1.2.1'
 
 # A module-wide switch to (dis)allow printing through the _echo module.
-do_echo = False
+do_echo = False  # TODO: consider using os.environ?
 
 # Make the following names fake so that `from lblcrn import *` doesn't
 # create mysterious (or conflicting) variables.

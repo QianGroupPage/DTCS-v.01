@@ -7,18 +7,18 @@ Credits:
 Dr. Jin Qian, Domas Buracas, Ye Wang, Andrew Bogdan, Rithvik Panchapakesan
 """
 
-# *** Libraries ***
-import sympy as sym
-
 from typing import List, Union
 
-# *** Classes ***
-class Orbital:
+import monty.json
+import sympy as sym
+
+
+class Orbital(monty.json.MSONable):
     """
     An orbital in a species, this is essentially a named tuple, it's a class for readability purposes.
     """
 
-    def __init__(self, name: str, binding_energy: float, splitting: float=1):
+    def __init__(self, name: str, binding_energy: float, splitting: float = 1):
         self.name = name
         self.binding_energy = binding_energy
         self.splitting = splitting
@@ -36,7 +36,7 @@ class Orbital:
             return "Orbital(name=" + self.name + ', binding_energy=' + repr(self.binding_energy) + ', splitting=' + repr(self.splitting) + ')'
 
 
-class Species:
+class Species(monty.json.MSONable):
     """
     A chemical species with a name and orbitals, which are triples of (orbital name, binding energy, proportion)
     """
@@ -52,7 +52,7 @@ class Species:
         return 'Species(name=' + self.name + ', orbitals=' + repr(self.orbitals) + ')'
 
 
-class SpeciesManager:
+class SpeciesManager(monty.json.MSONable):
     """
     A smart wrapper of a dictionary {sym.Symbol: Species} for the purpose of keeping track of
     which symbols correspond to which speices.
@@ -82,6 +82,26 @@ class SpeciesManager:
     def species_from_symbol(self, key: sym.Symbol) -> Species:
         return self._species[key]
 
+    def symbol_from_name(self, name: str) -> sym.Symbol:
+        """Gets the symbol for the given name, if it is a species.
+
+        Args:
+            name: The name of the species you want to get the symbol for.
+
+        Raises:
+            KeyError: If that's not a name for any species.
+
+        Returns:
+            A sym.Symbol corresponding to a species in the species manager.
+            sm.species_from_symbol(sm.symbol_from_name('name') will work
+            unless you are supposed to get a KeyError.
+        """
+        symbol = sym.Symbol(name)
+        if symbol in self._species:
+            return symbol
+        else:
+            raise KeyError(f'Name {name} corresponds to no species.')
+
     def __str__(self):
         return str(self._species)  # TODO
 
@@ -89,5 +109,5 @@ class SpeciesManager:
         pass  # TODO
 
     sp = make_species
+    get = symbol_from_name
     __getitem__ = species_from_symbol
-    

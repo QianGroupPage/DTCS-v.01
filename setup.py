@@ -28,11 +28,13 @@ if __name__ == '__main__':
           packages=find_packages(),
           install_requires=[
               'matplotlib',
+              'monty',
               'numpy',
               'pandas',
               'scipy',
-              'sympy',
-              'sklearn', ],
+              'seaborn',
+              'sklearn',
+              'sympy'],
           requires=[
               'jupyterlab',
           ],
