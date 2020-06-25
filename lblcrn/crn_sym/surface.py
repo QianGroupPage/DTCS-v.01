@@ -10,13 +10,14 @@ Dr. Jin Qian, Domas Buracas, Andrew Bogdan, Rithvik Panchapakesan, Ye Wang
 # *** Libraries ***
 from typing import List, Tuple, Union
 
+
 # *** Classes ***
 class Surface:
     """
-    An orbital in a species, this is essentially a named tuple, it's a class for readability purposes.
+    A surface structure, by default, it is square with only top sites.
     """
 
-    def __init__(self, name: str, size: Tuple[int], color: Union[Tuple[int],List[int], str]=None):
+    def __init__(self, name: str, size: Tuple[int], color: Union[Tuple[int],List[int], str] = None):
         self.name = name
         self.size = size
         self.color = color

@@ -31,7 +31,6 @@ from typing import List, Set, Tuple
 from lblcrn.crn_sym import species
 from lblcrn.crn_sym import conditions
 from lblcrn.crn_sym import surface
-from lblcrn.crn_sym.surface_reaction import SurfaceRxn, SurfaceRevRxn
 
 
 class Rxn:  # TODO(Andrew) Document here & beyond.
@@ -167,6 +166,7 @@ class RevRxn(Rxn):
 
     def __repr__(self):
         return 'RevRxn(reactants=' + repr(self.reactants) + ', products=' + repr(self.products) + ', k1=' + str(self.rate_constant) + ', k2=' + str(self.rate_constant_reverse) + ')'
+
 
 class RxnSystem:
     """
