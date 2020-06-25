@@ -15,3 +15,5 @@ Dr. Jin Qian, Domas Buracas, Ye Wang, Andrew Bogdan, Rithvik Panchapakesan
 from lblcrn.crn_sym.species import *
 from lblcrn.crn_sym.conditions import *
 from lblcrn.crn_sym.reaction import *
+from lblcrn.crn_sym.surface_reaction import SurfaceRxn, SurfaceRevRxn
+

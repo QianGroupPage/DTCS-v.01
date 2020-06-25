@@ -29,6 +29,7 @@ def scrn_simulate(manifest_file, rxns, time_max=-1, lattice=None, display_class=
         r.species_colors = {r.species_ordering[i]: color_gradient.RGB_to_hex(colors[i]) for i in range(len(r.species_ordering))}
         return r
 
+
 def simulate_with_display(manifest_file, lattice, display_class="Hex Grid"):
     if display_class == "Hex Grid":
         display_class = HexGridPlusIntersectionDisplay
