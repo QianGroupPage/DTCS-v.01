@@ -39,8 +39,16 @@ class SurfaceRxn(Rxn):
     def to_terms(self) -> None:
         raise Exception("SurfaceRxn doesn't support to_terms method.")
 
+    @property
+    def reactants_str(self):
+        return "+".join([str(s) for s in self.reactants])
+
+    @property
+    def products_str(self):
+        return "+".join([str(s) for s in self.products])
+
     def __str__(self):
-        return "+".join(self.reactants) + ' → ' + "+".join(self.products) + ' @ k=' + str(self.rate_constant)
+        return self.reactants_str + ' → ' + self.products_str + ' @ k=' + str(self.rate_constant)
 
     def __repr__(self):
         return 'SurfaceRxn(reactants=' + repr(self.reactants) + ', products=' + repr(self.products) + ', k=' + \
@@ -75,7 +83,7 @@ class SurfaceRevRxn(SurfaceRxn):
                SurfaceRxn(self.products, self.reactants, k=self.rate_constant_reverse)
 
     def __str__(self):
-        return "+".join(self.reactants) + ' ↔ ' + "+".join(self.products) + ' @ k1=' + str(self.rate_constant) + ', ' \
+        return self.reactants_str + ' ↔ ' + self.products_str + ' @ k1=' + str(self.rate_constant) + ', ' \
                + 'k2=' + str(self.rate_constant_reverse)
 
     def __repr__(self):

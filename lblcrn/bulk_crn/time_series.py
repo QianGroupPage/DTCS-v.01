@@ -35,7 +35,7 @@ import sympy as sym
 from lblcrn.bulk_crn import common
 from lblcrn.bulk_crn import experiment
 from lblcrn.bulk_crn import xps
-from lblcrn.crn_sym import reaction
+from lblcrn.crn_sym.rxn_system import RxnSystem
 
 
 class CRNTimeSeries(experiment.Experiment):
@@ -167,7 +167,7 @@ class CRNTimeSeries(experiment.Experiment):
         return bisect.bisect_right(self.t, time) - 1
 
 
-def simulate_crn(rsys: reaction.RxnSystem, time_max: float = 1,
+def simulate_crn(rsys: RxnSystem, time_max: float = 1,
                  **options) -> CRNTimeSeries:
     """Simulate the given reaction system over time.
 

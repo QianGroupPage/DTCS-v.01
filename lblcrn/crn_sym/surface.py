@@ -17,7 +17,7 @@ class Surface:
     A surface structure, by default, it is square with only top sites.
     """
 
-    def __init__(self, name: str, size: Tuple[int], color: Union[Tuple[int],List[int], str] = None):
+    def __init__(self, name: str, size: Tuple[int], color: Union[Tuple[int], List[int], str] = None):
         self.name = name
         self.size = size
         self.color = color

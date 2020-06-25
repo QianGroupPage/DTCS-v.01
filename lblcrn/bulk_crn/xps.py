@@ -33,7 +33,7 @@ import sympy as sym
 from lblcrn.bulk_crn import common
 from lblcrn.bulk_crn import experiment
 from lblcrn.bulk_crn import time_series
-from lblcrn.crn_sym import reaction
+from lblcrn.crn_sym.rxn_system import RxnSystem
 from lblcrn.crn_sym import species
 from lblcrn import _echo
 
@@ -462,7 +462,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
         xps_obs.plot(ax=ax, **kwargs)
 
 
-def simulate_xps(rsys: reaction.RxnSystem, time: float = 1,
+def simulate_xps(rsys: RxnSystem, time: float = 1,
                  species: List[sym.Symbol] = None,
                  ignore: List[sym.Symbol] = None,
                  autoresample: bool = True,
