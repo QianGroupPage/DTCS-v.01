@@ -45,7 +45,6 @@ def generate_initial_surface(rsys, random_seed=30):
             raise Exception(f"{c.symbol} must have a positive integer number of initial counts. Currently, it's initial count is {}")
         species.extend([str(c.symbol) for _ in range(int(str(c.expression))])
             
-
     if not rsys.surface:
         rsys.surface = SurfaceManager('surface', rows=10, cols=10, color=(34,139,34))
         print("Using a default surface")

@@ -9,6 +9,9 @@ Dr. Jin Qian, Domas Buracas, Ye Wang, Andrew Bogdan, Rithvik Panchapakesan
 
 # *** Libraries ***
 import sympy as sym
+# TODO: one way to enforce order in the expressions is to overwrite add's sorting function to
+#  preversve order. However, this is highly dependent on sympy.
+# sym.core.Add._addsort = lambda x: None
 
 from typing import List, Tuple, Union
 
