@@ -31,6 +31,7 @@ from typing import List, Set, Tuple
 from lblcrn.crn_sym import species
 from lblcrn.crn_sym import conditions
 from lblcrn.crn_sym import surface
+from lblcrn.crn_sym.surface_reaction import SurfaceRxn, SurfaceRevRxn
 
 
 class Rxn:  # TODO(Andrew) Document here & beyond.
@@ -71,6 +72,7 @@ class Rxn:  # TODO(Andrew) Document here & beyond.
         symbol.update(self.products.free_symbols)
         return symbol
 
+    # TODO: this is bulk crn-specific method, and as a result should be removed.
     def to_terms(self) -> List[conditions.Term]:
         """
         Create a list of terms from the reaction.
@@ -116,7 +118,9 @@ class Rxn:  # TODO(Andrew) Document here & beyond.
         return str(self.reactants) + ' → ' + str(self.products) + ' @ k=' + str(self.rate_constant)
 
     def __repr__(self):
-        return 'Rxn(reactants=' + repr(self.reactants) + ', products=' + repr(self.products) + ', k=' + str(self.rate_constant) + ')'
+        return 'Rxn(reactants=' + repr(self.reactants) + ', products=' + repr(self.products) + ', k=' + \
+               str(self.rate_constant) + ')'
+
 
 class RevRxn(Rxn):
     """
@@ -162,7 +166,7 @@ class RevRxn(Rxn):
         return str(self.reactants) + ' ↔ ' + str(self.products) + ' @ k1=' + str(self.rate_constant) + ', k2=' + str(self.rate_constant_reverse)
 
     def __repr__(self):
-        return 'Revrxn(reactants=' + repr(self.reactants) + ', products=' + repr(self.products) + ', k1=' + str(self.rate_constant) + ', k2=' + str(self.rate_constant_reverse) + ')'
+        return 'RevRxn(reactants=' + repr(self.reactants) + ', products=' + repr(self.products) + ', k1=' + str(self.rate_constant) + ', k2=' + str(self.rate_constant_reverse) + ')'
 
 class RxnSystem:
     """
