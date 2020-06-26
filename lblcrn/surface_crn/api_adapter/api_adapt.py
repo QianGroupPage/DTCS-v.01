@@ -1,5 +1,7 @@
 from lblcrn.crn_sym import Rxn, RevRxn, Surface, SurfaceRxn, SurfaceRevRxn, Schedule, Conc
+from lblcrn.surface_crn.color_gradient import hex_to_RGB, RGB_to_hex
 import re
+import io
 import random
 
 
@@ -38,7 +40,7 @@ def generate_rules(rsys):
 
 def generate_initial_surface(rsys, random_seed=30):
     """
-    :rsys: a reaction system object
+    :rsys: a rxn_system object
     :return: a string representing the initial surface.
     """
     species = []
@@ -68,3 +70,59 @@ def generate_initial_surface(rsys, random_seed=30):
         surface_strs[choice // cols][choice % cols] = species[i]
 
     return "\n".join([" ".join(strs) for strs in surface_strs]) + "\n"
+
+
+def generate_settings(rsys, max_duration, random_seed=923123122):
+    """
+    :rsys: a rxn_system object
+    :return: a string representing the initial surface.
+    """
+    return f"""
+    # Run settings
+    pixels_per_node    = 100
+    speedup_factor     = 0.5
+    debug              = True
+    rng_seed           = {random_seed}
+    max_duration       = {max_duration}
+    fps                = 1
+    node_display       = text
+    wrap               = false
+    capture_directory  = {""}
+    movie_title = SCRN Simulation
+    """
+
+def generate_colors(rsys):
+    color_strs = ""
+    for s, color in rsys.get_colors().items():
+        if isinstance(color, str):
+            color = hex_to_RGB(color)
+        color_strs += str(s) + " " + str(color) + "\n"
+
+    return f"""
+    !START_COLORMAP
+    {color_strs}!END_COLORMAP
+    """
+
+
+# TODO
+def generate_manifest_stream(rsys, max_duration, random_seed_scrn=923123122, random_seed_surface=30):
+    """
+    :param rsys: the rxn_system object
+    :return: a stream of lines for the corresponding reaction rules.
+    """
+    rule = generate_settings(rsys, max_duration, random_seed_scrn)
+
+    rule += "!START_TRANSITION_RULES\n"
+    rule += generate_rules(rsys)
+    rule += "!END_TRANSITION_RULES\n"
+    rule += "\n"
+
+    rule += "!START_INIT_STATE\n"
+    rule += generate_initial_surface(rsys, random_seed_surface)
+    rule += "!END_INIT_STATE\n"
+    rule += "\n"
+
+    rule += generate_colors(rsys)
+
+    for line in rule.splitlines():
+        yield line
