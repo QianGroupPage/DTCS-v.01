@@ -8,20 +8,18 @@ def to_str(rule):
     :param rule: a reaction rule
     :return: a list of strings representing the rule, suitable for Surface CRN
     """
-    if isinstance(rule, RevRxn):
+    if isinstance(rule, SurfaceRevRxn):
+        left = rule.reactants_str
+        right = rule.products_str
+        return [f"({rule.rate_constant}) {left} -> {right}",
+                f"({rule.rate_constant_reverse}) {right} -> {left}"]
+    elif isinstance(rule, SurfaceRxn):
+        return [f"({rule.rate_constant}) {rule.reactants_str} -> {rule.products_str}"]
+    elif isinstance(rule, RevRxn):
         return [f"({rule.rate_constant}) {rule.reactants} -> {rule.products}",
                 f"({rule.rate_constant_reverse}) {rule.reactants} -> {rule.products}"]
     elif isinstance(rule, Rxn):
         return [f"({rule.rate_constant}) {rule.reactants} -> {rule.products}"]
-    elif isinstance(rule, SurfaceRxn):
-        left = "+".join(rule.reactants)
-        right = "+".join(rule.products)
-        return [f"({rule.rate_constant}) {left} -> {right}"]
-    elif isinstance(rule, SurfaceRevRxn):
-        left = "+".join(rule.reactants)
-        right = "+".join(rule.products)
-        return [f"({rule.rate_constant}) {left} -> {right}",
-                f"({rule.rate_constant_reverse}) {right} -> {left}"]
     else:
         raise Exception("Rule is not of type crn_sym.Rxn or crn_sym.RevRxn.")
 
