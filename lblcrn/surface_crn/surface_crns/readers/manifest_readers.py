@@ -37,11 +37,18 @@ def read_manifest(filename):
 
     Return value: A dictionary of options.
     '''
-    file_location = filename[0:filename.rfind(os.sep)+1]
-    with open(filename, 'rU') as manifest_file:
-        manifest_stream = remove_comments(splice_includes(manifest_file, 
-                                                          file_location))
-        return parse_manifest_stream(manifest_stream)
+    # TODO: if filename is only a stream, (not a string), then
+    # think of it as if the comments or the include statements aren't present
+
+    if isinstance(filename, str):
+
+        file_location = filename[0:filename.rfind(os.sep)+1]
+        with open(filename, 'rU') as manifest_file:
+            manifest_stream = remove_comments(splice_includes(manifest_file,
+                                                              file_location))
+    else:
+        manifest_stream = filename
+    return parse_manifest_stream(manifest_stream)
 
 
 def parse_manifest_stream(manifest_stream):

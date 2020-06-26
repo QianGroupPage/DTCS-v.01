@@ -168,6 +168,13 @@ class RxnSystem:
         """
         return copy.copy(self._symbols)
 
+    # TODO
+    def get_colors(self):
+        """
+        :return: colors for each species, if color is assigned.
+        """
+        pass
+
     def __str__(self):
         s = 'rxn system with components:\n'
         for component in self.components:

@@ -6,19 +6,27 @@ from lblcrn.surface_crn.surface_crns.simulators.queue_simulator import *
 from lblcrn.surface_crn.surface_crns.readers.manifest_readers import read_manifest
 from lblcrn.surface_crn.surface_crns.options.option_processor import SurfaceCRNOptionParser
 from lblcrn.surface_crn.results import Results
+from lblcrn.surface_crn.api_adapter.api_adapt import generate_manifest_stream
 import lblcrn.surface_crn.color_gradient as color_gradient
 from lblcrn.surface_crn.surface_crns.random_color import get_random_color, generate_new_color
 import pygame
 import math
 
 
-def scrn_simulate(manifest_file, rxns, time_max=-1, lattice=None, display_class=None, video=False, concentrations=False,
-             species_tracked=[]):
+def scrn_simulate(rxns, time_max=-1, lattice=None, display_class=None, video=False, concentrations=False,
+             species_tracked=[], manifest_file=""):
+    if not manifest_file:
+        manifest = generate_manifest_stream(rxns, time_max)
+    else:
+        manifest = manifest_file
     if video:
-        simulate_with_display(manifest_file, lattice, display_class)
+        simulate_with_display(manifest, lattice, display_class)
     if concentrations:
-        times, concs = simulate_without_display(manifest_file, lattice, species_tracked)
-        r = Results.from_concs_times(manifest_file, rxns, concs, times)
+        times, concs = simulate_without_display(manifest, lattice, species_tracked)
+        if manifest_file:
+            r = Results.from_concs_times(manifest_file, rxns, concs, times)
+        else:
+            r = Results.from_concs_times("".join(list(manifest)), rxns, concs, times)
         r.species_ordering = species_tracked
         colors = []
         for i, s in enumerate(r.species_ordering):
@@ -45,7 +53,10 @@ def simulate_without_display(manifest_file, lattice, species_tracked):
     display a graph of species concentrations as they change.
     '''
     manifest_options = read_manifest(manifest_file)
+
+    print("manifest options", manifest_options)
     opts = SurfaceCRNOptionParser(manifest_options)
+    print("opts", opts)
     if not lattice:
         # If no grid is made, use the initial grid
         lattice = opts.grid
