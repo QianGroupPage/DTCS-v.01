@@ -41,11 +41,11 @@ class SurfaceRxn(Rxn):
 
     @property
     def reactants_str(self):
-        return "+".join([str(s) for s in self.reactants])
+        return " + ".join([str(s) for s in self.reactants])
 
     @property
     def products_str(self):
-        return "+".join([str(s) for s in self.products])
+        return " + ".join([str(s) for s in self.products])
 
     def __str__(self):
         return self.reactants_str + ' → ' + self.products_str + ' @ k=' + str(self.rate_constant)

@@ -1,4 +1,4 @@
-from lblcrn.crn_sym import Rxn, RevRxn, Surface, SurfaceRxn, SurfaceRevRxn
+from lblcrn.crn_sym import Rxn, RevRxn, Surface, SurfaceRxn, SurfaceRevRxn, Schedule, Conc
 import re
 import random
 
@@ -42,12 +42,16 @@ def generate_initial_surface(rsys, random_seed=30):
     :return: a string representing the initial surface.
     """
     species = []
-    for c in rsys.conc_eqs:
+    for c in rsys.schedules:
         # TODO
-        if not re.match('[1-9][0-9]*', str(c.expression)):
-            raise Exception(f"{c.symbol} must have a positive integer number of initial counts. Currently, " +
-                            f"it's initial count is {c.expression}")
-        species.extend([str(c.symbol) for _ in range(int(str(c.expression)))])
+        if isinstance(c, Schedule) and not isinstance(c, Conc):
+            raise Exception(f"{c} is a schedule, not an initial concentration." +
+                            f" This is not currently supported in the Surface CRN.")
+
+        # if not re.match('[1-9][0-9]*', str(c.expression)):
+        #     raise Exception(f"{c.symbol} must have a positive integer number of initial counts. Currently, " +
+        #                     f"it's initial count is {c.expression}")
+        species.extend([str(c.symbol) for _ in range(int(str(c.concentration)))])
 
     if not rsys.surface:
         rsys.surface = Surface('surface', (10, 10), color=(34, 139, 34))
