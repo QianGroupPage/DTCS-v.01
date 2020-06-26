@@ -30,8 +30,13 @@ def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=Fa
         manifest = generate_manifest_stream(rxns, time_max)
     else:
         manifest = manifest_file
+
     if video:
         simulate_with_display(manifest, lattice, display_class)
+
+    # Generate the file stream again after it's used.
+    if not manifest_file:
+        manifest = generate_manifest_stream(rxns, time_max)
 
     if not species_tracked:
         species_tracked = list(rxns.get_symbols())
@@ -46,6 +51,8 @@ def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=Fa
     r.species_colors = {s: color_index[s] for s in r.species_ordering}
     r.species_ordering = [str(s) for s in r.species_ordering]
     r.species_colors = {str(s): color_to_HEX(c) for s, c in r.species_colors.items()}
+
+    # TODO: warn the user if termination is early.
     return r
 
 
