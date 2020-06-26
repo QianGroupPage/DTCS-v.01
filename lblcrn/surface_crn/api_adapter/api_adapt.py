@@ -113,7 +113,7 @@ def generate_manifest_stream(rsys, max_duration, random_seed_scrn=923123122, ran
     rule = generate_settings(rsys, max_duration, random_seed_scrn)
 
     rule += "!START_TRANSITION_RULES\n"
-    rule += generate_rules(rsys)
+    rule += "".join(generate_rules(rsys))
     rule += "!END_TRANSITION_RULES\n"
     rule += "\n"
 
