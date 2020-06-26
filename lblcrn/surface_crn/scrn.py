@@ -6,36 +6,47 @@ from lblcrn.surface_crn.surface_crns.simulators.queue_simulator import *
 from lblcrn.surface_crn.surface_crns.readers.manifest_readers import read_manifest
 from lblcrn.surface_crn.surface_crns.options.option_processor import SurfaceCRNOptionParser
 from lblcrn.surface_crn.results import Results
+from lblcrn.common import color_to_HEX
 from lblcrn.surface_crn.api_adapter.api_adapt import generate_manifest_stream
-import lblcrn.surface_crn.color_gradient as color_gradient
-from lblcrn.surface_crn.surface_crns.random_color import get_random_color, generate_new_color
 import pygame
 import math
 
 
-def scrn_simulate(rxns, time_max=-1, lattice=None, display_class=None, video=False, concentrations=False,
+def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=False,
              species_tracked=[], manifest_file=""):
+    """
+
+    :param rxns:
+    :param time_max:
+    :param lattice:
+    :param display_class:
+    :param video:
+    :param concentrations:
+    :param species_tracked: a list of sympy symbols or strings representing each species
+    :param manifest_file:
+    :return:
+    """
     if not manifest_file:
         manifest = generate_manifest_stream(rxns, time_max)
     else:
         manifest = manifest_file
     if video:
         simulate_with_display(manifest, lattice, display_class)
-    if concentrations:
-        times, concs = simulate_without_display(manifest, lattice, species_tracked)
-        if manifest_file:
-            r = Results.from_concs_times(manifest_file, rxns, concs, times)
-        else:
-            r = Results.from_concs_times("".join(list(manifest)), rxns, concs, times)
-        r.species_ordering = species_tracked
-        colors = []
-        for i, s in enumerate(r.species_ordering):
-            if i == 0:
-                colors.append(get_random_color())
-            else:
-                colors.append(generate_new_color(colors))
-        r.species_colors = {r.species_ordering[i]: color_gradient.RGB_to_hex(colors[i]) for i in range(len(r.species_ordering))}
-        return r
+
+    if not species_tracked:
+        species_tracked = list(rxns.get_symbols())
+    times, concs = simulate_without_display(manifest, lattice, [str(s) for s in species_tracked])
+    if manifest_file:
+        r = Results.from_concs_times(manifest_file, rxns, concs, times)
+    else:
+        r = Results.from_concs_times("".join(list(manifest)), rxns, concs, times)
+
+    color_index = rxns.get_colors()
+    r.species_ordering = species_tracked
+    r.species_colors = {s: color_index[s] for s in r.species_ordering}
+    r.species_ordering = [str(s) for s in r.species_ordering]
+    r.species_colors = {str(s): color_to_HEX(c) for s, c in r.species_colors.items()}
+    return r
 
 
 def simulate_with_display(manifest_file, lattice, display_class="Hex Grid"):
@@ -54,9 +65,7 @@ def simulate_without_display(manifest_file, lattice, species_tracked):
     '''
     manifest_options = read_manifest(manifest_file)
 
-    print("manifest options", manifest_options)
     opts = SurfaceCRNOptionParser(manifest_options)
-    print("opts", opts)
     if not lattice:
         # If no grid is made, use the initial grid
         lattice = opts.grid

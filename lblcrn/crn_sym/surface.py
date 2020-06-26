@@ -10,7 +10,7 @@ Dr. Jin Qian, Domas Buracas, Andrew Bogdan, Rithvik Panchapakesan, Ye Wang
 # *** Libraries ***
 from typing import List, Tuple, Union
 import sympy as sym
-
+from lblcrn.common import color_to_RGB
 
 # *** Classes ***
 class Surface:
@@ -21,7 +21,11 @@ class Surface:
     def __init__(self, name: str, size: Tuple[int], color: Union[Tuple[int], List[int], str] = None):
         self.name = name
         self.size = size
-        self.color = color
+
+        if color:
+            self.color = color_to_RGB(color)
+        else:
+            self.color = color
 
     #property
     def symbol(self):

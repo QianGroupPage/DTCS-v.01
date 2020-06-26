@@ -40,7 +40,8 @@ class QueueSimulator:
 
         self.time = 0
         self.surface.set_global_state(self.init_state)
-        print("QueueSimulator initialized with global state:\n" + str(self.init_state))
+        if self.debugging:
+            print("QueueSimulator initialized with global state:\n" + str(self.init_state))
         self.reset()
         if self.debugging:
             print(self.surface)

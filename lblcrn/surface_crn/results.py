@@ -139,7 +139,7 @@ class Results:
         if species_in_figure is None:
             species_in_figure = self.species_ordering
 
-        fig = plt.figure(figsize=(50, 100))
+        fig = plt.figure(figsize=(30, 60))
         fig.subplots_adjust(top=0.95)
         fig.suptitle(f"{title}", fontsize=48)
 

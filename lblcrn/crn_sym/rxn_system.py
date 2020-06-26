@@ -7,6 +7,7 @@ from lblcrn.crn_sym import surface
 from lblcrn.crn_sym import conditions
 from lblcrn.crn_sym.reaction import Rxn
 from lblcrn.crn_sym.surface_reaction import SurfaceRxn
+from lblcrn.common import generate_new_color, color_to_RGB
 
 
 class RxnSystem:
@@ -91,6 +92,9 @@ class RxnSystem:
         for schedule in self.schedules:
             self.scheduler[self.symbol_index[schedule.symbol]] = schedule
 
+        # an index from symbols to their colors
+        self.color_index = None
+
     def get_ode_expressions(self) -> List[sym.Expr]:
         """
         Return a list of expressions, corresponding to the derivative of the concentration of
@@ -173,7 +177,34 @@ class RxnSystem:
         """
         :return: colors for each species, if color is assigned.
         """
-        pass
+        colors = [] if not self.surface.color else [self.surface.color]
+        if self.color_index is None:
+            self.color_index = {}
+        for index, symbol in enumerate(self._symbols):
+            if self.color_index and symbol in self.color_index:
+                continue
+            color = self.species_manager[symbol].color
+            if color is None:
+                color = color_to_RGB(generate_new_color(colors))
+                colors.append(color)
+                self.species_manager[symbol].color = color
+
+            self.color_index[symbol] = self.species_manager[symbol].color
+
+        if self.surface:
+            if self.color_index and self.surface.symbol in self.color_index:
+                pass
+            else:
+                color = self.surface.color
+                if color is None:
+                    color = color_to_RGB(generate_new_color(colors))
+                    colors.append(color)
+                    self.surface.color = color
+                self.color_index[self.surface.symbol()] = color
+        return self.color_index
+
+
+
 
     def __str__(self):
         s = 'rxn system with components:\n'

@@ -12,6 +12,7 @@ import sympy as sym
 # TODO: one way to enforce order in the expressions is to overwrite add's sorting function to
 #  preversve order. However, this is highly dependent on sympy.
 # sym.core.Add._addsort = lambda x: None
+from lblcrn.common import color_to_RGB
 
 from typing import List, Tuple, Union
 
@@ -47,7 +48,10 @@ class Species:
     def __init__(self, name: str, orbitals: List[Orbital], color: Union[Tuple[int],List[int], str]=None):
         self.name = name
         self.orbitals = orbitals
-        self.color = color
+        if color:
+            self.color = color_to_RGB(color)
+        else:
+            self.color = color
 
     def __str__(self):
         if self.color:

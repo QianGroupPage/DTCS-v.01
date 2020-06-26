@@ -111,13 +111,13 @@ def simulate_surface_crn(manifest_filename, display_class = None,
     # READ MANIFEST AND INITIALIZE #
     ################################
     # Parse the manifest
-    print("Reading information from manifest file " + manifest_filename + "...",
-          end="")
+    # print("Reading information from manifest file " + manifest_filename + "...",
+    #       end="")
     manifest_options = \
                 readers.manifest_readers.read_manifest(manifest_filename)
     opts = SurfaceCRNOptionParser(manifest_options)
 
-    print(" Done.")
+    # print(" Done.")
 
     if opts.capture_directory != None:
         from signal import signal, SIGPIPE, SIG_DFL

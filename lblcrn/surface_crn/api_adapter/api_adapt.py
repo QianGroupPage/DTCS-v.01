@@ -1,5 +1,5 @@
 from lblcrn.crn_sym import Rxn, RevRxn, Surface, SurfaceRxn, SurfaceRevRxn, Schedule, Conc
-from lblcrn.surface_crn.color_gradient import hex_to_RGB, RGB_to_hex
+from lblcrn.common import color_to_RGB
 import re
 import io
 import random
@@ -77,31 +77,27 @@ def generate_settings(rsys, max_duration, random_seed=923123122):
     :rsys: a rxn_system object
     :return: a string representing the initial surface.
     """
-    return f"""
-    # Run settings
-    pixels_per_node    = 100
-    speedup_factor     = 0.5
-    debug              = True
-    rng_seed           = {random_seed}
-    max_duration       = {max_duration}
-    fps                = 1
-    node_display       = text
-    wrap               = false
-    capture_directory  = {""}
-    movie_title = SCRN Simulation
-    """
+    return f"# Run settings\n" + \
+           "pixels_per_node     = 100\n" + \
+           "speedup_factor      = 0.5\n" + \
+           "debug               = False\n" + \
+           f"rng_seed           = {random_seed}\n" + \
+           f"max_duration       = {max_duration}\n" + \
+           "fps                 = 1\n" + \
+           "node_display        = text\n" + \
+           "wrap                = false\n" + \
+           f"capture_directory  = Surface CRN Videos\n" + \
+           "movie_title = SCRN Simulation\n\n"
+
 
 def generate_colors(rsys):
     color_strs = ""
     for s, color in rsys.get_colors().items():
         if isinstance(color, str):
-            color = hex_to_RGB(color)
-        color_strs += str(s) + " " + str(color) + "\n"
+            color = (c for c in color_to_RGB(color))
+        color_strs += str(s) + ": " + str(color) + "\n"
 
-    return f"""
-    !START_COLORMAP
-    {color_strs}!END_COLORMAP
-    """
+    return f"""!START_COLORMAP\n{color_strs}!END_COLORMAP\n"""
 
 
 # TODO
@@ -113,7 +109,7 @@ def generate_manifest_stream(rsys, max_duration, random_seed_scrn=923123122, ran
     rule = generate_settings(rsys, max_duration, random_seed_scrn)
 
     rule += "!START_TRANSITION_RULES\n"
-    rule += "".join(generate_rules(rsys))
+    rule += "\n".join(generate_rules(rsys)) + "\n"
     rule += "!END_TRANSITION_RULES\n"
     rule += "\n"
 
