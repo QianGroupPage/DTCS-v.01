@@ -1,4 +1,5 @@
 from lblcrn.crn_sym.reaction import Rxn
+from lblcrn.crn_sym.surface import Surface
 from typing import Set, Tuple
 import sympy as sym
 
@@ -22,12 +23,29 @@ class SurfaceRxn(Rxn):
                             + " be equal length.")
 
         for s in reactants + products:
-            if s is not None and not isinstance(s, sym.Symbol):
-                raise Exception(f"{s} is not a of sympy.Symbol class. \n" +
+            if s is not None and (not isinstance(s, sym.Symbol) and not isinstance(s, Surface)):
+                raise Exception(f"{s} is not a of sympy.Symbol class or Surface class. \n" +
                                 "please create it using the sp method of a species manager")
 
-        self.reactants = reactants
-        self.products = products
+        self.reactants = []
+        for s in reactants:
+            if s is not None and (not isinstance(s, sym.Symbol) and not isinstance(s, Surface)):
+                raise Exception(f"{s} is not a of sympy.Symbol class or Surface class. \n" +
+                                "please create it using the sp method of a species manager")
+            if isinstance(s, Surface):
+                self.reactants.append(s.symbol())
+            else:
+                self.reactants.append(s)
+
+        self.products = []
+        for s in products:
+            if isinstance(s, Surface):
+                self.products.append(s.symbol())
+            else:
+                self.products.append(s)
+
+        self.reactants = tuple(self.reactants)
+        self.products = tuple(self.products)
         self.rate_constant = k
 
     def get_symbols(self) -> Set[sym.Symbol]:

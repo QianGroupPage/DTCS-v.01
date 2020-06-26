@@ -9,6 +9,7 @@ Dr. Jin Qian, Domas Buracas, Andrew Bogdan, Rithvik Panchapakesan, Ye Wang
 
 # *** Libraries ***
 from typing import List, Tuple, Union
+import sympy as sym
 
 
 # *** Classes ***
@@ -21,6 +22,10 @@ class Surface:
         self.name = name
         self.size = size
         self.color = color
+
+    #property
+    def symbol(self):
+        return sym.Symbol(self.name)
 
     def __str__(self):
         row = " ".join([self.name] * self.size[1])
