@@ -125,8 +125,8 @@ class Results:
                 self.df[k] += self.df[s]
 
     # TODO: decrease the figure size in case zoom = False
-    def plot_evolution(self, species_in_figure=None, start_time=0, end_time=-1, title="", save=False, path="",
-                       zoom=False):
+    def plot_evolution(self, species_in_figure=None, start_time=0, end_time=-1, title="", save=False,
+                       return_fig=False, path="", zoom=False):
         """
         Plot the concentrations from start_time until time step end_time. -1 means till the end.
 
@@ -139,7 +139,7 @@ class Results:
         if species_in_figure is None:
             species_in_figure = self.species_ordering
 
-        fig = plt.figure(figsize=(40, 30))
+        fig = plt.figure(figsize=(8, 6))
         # fig.subplots_adjust(top=0.95)
         # fig.suptitle(f"{title}", fontsize=48)
 
@@ -148,19 +148,21 @@ class Results:
         else:
             irange = [0]
         for i in irange:
-            plt.subplot(len(species_in_figure), 1, i + 1)
+            # Use subplots only when multiple subplots are required.
+            if len(irange) > 1:
+                plt.subplot(len(species_in_figure), 1, i + 1)
             for j in range(i, len(species_in_figure)):
                 species = species_in_figure[j]
-                plt.tick_params(axis='both', which='both', labelsize=36)
-                plt.plot(df[species], color=self.species_colors[species], label=species, linewidth=5)
-                plt.legend(fontsize=36, numpoints=30)
+                plt.tick_params(axis='both', which='both', labelsize=12)
+                plt.plot(df[species], color=self.species_colors[species], label=species, linewidth=2)
+                plt.legend(fontsize=12, numpoints=30)
 
-            plt.xlabel("Time (s)", fontsize=36)
-            plt.ylabel("Molecule Count (#)", fontsize=36)
+            plt.xlabel("Time (s)", fontsize=12)
+            plt.ylabel("Molecule Count (#)", fontsize=12)
         if save:
             fig.savefig(f"{path}/{title}")
-        plt.close()
-        return fig
+        if return_fig:
+            return fig
 
     def reference_with_xps(self, path="", scaling_factor=1):
         self.xps_df = xps.read_and_process(path, round=1) / scaling_factor
@@ -203,7 +205,7 @@ class Results:
         max_be = max(gaussian.index.max(), xps_df.index.max())
         return xps.fill_zeros(gaussian, min_be, max_be), xps.fill_zeros(xps_df, min_be, max_be)
 
-    def plot_gaussian(self, t=-1, path="", xps_path="", xps_scaling=1, save=False, show_fig=True, fig_size="Default",
+    def plot_gaussian(self, t=-1, path="", xps_path="", xps_scaling=1, save=False, return_fig=False, fig_size="Default",
                       scaling_factor=1,
                       ax=None):
         """
@@ -223,9 +225,11 @@ class Results:
         curves = []
         if not ax:
             fig, ax = plt.subplots()
+            fig.set_figheight(6)
+            fig.set_figwidth(8)
         plt.style.use('seaborn-white')
-        # ax.tick_params(axis="x", direction="out", length=8, width=2)
-        # plt.tick_params(axis='both', which='minor', labelsize=36)
+        ax.tick_params(axis="x", direction="out", length=8, width=2)
+        ax.tick_params(axis='both', which='minor', labelsize=12)
 
         gaussian_peaks = {}
         for n in sorted([n for n in gaussian.columns if n != "Envelope"],
@@ -247,11 +251,12 @@ class Results:
             curves.append(curve)
             legend_labels += ["Experiment"] + legend_labels
 
-        curve = ax.plot(gaussian.index, gaussian["Envelope"], linewidth=4, color='black', label="CRN", alpha=0.8)
+        curve = ax.plot(gaussian.index, gaussian["Envelope"], linewidth=2, color='black', label="CRN", alpha=0.8)
         curves.append(curve)
         legend_labels += ["CRN"] + [gaussian_peaks[n][0].get_label() for n in self.species_ordering]
 
-        ax.legend([c[0] for c in curves] + [gaussian_peaks[n][0] for n in self.species_ordering], legend_labels)
+        ax.legend([c[0] for c in curves] + [gaussian_peaks[n][0] for n in self.species_ordering], legend_labels,
+                  fontsize=12)
         # if fig_size == "Default":
         #     ax.legend([c[0] for c in curves] + [gaussian_peaks[n][0] for n in names], legend_labels,
         #               fontsize=14)
@@ -259,12 +264,17 @@ class Results:
         #     ax.legend([c[0] for c in curves] + [gaussian_peaks[n][0] for n in names], legend_labels,
         #               fontsize=12)
 
+        ax.set_xlabel("Binding Energy", fontsize=12)
+        ax.set_ylabel("Intensity", fontsize=12)
+
         ax.set_xlim(max_be, min_be)
-        if show_fig:
-            plt.show()
+
         if save:
             ax.figure.savefig("{}/spectrum.png".format(path))
-        return ax.figure
+        if return_fig:
+            # Usually, you don't need to return because plot would draw the graph in the current
+            # Jupter Notebbok. Return only when you need the figure.
+            return ax.figure
 
     def save(self, directory=None):
         """
