@@ -18,12 +18,21 @@ class Results:
     def __init__(self, manifest_file, rxns, df=None):
         self.manifest_file = manifest_file
         self.df = df
+        self.resample_evolution()
 
         self.xps_df = None # The xps dataframe we have for reference
 
         self.species_ordering = None  # The ordering of species as they appear in our figures.
         self.species_colors = {}  # A dictionary from species names to their colors
         self.substances = dict(zip([repr(s) for s in rxns.get_symbols()], rxns.get_species())) if rxns else {}
+
+    def resample_evolution(self, round=1):
+        df = self.df.copy()
+        df["Time (s)"] = df.index
+        df["Time (s)"] = df["Time (s)"].round(round)
+        df = df.groupby("Time (s)").mean()
+        self.df_raw = self.df
+        self.df = df.reset_index().set_index("Time (s)")
 
     @staticmethod
     def from_directory(path, rxns):
@@ -125,8 +134,8 @@ class Results:
                 self.df[k] += self.df[s]
 
     # TODO: decrease the figure size in case zoom = False
-    def plot_evolution(self, species_in_figure=None, start_time=0, end_time=-1, title="", save=False,
-                       return_fig=False, path="", zoom=False):
+    def plot_evolution(self, species_in_figure=None, start_time=0, end_time=-1, title="", ax=None, save=False,
+                       return_fig=False, path="", use_raw_data=False, zoom=False):
         """
         Plot the concentrations from start_time until time step end_time. -1 means till the end.
 
@@ -134,35 +143,56 @@ class Results:
         """
         if end_time == -1:
             end_time = self.df.index.max()
-        df = self.df[(self.df.index <= end_time) & (self.df.index >= start_time)]
+
+        if use_raw_data:
+            df = self.df_raw
+        else:
+            df = self.df
+        df = df[(df.index <= end_time) & (df.index >= start_time)]
 
         if species_in_figure is None:
             species_in_figure = self.species_ordering
-
-        fig = plt.figure(figsize=(8, 6))
-        # fig.subplots_adjust(top=0.95)
-        # fig.suptitle(f"{title}", fontsize=48)
 
         if zoom:
             irange = range(len(species_in_figure) - 1)
         else:
             irange = [0]
+
+        if not ax:
+            ax_given = False
+            fig, axes = plt.subplots(len(irange), 1)
+            # TODO: fix this for multiple axes
+            fig.set_figheight(6)
+            fig.set_figwidth(8)
+            # fig.subplots_adjust(top=0.95)
+            # fig.suptitle(f"{title}", fontsize=48)
+        else:
+            ax_given = True
+            axes = [ax]
+
+        if not isinstance(axes, list):
+            axes = [axes]
+
         for i in irange:
-            # Use subplots only when multiple subplots are required.
-            if len(irange) > 1:
-                plt.subplot(len(species_in_figure), 1, i + 1)
+            ax = axes[i]
             for j in range(i, len(species_in_figure)):
                 species = species_in_figure[j]
-                plt.tick_params(axis='both', which='both', labelsize=12)
-                plt.plot(df[species], color=self.species_colors[species], label=species, linewidth=2)
-                plt.legend(fontsize=12, numpoints=30)
+                ax.tick_params(axis='both', which='both', labelsize=12)
+                ax.plot(df[species], color=self.species_colors[species], label=species, linewidth=2)
+                ax.legend(fontsize=12, numpoints=30)
 
-            plt.xlabel("Time (s)", fontsize=12)
-            plt.ylabel("Molecule Count (#)", fontsize=12)
+            ax.set_title(title)
+            ax.set_xlabel("Time (s)", fontsize=12)
+            ax.set_ylabel("Molecule Count (#)", fontsize=12)
         if save:
+            if ax_given:
+                raise Exception("Ax is given as a parameter. Please save outside of this function. \n" +
+                                "Alternatively, try not giving ax as a parameter to this function")
             fig.savefig(f"{path}/{title}")
         if return_fig:
-            return fig
+            # if ax_given:
+            #     raise Exception("Ax is given as a parameter, and therefore fig
+            return ax.figure
 
     def reference_with_xps(self, path="", scaling_factor=1):
         self.xps_df = xps.read_and_process(path, round=1) / scaling_factor
@@ -283,6 +313,7 @@ class Results:
         :param directory: a path in the file system; if None, infer the directory from the rules file.
         :return:
         """
+        self.df_raw.to_csv("{}/Data_raw.gz".format(directory), compression='gzip')
         self.df.to_csv("{}/Data.gz".format(directory), compression='gzip')
 
     def save_converged_values(self, directory="", convergence_time=None, annotations=None):
