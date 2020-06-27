@@ -1,21 +1,38 @@
-"""
-CRN - species.py:
+"""Classes for defining chemical species.
 
-Structures for the manipulation of chemical speices.
+Ideally we'd transition to using pymatgen's stuff, but before then, this is
+good.
 
-Credits:
-Dr. Jin Qian, Domas Buracas, Ye Wang, Andrew Bogdan, Rithvik Panchapakesan
+Exports:
+    Orbital: An orbital in a species.
+    Species: A chemical species with a name and orbitals.
+    SpeciesManager: A smart wrapper of a dictionary {sym.Symbol: Species}.
+
+Usage:
+    # Create and print a new species X.
+    sm = SpeciesManager()
+    x = sm.sp('X', Orbital('1s', 340))
+    print(sm[x])
 """
 
 from typing import List, Union
 
+import lblcrn
 import monty.json
 import sympy as sym
 
 
 class Orbital(monty.json.MSONable):
-    """
-    An orbital in a species, this is essentially a named tuple, it's a class for readability purposes.
+    """An orbital in a species.
+
+    This isn't actually a whole orbital. If you want to represent an orbital
+    with splitting, you represent it with two orbitals, each with their own
+    splitting coefficient.
+
+    Attributes:
+        name: The name of the orbital, e.g. 1s, 2p-1/2
+        binding_energy: The binding energy of the orbital
+        splitting: The splitting coefficient, these should sum to one.
     """
 
     def __init__(self, name: str, binding_energy: float, splitting: float = 1):
@@ -25,20 +42,27 @@ class Orbital(monty.json.MSONable):
 
     def __str__(self):
         if self.splitting == 1:
-            return self.name + '@ ' + str(self.binding_energy)
+            return f'{self.name} @ {self.binding_energy} eV'
         else:
-            return self.name + '@ ' + repr(self.binding_energy) + ', splitting ' + repr(self.splitting)
+            return f'{self.name} @ {self.binding_energy} eV, ' \
+                   f'splitting {self.splitting}'
 
     def __repr__(self):
         if self.splitting == 1:
-            return "Orbital(name=" + self.name + ', binding_energy=' + str(self.binding_energy) + ')'
+            return f'{self.__class__}(name={repr(self.name)}, ' \
+                   f'binding_energy={repr(self.binding_energy)})'
         else:
-            return "Orbital(name=" + self.name + ', binding_energy=' + repr(self.binding_energy) + ', splitting=' + repr(self.splitting) + ')'
+            return f'{self.__class__}(name={repr(self.name)}, ' \
+                   f'binding_energy={repr(self.binding_energy)}, ' \
+                   f'splitting={repr(self.splitting)})'
 
 
 class Species(monty.json.MSONable):
-    """
-    A chemical species with a name and orbitals, which are triples of (orbital name, binding energy, proportion)
+    """A chemical species with a name and orbitals.
+
+    Attributes:
+        name: The name of the species.
+        orbitals: A list of Orbitals.
     """
 
     def __init__(self, name: str, orbitals: List[Orbital]):
@@ -46,30 +70,49 @@ class Species(monty.json.MSONable):
         self.orbitals = orbitals
 
     def __str__(self):
-        return self.name + ", orbitals: " + str(self.orbitals)
+        orbitals = [str(orbital) for orbital in self.orbitals]
+        return f'{self.name}, orbitals: {orbitals}'
 
     def __repr__(self):
-        return 'Species(name=' + self.name + ', orbitals=' + repr(self.orbitals) + ')'
+        return f'{self.__class__}(name={repr(self.name)}, ' \
+               f'orbitals={repr(self.orbitals)})'
 
 
 class SpeciesManager(monty.json.MSONable):
+    """A smart wrapper of a dictionary {sym.Symbol: Species}.
+
+    Exists for the purpose of keeping track of which symbols correspond to
+    which speices.
+
+    You can create symbols/species pairs with SpeciesManager.sp and access
+    them with SpeciesManager[], which forward to the more verbosely-named
+    make_species and species_from_symbol.
+
+    If you need to, you can get a symbol which corresponds to a species with
+    SpeciesManager.get, which forwards to symbol_from_name. This is useful if,
+    for example you loaded the SpeciesManager from a file.
     """
-    A smart wrapper of a dictionary {sym.Symbol: Species} for the purpose of keeping track of
-    which symbols correspond to which speices.
 
-    You can create symbols/species pairs with SpeciesManager.sp and access them with SpeciesManager[],
-    which forward to the more verbosely-named make_species and species_from_symbol
-    """
+    def __init__(self, species: dict = None):
+        if species:
+            self._species = species
+        else:
+            self._species = {}
 
-    def __init__(self):
-        self._species = {} # As of current, initializes empty
+    def make_species(self, name: str,
+                     orbitals: Union[Orbital, List[Orbital]]) -> sym.Symbol:
+        """Makes a sym.Symbol and a corresponding Species
 
-    def make_species(self, name: str, orbitals: Union[Orbital, List[Orbital]]) -> sym.Symbol:
-        """
-        Makes a sym.Symbol and a corresponding Species and keeps track of their correspondence.
-        Returns the symbol.
+        Keeps track of their correspondence.
+        Orbitals can be either a list of orbitals or just one orbital
 
-        Orbitals can be either a list of orbitals or just one orbital, just to be kind.
+        Args:
+            name: The name of the new species and of the symbol.
+            orbitals: The Orbitals of the species. Can be an Orbital or a list
+                of Orbitals, just to be nice
+
+        Returns:
+             The sym.Symbol corresponding to the new Species.
         """
         symbol = sym.Symbol(name)
 
@@ -102,11 +145,40 @@ class SpeciesManager(monty.json.MSONable):
         else:
             raise KeyError(f'Name {name} corresponds to no species.')
 
+    def as_dict(self) -> dict:
+        """Return a MSON-serializable dict representation."""
+        d = {
+            '@module': self.__class__.__module__,
+            '@class': self.__class__.__name__,
+            '@version': lblcrn.__version__,  # TODO: Better way to do this?
+            'species': {}
+        }
+
+        for symbol, species in self._species.items():
+            d['species'][symbol.name] = species.as_dict()
+
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict):
+        """Load from a dict representation."""
+        decode = monty.json.MontyDecoder().process_decoded
+
+        species_dict = {}
+        for name, species in d['species'].items():
+            species_dict[sym.Symbol(name)] = decode(species)
+        d['species'] = species_dict
+
+        return cls(**d)
+
     def __str__(self):
-        return str(self._species)  # TODO
+        s = 'species manager:\n'
+        for symbol, species in self._species.items():
+            s += f'\t{symbol}:\t{species}\n'
+        return s
 
     def __repr__(self):
-        pass  # TODO
+        return f'{self.__class__}(species={repr(self._species)})'
 
     sp = make_species
     get = symbol_from_name
