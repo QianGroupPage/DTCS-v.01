@@ -157,7 +157,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
                  autoscale: bool = True,
                  experimental: pd.Series = None,
                  gas_interval: Tuple[float, float] = None,
-                 scale_factor: float = 0.0,
+                 scale_factor: float = 1.0,
                  title: str = ''):
         """Initialze the XPSExperiment.
 
@@ -308,7 +308,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
     # self.resample(), and that's only if overwrite=True.
 
     def resample(self, overwrite=True, species=None,
-                 ignore=None) -> XPSObservable:
+                 ignore=[]) -> XPSObservable:
         """Recalculates the dataframe in case anything updated.
 
         Args:
@@ -320,7 +320,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
         Returns:
             An XPSObservable with the resampled data.
         """  # TODO(Andrew) Typehints?
-        species = self._get_species_not_ignored(species, ignore)
+        species = self._get_species_not_ignored(species, ignore + self.ignore)
 
         x_range = self._get_x_range(species)
         df = pd.DataFrame(data=0, index=x_range, columns=['envelope'])
