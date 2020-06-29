@@ -6,7 +6,7 @@ import numpy as np
 from scipy.stats import norm
 import lblcrn.surface_crn.xps as xps
 import os
-
+from IPython.display import HTML
 
 class Results:
     """
@@ -25,6 +25,27 @@ class Results:
         self.species_ordering = None  # The ordering of species as they appear in our figures.
         self.species_colors = {}  # A dictionary from species names to their colors
         self.substances = dict(zip([repr(s) for s in rxns.get_symbols()], rxns.get_species())) if rxns else {}
+
+        # Play the videos
+        self.video = None
+        self.slow_motion = None
+
+    def play_video(self):
+        """
+        Play the simulation video if a video is produced.
+
+        :return: HTML object for playing a video in the IPython Notebook
+        """
+        if self.video is None:
+            # TODO: does absolute path work?
+            # self.video = "/Users/ye/Desktop/lbl-crn/Surface CRN Videos/scrn simulation.mp4"
+            self.video = "Surface CRN Videos/scrn simulation.mp4"
+            # raise Exception("There is no video generated for the reaction system.")
+        return HTML(f"""
+        <video width="640" height="480" controls>
+          <source src="{self.video}" type="video/mp4">
+        </video>
+        """)
 
     def resample_evolution(self, round=1):
         df = self.df.copy()
@@ -141,6 +162,7 @@ class Results:
 
         Name is the specific name of this plot.
         """
+        plt.style.use('seaborn-white')
         if end_time == -1:
             end_time = self.df.index.max()
 

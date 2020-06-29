@@ -12,6 +12,8 @@ import pygame
 import math
 
 
+
+
 def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=False,
              species_tracked=[], manifest_file=""):
     """
@@ -32,6 +34,10 @@ def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=Fa
         manifest = manifest_file
 
     if video:
+        # TODO: check to not overwrite the video files.
+        # TODO: fix the issue that the video will fail if there is already file in
+        # the frames folder.
+        # TODO: progress bar for the video
         simulate_with_display(manifest, lattice, display_class)
 
     # Generate the file stream again after it's used.
