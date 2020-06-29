@@ -33,9 +33,9 @@ import numpy as np
 import pandas as pd
 import sympy as sym
 
-from lblcrn.bulk_crn import common
-from lblcrn.bulk_crn import experiment
-from lblcrn.bulk_crn import xps
+from lblcrn import bulk_crn
+from lblcrn.experiments import experiment
+from lblcrn.experiments import xps
 from lblcrn.crn_sym import reaction
 
 
@@ -198,7 +198,7 @@ def simulate_crn(rsys: reaction.RxnSystem, time_max: float = 1,
         A CRNTimeSeries object with the concentrations over time.
     """
 
-    sol_t, sol_y = common.solve_rsys_ode(rsys, time_max, **options)
+    sol_t, sol_y = bulk_crn.solve_rsys_ode(rsys, time_max, **options)
     return CRNTimeSeries(sol_t, sol_y, rsys)
 
 

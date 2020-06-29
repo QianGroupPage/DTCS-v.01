@@ -31,9 +31,9 @@ from scipy import stats
 from sklearn import metrics
 import sympy as sym
 
-from lblcrn.bulk_crn import common
-from lblcrn.bulk_crn import experiment
-from lblcrn.bulk_crn import time_series
+from lblcrn import bulk_crn
+from lblcrn.experiments import experiment
+from lblcrn.experiments import time_series
 from lblcrn.crn_sym import reaction
 from lblcrn.crn_sym import species
 from lblcrn import _echo
@@ -526,7 +526,7 @@ def simulate_xps(rsys: reaction.RxnSystem, time: float = 1,
         A Solution object describing the solution.
     """
     # TODO(Andrew): Solve at equilibrium when no time is specified.
-    sol_t, sol_y = common.solve_rsys_ode(rsys, time, **options)
+    sol_t, sol_y = bulk_crn.solve_rsys_ode(rsys, time, **options)
     sol = time_series.CRNTimeSeries(sol_t, sol_y, rsys)
     return sol.xps_with(species=species,
                         ignore=ignore,
