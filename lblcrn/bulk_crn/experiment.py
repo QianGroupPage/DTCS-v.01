@@ -2,14 +2,17 @@
 
 """
 
+import abc
 from typing import List, Optional, Union
 
-import abc
 from matplotlib import pyplot as plt
+import monty.json
 import sympy as sym
 
+import lblcrn
 
-class Experiment(abc.ABC):
+
+class Experiment(monty.json.MSONable, abc.ABC):
     """A base class for experiments.
 
     Attributes:
@@ -92,6 +95,21 @@ class Experiment(abc.ABC):
             ignore = []
 
         return [specie for specie in species if specie not in ignore]
+
+    def as_dict(self) -> dict:
+        """Return a MSON-serializable dict representation."""
+        d = {
+            '@module': self.__class__.__module__,
+            '@class': self.__class__.__name__,
+            '@version': lblcrn.__version__,  # TODO: Better way to do this?
+        }
+        return d
+
+    @classmethod
+    @abc.abstractmethod
+    def from_dict(cls, d: dict):
+        """Load from a dict representation."""
+        return cls()
 
     def _repr_html_(self) -> Optional[str]:
         """For iPython; mostly just gives the DataFrame."""

@@ -25,9 +25,10 @@ Example:
 """
 
 import bisect
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 
 from matplotlib import pyplot as plt
+import monty.json
 import numpy as np
 import pandas as pd
 import sympy as sym
@@ -165,6 +166,23 @@ class CRNTimeSeries(experiment.Experiment):
         if time < 0:
             raise IndexError('time cannot be below 0.')
         return bisect.bisect_right(self.t, time) - 1
+
+    def as_dict(self) -> dict:
+        """Return a MSON-serializable dict representation."""
+        d = super().as_dict()
+        d['rsys'] = self.rsys.as_dict()
+        d['t'] = self.t
+        d['y'] = np.transpose(self.df.to_numpy())
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict):
+        """Load from a dict representation."""
+        decode = monty.json.MontyDecoder().process_decoded
+        d['rsys'] = decode(d['rsys'])
+        d['t'] = decode(d['t'])
+        d['y'] = decode(d['y'])
+        return cls(**d)
 
 
 def simulate_crn(rsys: reaction.RxnSystem, time_max: float = 1,

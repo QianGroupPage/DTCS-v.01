@@ -1,4 +1,4 @@
-"""Tests lblcrn.crn_sym
+"""Tests the bulk CRN
 
 Includes test for serialization.
 """
@@ -16,12 +16,18 @@ class TestMSON(unittest.TestCase):
     """Test MSON serialization of crn_sym objects."""
 
     RSYS_PATH = TEST_DIR + 'rsys-test.json'
+    CTS_PATH = TEST_DIR + 'cts-test.json'
+    XPS_PATH = TEST_DIR + 'xps-test.json'
 
     TEST_FILES = [
-        RSYS_PATH,
+        RSYS_PATH, CTS_PATH, XPS_PATH
     ]
     
     def setUp(self):
+        for file_path in self.TEST_FILES:
+            if os.path.exists(file_path):
+                os.remove(file_path)
+
         if not os.path.exists(TEST_DIR):
             os.mkdir(TEST_DIR)
         
@@ -54,22 +60,36 @@ class TestMSON(unittest.TestCase):
             Term(x3, x1),
         )
 
+        cts = simulate_crn(rsys, time_max=5, max_step=0.1)
+        xps = cts.xps
+
         with open(self.RSYS_PATH, 'w') as file:
             json.dump(rsys, file, cls=monty.json.MontyEncoder)
+        with open(self.CTS_PATH, 'w') as file:
+            json.dump(cts, file, cls=monty.json.MontyEncoder)
+        with open(self.XPS_PATH, 'w') as file:
+            json.dump(xps, file, cls=monty.json.MontyEncoder)
 
         with open(self.RSYS_PATH, 'r') as file:
             lrsys = json.load(file, cls=monty.json.MontyDecoder)
+        with open(self.CTS_PATH, 'r') as file:
+            lcts = json.load(file, cls=monty.json.MontyDecoder)
+        with open(self.XPS_PATH, 'r') as file:
+            lxps = json.load(file, cls=monty.json.MontyDecoder)
 
         # Check the right type
         self.assertEqual(type(lrsys), RxnSystem, 'Loaded type mismatch')
+        self.assertEqual(type(lcts), CRNTimeSeries, 'Loaded type mismatch')
+        self.assertEqual(type(lxps), XPSExperiment, 'Loaded type mismatch')
 
         # Sanity check
         lsm = lrsys.species_manager
-        cts_one = simulate_crn(rsys, time_max=5, max_step=0.01)
-        cts_two = simulate_crn(lrsys, time_max=5, max_step=0.01)
+        cts_two = simulate_crn(lrsys, time_max=5, max_step=0.1)
         self.assertEqual(sm.get('laggy_chem'), lsm.get('laggy_chem'),
                          'Loaded symbols don\'t match')
-        self.assertTrue((cts_two.df == cts_one.df).all().all(),
+        self.assertTrue((lcts.df == cts_two.df).all().all(),
+                        'Loaded a simulation mismatch.')
+        self.assertTrue((lxps.df == lcts.xps.df).all().all(),
                         'Loaded a simulation mismatch.')
     
 
