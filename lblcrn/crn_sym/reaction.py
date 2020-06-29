@@ -144,8 +144,9 @@ class Rxn(monty.json.MSONable):
         return f'{self.reactants} -> {self.products} @ k={self.rate_constant}'
 
     def __repr__(self):
-        return f'{self.__class__}(reactants={repr(self.reactants)}, ' \
-               f'products={repr(self.products)},' \
+        return f'{self.__class__.__name__}' \
+               f'(reactants={repr(self.reactants)}, ' \
+               f'products={repr(self.products)}, ' \
                f'k={self.rate_constant})'
 
 class RevRxn(Rxn):
@@ -201,7 +202,8 @@ class RevRxn(Rxn):
                f'@ k={self.rate_constant}, k2={self.rate_constant_reverse}'
 
     def __repr__(self):
-        return f'{self.__class__}(reactants={repr(self.reactants)}, ' \
+        return f'{self.__class__.__name__}' \
+               f'(reactants={repr(self.reactants)}, ' \
                f'products={repr(self.products)}, ' \
                f'k={self.rate_constant}, k2={self.rate_constant_reverse})'
 
@@ -389,10 +391,11 @@ class RxnSystem(monty.json.MSONable):
         return cls(*components)
 
     def __str__(self):
-        s = 'rxn system with components:\n'
+        s = self.__class__.__name__ + ' with components:\n'
         for component in self.components:
-            s += str(component) + '\n'
+            comp_lines = str(component).splitlines()
+            s += ''.join([f'\t{line}\n' for line in comp_lines])
         return s[:-1]
 
     def __repr__(self):
-        return f'RxnSystem(components={repr(self.components)})'
+        return f'{self.__class__.__name__}(components={repr(self.components)})'

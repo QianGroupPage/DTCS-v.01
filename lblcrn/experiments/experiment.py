@@ -112,7 +112,7 @@ class Experiment(monty.json.MSONable, abc.ABC):
         return cls()
 
     def _repr_html_(self) -> Optional[str]:
-        """For iPython; mostly just gives the DataFrame."""
+        """For iPython; mostly just gives the head of the DataFrame."""
         # TODO: do this without accessing private member?
         df_html = self.df.head()._repr_html_()
 
@@ -120,3 +120,12 @@ class Experiment(monty.json.MSONable, abc.ABC):
         {df_html}"""
 
         return html
+
+    def __str__(self) -> str:
+        """Mostly just the head of the DataFrame."""
+        # TODO: do this without accessing private member?
+        df_str = str(self.df.head())
+
+        s = f'{self.__class__.__name__} with head:\n{df_str}'
+
+        return s

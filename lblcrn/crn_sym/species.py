@@ -49,10 +49,10 @@ class Orbital(monty.json.MSONable):
 
     def __repr__(self):
         if self.splitting == 1:
-            return f'{self.__class__}(name={repr(self.name)}, ' \
+            return f'{self.__class__.__name__}(name={repr(self.name)}, ' \
                    f'binding_energy={repr(self.binding_energy)})'
         else:
-            return f'{self.__class__}(name={repr(self.name)}, ' \
+            return f'{self.__class__.__name__}(name={repr(self.name)}, ' \
                    f'binding_energy={repr(self.binding_energy)}, ' \
                    f'splitting={repr(self.splitting)})'
 
@@ -74,7 +74,7 @@ class Species(monty.json.MSONable):
         return f'{self.name}, orbitals: {orbitals}'
 
     def __repr__(self):
-        return f'{self.__class__}(name={repr(self.name)}, ' \
+        return f'{self.__class__.__name__}(name={repr(self.name)}, ' \
                f'orbitals={repr(self.orbitals)})'
 
 
@@ -172,13 +172,14 @@ class SpeciesManager(monty.json.MSONable):
         return cls(**d)
 
     def __str__(self):
-        s = 'species manager:\n'
-        for symbol, species in self._species.items():
-            s += f'\t{symbol}:\t{species}\n'
+        s = self.__class__.__name__ + ' with species:\n'
+        for species in self._species.values():
+            species_lines = str(species).splitlines()
+            s += ''.join([f'\t{line}\n' for line in species_lines])
         return s
 
     def __repr__(self):
-        return f'{self.__class__}(species={repr(self._species)})'
+        return f'{self.__class__.__name__}(species={repr(self._species)})'
 
     sp = make_species
     get = symbol_from_name
