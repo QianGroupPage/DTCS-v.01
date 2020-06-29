@@ -23,11 +23,11 @@ import os
 import pkg_resources
 import monty.json
 
-from lblcrn import _DATA_FILES_PATH
+import lblcrn
 from lblcrn import _echo
 
 
-EXAMPLE_OBJS_DIR = _DATA_FILES_PATH + 'examples/objects/'
+EXAMPLE_OBJS_DIR = lblcrn._DATA_FILES_PATH + 'examples/objects/'
 EXAMPLE_OBJS_TYPE = '.json'
 
 

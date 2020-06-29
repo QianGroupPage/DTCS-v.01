@@ -39,6 +39,8 @@ def __getattr__(name: str):
         if os.environ['LBLCRN_DO_ECHO'] == 'true':
             return True
         return False
+    elif name == 'docs':
+        return lblcrn_docs
     elif name == 'echo_on':
         return lblcrn_echo_on
     elif name == 'echo_off':

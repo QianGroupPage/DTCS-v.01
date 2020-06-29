@@ -6,8 +6,11 @@ This:
 - Calls setuptools.setup()
 """
 
-import glob
+import collections
+import fnmatch
+import os
 import re
+
 
 import setuptools
 
@@ -26,15 +29,28 @@ with open('README.md', 'r') as readme_file:
     readme = readme_file.read()
 
 # --- Get data files ---------------------------------------------------------
+# The directory under venv/ to store datafiles.
 DATA_FP = 'lblcrn/'
-DATA_GLOBS = [('examples/objects', ['examples/objects/*.json'])]
 
-data_files = []
-for path, patterns in DATA_GLOBS:
-    files = []
-    for pattern in patterns:
-        files.extend([file.replace('\\', '/') for file in glob.glob(pattern)])
-    data_files.append((DATA_FP + path, files))
+# The files to include. These are triples of the form
+# (destination path, path to search, [file patterns])
+# The search is recursive.
+INCLUDE = [
+    ('examples/objects', 'examples/objects', ['*.json']),
+    ('docs', 'docs/build', ['*']),
+]
+
+mapping = collections.defaultdict(list)
+for new_root, search_root, patterns in INCLUDE:
+    for dir_path, subdirs, files in os.walk(search_root):
+        clean_path = dir_path.replace(os.sep, '/')
+        new_path = DATA_FP + clean_path.replace(search_root, new_root)
+        for file in files:
+            if any([fnmatch.fnmatch(file, pattern) for pattern in patterns]):
+                mapping[new_path].append(clean_path + '/' + file)
+
+data_files = [(dir_name, files) for dir_name, files in mapping.items()]
+#import pprint; pprint.pprint(data_files); input('>')
 
 # --- Setup ------------------------------------------------------------------
 if __name__ == '__main__':
