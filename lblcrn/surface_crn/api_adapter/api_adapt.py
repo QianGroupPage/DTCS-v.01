@@ -78,7 +78,7 @@ def generate_settings(rsys, max_duration, random_seed=923123122):
     :return: a string representing the initial surface.
     """
     return f"# Run settings\n" + \
-           "pixels_per_node     = 100\n" + \
+           "pixels_per_node     = 50\n" + \
            "speedup_factor      = 0.5\n" + \
            "debug               = False\n" + \
            f"rng_seed           = {random_seed}\n" + \
