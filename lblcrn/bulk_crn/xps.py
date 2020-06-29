@@ -486,8 +486,11 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
         d['species_concs'] = {sym.Symbol(name): conc for name, conc in
                               d['species_concs'].items()}
         d['species_manager'] = decode(d['species_manager'])
-        d['experimental'] = pd.read_json(d['experimental']) if \
-            d['experimental'] is not None else None
+        if d['experimental'] is not None:
+            d['experimental'] = pd.read_json(d['experimental'],
+                                             typ='series',
+                                             convert_axes=False)
+            d['experimental'].index = d['experimental'].index.map(float)
         return cls(**d)
 
 
