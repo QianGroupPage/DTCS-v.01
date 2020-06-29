@@ -1,3 +1,5 @@
+# Package data for package lblcrn
+
 include README.md
-include examples/*.ipynb
-include testing/*.py
+include examples/*
+include lblcrn/resources/*.csv
