@@ -12,8 +12,6 @@ import pygame
 import math
 
 
-
-
 def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=False,
              species_tracked=[], manifest_file=""):
     """
@@ -33,17 +31,6 @@ def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=Fa
     else:
         manifest = manifest_file
 
-    if video:
-        # TODO: check to not overwrite the video files.
-        # TODO: fix the issue that the video will fail if there is already file in
-        # the frames folder.
-        # TODO: progress bar for the video
-        simulate_with_display(manifest, lattice, display_class)
-
-    # Generate the file stream again after it's used.
-    if not manifest_file:
-        manifest = generate_manifest_stream(rxns, time_max)
-
     if not species_tracked:
         species_tracked = list(rxns.get_symbols())
     times, concs = simulate_without_display(manifest, lattice, [str(s) for s in species_tracked])
@@ -52,6 +39,22 @@ def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=Fa
     else:
         r = Results.from_concs_times("".join(list(manifest)), rxns, concs, times)
 
+    video_link = None
+    if video:
+        # Generate the file stream again after it's used.
+        if not manifest_file:
+            manifest = generate_manifest_stream(rxns, time_max)
+        video_link = get_video_link(manifest)
+        # Generate the file stream again after it's used.
+        if not manifest_file:
+            manifest = generate_manifest_stream(rxns, time_max)
+        # TODO: check to not overwrite the video files.
+        # TODO: fix the issue that the video will fail if there is already file in
+        # the frames folder.
+        # TODO: progress bar for the video
+        simulate_with_display(manifest, lattice, display_class)
+
+    r.video = video_link
     color_index = rxns.get_colors()
     r.species_ordering = species_tracked
     r.species_colors = {s: color_index[s] for s in r.species_ordering}
@@ -60,6 +63,23 @@ def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=Fa
 
     # TODO: warn the user if termination is early.
     return r
+
+
+def get_opts(manifest):
+    '''
+    Process a stream into an options file.
+    '''
+    manifest_options = read_manifest(manifest)
+    return SurfaceCRNOptionParser(manifest_options)
+
+
+def get_video_link(manifest):
+    """
+    :param manifest: a stream or file name of manifest file
+    :return: the link where the video would be stored.
+    """
+    opts = get_opts(manifest)
+    return f"{opts.capture_directory}/{opts.movie_title}.mp4"
 
 
 def simulate_with_display(manifest_file, lattice, display_class="Hex Grid"):

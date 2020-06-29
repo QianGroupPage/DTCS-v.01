@@ -267,6 +267,8 @@ def simulate_surface_crn(manifest_filename, display_class = None,
     #opts_menu = MainOptionMenu()
     #opts_menu.update()
 
+    # TODO:
+    # these do the rendering on the surface
     time_display.render(display_surface, x_pos = 0,
                                          y_pos = 0)
     legend_display.render(display_surface, x_pos = 0,

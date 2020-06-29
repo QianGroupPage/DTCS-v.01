@@ -61,4 +61,5 @@ traitlets
 urllib3
 wcwidth
 webencodings
+ffmpeg
 

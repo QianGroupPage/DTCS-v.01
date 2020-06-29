@@ -203,8 +203,11 @@ class RxnSystem:
                 self.color_index[self.surface.symbol()] = color
         return self.color_index
 
-
-
+    def show_colors(self):
+        # TODO: write a function to show the colors.
+        if self.color_index is None:
+            pass
+        pass
 
     def __str__(self):
         s = 'rxn system with components:\n'

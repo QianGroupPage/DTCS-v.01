@@ -7,6 +7,8 @@ from scipy.stats import norm
 import lblcrn.surface_crn.xps as xps
 import os
 from IPython.display import HTML
+import ffmpeg
+
 
 class Results:
     """
@@ -28,9 +30,8 @@ class Results:
 
         # Play the videos
         self.video = None
-        self.slow_motion = None
 
-    def play_video(self):
+    def play_video(self, slowdown_factor=1):
         """
         Play the simulation video if a video is produced.
 
@@ -39,11 +40,23 @@ class Results:
         if self.video is None:
             # TODO: does absolute path work?
             # self.video = "/Users/ye/Desktop/lbl-crn/Surface CRN Videos/scrn simulation.mp4"
-            self.video = "Surface CRN Videos/scrn simulation.mp4"
-            # raise Exception("There is no video generated for the reaction system.")
+            # self.video = "Surface CRN Videos/scrn simulation.mp4"
+            raise Exception("There is no video generated for the reaction system.")
+
+        if slowdown_factor == 1:
+            video = self.video
+        else:
+            # Use a factor for slowing down the video
+            head, name = os.path.split(self.video)
+            name, ext = os.path.splitext(name)
+            slowmo_name = f'{head}/{name}_{slowdown_factor}x_slower{ext}'
+            if not os.isfile(slowmo_name):
+                ffmpeg.input(self.video).setpts(f"{slowdown_factor}*PTS").output(
+                f'{head}/{name}_{slowdown_factor}x_slower{ext}').run()
+            video = slowmo_name
         return HTML(f"""
         <video width="640" height="480" controls>
-          <source src="{self.video}" type="video/mp4">
+          <source src="{video}" type="video/mp4">
         </video>
         """)
 
