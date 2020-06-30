@@ -31,11 +31,7 @@ from lblcrn.surface_crn.surface_crns.base.transition_rule import TransitionRule
 from lblcrn.surface_crn.surface_crns.pygbutton import *
 from lblcrn.surface_crn.surface_crns.views.grid_display import ParallelEmulatedSquareGridDisplay
 from lblcrn.surface_crn.results import Results
-import sympy as sym
 
-import numpy as np
-from queue import PriorityQueue
-import random
 import cProfile
 import optparse
 import sys
@@ -43,7 +39,6 @@ from time import process_time
 
 import pygame
 from pygame.locals import *
-
 
 pygame.display.init()
 pygame.font.init()
