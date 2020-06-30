@@ -69,8 +69,10 @@ class Results:
             head, name = os.path.split(self.video)
             name, ext = os.path.splitext(name)
             slowmo_name = f'{head}/{name}_{slowdown_factor}x_slower{ext}'
-            if not os.path.isfile(slowmo_name):
-                ffmpeg.input(self.video).setpts(f"{slowdown_factor}*PTS").output(
+            # Overwrite existing files.
+            if os.path.isfile(slowmo_name):
+                os.remove(slowmo_name)
+            ffmpeg.input(self.video).setpts(f"{slowdown_factor}*PTS").output(
                 f'{head}/{name}_{slowdown_factor}x_slower{ext}').run()
             video = slowmo_name
         return HTML(f"""
