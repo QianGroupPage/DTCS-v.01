@@ -31,10 +31,29 @@ class Results:
         # Play the videos
         self.video = None
 
+
+    @staticmethod
+    def side_by_side_axes(num_axes=2, output_fig=False):
+        """
+        A function designed to wrap around matplotlib to encourage
+        people to do side by side comparisons more often.
+        :param num_axes: number of axes to generate
+        :param output_fig: output fig, axes if set to True
+        :return: a list of axes
+        """
+        fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+        if output_fig:
+            return fig, axes
+        else:
+            return axes
+
+
     def play_video(self, slowdown_factor=1):
         """
         Play the simulation video if a video is produced.
 
+
+        :slowdown_factor: 1 by default, 30 is suggested for reasonable viewing by humans.
         :return: HTML object for playing a video in the IPython Notebook
         """
         if self.video is None:
@@ -50,7 +69,7 @@ class Results:
             head, name = os.path.split(self.video)
             name, ext = os.path.splitext(name)
             slowmo_name = f'{head}/{name}_{slowdown_factor}x_slower{ext}'
-            if not os.isfile(slowmo_name):
+            if not os.path.isfile(slowmo_name):
                 ffmpeg.input(self.video).setpts(f"{slowdown_factor}*PTS").output(
                 f'{head}/{name}_{slowdown_factor}x_slower{ext}').run()
             video = slowmo_name

@@ -13,6 +13,7 @@ import sympy as sym
 #  preversve order. However, this is highly dependent on sympy.
 # sym.core.Add._addsort = lambda x: None
 from lblcrn.common import color_to_RGB
+from lblcrn.crn_sym.surface import Site
 
 from typing import List, Tuple, Union
 
@@ -45,17 +46,43 @@ class Species:
     A chemical species with a name and orbitals, which are triples of (orbital name, binding energy, proportion)
     """
 
-    def __init__(self, name: str, orbitals: List[Orbital], color: Union[Tuple[int],List[int], str]=None):
+    def __init__(self, name: str, orbitals: List[Orbital], color: Union[Tuple[int], List[int], str] = None,
+                 parent=None, site: Site = None):
         self.name = name
         self.orbitals = orbitals
         if color:
             self.color = color_to_RGB(color)
         else:
             self.color = color
+        self.parent = parent   # The parent of the species
+        self.sub_species = {}   # The dictionary of sub species from name to the object
+
+        self.site = site
+        if self.site and self.site != Site.default:
+            self.create_sub_species(suffix=site.name, color=self.color)
+
+    def create_sub_species(self, suffix: str = "", color: Union[Tuple[int], List[int], str] = "", entire_name: str =""):
+        if not entire_name:
+            if not suffix:
+                suffix = f"sub_{len(self.sub_species)}"
+            entire_name = f"{self.name}_{suffix}"
+        elif suffix:
+            raise Exception(f"Both suffix={suffix} and entire_name {entire_name} provided to " +
+                            f"create_sub_species_function")
+        if not color:
+            color = self.color
+        sub_species = Species(entire_name, self.orbitals, color=color, parent=self)
+
+        if entire_name in self.sub_species:
+            raise Exception(f"species {self.name} already has sub species {repr(self.sub_species[entire_name])} " +
+                            f"with name {entire_name}.")
+        else:
+            self.sub_species[entire_name] = sub_species
+        return
 
     def __str__(self):
         if self.color:
-            return  self.name + ", orbitals: " + str(self.orbitals) + ", color: " + str(self.color)
+            return self.name + ", orbitals: " + str(self.orbitals) + ", color: " + str(self.color)
         return self.name + ", orbitals: " + str(self.orbitals)
 
     def __repr__(self):
@@ -74,7 +101,7 @@ class SpeciesManager:
     def __init__(self):
         self._species = {} # As of current, initializes empty
 
-    def make_species(self, name: str, orbitals: Union[Orbital, List[Orbital]]) -> sym.Symbol:
+    def make_species(self, name: str, orbitals: Union[Orbital, List[Orbital]], site: Site = None) -> sym.Symbol:
         """
         Makes a sym.Symbol and a corresponding Species and keeps track of their correspondence.
         Returns the symbol.
@@ -86,7 +113,7 @@ class SpeciesManager:
         if not isinstance(orbitals, list):
             orbitals = [orbitals]
 
-        self._species[symbol] = Species(name, orbitals)
+        self._species[symbol] = Species(name, orbitals, site=site)
         return symbol
 
     def species_from_symbol(self, key: sym.Symbol) -> Species:
@@ -100,4 +127,3 @@ class SpeciesManager:
 
     sp = make_species
     __getitem__ = species_from_symbol
-    
