@@ -51,6 +51,54 @@
 <p>Once it’s installed (it might take a while), run <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">lblcrn</span> <span class="pre">--version</span></code>
 to check if everything installed.</p>
 </div>
+<div class="section" id="api-rundown">
+<h2>API Rundown<a class="headerlink" href="#api-rundown" title="Permalink to this headline">¶</a></h2>
+<p>For exhaustive documentation, see the full <a class="reference internal" href="api_docs/index.html#api-docs"><span class="std std-ref">API Docs</span></a></p>
+<ul class="simple">
+<li><dl class="simple">
+<dt>Help Utilities</dt><dd><ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">lblcrn_help()</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">lblcrn_docs()</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">lblcrn_echo_on()</span></code> and <code class="docutils literal notranslate"><span class="pre">lblcrn_echo_off()</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">lblcrn_examples.load()</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p>Monty JSON save/load utilities</p></li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">RxnSystem</span></code>, which takes as input:</dt><dd><ul>
+<li><p>one <code class="docutils literal notranslate"><span class="pre">SpeciesManager</span></code></p></li>
+<li><p>any amount of: <code class="docutils literal notranslate"><span class="pre">Rxn</span></code>, <code class="docutils literal notranslate"><span class="pre">RevRxn</span></code>, <code class="docutils literal notranslate"><span class="pre">Schedule</span></code>, <code class="docutils literal notranslate"><span class="pre">Conc</span></code>, <code class="docutils literal notranslate"><span class="pre">ConcEq</span></code>, <code class="docutils literal notranslate"><span class="pre">ConcDiffEq</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">simulate_crn()</span></code>, which takes a <code class="docutils literal notranslate"><span class="pre">RxnSystem</span></code> and creates a <code class="docutils literal notranslate"><span class="pre">CRNTimeSeries</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">simulate_xps()</span></code>, which takes a <code class="docutils literal notranslate"><span class="pre">RxnSystem</span></code> and creates an <code class="docutils literal notranslate"><span class="pre">XPSExperiment</span></code></p></li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">CRNTimeSeries</span></code></dt><dd><ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">.df</span></code>, a pandas DataFrame</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.at()</span></code>, to look at one time</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.xps_with()</span></code> to make an <code class="docutils literal notranslate"><span class="pre">XPSExperiment</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.plot()</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>XPSExperiment</dt><dd><ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">.df</span></code>, a pandas DataFrame</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.set_experimental()</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.set_gas_interval()</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.set_scale_factor()</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.plot()</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</div>
 <div class="section" id="walkthrough">
 <h2>Walkthrough<a class="headerlink" href="#walkthrough" title="Permalink to this headline">¶</a></h2>
 <p>This will walk you through the workflow of a predator-prey system. Import:</p>
@@ -78,15 +126,18 @@ Then, you can create some species:</p>
 </pre></div>
 </div>
 <p>Then, you solve the system. This simulates the system for <code class="docutils literal notranslate"><span class="pre">time</span></code>:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">solution</span> <span class="o">=</span> <span class="n">simulate</span><span class="p">(</span><span class="n">rsys</span><span class="p">,</span> <span class="n">time_max</span><span class="o">=</span><span class="mi">45</span><span class="p">,</span> <span class="n">max_step</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
-<span class="n">solution</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">time_series</span> <span class="o">=</span> <span class="n">simulate_crn</span><span class="p">(</span><span class="n">rsys</span><span class="p">,</span> <span class="n">time_max</span><span class="o">=</span><span class="mi">45</span><span class="p">,</span> <span class="n">max_step</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
+<span class="n">time_series</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
 </pre></div>
 </div>
-<p>And then to plot the spectroscopy gaussians:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">solution</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">exp_type</span><span class="o">=</span><span class="s1">&#39;spectro&#39;</span><span class="p">)</span>
+<p>And then to plot some x-ray spectroscopy gaussians:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">time_series</span><span class="o">.</span><span class="n">xps_with</span><span class="p">(</span><span class="n">t</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
 </pre></div>
 </div>
-<p>You can download this example <a class="reference external" href="https://github.com/rithvikp/lbl-crn/blob/master/examples/predator_prey.ipynb">here</a>.</p>
+<p>You can access this example through:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">lblcrn_examples</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s1">&#39;predator-prey&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
 </div>
 <div class="section" id="indices-and-tables">
 <h2>Indices and Tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h2>

@@ -30,6 +30,34 @@ If you are using normal Python::
 Once it's installed (it might take a while), run ``python -m lblcrn --version``
 to check if everything installed.
 
+API Rundown
+-----------
+
+For exhaustive documentation, see the full :ref:`API Docs <api_docs>`
+
+- Help Utilities
+    - ``lblcrn_help()``
+    - ``lblcrn_docs()``
+    - ``lblcrn_echo_on()`` and ``lblcrn_echo_off()``
+    - ``lblcrn_examples.load()``
+- Monty JSON save/load utilities
+- ``RxnSystem``, which takes as input:
+    - one ``SpeciesManager``
+    - any amount of: ``Rxn``, ``RevRxn``, ``Schedule``, ``Conc``, ``ConcEq``, ``ConcDiffEq``
+- ``simulate_crn()``, which takes a ``RxnSystem`` and creates a ``CRNTimeSeries``
+- ``simulate_xps()``, which takes a ``RxnSystem`` and creates an ``XPSExperiment``
+- ``CRNTimeSeries``
+    - ``.df``, a pandas DataFrame
+    - ``.at()``, to look at one time
+    - ``.xps_with()`` to make an ``XPSExperiment``
+    - ``.plot()``
+- XPSExperiment
+    - ``.df``, a pandas DataFrame
+    - ``.set_experimental()``
+    - ``.set_gas_interval()``
+    - ``.set_scale_factor()``
+    - ``.plot()``
+
 Walkthrough
 -----------
 This will walk you through the workflow of a predator-prey system. Import::
@@ -58,14 +86,16 @@ Then, you define your reaction system::
 
 Then, you solve the system. This simulates the system for ``time``::
 
-    solution = simulate(rsys, time_max=45, max_step=0.01)
-    solution.plot()
+    time_series = simulate_crn(rsys, time_max=45, max_step=0.01)
+    time_series.plot()
 
-And then to plot the spectroscopy gaussians::
+And then to plot some x-ray spectroscopy gaussians::
 
-    solution.plot(exp_type='spectro')
+    time_series.xps_with(t=20).plot()
 
-You can download this example `here <https://github.com/rithvikp/lbl-crn/blob/master/examples/predator_prey.ipynb>`_.
+You can access this example through::
+
+    lblcrn_examples.load('predator-prey')
 
 .. TODO Citation Information
 
