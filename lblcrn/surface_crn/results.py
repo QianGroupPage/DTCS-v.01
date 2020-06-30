@@ -119,6 +119,16 @@ class Results:
         return r
 
     @staticmethod
+    def from_counts(rxns, counter):
+        """
+        :param rxns: a rxn_system object
+        :param counter: a dictionary from species name to counts
+        :return: a results object representing only 1 timestep.
+        """
+        concs = {s: [c] for s, c in counter.items()}
+        return Results.from_concs_times(None, rxns, concs, [0])
+
+    @staticmethod
     def concs_times_df(concentrations, times):
         """
         :param concentrations: a dictionary from species name (string) to a list of concentration values;
@@ -297,8 +307,7 @@ class Results:
         return xps.fill_zeros(gaussian, min_be, max_be), xps.fill_zeros(xps_df, min_be, max_be)
 
     def plot_gaussian(self, t=-1, path="", xps_path="", xps_scaling=1, save=False, return_fig=False, fig_size="Default",
-                      scaling_factor=1,
-                      ax=None):
+                      dpi=100, scaling_factor=1, ax=None):
         """
         Plot the Gaussian function from time t to time t + 1.
         """
@@ -321,7 +330,7 @@ class Results:
                 fig.set_figwidth(8)
             else:
                 # For the plotting used in videos
-                fig.set_dpi(100)
+                fig.set_dpi(dpi)
                 fig.set_figheight(fig_size[1])
                 fig.set_figwidth(fig_size[0])
         plt.style.use('seaborn-white')
@@ -373,19 +382,17 @@ class Results:
             # Jupter Notebbok. Return only when you need the figure.
             return ax.figure
 
-    def raw_string_gaussian(self, t=-1, y_upper_limit=None,  xps_scaling=1, fig_size="Default",
-                      scaling_factor=1,
-                      ax=None):
+    def raw_string_gaussian(self, t=-1, y_upper_limit=None,  xps_scaling=1, fig_size="Default", dpi=100,
+                        scaling_factor=1, ax=None):
         """
-
+        A wrapper function for self.plot_gaussian intended for generating frames in Pygame videos.
         :return: raw string representation of the figure
         """
         import matplotlib
         backend = matplotlib.rcParams['backend']
         matplotlib.use("Agg")
-        fig = self.plot_gaussian(t=t,  xps_scaling=xps_scaling,
-                                 return_fig=True, fig_size=fig_size, scaling_factor=scaling_factor,
-                                 ax=ax)
+        fig = self.plot_gaussian(t=t,  xps_scaling=xps_scaling, return_fig=True, fig_size=fig_size, dpi=dpi,
+                                 scaling_factor=scaling_factor, ax=ax)
         matplotlib.pyplot.ylim((0, y_upper_limit))
         canvas = agg.FigureCanvasAgg(fig)
         canvas.draw()

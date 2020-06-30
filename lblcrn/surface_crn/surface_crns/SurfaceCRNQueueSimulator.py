@@ -637,14 +637,12 @@ def update_display(opts, simulation, FRAME_DIRECTORY = None):
             # TODO: create and save more contents:
             # Currently this block adds the Gaussian figures
             half_size = simulation.display_surface.get_size()
-            # create a surface with size 'area_to_save.size'
             temp_screen = pygame.Surface([half_size[0] * 2, half_size[1]])
-            # blit the rectangular area 'area_to_save' from 'screen' to 'temp_screen' at (0, 0)
             temp_screen.blit(simulation.display_surface, (0, 0))
-            concs = {s: [c] for s, c in simulation.surface.species_count().items()}
-            r = Results.from_concs_times(None, simulation.rxns, concs, [0.1])
+            r = Results.from_counts(simulation.rxns, simulation.surface.species_count())
+            dpi = 100
             raw_data, size = r.raw_string_gaussian(y_upper_limit=simulation.surface.num_nodes,
-                                                   fig_size=(half_size[0]/100, half_size[1] / 100))
+                                                   fig_size=(half_size[0]/dpi, half_size[1]/dpi), dpi=dpi)
             gaussian = pygame.image.fromstring(raw_data, size, "RGB")
             temp_screen.blit(gaussian, (half_size[0], 0))
             pygame.image.save(temp_screen, frame_filename)
