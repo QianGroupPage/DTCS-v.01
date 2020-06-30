@@ -25,31 +25,41 @@ Usage:
 """
 
 import copy
-import sympy as sym
-from typing import List, Set, Tuple
+from typing import List, Optional, Set, Tuple
 
+import monty.json
+import sympy as sym
+from sympy.parsing import sympy_parser
+
+import lblcrn
 from lblcrn.crn_sym import species
 from lblcrn.crn_sym import conditions
 
 
-class Rxn:  # TODO(Andrew) Document here & beyond.
+class Rxn(monty.json.MSONable):
+    """A chemical reaction with reactants, products, and a rate constant.
+
+    Attributes:
+        reactants: A sym.Expr of the reactants.
+        products: A sym.Expr of the products.
+        rate_constant: A float, the rate constant of the chemical reaction.
     """
-    A chemical reaction with reactants, products, and a rate constant.
-    """
 
-    def __init__(self, reactants: sym.Expr, products: sym.Expr, k: float):
+    def __init__(self, reactants: Optional[sym.Expr],
+                 products: Optional[sym.Expr], k: float):
+        """Create a new reaction by giving equation of the reactants.
+
+        This is intended to look like reactants -> products @ rate k. That is,
+        if your chemical equation looks like 2A -> B + C, then your reactants
+        is 2A.
+
+        Args:
+            reactants: The left-hand side of the chemical reaction.
+            products: The right-hand side of the chemical reaction.
+            k: The rate constant.
         """
-        Create a new reaction by giving equation of the reactants, the equation of the products,
-        and the rate constant.
 
-        This is intended to look like reactants -> products @ rate k. That is, if
-        your chemical equation looks like 2A -> B + C, then your reactants is 2A.
-        That is, the reactants is not a list of reactants, but the equation on the left-hand
-        side of the chemical equation. Similarly, products is the equation on the right-hand
-        side of the chemical equation.
-        """
-
-        # Note that although the type suggestion is sym.Expr, that is a suggestion
+        # Note that the type suggestion is Optional[sym.Expr].
         # It is possible that the user could pass None or 0 or 1 in.
         # Hence, sanitize input
         if not isinstance(reactants, sym.Expr):
@@ -71,18 +81,18 @@ class Rxn:  # TODO(Andrew) Document here & beyond.
         return symbol
 
     def to_terms(self) -> List[conditions.Term]:
-        """
-        Create a list of terms from the reaction.
+        """Create a list of terms from the reaction.
 
         Each term is essentially the reaction rate but positive or negative, 
         depending on if it is a reactand or the product.
 
-        This uses the reaction rate formula r = k*(concentration of products^coefficient of product):
-        if this is not true for your chemical equation, then you will get an error.
+        This uses the reaction rate formula r =
+        k*(concentration of products^coefficient of product):
+        if this is false for your chemical equation, you will get an error.
         """
         
         # Get the lefts and right 
-        # Here we're assuming that reactants and products are linear, chemical equations.
+        # Here we're assuming that reactants and products are linear.
         lefts = self.reactants.as_coefficients_dict()
         rights = self.products.as_coefficients_dict()
 
@@ -111,36 +121,59 @@ class Rxn:  # TODO(Andrew) Document here & beyond.
             
         return terms
 
+    def as_dict(self) -> dict:
+        """Return a MSON-serializable dict representation."""
+        d = {
+            '@module': self.__class__.__module__,
+            '@class': self.__class__.__name__,
+            '@version': lblcrn.__version__,  # TODO: Better way to do this?
+            'reactants': str(self.reactants),
+            'products': str(self.products),
+            'k': self.rate_constant
+        }
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict):
+        """Load from a dict representation."""
+        d['reactants'] = sympy_parser.parse_expr(d['reactants'])
+        d['products'] = sympy_parser.parse_expr(d['products'])
+        return cls(**d)
+
     def __str__(self):
-        return str(self.reactants) + ' → ' + str(self.products) + ' @ k=' + str(self.rate_constant)
+        return f'{self.reactants} -> {self.products} @ k={self.rate_constant}'
 
     def __repr__(self):
-        return 'Rxn(reactants=' + repr(self.reactants) + ', products=' + repr(self.products) + ', k=' + str(self.rate_constant) + ')'
+        return f'{self.__class__.__name__}' \
+               f'(reactants={repr(self.reactants)}, ' \
+               f'products={repr(self.products)}, ' \
+               f'k={self.rate_constant})'
 
 class RevRxn(Rxn):
-    """
-    A reversible reaction, essentially a reaction with two rate constants.
+    """A reversible reaction, essentially a reaction with two rate constants.
 
     Its use is to be quickly unpacked into two Rxns.
     """
 
-    def __init__(self, reactants: sym.Expr, products: sym.Expr, k1: float, k2: float = None):
+    def __init__(self, reactants: Optional[sym.Expr],
+                 products: Optional[sym.Expr], k: float, k2: float = None):
+        """Create a reversible reaction by giving equation.
+
+        This is intended to look like reactants <-> products @ rate k1,
+        with the reverse rate k2.
+
+        Args:
+            reactants: The left-hand side of the chemical reaction.
+            products: The right-hand side of the chemical reaction.
+            k: The rate constant.
+            k2: Optional, the rate constant for the reverse reaction. If not
+                supplied, it's assumed to be 1/k.
         """
-        Create a reversible reaction by giving equation of the reactants, the equation of the products,
-        and the rate constant.
 
-        This is intended to look like reactants <-> products @ rate k1, with the reverse rate k2.
-        If you don't specify a k2, it will assume that k2 = 1/k1.
-
-        The reactants is not a list of reactants, but the equation on the left-hand
-        side of the chemical equation. Similarly, products is the equation on the right-hand
-        side of the chemical equation.
-        """
-
-        Rxn.__init__(self, reactants, products, k1)
+        super().__init__(reactants, products, k)
 
         if k2 is None:
-            self.rate_constant_reverse = 1 / k1
+            self.rate_constant_reverse = 1 / k
         else:
             self.rate_constant_reverse = k2
 
@@ -151,31 +184,59 @@ class RevRxn(Rxn):
         return symbol
 
     def to_rxns(self) -> Tuple[Rxn, Rxn]:
-        return Rxn(self.reactants, self.products, k=self.rate_constant), Rxn(self.products, self.reactants, k=self.rate_constant_reverse)
+        return Rxn(self.reactants, self.products, k=self.rate_constant), \
+               Rxn(self.products, self.reactants, k=self.rate_constant_reverse)
 
     def to_terms(self) -> List[conditions.Term]:
         rxns = self.to_rxns()
         return [*rxns[0].to_terms(), *rxns[1].to_terms()]
-    
+
+    def as_dict(self) -> dict:
+        """Return a MSON-serializable dict representation."""
+        d = super().as_dict()
+        d['k2'] = self.rate_constant_reverse
+        return d
+
     def __str__(self):
-        return str(self.reactants) + ' ↔ ' + str(self.products) + ' @ k1=' + str(self.rate_constant) + ', k2=' + str(self.rate_constant_reverse)
+        return f'{self.reactants} <-> {self.products} ' \
+               f'@ k={self.rate_constant}, k2={self.rate_constant_reverse}'
 
     def __repr__(self):
-        return 'Revrxn(reactants=' + repr(self.reactants) + ', products=' + repr(self.products) + ', k1=' + str(self.rate_constant) + ', k2=' + str(self.rate_constant_reverse) + ')'
+        return f'{self.__class__.__name__}' \
+               f'(reactants={repr(self.reactants)}, ' \
+               f'products={repr(self.products)}, ' \
+               f'k={self.rate_constant}, k2={self.rate_constant_reverse})'
 
-class RxnSystem:
-    """
-    A collection of Terms, Rxns, Schedules, etc. which describes a chemical reaction system
-    for the purpose of simulating it (namely the concentrations of each chemical) over time.
+class RxnSystem(monty.json.MSONable):
+    """A chemical reaction system, for simulation.
+
+    A collection of Terms, Rxns, Schedules, etc. which describes a chemical
+    reaction system for the purpose of simulating it (namely the concentrations
+    of each chemical) over time.
+
+    Attributes:
+        components: Everything the RxnSystem contains
+        terms: Terms in the ODE of the system.
+        schedules: The Schedules and Concs passed during initialization.
+        conc_eqs: The ConcEqs in the system.
+        conc_diffeqs: The ConcDiffEqs in the system.
+        species_manager: The SpeciesManager the system uses.
+        symbol_index: A dictionary {sym.Symbol: int} to keep track of the order
+            of the symbols.
+        scheduler: A comprehensive Schedule of the system, has entries (which
+            might be Conc(species, 0) for each species which isn't set by a
+            ConcEq.
     """
 
     def __init__(self, *components):
-        """
-        Create a new reaction system by giving it Rxns, Revrxns, Concs, Schedules, Terms, ConcEqs, and 
-        ConcDiffEqs in any order.
+        """Create a new reaction system. Requires a SpeciesManager.
 
-        If you have a function returning a collection of the above, you do not have to worry about
-        unpacking the collection: it will unpack and flatten lists and tuples for you.
+        Accepts Rxns, Revrxns, Concs, Schedules, Terms, ConcEqs,
+        ConcDiffEqs, and (one) SpeciesManager in any order.
+
+        If you have a function returning a collection of the above, you do
+        not have to worry about unpacking the collection: it will unpack and
+        flatten lists and tuples for you.
         """
 
         # Flatten the components
@@ -190,7 +251,7 @@ class RxnSystem:
                 else:
                     flatter_components.append(component)
             components = flatter_components
-        self.components = flatter_components  # pyint: disable=
+        self.components = flatter_components
 
         # Split into terms, schedules, and conc (diff.) eq.s
         # These are not sorted by the symbol index.
@@ -241,12 +302,11 @@ class RxnSystem:
             self.scheduler[self.symbol_index[schedule.symbol]] = schedule
 
     def get_ode_expressions(self) -> List[sym.Expr]:
-        """
-        Return a list of expressions, corresponding to the derivative of the concentration of
-        each symbol in the reaction system.
+        """Return a list of expressions, corresponding to the derivative of the
+        concentration of each symbol in the reaction system.
 
-        The collection is ordered, and that order is accessible through symbol_index or
-        through get_symbols.
+        The collection is ordered, and that order is accessible through
+        symbol_index or through get_symbols.
         """
         
         # Make an emtpy ODE list
@@ -263,9 +323,7 @@ class RxnSystem:
         return odes
 
     def get_ode_functions(self):
-        """
-        Return a function with signature func(t, y) representing the reaction system.
-        """
+        """Return the ODE function with signature func(t, y) of the system."""
 
         symbols = self.get_symbols()
         odes = self.get_ode_expressions()
@@ -287,10 +345,9 @@ class RxnSystem:
         return decorated_ode
 
     def get_conc_functions(self):
-        """
-        TODO
-        Returns:
-        """
+        """Return the functions corresponding to the ConcEqs.
+
+        Used internally by get_ode_functions."""
         symbols = self.get_symbols()
         time = sym.symbols('t')
 
@@ -316,11 +373,29 @@ class RxnSystem:
         """
         return copy.copy(self._symbols)
 
+    def as_dict(self) -> dict:
+        """Return a MSON-serializable dict representation."""
+        d = {
+            '@module': self.__class__.__module__,
+            '@class': self.__class__.__name__,
+            '@version': lblcrn.__version__,  # TODO: Better way to do this?
+            'components': [comp.as_dict() for comp in self.components]
+        }
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict):
+        """Load from a dict representation."""
+        decode = monty.json.MontyDecoder().process_decoded
+        components = [decode(comp) for comp in d['components']]
+        return cls(*components)
+
     def __str__(self):
-        s = 'rxn system with components:\n'
+        s = self.__class__.__name__ + ' with components:\n'
         for component in self.components:
-            s += str(component) + '\n'
+            comp_lines = str(component).splitlines()
+            s += ''.join([f'\t{line}\n' for line in comp_lines])
         return s[:-1]
 
     def __repr__(self):
-        return 'RxnSystem(components=' + repr(self.components) + ')'
+        return f'{self.__class__.__name__}(components={repr(self.components)})'

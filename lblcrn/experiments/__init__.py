@@ -8,5 +8,5 @@ Submodules:
     lblcrn.bulk_crn.xps
 """
 
-from lblcrn.bulk_crn.time_series import *
-from lblcrn.bulk_crn.xps import *
+from lblcrn.experiments.time_series import *
+from lblcrn.experiments.xps import *

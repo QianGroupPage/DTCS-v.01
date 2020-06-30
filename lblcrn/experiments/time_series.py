@@ -25,16 +25,17 @@ Example:
 """
 
 import bisect
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 
 from matplotlib import pyplot as plt
+import monty.json
 import numpy as np
 import pandas as pd
 import sympy as sym
 
-from lblcrn.bulk_crn import common
-from lblcrn.bulk_crn import experiment
-from lblcrn.bulk_crn import xps
+from lblcrn import bulk_crn
+from lblcrn.experiments import experiment
+from lblcrn.experiments import xps
 from lblcrn.crn_sym import reaction
 
 
@@ -166,6 +167,23 @@ class CRNTimeSeries(experiment.Experiment):
             raise IndexError('time cannot be below 0.')
         return bisect.bisect_right(self.t, time) - 1
 
+    def as_dict(self) -> dict:
+        """Return a MSON-serializable dict representation."""
+        d = super().as_dict()
+        d['rsys'] = self.rsys.as_dict()
+        d['t'] = self.t
+        d['y'] = np.transpose(self.df.to_numpy())
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict):
+        """Load from a dict representation."""
+        decode = monty.json.MontyDecoder().process_decoded
+        d['rsys'] = decode(d['rsys'])
+        d['t'] = decode(d['t'])
+        d['y'] = decode(d['y'])
+        return cls(**d)
+
 
 def simulate_crn(rsys: reaction.RxnSystem, time_max: float = 1,
                  **options) -> CRNTimeSeries:
@@ -180,7 +198,7 @@ def simulate_crn(rsys: reaction.RxnSystem, time_max: float = 1,
         A CRNTimeSeries object with the concentrations over time.
     """
 
-    sol_t, sol_y = common.solve_rsys_ode(rsys, time_max, **options)
+    sol_t, sol_y = bulk_crn.solve_rsys_ode(rsys, time_max, **options)
     return CRNTimeSeries(sol_t, sol_y, rsys)
 
 

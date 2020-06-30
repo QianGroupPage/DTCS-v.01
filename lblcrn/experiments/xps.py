@@ -23,6 +23,7 @@ Example:
 from typing import Dict, List, Optional, Tuple, Union
 
 from matplotlib import pyplot as plt
+import monty.json
 import numpy as np
 import pandas as pd
 from scipy import integrate
@@ -30,9 +31,9 @@ from scipy import stats
 from sklearn import metrics
 import sympy as sym
 
-from lblcrn.bulk_crn import common
-from lblcrn.bulk_crn import experiment
-from lblcrn.bulk_crn import time_series
+from lblcrn import bulk_crn
+from lblcrn.experiments import experiment
+from lblcrn.experiments import time_series
 from lblcrn.crn_sym import reaction
 from lblcrn.crn_sym import species
 from lblcrn import _echo
@@ -462,6 +463,37 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
         xps_obs = self.resample(overwrite=False, species=species)
         xps_obs.plot(ax=ax, **kwargs)
 
+    # --- Utility -------------------------------------------------------------
+
+    def as_dict(self) -> dict:
+        """Return a MSON-serializable dict representation."""
+        d = super().as_dict()
+        d['species_concs'] = {str(symbol): conc for symbol, conc in
+                              self.species_concs.items()}
+        d['species_manager'] = self.species_manager.as_dict()
+        d['autoresample'] = self.autoresample
+        d['autoscale'] = self.autoscale
+        d['experimental'] = self._experimental.to_json() if \
+            self._experimental is not None else None
+        d['gas_interval'] = self._gas_interval
+        d['scale_factor'] = self._scale_factor
+        d['title'] = self.title
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict):
+        """Load from a dict representation."""
+        decode = monty.json.MontyDecoder().process_decoded
+        d['species_concs'] = {sym.Symbol(name): conc for name, conc in
+                              d['species_concs'].items()}
+        d['species_manager'] = decode(d['species_manager'])
+        if d['experimental'] is not None:
+            d['experimental'] = pd.read_json(d['experimental'],
+                                             typ='series',
+                                             convert_axes=False)
+            d['experimental'].index = d['experimental'].index.map(float)
+        return cls(**d)
+
 
 def simulate_xps(rsys: reaction.RxnSystem, time: float = 1,
                  species: List[sym.Symbol] = None,
@@ -495,7 +527,7 @@ def simulate_xps(rsys: reaction.RxnSystem, time: float = 1,
         A Solution object describing the solution.
     """
     # TODO(Andrew): Solve at equilibrium when no time is specified.
-    sol_t, sol_y = common.solve_rsys_ode(rsys, time, **options)
+    sol_t, sol_y = bulk_crn.solve_rsys_ode(rsys, time, **options)
     sol = time_series.CRNTimeSeries(sol_t, sol_y, rsys)
     return sol.xps_with(species=species,
                         ignore=ignore,
