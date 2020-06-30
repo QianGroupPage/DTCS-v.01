@@ -94,7 +94,8 @@ class XPSObservable:
             ax: The plt.Axes on which to plot.
             **kwargs: Forwarded.
         """
-        for index, specie in enumerate(self.gaussians):
+        # Sort the Gaussians before plotting to overlay smaller peaks on top of larger ones
+        for index, specie in sorted(enumerate(self.gaussians), key=lambda x: max(self.gaussians[x[1]]), reverse=True):
             ax.fill(self.x_range, self.gaussians[specie], label=specie,
                     color=self._COLORS[index])
 
