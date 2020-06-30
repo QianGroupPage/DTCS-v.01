@@ -29,6 +29,9 @@ from lblcrn.surface_crn.surface_crns.simulators.event_history import EventHistor
 from lblcrn.surface_crn.surface_crns.simulators.event import Event
 from lblcrn.surface_crn.surface_crns.base.transition_rule import TransitionRule
 from lblcrn.surface_crn.surface_crns.pygbutton import *
+from lblcrn.surface_crn.surface_crns.views.grid_display import ParallelEmulatedSquareGridDisplay
+from lblcrn.surface_crn.results import Results
+import sympy as sym
 
 import numpy as np
 from queue import PriorityQueue
@@ -93,7 +96,7 @@ def main():
 
 
 def simulate_surface_crn(manifest_filename, display_class = None,
-                         init_state = None):
+                         init_state=None, rxns=None):
     '''
     Runs a simulation, and displays it in a GUI window OR saves all frames
     as PNG images.
@@ -130,7 +133,9 @@ def simulate_surface_crn(manifest_filename, display_class = None,
             if not os.path.isdir(d):
                 os.mkdir(d)
         os.environ["SDL_VIDEODRIVER"] = "dummy"
-        print("SDL_VIDEODRIVER set to 'dummy'")
+        if opts.debug:
+            # TODO: maybe opts.verbose
+            print("SDL_VIDEODRIVER set to 'dummy'")
     else:
         FRAME_DIRECTORY = ""
 
@@ -164,14 +169,15 @@ def simulate_surface_crn(manifest_filename, display_class = None,
         raise Exception('Unknown simulation type "' + opts.simulation_type+'".')
     time = simulation.time
     event_history = EventHistory()
+    simulation.rxns = rxns
+
 
     ################
     # PYGAME SETUP #
     ################
-    print("Beginning Pygame setup...")
+    if opts.debug:
+        print("Beginning Pygame setup...")
     if opts.grid_type == 'parallel_emulated':
-        from surface_crns.views.grid_display \
-                import ParallelEmulatedSquareGridDisplay
         grid_display = ParallelEmulatedSquareGridDisplay(grid = grid,
                             colormap = opts.COLORMAP,
                             emulation_colormap = opts.emulation_colormap,
@@ -261,7 +267,9 @@ def simulate_surface_crn(manifest_filename, display_class = None,
         print("Clock initialized. Filling display with white.")
     # Initial render
     display_surface.fill(WHITE)
-    print("Pygame setup done, first render attempted.")
+    if opts.debug:
+        # TODO: maybe this should be shown in verbose mode
+        print("Pygame setup done, first render attempted.")
 
     # Make the options menu.
     #opts_menu = MainOptionMenu()
@@ -301,7 +309,8 @@ def simulate_surface_crn(manifest_filename, display_class = None,
     last_frame  = False
     running_backward = False
 
-    print("Beginning simulation....")
+    if opts.debug:
+        print("Beginning simulation....")
     # Iterate through events
     while True:
         # Check for interface events
@@ -376,8 +385,9 @@ def simulate_surface_crn(manifest_filename, display_class = None,
                 event_history.clip()
                 simulation.time = time
                 simulation.reset()
-                for rxn in list(simulation.event_queue.queue):
-                    print(rxn)
+                if opts.debug:
+                    for rxn in list(simulation.event_queue.queue):
+                        print(rxn)
             if event.type == QUIT:
                 if opts.saving_movie:
                     movie_file.close()
@@ -528,11 +538,12 @@ def simulate_surface_crn(manifest_filename, display_class = None,
                            '-vf', 'pad=ceil(iw/2)*2:ceil(ih/2)*2',
                            movie_filename
                            ]
-                print("Calling ffmpeg with: " + str(command))
-                print("And right now the current dir is " + os.getcwd())
-                print("opts.capture_directory = " + opts.capture_directory)
 
                 if opts.debug:
+                    print("Calling ffmpeg with: " + str(command))
+                    print("And right now the current dir is " + os.getcwd())
+                    print("opts.capture_directory = " + opts.capture_directory)
+
                     print("Writing movie with command:\n")
                     print("\t" + str(command) + "\n")
                 debug_output_stream = open(os.path.join(opts.capture_directory,
@@ -602,7 +613,8 @@ def update_display(opts, simulation, FRAME_DIRECTORY = None):
         pygame.display.update()
         pygame.display.flip()
     else:
-        print("capture directory is: " + str(opts.capture_directory))
+        if opts.debug:
+            print("capture directory is: " + str(opts.capture_directory))
         if FRAME_DIRECTORY == None:
             raise Exception("FRAME_DIRECTORY should be set if a capture" +
                             " directory is set.")
@@ -626,7 +638,21 @@ def update_display(opts, simulation, FRAME_DIRECTORY = None):
                                           ".jpeg")
             if opts.debug:
                 print("Saving frame at: " + frame_filename)
-            pygame.image.save(simulation.display_surface, frame_filename)
+
+            # TODO: create and save more contents:
+            # Currently this block adds the Gaussian figures
+            half_size = simulation.display_surface.get_size()
+            # create a surface with size 'area_to_save.size'
+            temp_screen = pygame.Surface([half_size[0] * 2, half_size[1]])
+            # blit the rectangular area 'area_to_save' from 'screen' to 'temp_screen' at (0, 0)
+            temp_screen.blit(simulation.display_surface, (0, 0))
+            concs = {s: [c] for s, c in simulation.surface.species_count().items()}
+            r = Results.from_concs_times(None, simulation.rxns, concs, [0.1])
+            raw_data, size = r.raw_string_gaussian(y_upper_limit=simulation.surface.num_nodes,
+                                                   fig_size=(half_size[0]/100, half_size[1] / 100))
+            gaussian = pygame.image.fromstring(raw_data, size, "RGB")
+            temp_screen.blit(gaussian, (half_size[0], 0))
+            pygame.image.save(temp_screen, frame_filename)
 
             # Determine next capture time
             simulation.capture_time = capture_time + 1./opts.capture_rate

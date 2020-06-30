@@ -78,7 +78,7 @@ class Species:
                             f"with name {entire_name}.")
         else:
             self.sub_species[entire_name] = sub_species
-        return
+        return sub_species
 
     def __str__(self):
         if self.color:
@@ -113,7 +113,15 @@ class SpeciesManager:
         if not isinstance(orbitals, list):
             orbitals = [orbitals]
 
-        self._species[symbol] = Species(name, orbitals, site=site)
+        if symbol in self._species:
+            s = self._species[symbol].create_sub_species(suffix=site.name)
+            symbol = sym.Symbol(s.name)
+        else:
+            s = Species(name, orbitals, site=site)
+            for name, new_species in s.sub_species.items():
+                self._species[sym.Symbol(name)] = new_species
+
+        self._species[symbol] = s
         return symbol
 
     def species_from_symbol(self, key: sym.Symbol) -> Species:

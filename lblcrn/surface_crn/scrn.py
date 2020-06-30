@@ -10,6 +10,8 @@ from lblcrn.common import color_to_HEX
 from lblcrn.surface_crn.api_adapter.api_adapt import generate_manifest_stream
 import pygame
 import math
+import os
+from shutil import rmtree
 
 
 def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=False,
@@ -49,10 +51,17 @@ def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=Fa
         if not manifest_file:
             manifest = generate_manifest_stream(rxns, time_max)
         # TODO: check to not overwrite the video files.
+        frames_link = get_frames_link(manifest)
+        if os.path.isdir(frames_link):
+            rmtree(frames_link)
+        # Generate the file stream again after it's used.
+        if not manifest_file:
+            manifest = generate_manifest_stream(rxns, time_max)
+
         # TODO: fix the issue that the video will fail if there is already file in
         # the frames folder.
         # TODO: progress bar for the video
-        simulate_with_display(manifest, lattice, display_class)
+        simulate_with_display(manifest, lattice, display_class, rxns=rxns)
 
     r.video = video_link
     color_index = rxns.get_colors()
@@ -82,12 +91,18 @@ def get_video_link(manifest):
     return f"{opts.capture_directory}/{opts.movie_title}.mp4"
 
 
-def simulate_with_display(manifest_file, lattice, display_class="Hex Grid"):
+# TODO: cleanup
+def get_frames_link(manifest):
+    opts = get_opts(manifest)
+    return f"{opts.capture_directory}/frames"
+
+
+def simulate_with_display(manifest_file, lattice, display_class="Hex Grid", rxns=None):
     if display_class == "Hex Grid":
         display_class = HexGridPlusIntersectionDisplay
     else:
         display_class = None
-    SurfaceCRNQueueSimulator.simulate_surface_crn(manifest_file, display_class, init_state=lattice)
+    SurfaceCRNQueueSimulator.simulate_surface_crn(manifest_file, display_class, init_state=lattice, rxns=rxns)
 
 
 def simulate_without_display(manifest_file, lattice, species_tracked):
@@ -121,6 +136,7 @@ def simulate_without_display(manifest_file, lattice, species_tracked):
         times.append(next_rxn.time)
         for species in species_tracked:
             concs[species].append(concs[species][-1])
+        # Very simple mechanism, one reaction at a time.
         for reactant in next_rxn.rule.inputs:
             if reactant in concs:
                 concs[reactant][-1] -= 1

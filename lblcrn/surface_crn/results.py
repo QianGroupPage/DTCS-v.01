@@ -8,7 +8,8 @@ import lblcrn.surface_crn.xps as xps
 import os
 from IPython.display import HTML
 import ffmpeg
-
+from lblcrn.common import color_to_HEX
+import matplotlib.backends.backend_agg as agg
 
 class Results:
     """
@@ -22,15 +23,20 @@ class Results:
         self.df = df
         self.resample_evolution()
 
-        self.xps_df = None # The xps dataframe we have for reference
+        self.xps_df = None  # The xps dataframe we have for reference
 
         self.species_ordering = None  # The ordering of species as they appear in our figures.
         self.species_colors = {}  # A dictionary from species names to their colors
+
+        self.species_ordering = list(rxns.get_symbols())
+        color_index = rxns.get_colors()
+        self.species_colors = {s: color_index[s] for s in self.species_ordering}
+        self.species_ordering = [str(s) for s in self.species_ordering]
+        self.species_colors = {str(s): color_to_HEX(c) for s, c in self.species_colors.items()}
         self.substances = dict(zip([repr(s) for s in rxns.get_symbols()], rxns.get_species())) if rxns else {}
 
         # Play the videos
         self.video = None
-
 
     @staticmethod
     def side_by_side_axes(num_axes=2, output_fig=False):
@@ -46,7 +52,6 @@ class Results:
             return fig, axes
         else:
             return axes
-
 
     def play_video(self, slowdown_factor=1):
         """
@@ -311,8 +316,14 @@ class Results:
         curves = []
         if not ax:
             fig, ax = plt.subplots()
-            fig.set_figheight(6)
-            fig.set_figwidth(8)
+            if fig_size == "Default":
+                fig.set_figheight(6)
+                fig.set_figwidth(8)
+            else:
+                # For the plotting used in videos
+                fig.set_dpi(100)
+                fig.set_figheight(fig_size[1])
+                fig.set_figwidth(fig_size[0])
         plt.style.use('seaborn-white')
         ax.tick_params(axis="x", direction="out", length=8, width=2)
         ax.tick_params(axis='both', which='minor', labelsize=12)
@@ -361,6 +372,26 @@ class Results:
             # Usually, you don't need to return because plot would draw the graph in the current
             # Jupter Notebbok. Return only when you need the figure.
             return ax.figure
+
+    def raw_string_gaussian(self, t=-1, y_upper_limit=None,  xps_scaling=1, fig_size="Default",
+                      scaling_factor=1,
+                      ax=None):
+        """
+
+        :return: raw string representation of the figure
+        """
+        import matplotlib
+        backend = matplotlib.rcParams['backend']
+        matplotlib.use("Agg")
+        fig = self.plot_gaussian(t=t,  xps_scaling=xps_scaling,
+                                 return_fig=True, fig_size=fig_size, scaling_factor=scaling_factor,
+                                 ax=ax)
+        matplotlib.pyplot.ylim((0, y_upper_limit))
+        canvas = agg.FigureCanvasAgg(fig)
+        canvas.draw()
+        renderer = canvas.get_renderer()
+        matplotlib.use(backend)
+        return renderer.tostring_rgb(),  canvas.get_width_height()
 
     def save(self, directory=None):
         """

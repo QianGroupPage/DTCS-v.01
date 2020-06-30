@@ -1,7 +1,7 @@
 import numpy as np
 from lblcrn.surface_crn.surface_crns.base.node import *
-from lblcrn.surface_crn.surface_crns.models.grids import SquareGrid
 from warnings import *
+from collections import Counter
 
 class EmulatedSimulationGrid(object):
     '''
@@ -75,6 +75,16 @@ class EmulatedSimulationGrid(object):
 
     def getnode(self, x, y):
         return self.grid[x,y]
+
+    def species_count(self):
+        """
+        :return: count of each species in the grid
+        """
+        return Counter([str(n.state) for n in self])
+
+    @property
+    def num_nodes(self):
+        return sum([1 for _ in self])
 
     def __iter__(self):
         return SimulationGridIterator(self)
