@@ -8,7 +8,7 @@ class LegendDisplay:
     Displays a legend of all of the states and colors used in the simulation.
     '''
     pygame.font.init()
-    LEGEND_FONT       = pygame.font.SysFont('monospace', 16)
+    LEGEND_FONT       = pygame.font.SysFont('menlo', 16)
     HORIZONTAL_BUFFER = 5
     VERTICAL_BUFFER   = 5
     MIN_BOX_HEIGHT    = 10

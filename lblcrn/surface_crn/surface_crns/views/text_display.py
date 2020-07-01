@@ -9,23 +9,26 @@ class TextDisplay(object):
     This object is assigned a width on creation. Text is centered within that
     space.
     '''
-    TIME_FONT         = pygame.font.SysFont('monospace', 24)
+    # TODO: make sure this works across all systems
+    FONT_NAME         = 'ariaboldttc'  # This is good for MacOS
     BLACK             = (0,0,0)
     WHITE             = (255,255,255)
     HORIZONTAL_BUFFER = 5
     VERTICAL_BUFFER   = 5
 
 
-    def __init__(self, width):
+    def __init__(self, width, font_size=24, text=""):
         debug = False
 
         self.display_width = width
 
-        # Calculate this display's size
-        self.display_height = TextDisplay.TIME_FONT.get_linesize() + \
-                              2 * TextDisplay.VERTICAL_BUFFER
+        self.font_name = TextDisplay.FONT_NAME
+        self.font = pygame.font.SysFont(self.font_name, font_size)
 
-        self.text = ""
+        # Calculate this display's size
+        self.display_height = self.font.get_linesize() + 2 * TextDisplay.VERTICAL_BUFFER
+
+        self.text = text
 
 
     def update_text(self, text = None):
@@ -34,10 +37,10 @@ class TextDisplay(object):
             return
 
         font_size = 24
-        temp_font = pygame.font.SysFont('monospace', font_size)
+        temp_font = self.font
         while temp_font.size(self.text)[0] > self.display_width:
             font_size *= 0.75
-            temp_font = pygame.font.SysFont('monospace', font_size)
+            temp_font = pygame.font.SysFont(self.font_name, font_size)
         self.text_surface = temp_font.render(self.text, True, TextDisplay.BLACK)
         self.text_box = self.text_surface.get_rect()
         self.text_box.centerx = int(self.display_width / 2)
