@@ -393,6 +393,7 @@ class Results:
         matplotlib.use("Agg")
         fig = self.plot_gaussian(t=t,  xps_scaling=xps_scaling, return_fig=True, fig_size=fig_size, dpi=dpi,
                                  scaling_factor=scaling_factor, ax=ax)
+        fig.tight_layout()
         matplotlib.pyplot.ylim((0, y_upper_limit))
         canvas = agg.FigureCanvasAgg(fig)
         canvas.draw()
