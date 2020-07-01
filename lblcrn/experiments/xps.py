@@ -142,7 +142,7 @@ class XPSObservable:
         """The x-values, energies, on which there is data."""
         return np.asarray(self.df.index)
 
-    def plot(self, ax: plt.Axes,
+    def plot(self, ax: plt.Axes = None,
              simulated=True,
              experimental=True,
              sim_gaussians=True,
@@ -150,14 +150,20 @@ class XPSObservable:
              gas_phase=True,
              envelope=True,
              experimental_raw=True,
-             **kwargs):
+             **kwargs) -> plt.Axes:
         """Default plotting behavior for an XPS observable.
 
         Args:
             ax: The plt.Axes on which to plot.
             **kwargs: Forwarded. # TODO: how to use?
             # TODO
+
+        Returns:
+            # TODO
         """
+        if ax is None:
+            ax = plt.gca()
+
         # Sort the gaussian columns so shorter ones show in front.
         def gauss_col_sort_key(col):
             return max(self.df[col])
@@ -202,6 +208,7 @@ class XPSObservable:
         ax.legend()
         ax.set_title(self.title)
         ax.invert_xaxis()  # XPS Plots are backwards
+        return ax
 
     # --- Data Analysis ------------------------------------------------------
 
@@ -469,6 +476,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
             scale = self._scale_factor
             if self.autoscale:
                 scale = self._get_autoscale(df, sim_cols, experimental)
+                self._scale_factor = scale
             for sim_col in sim_cols:
                 df[sim_col] *= scale
 
@@ -584,13 +592,16 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
 
     def _plot(self, species: List[sym.Symbol], ax: plt.Axes,
               experimental=True, simulated=True,
-              gas_phase=True, envelope=True, **kwargs):
+              gas_phase=True, envelope=True, **kwargs) -> plt.Axes:
         """Plot the XPS observable.
 
         Args:
             ax: The plt.Axes on which to plot.
             species: A list of sym.Symbols, the species to plot.
             **kwargs: Forwarded.
+
+        Returns:
+            The
         """
         # This makes an XPSObservable.
         xps_obs = self.resample(overwrite=False, species=species,
@@ -600,12 +611,12 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
                                 envelope=envelope)
         # XPSExperiment.plot is overridden by Experiment.plot, but
         # this is an XPSObservable, so this doesn't make an infinite loop.
-        xps_obs.plot(ax=ax,
-                     experimental=experimental,
-                     simulated=simulated,
-                     gas_phase=gas_phase,
-                     envelope=envelope,
-                     **kwargs)
+        return xps_obs.plot(ax=ax,
+                            experimental=experimental,
+                            simulated=simulated,
+                            gas_phase=gas_phase,
+                            envelope=envelope,
+                            **kwargs)
 
     # --- Utility -------------------------------------------------------------
 

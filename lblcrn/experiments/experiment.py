@@ -34,7 +34,7 @@ class Experiment(monty.json.MSONable, abc.ABC):
     def plot(self, ax: Optional[plt.Axes] = None,
              species: Union[sym.Symbol, List[sym.Symbol], None] = None,
              ignore: Union[sym.Symbol, List[sym.Symbol], None] = None,
-             **kwargs):
+             **kwargs) -> plt.Axes:
         """Plot the experiment.
 
         Args:
@@ -43,15 +43,19 @@ class Experiment(monty.json.MSONable, abc.ABC):
             ignore: Optional, the species you don't want to plot. Defaults to
                 none.
             **kwargs: Extra arguments, forwarded many places.
+
+        Returns:
+            #TODO
         """
         species = self._get_species_not_ignored(species, ignore)
         if ax is None:
             ax = plt.gca()
 
-        self._plot(species=species, ax=ax, **kwargs)
+        return self._plot(species=species, ax=ax, **kwargs)
 
     @abc.abstractmethod
-    def _plot(self, ax: plt.Axes, species: List[sym.Symbol], **kwargs):
+    def _plot(self, ax: plt.Axes, species: List[sym.Symbol],
+              **kwargs) -> plt.Axes:
         """Do the actual plotting legwork.
 
         In general, this shouldn't call plt.show(), as that screws up axes.
@@ -60,6 +64,9 @@ class Experiment(monty.json.MSONable, abc.ABC):
             ax: The plt.Axes on which to plot.
             species: A list of sym.Symbols, the species to plot.
             **kwargs: Forwarded.
+
+        Returns:
+            #TODO
         """
         pass
 
