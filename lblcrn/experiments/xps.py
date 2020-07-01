@@ -310,7 +310,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
     # self.resample(), and that's only if overwrite=True.
 
     def resample(self, overwrite=True, species=None,
-                 ignore=[]) -> XPSObservable:
+                 ignore=None) -> XPSObservable:
         """Recalculates the dataframe in case anything updated.
 
         Args:
@@ -322,7 +322,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
         Returns:
             An XPSObservable with the resampled data.
         """  # TODO(Andrew) Typehints?
-        species = self._get_species_not_ignored(species, ignore + self.ignore)
+        species = self._get_species_not_ignored(species, ignore)
 
         x_range = self._get_x_range(species)
         df = pd.DataFrame(data=0, index=x_range, columns=['envelope'])

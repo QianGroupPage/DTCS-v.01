@@ -17,11 +17,13 @@ class Experiment(monty.json.MSONable, abc.ABC):
 
     Attributes:
         df: The pd.DataFrame representing the experiment.
+        ignore: The species ignored by default.
     """
 
     def __init__(self):
         """Initialize required instance variables."""
         self.df = None
+        self.ignore = []
 
     @property
     @abc.abstractmethod
@@ -92,7 +94,7 @@ class Experiment(monty.json.MSONable, abc.ABC):
         if not species:
             species = self.species
         if not ignore:
-            ignore = []
+            ignore = self.ignore
 
         return [specie for specie in species if specie not in ignore]
 
