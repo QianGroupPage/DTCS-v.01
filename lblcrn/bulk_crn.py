@@ -77,3 +77,7 @@ def solve_rsys_ode(rsys, time_max: float = 1, **options):
             sol_y[index][tindex] = func(sol_t[tindex], sol_y[:, tindex])
 
     return sol_t, sol_y
+
+def solve_rsys_ode_till_eq(rsys, **options):
+    # TODO: stub, please remove me once this is implemented
+    return solve_rsys_ode(rsys, time_max=100, **options)
