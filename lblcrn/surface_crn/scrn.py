@@ -14,7 +14,7 @@ import os
 from shutil import rmtree
 
 
-def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=False,
+def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=False, spectra_in_video=True,
              species_tracked=[], manifest_file=""):
     """
 
@@ -61,7 +61,7 @@ def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=Fa
         # TODO: fix the issue that the video will fail if there is already file in
         # the frames folder.
         # TODO: progress bar for the video
-        simulate_with_display(manifest, lattice, display_class, rxns=rxns)
+        simulate_with_display(manifest, lattice, display_class, rxns=rxns, spectra_in_video=spectra_in_video)
 
     r.video = video_link
     color_index = rxns.get_colors()
@@ -97,12 +97,13 @@ def get_frames_link(manifest):
     return f"{opts.capture_directory}/frames"
 
 
-def simulate_with_display(manifest_file, lattice, display_class="Hex Grid", rxns=None):
+def simulate_with_display(manifest_file, lattice, display_class="Hex Grid", rxns=None, spectra_in_video=True):
     if display_class == "Hex Grid":
         display_class = HexGridPlusIntersectionDisplay
     else:
         display_class = None
-    SurfaceCRNQueueSimulator.simulate_surface_crn(manifest_file, display_class, init_state=lattice, rxns=rxns)
+    SurfaceCRNQueueSimulator.simulate_surface_crn(manifest_file, display_class, init_state=lattice, rxns=rxns,
+                                                  spectra_in_video=spectra_in_video)
 
 
 def simulate_without_display(manifest_file, lattice, species_tracked):

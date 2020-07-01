@@ -50,7 +50,10 @@ PROFILE = False
 WHITE = (255,255,255)
 BLACK = (0, 0, 0)
 #time_font = pygame.font.SysFont('monospace', 24)
+# TODO: unify font with other figures
 time_font = time_font = pygame.font.SysFont(pygame.font.get_default_font(), 24)
+# import matplotlib
+# time_font = time_font = pygame.font.SysFont(matplotlib.rcParams['font.family'], 24)
 TEXT_X_BUFFER  = 10
 TEXT_Y_BUFFER  = 5
 TEXT_HEIGHT    = time_font.get_linesize() + 2 * TEXT_Y_BUFFER
@@ -91,7 +94,7 @@ def main():
 
 
 def simulate_surface_crn(manifest_filename, display_class = None,
-                         init_state=None, rxns=None):
+                         init_state=None, rxns=None, spectra_in_video=True):
     '''
     Runs a simulation, and displays it in a GUI window OR saves all frames
     as PNG images.
@@ -165,6 +168,7 @@ def simulate_surface_crn(manifest_filename, display_class = None,
     time = simulation.time
     event_history = EventHistory()
     simulation.rxns = rxns
+    simulation.spectra_in_video = spectra_in_video
 
 
     ################
@@ -292,7 +296,7 @@ def simulate_surface_crn(manifest_filename, display_class = None,
         clip_button.draw(display_surface)
 
     pygame.display.flip()
-    update_display(opts, simulation, FRAME_DIRECTORY)
+    update_display(opts, simulation, FRAME_DIRECTORY, time_display=time_display)
 
     # State variables for simulation
     next_reaction_time = 0
@@ -469,7 +473,7 @@ def simulate_surface_crn(manifest_filename, display_class = None,
         # Render updates and make the next clock tick.
         if opts.debug:
             print("Updating display.")
-        update_display(opts, simulation, FRAME_DIRECTORY)
+        update_display(opts, simulation, FRAME_DIRECTORY, time_display=time_display)
         fpsClock.tick(opts.fps)
 
         # Check for simulation completion...
@@ -488,7 +492,7 @@ def simulate_surface_crn(manifest_filename, display_class = None,
                                 y_pos = 0)#opts_menu.display_height)
             if next_reaction:
                 display_next_event(next_reaction, grid_display)
-            update_display(opts, simulation, FRAME_DIRECTORY)
+            update_display(opts, simulation, FRAME_DIRECTORY, time_display=time_display)
             if opts.debug:
                 print("Simulation state at final time " + \
                       str(opts.max_duration) + ":")
@@ -603,7 +607,7 @@ def cleanup_and_exit(simulation):
     print(str(simulation.surface))
     sys.exit()
 
-def update_display(opts, simulation, FRAME_DIRECTORY = None):
+def update_display(opts, simulation, FRAME_DIRECTORY = None, time_display=None):
     if opts.capture_directory == None:
         pygame.display.update()
         pygame.display.flip()
@@ -636,21 +640,26 @@ def update_display(opts, simulation, FRAME_DIRECTORY = None):
 
             # TODO: create and save more contents:
             # Currently this block adds the Gaussian figures
-            half_size = simulation.display_surface.get_size()
-            h_gap = 40
-            up_gap = 50
-            temp_screen = pygame.Surface([half_size[0] * 2 + h_gap, half_size[1]])
-            temp_screen.fill((255,255,255))
-            temp_screen.blit(simulation.display_surface, (0, 0))
-            r = Results.from_counts(simulation.rxns, simulation.surface.species_count())
-            dpi = 100
-            raw_data, size = r.raw_string_gaussian(y_upper_limit=simulation.surface.num_nodes,
+            screen = simulation.display_surface
+            if simulation.spectra_in_video:
+
+                half_size = simulation.display_surface.get_size()
+                h_gap = 40
+                up_gap = 50
+                temp_screen = pygame.Surface([half_size[0] * 2 + h_gap, half_size[1]])
+                temp_screen.fill((255,255,255))
+                temp_screen.blit(simulation.display_surface, (0, 0))
+                r = Results.from_counts(simulation.rxns, simulation.surface.species_count())
+                dpi = 100
+                raw_data, size = r.raw_string_gaussian(y_upper_limit=simulation.surface.num_nodes,
                                                    fig_size=(half_size[0]/dpi, (half_size[1] - up_gap)/dpi), dpi=dpi)
-            gaussian = pygame.image.fromstring(raw_data, size, "RGB")
-            # white = pygame.Surface((half_size[0] + h_gap, half_size[1]))
-            # temp_screen.blit(white, (half_size[0], 0))
-            temp_screen.blit(gaussian, (half_size[0] + h_gap, up_gap - 10))
-            pygame.image.save(temp_screen, frame_filename)
+                gaussian = pygame.image.fromstring(raw_data, size, "RGB")
+                temp_screen.blit(gaussian, (half_size[0] + h_gap, up_gap - 10))
+                if time_display is not None:
+                    time_display.render(temp_screen, x_pos=half_size[0] + h_gap,
+                                        y_pos=0)
+                screen = temp_screen
+            pygame.image.save(screen, frame_filename)
 
             # Determine next capture time
             simulation.capture_time = capture_time + 1./opts.capture_rate

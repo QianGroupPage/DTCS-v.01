@@ -307,7 +307,7 @@ class Results:
         return xps.fill_zeros(gaussian, min_be, max_be), xps.fill_zeros(xps_df, min_be, max_be)
 
     def plot_gaussian(self, t=-1, path="", xps_path="", xps_scaling=1, save=False, return_fig=False, fig_size="Default",
-                      dpi=100, scaling_factor=1, ax=None):
+                      dpi=100, scaling_factor=1, ax=None, envelope_name="CRN"):
         """
         Plot the Gaussian function from time t to time t + 1.
         """
@@ -359,7 +359,7 @@ class Results:
 
         curve = ax.plot(gaussian.index, gaussian["Envelope"], linewidth=2, color='black', label="CRN", alpha=0.8)
         curves.append(curve)
-        legend_labels += ["CRN"] + [gaussian_peaks[n][0].get_label() for n in self.species_ordering]
+        legend_labels += [envelope_name] + [gaussian_peaks[n][0].get_label() for n in self.species_ordering]
 
         ax.legend([c[0] for c in curves] + [gaussian_peaks[n][0] for n in self.species_ordering], legend_labels,
                   fontsize=12)
@@ -392,7 +392,7 @@ class Results:
         backend = matplotlib.rcParams['backend']
         matplotlib.use("Agg")
         fig = self.plot_gaussian(t=t,  xps_scaling=xps_scaling, return_fig=True, fig_size=fig_size, dpi=dpi,
-                                 scaling_factor=scaling_factor, ax=ax)
+                                 scaling_factor=scaling_factor, ax=ax, envelope_name="total")
         fig.tight_layout()
         matplotlib.pyplot.ylim((0, y_upper_limit))
         canvas = agg.FigureCanvasAgg(fig)
