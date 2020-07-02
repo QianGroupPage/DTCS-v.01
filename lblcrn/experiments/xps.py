@@ -54,9 +54,11 @@ class XPSObservable:
     # Settings for the column names
     _SIMULATED = 'simulated'
     _EXPERIMENTAL = 'experimental'
+    _CONTAMINANT = 'contaminant'
     _ENVELOPE = (_SIMULATED, 'envelope')
     _GAS_PHASE = (_EXPERIMENTAL, 'gas_phase')
-    _DEC_ENV = (_EXPERIMENTAL, 'deconv_envelope')
+    _DECONV_ENV = (_EXPERIMENTAL, 'deconv_envelope')
+    _CLEAN_EXP = (_EXPERIMENTAL, 'clean')
     _RAW = (_EXPERIMENTAL, 'raw')
 
     def __init__(self, df: pd.DataFrame, title: str = ''):
@@ -78,10 +80,17 @@ class XPSObservable:
         return None
 
     @property
+    def experimental_clean(self) -> Optional[pd.Series]:
+        """The experimental data without the gas phase or contaminants."""
+        if self._CLEAN_EXP in self.df:
+            return self.df[self._CLEAN_EXP]
+        return None
+
+    @property
     def decon_envelope(self):
         """The envelope of the deconvoluted experimental data."""
-        if self._DEC_ENV in self.df:
-            return self.df[self._DEC_ENV]
+        if self._DECONV_ENV in self.df:
+            return self.df[self._DECONV_ENV]
         return None
 
     @property
@@ -156,9 +165,11 @@ class XPSObservable:
              experimental=True,
              sim_gaussians=True,
              deconvoluted=True,
+             deconv_gaussians=True,
              deconv_envelope=True,
              gas_phase=True,
              envelope=True,
+             experimental_clean=True,
              experimental_raw=True, # TODO: perhaps rename these all to show_ or show=?
              **kwargs) -> plt.Axes:
         """Default plotting behavior for an XPS observable.
@@ -186,6 +197,10 @@ class XPSObservable:
             deconvoluted = False
             gas_phase = False
             experimental_raw = False
+            experimental_clean = False
+        if not deconvoluted:
+            deconv_envelope = False
+            deconv_gaussians = False
 
         if sim_gaussians and self.gaussians_simulated is not None:
             for index, column in enumerate(sorted(self.gaussians_simulated,
@@ -195,7 +210,7 @@ class XPSObservable:
                         label=f'Sim. {column[1]}',
                         color=self._COLORS[index])
 
-        if deconvoluted and self.gaussians_deconvoluted is not None:
+        if deconv_gaussians and self.gaussians_deconvoluted is not None:
             for index, column in enumerate(sorted(self.gaussians_deconvoluted,
                                                   key=gauss_col_sort_key,
                                                   reverse=True)):
@@ -218,6 +233,10 @@ class XPSObservable:
         if experimental_raw and self.experimental_raw is not None:
             ax.plot(self.x_range, self.experimental_raw,
                     label='Raw Experimental', color='#AAAAAA', linewidth=3)
+
+        if experimental_clean and self.experimental_clean is not None:
+            ax.plot(self.x_range, self.experimental_clean,
+                    label='Clean Experimental', color='#DDAADD', linewidth=3)  # TODO: I need more colors/line styles
 
         ax.legend()
         ax.set_title(self.title)
@@ -330,47 +349,15 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
 
     # --- Accessors ----------------------------------------------------------
 
-    @XPSObservable.experimental_raw.setter
-    def experimental_raw(self, experimental: pd.Series):
-        """Forwards to self.set_experimental."""
-        self.set_experimental(experimental)
-
-    @experimental_raw.deleter
-    def experimental_raw(self):
-        """Forwards to self.del_experimental."""
-        self.del_experimental()
-
     @property
     def gas_interval(self) -> Optional[Tuple[float, float]]:
         """The interval in which the gas phase peak should be. May be None."""
         return self._gas_interval
 
-    @gas_interval.setter
-    def gas_interval(self, interval: Tuple[float, float]):
-        """Forwards to self.set_gas_interval."""
-        if len(interval) != 2:
-            raise ValueError(f'Invalid interval {interval}')
-        self.set_gas_interval(lower=interval[0], upper=interval[1])
-
-    @gas_interval.deleter
-    def gas_interval(self):
-        """Forwards to self.del_gas_interval"""
-        self.del_gas_interval()
-
     @property
     def scale_factor(self) -> float:
         """The factor by which to scale the simulated data."""
         return self._scale_factor
-
-    @scale_factor.setter
-    def scale_factor(self, factor: float):
-        """Forwards to self.set_scale_factor."""
-        self.set_scale_factor(factor)
-
-    @scale_factor.deleter
-    def scale_factor(self):
-        """Forwards to self.del_scale_factor."""
-        self.del_scale_factor()
 
     @property
     def species(self) -> List[sym.Symbol]:
@@ -470,7 +457,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
             experimental = False
         if not self._gas_interval or not experimental:
             gas_phase = False
-        if not experimental:
+        if not experimental or not species:
             deconvolute = False
 
         # Make the pd.Index-s
@@ -494,11 +481,13 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
 
         # Add the experimental data and gas phase if possible.
         if experimental:
-            df[self._RAW] = self._exp_data
+            df[self._RAW] = self._exp_data.copy()
+            df[self._CLEAN_EXP] = self._exp_data.copy()
 
         if gas_phase:
             gas_gauss = self._get_gas_phase(x_range)
             df[self._GAS_PHASE] = gas_gauss
+            df[self._CLEAN_EXP] -= df[self._GAS_PHASE]
 
         if deconvolute:
             noise = np.zeros(x_range.size)
@@ -513,7 +502,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
                                                  dec_col[1],
                                                  decon_concs[dec_col[1]])
 
-            df[self._DEC_ENV] = df[dec_cols].sum(axis=1)
+            df[self._DECONV_ENV] = df[dec_cols].sum(axis=1)
 
         # Make the gaussians on the new x-range
         if simulated:
