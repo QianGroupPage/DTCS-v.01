@@ -99,7 +99,7 @@ class CRNTimeSeries(experiment.Experiment):
                  autoscale: bool = True,
                  experimental: pd.Series = None,
                  gas_interval: Tuple[float, float] = None,
-                 scale_factor: float = 0.0,
+                 scale_factor: float = None,
                  title: str = ''):
         """Calculates a simulated XPS observable at time t.
 
@@ -130,7 +130,8 @@ class CRNTimeSeries(experiment.Experiment):
                 species_concs[specie] = conc
         if not title:
             title = f'time={snapshot.name}'
-        self._xps = xps.XPSExperiment(species_concs, self.species_manager,
+        self._xps = xps.XPSExperiment(species_manager=self.species_manager,
+                                      sim_concs=species_concs,
                                       autoresample=autoresample,
                                       autoscale=autoscale,
                                       experimental=experimental,
@@ -141,7 +142,7 @@ class CRNTimeSeries(experiment.Experiment):
 
     # --- Plotting -----------------------------------------------------------
 
-    def _plot(self, species: List[sym.Symbol], ax: plt.Axes, **kwargs):
+    def _plot(self, ax: plt.Axes, species: List[sym.Symbol], **kwargs):
         """Plot the reaction network time series.
 
         Args:

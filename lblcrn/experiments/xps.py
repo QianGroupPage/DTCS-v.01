@@ -21,6 +21,7 @@ Example:
 """
 
 from typing import Dict, List, Optional, Tuple, Union
+import warnings
 
 from matplotlib import pyplot as plt
 import monty.json
@@ -57,9 +58,9 @@ class XPSObservable:
     _CONTAMINANT = 'contaminant'
     _ENVELOPE = (_SIMULATED, 'envelope')
     _GAS_PHASE = (_EXPERIMENTAL, 'gas_phase')
-    _DECONV_ENV = (_EXPERIMENTAL, 'deconv_envelope')
+    _DECON_ENV = (_EXPERIMENTAL, 'decon_envelope')
     _CLEAN_EXP = (_EXPERIMENTAL, 'clean')
-    _RAW = (_EXPERIMENTAL, 'raw')
+    _RAW_EXP = (_EXPERIMENTAL, 'raw')
 
     def __init__(self, species_manager: species.SpeciesManager,
                  df: pd.DataFrame, title: str = ''):
@@ -77,8 +78,8 @@ class XPSObservable:
     @property
     def experimental_raw(self) -> Optional[pd.Series]:
         """The raw experimental data. Might be None."""
-        if self._RAW in self.df:
-            return self.df[self._RAW]
+        if self._RAW_EXP in self.df:
+            return self.df[self._RAW_EXP]
         return None
 
     @property
@@ -91,8 +92,8 @@ class XPSObservable:
     @property
     def decon_envelope(self):
         """The envelope of the deconvoluted experimental data."""
-        if self._DECONV_ENV in self.df:
-            return self.df[self._DECONV_ENV]
+        if self._DECON_ENV in self.df:
+            return self.df[self._DECON_ENV]
         return None
 
     @property
@@ -163,16 +164,17 @@ class XPSObservable:
         return np.asarray(self.df.index)
 
     def plot(self, ax: plt.Axes = None,
-             simulated=True,
-             experimental=True,
-             sim_gaussians=True,
-             deconvoluted=True,
-             deconv_gaussians=True,
-             deconv_envelope=True,
-             gas_phase=True,
-             envelope=True,
-             experimental_clean=True,
-             experimental_raw=True, # TODO: perhaps rename these all to show_ or show=?
+             # TODO: perhaps rename these all to show_ or show=?
+             simulate: bool = True,
+             sim_gaussians: bool = True,
+             envelope: bool = True,
+             experimental: bool = True,
+             experimental_raw: bool = True,
+             experimental_clean: bool = True,
+             gas_phase: bool = True,
+             deconvolute: bool = True,
+             decon_gaussians: bool = True,
+             decon_envelope: bool = True,
              **kwargs) -> plt.Axes:
         """Default plotting behavior for an XPS observable.
 
@@ -192,17 +194,17 @@ class XPSObservable:
             return max(self.df[col])
 
         # Some switches disable more than one thing
-        if not simulated:
+        if not simulate:
             sim_gaussians = False
             envelope = False
         if not experimental:
-            deconvoluted = False
-            gas_phase = False
             experimental_raw = False
             experimental_clean = False
-        if not deconvoluted:
-            deconv_envelope = False
-            deconv_gaussians = False
+            gas_phase = False
+            deconvolute = False
+        if not deconvolute:
+            decon_gaussians = False
+            decon_envelope = False
 
         if sim_gaussians and self.gaussians_simulated is not None:
             for index, column in enumerate(sorted(self.gaussians_simulated,
@@ -212,7 +214,7 @@ class XPSObservable:
                         label=f'Sim. {column[1]}',
                         color=self._COLORS[index])
 
-        if deconv_gaussians and self.gaussians_deconvoluted is not None:
+        if decon_gaussians and self.gaussians_deconvoluted is not None:
             for index, column in enumerate(sorted(self.gaussians_deconvoluted,
                                                   key=gauss_col_sort_key,
                                                   reverse=True)):
@@ -220,7 +222,7 @@ class XPSObservable:
                         label=f'Deconv. {column[1]}',
                         color=self._COLORS[index])
 
-        if deconv_envelope and self.decon_envelope is not None:
+        if decon_envelope and self.decon_envelope is not None:
             ax.plot(self.x_range, self.decon_envelope,
                     label='Deconv. Envelope', color='black', linewidth=3)
 
@@ -278,7 +280,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
         autoresample: Defaults to true, decides if it resamples on edits.
         autoscale: Defaults to true, decides if it will automatically scale
             the gaussians and envelope to match the experimental data.
-        species_concs: The concentrations of each species, for the creation of
+        sim_concs: The concentrations of each species, for the creation of
             simulated data.
         species_manager: The SpeciesManager in use.
     """
@@ -288,69 +290,75 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
     _SIGMA = 0.75 * np.sqrt(2) / (np.sqrt(2 * np.log(2)) * 2)
 
     def __init__(self,
+                 # XPSObservable args
                  species_manager: species.SpeciesManager,
-                 title: str = '',
-                 species: List[sym.Symbol] = None,
-                 species_concs: Dict[sym.Symbol, float] = None,
-                 scale_factor: float = 0.0,
-                 experimental: pd.Series = None,
-                 gas_interval: Tuple[float, float] = None,
+                 title: Optional[str] = '',
+                 # These act as defaults for resample()
+                 species: Optional[List[sym.Symbol]] = None,
+                 sim_concs: Optional[Dict[sym.Symbol, float]] = None,
+                 scale_factor: Optional[float] = None,
+                 experimental: Optional[pd.Series] = None,
+                 gas_interval: Optional[Tuple[float, float]] = None,
+                 contam_spectra: Optional[Dict[sym.Symbol, pd.Series]] = None,
+                 decon_species: Optional[List[sym.Symbol]] = None,
+                 # Flags for how to behave
                  autoresample: bool = True,
-                 autoscale: bool = True,):  # TODO: Add init resample options
+                 autoscale: bool = True, ):  # TODO: Add init resample options
         """Initialze the XPSExperiment.
 
         Pass arguments instead of setting to prevent excessive re-sampling.
 
-        Args:
-            species_manager: A SpeciesManager, for binding energies.
-            species_concs: A dictionary {specie: concentration} of the species
-                and their concentrations. This or experimental is required.
-            experimental: The experimental data. This or species_concs is
-                required.
-            autoresample: Defaults to true, decides if it resamples on edits.
-            autoscale: Defaults to true, decides if it will automatically scale
-                the gaussians and envelope to match the experimental data.
-            gas_interval: Optional, the interval in which to find the peak of
-                the gas phase's gaussian.
-            scale_factor: Optional, the factor by which to scale the gaussians.
-            title: The title to name the default plot.
+        Args: TODO
         """
         super().__init__()
         XPSObservable.__init__(self, species_manager=species_manager,
                                df=None, title=title)
 
-        # Deal with required arguments
-        if not (species_concs or experimental is not None):
+        # --- Parse Arguments ------------------------------------------------
+        # Require either sim_concs or experimental
+        if not (sim_concs or experimental is not None):
             raise ValueError(f'{self.__class__.__name__} needs at least'
                              f'species_concs or experimental defined.')
 
-        if not species_concs:
-            species_concs = {}
+        # Make everything match its intended type.
+        if sim_concs is None:
+            sim_concs = {}
+        if contam_spectra is None:
+            contam_spectra = {}
+        if decon_species is None:
+            decon_species = []
         if experimental is not None:
             experimental = experimental.copy()
-        if not species:
-            if species_concs:
-                species = list(species_concs.keys())
-            else:
-                # TODO: perhaps an echo saying that we're assuming this?
+        if species is None:
+            species = []
+            species.extend(sim_concs.keys())
+            species.extend(contam_spectra.keys())
+            species.extend(decon_species)
+            if not species:
+                _echo.echo(f'No species specified to '
+                           f'{self.__class__.__name__}(), so all species in '
+                           f'the SpeciesManager will be included.')
                 species = species_manager.species
 
         # Default scale factor to 1
-        # If they pick 1.0 on their own, then it disables autoscale.
-        if scale_factor == 0.0:
+        # If they pick anything on their own, it disables autoscale.
+        if scale_factor is None:
             scale_factor = 1.0
         else:
             autoscale = False
 
         # Flags
-        self.autoresample = autoresample
-        self.autoscale = autoscale
-        # Internal data, meant to act like a descriptor of state.
-        self._species = species
-        self.species_concs = species_concs
-        self._exp_data = experimental
-        self._gas_interval = gas_interval
-        self._scale_factor = scale_factor
+        self.autoresample: bool = autoresample
+        self.autoscale: bool = autoscale
+        # Internal data, these act like defaults for resampling.
+        # If you resample with overwrite=True, they will be overwritten.
+        self._species: List[sym.Symbol] = species
+        self._sim_concs: Dict[sym.Symbol, float] = sim_concs
+        self._scale_factor: float = scale_factor
+        self._exp_data: Union[pd.Series, None] = experimental
+        self._gas_interval: Union[Tuple[float, float], None] = gas_interval
+        self._contam_spectra: Dict[sym.Symbol, pd.Series] = contam_spectra
+        self._decon_species: List[sym.Symbol] = decon_species
 
         # Resample if autoresample is True.
         self._autoresample()
@@ -409,19 +417,42 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
         del self.df['gas_phase']
         self._autoresample()
 
-    def set_scale_factor(self, factor: float):
-        """Sets the scale factor, disabling autoscale and prompting an
-        autoresample."""
-        self.autoscale = False
-        self._scale_factor = factor
-        self._autoresample()
+    def scale(self, factor: Optional[float] = None,
+              by: Optional[float] = None,
+              to: Optional[float] = None) -> float:
+        """Scales according to the inputs you give.
 
-    def del_scale_factor(self):
-        """Deletes the scale factor, enabling autoscale and prompting an
-        autoresample."""
-        self.autoscale = True
-        self._scale_factor = 0
+        If you give no inputs, it autoscales. If you give inputs, it disables
+        autoscaling.
+
+        Args:
+            factor: Optional, float, sets the scale factor exactly.
+            by: Optional, float, multiplies the scale factor by this amount.
+            to: Optional, float, makes the peak simulated envelope equal to it.
+
+        Returns:
+            The new scale factor.
+
+        Raises:
+            ValueError: If you supply more than one argument.
+        """
+        if sum([factor is None, by is None, to is None]) > 1:
+            raise ValueError('Only one or zero arguments is acceptable.')
+
+        if factor is not None:
+            self.autoscale = False
+            self._scale_factor = factor
+        elif by is not None:
+            self.autoscale = False
+            self._scale_factor *= by
+        elif to is not None:
+            self.autoscale = False
+            raise NotImplementedError()  # TODO
+        else:
+            raise NotImplementedError()  # TODO
+
         self._autoresample()
+        return self._scale_factor
 
     def include(self, *species: sym.Symbol):
         """Add the species to the experiment.
@@ -442,7 +473,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
         Prompts and autoresample.
         """
         for specie in species:
-            self._species.pop(specie)
+            self._species.remove(specie)
         self._autoresample()
 
     def _autoresample(self):
@@ -455,111 +486,326 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
     # Note that functions in this section will only modify state if
     # overwwrite=True.
 
-    def resample(self, overwrite=True, species=None, ignore=None,
-                 experimental=True,
-                 simulated=True,
-                 gas_phase=True,
-                 deconvolute=True) -> XPSObservable:  # TODO(Andrew) Typehints?
-        """Recalculates the dataframe in case anything updated.
+    def resample(
+            self,
+            overwrite: bool = True,
+            species: Optional[Union[List[sym.Symbol], sym.Symbol]] = None,
+            ignore: Optional[Union[List[sym.Symbol], sym.Symbol]] = None,
+            x_range: Optional[np.ndarray] = None,  # TODO: cache?
+            # Arguments for the simulated data
+            simulate: Optional[bool] = None,
+            autoscale: Optional[bool] = None,
+            scale_factor: Optional[float] = None,
+            sim_concs: Optional[dict] = None,
+            # Arguments for the experimental data
+            experimental: Optional[bool] = None,
+            exp_data: Optional[pd.Series] = None,
+            gas_phase: Optional[bool] = None,
+            gas_interval: Optional[Tuple[float, float]] = None,
+            decontaminate: Optional[bool] = None,
+            contaminate: Optional[bool] = None,
+            contam_spectra: Optional[Dict[sym.Symbol, pd.Series]] = None,
+            deconvolute: Optional[bool] = None,
+            decon_species: Optional[List[sym.Symbol]] = None,
+    ) -> XPSObservable:
+        """Re-calculate everything.
 
         Args:
-            overwrite: If true, overwrites self.df with the resampled df.
-            species: A list of sym.Symbols, if you only want to sample for
-                those species.
-            ignore: A list of sym.Symbols to not include.
-            TODO: add rest of params
+            overwrite:
+            species:
+            ignore:
+
+            --- Data Inputs ---
+            x_range:
+            scale_factor:
+            sim_concs:
+            exp_data:
+            gas_interval:
+            contam_spectra:
+            decon_species:
+
+            --- Flags ---
+            simulate:
+            autoscale:
+            experimental:
+            gas_phase:
+            decontaminate:
+            contaminate:
+            deconvolute:
+
+        TODO: Cache all the data inputs
 
         Returns:
-            An XPSObservable with the resampled data.
+
         """
+        # --- Parse Arguments ------------------------------------------------
+        # Handle: species, ignore
         species = self._get_species_not_ignored(species, ignore)
 
-        # This uses the experimental data, even if experimental=False
-        # I'm leaving it in because I can't think of a time you would want
-        # to have the x-axes mismatch.
-        x_range = self._get_x_range(species)
-        scale = self._scale_factor
+        # x-range is handled in _resample, as it might require everything else
+        # to be defined.
 
-        # TODO: Warn the user if I override what they asked
-        if not self.species_concs:
-            simulated = False
-        if self._exp_data is None:
+        # --- Simulation-Related ---------------------------------------------
+        # Handle: sim_concs
+        if sim_concs is None:
+            sim_concs = self._sim_concs
+        # Only take into account species given by _get_species_not_ignored
+        sim_species = [specie for specie in sim_concs.keys()
+                       if specie in species]  # Everything subsets species
+
+        # Handle: simulate
+        # Default to True, requires that sim_species is nonempty
+        if not sim_species:
+            if simulate:
+                warnings.warn(UserWarning('Cannot simulate without simulated '
+                                          'concentrations defined.'))
+            simulate = False
+        elif simulate is None:
+            simulate = True
+
+        # Handle: autoscale, scale_factor
+        # scale_factor and autoscale are only used in simulated data.
+        if (scale_factor or autoscale) and not simulate:
+            warnings.warn(UserWarning('Scaling is only used in '
+                                      'simulated data.'))
+        # Default scale_factor to self._scale_factor/autoscale.
+        if scale_factor is None:
+            # If autoscale was not given, default to self.autoscale
+            if autoscale is None:
+                autoscale = self.autoscale
+            scale_factor = self._scale_factor  # Won't get used if autoscale.
+        elif autoscale:
+            warnings.warn(UserWarning('Cannot specify both scale_factor and '
+                                      'autoscale=True.'))
+
+        # --- Experimental-Related -------------------------------------------
+        # Handle: exp_data
+        if exp_data is None:
+            exp_data = self._exp_data  # Might still be None
+
+        # Handle: experimental
+        # Default to True, experimental requires exp_data
+        if exp_data is None:
+            if experimental:
+                warnings.warn(UserWarning('Experimental data required for '
+                                          'experimental-related functions.'))
             experimental = False
-        if not self._gas_interval or not experimental:
-            gas_phase = False
-        if not experimental or not species:
-            deconvolute = False
+        elif experimental is None:
+            experimental = True
 
-        # Make the pd.Index-s
-        columns = []
-        if experimental:
-            columns.append(self._RAW)
-            if gas_phase:
-                columns.append(self._GAS_PHASE)
+        # Handle: gas_interval
+        if gas_interval is None:
+            gas_interval = self._gas_interval
+        elif not experimental:
+            warnings.warn(UserWarning('experimental=True required for '
+                                      'gas phase evaluation.'))
+
+        # Handle: gas_phase
+        # gas_phase requires a valid gas_interval
+        def valid_gas_interval(interval):
+            return len(interval) == 2 and interval[0] <= interval[1]
+
+        if gas_phase is None:
+            if experimental and valid_gas_interval(gas_interval):
+                gas_phase = True
+            else:
+                gas_phase = False
+        elif gas_phase:
+            if not (experimental and valid_gas_interval(gas_interval)):
+                warnings.warn(UserWarning('Cannot evaluate gas phase without '
+                                          'experimental and a valid gas phase'
+                                          'interval.'))
+                gas_phase = False
+
+        # Handle: contam_spectra
+        if contam_spectra is None:
+            contam_spectra = {}
+        contam_species = [specie for specie in contam_spectra.keys()
+                          if specie in species]  # Everything subsets species
+
+        # Handle: decontaminate, contaminate
+        # (de)contaminate requires contam_species to be nonempty
+        if not contam_species:
+            if decontaminate:
+                warnings.warn(UserWarning('decontaminate=True requries '
+                                          'contaminants.'))
+            if contaminate:
+                warnings.warn(UserWarning('contaminate=True requries '
+                                          'contaminants.'))
+            decontaminate = False
+            contaminate = False
+        else:
+            # decontaminate defaults to True, contaminate to False
+            if decontaminate is None:
+                decontaminate = True
+            if contaminate is None:
+                contaminate = False
+
+        # Handle: decon_species
+        if decon_species is None:
+            decon_species = self._decon_species
+            # If the default is unspecified, default to species
+            if not decon_species:
+                decon_species = species
+        decon_species = [specie for specie in decon_species
+                         if specie in species]  # Everything subsets species
+
+        # Handle: deconvolute
+        # deconvolute requires decon_species to be nonempty
+        if not decon_species:
             if deconvolute:
-                dec_cols = [(self._EXPERIMENTAL, specie) for specie in species]
-                columns.extend(dec_cols)
-        if simulated:
-            columns.append(self._ENVELOPE)
-            sim_cols = [(self._SIMULATED, specie) for specie in species]
-            columns.extend(sim_cols)
+                warnings.warn(UserWarning('deconvolute=True requires '
+                                          'more than zero species.'))
+            deconvolute = False
+        elif deconvolute is None:
+            deconvolute = True
 
-        row_index = pd.Index(x_range, name='eV')
-        col_index = pd.MultiIndex.from_tuples(columns)
-
-        df = pd.DataFrame(data=0, index=row_index, columns=col_index)
-
-        # Add the experimental data and gas phase if possible.
-        if experimental:
-            df[self._RAW] = self._exp_data.copy()
-            df[self._CLEAN_EXP] = self._exp_data.copy()
-
-        if gas_phase:
-            gas_gauss = self._get_gas_phase(x_range)
-            df[self._GAS_PHASE] = gas_gauss
-            df[self._CLEAN_EXP] -= df[self._GAS_PHASE]
-
-        if deconvolute:
-            noise = np.zeros(x_range.size)
-            if gas_phase:
-                noise += df[self._GAS_PHASE]
-
-            # A dict {specie: conc}, like self.species_concs
-            decon_concs = self._get_deconvolution(x_range, species, noise)
-            for dec_col in dec_cols:
-                # dec_col is a tuple (self._EXPERIMENTAL, specie)
-                df[dec_col] = self._get_gaussian(x_range,
-                                                 dec_col[1],
-                                                 decon_concs[dec_col[1]])
-
-            df[self._DECONV_ENV] = df[dec_cols].sum(axis=1)
-
-        # Make the gaussians on the new x-range
-        if simulated:
-            for sim_col in sim_cols:
-                # sim_col is a tuple (self._SIMULATED, specie)
-                df[sim_col] = self._get_gaussian(x_range,
-                                                 sim_col[1],
-                                                 self.species_concs[sim_col[1]])
-
-            # Scales the gaussians and envelope by self._scale_factor
-            # If self.autoscale, scale it to to self._get_autoscale()
-            if self.autoscale:
-                scale = self._get_autoscale(df, sim_cols, experimental)
-            for sim_col in sim_cols:
-                df[sim_col] *= scale
-
-            df[self._ENVELOPE] = df[sim_cols].sum(axis=1)
+        # --- Resample and Overwrite -----------------------------------------
+        df = self._resample(
+            x_range=x_range,
+            simulate=simulate,
+            sim_concs=sim_concs,
+            sim_species=sim_species,
+            autoscale=autoscale,
+            scale_factor=scale_factor,
+            experimental=experimental,
+            exp_data=exp_data,
+            gas_phase=gas_phase,
+            gas_interval=gas_interval,
+            decontaminate=decontaminate,
+            contaminate=contaminate,
+            contam_spectra=contam_spectra,
+            contam_species=contam_species,
+            deconvolute=deconvolute,
+            decon_species=decon_species,
+        )
 
         if overwrite:
-            self._scale_factor = scale
+            self._sim_concs = sim_concs
+            self._scale_factor = scale_factor
+            self._exp_data = exp_data
+            self._gas_interval = gas_interval
+            self._contam_spectra = contam_spectra
             self.df = df
         return XPSObservable(species_manager=self.species_manager,
                              df=df,
                              title=self.title)
 
-    def _get_autoscale(self, df: pd.DataFrame, columns: Tuple[str, sym.Symbol],
-                       experimental=False) -> float:
+    def _resample(
+            self,
+            # Input Data
+            x_range: Union[np.ndarray, None],
+            sim_concs: Dict[sym.Symbol, float],
+            sim_species: List[sym.Symbol],
+            scale_factor: float,
+            exp_data: pd.Series,
+            gas_interval: Tuple[float, float],
+            contam_spectra: Dict[sym.Symbol, pd.Series],
+            contam_species: List[sym.Symbol],
+            decon_species: List[sym.Symbol],
+            # Flags
+            simulate: bool,
+            autoscale: bool,
+            experimental: bool,
+            gas_phase: bool,
+            decontaminate: bool,
+            contaminate: bool,
+            deconvolute: bool,
+    ) -> pd.DataFrame:
+        """TODO"""
+        # Find the x_range based on what species we need to see.
+        if x_range is None:
+            species_to_plot = []
+            if simulate:
+                species_to_plot.extend(sim_species)
+            # Don't bother with deconv_/contam_species, because if they're
+            # defined, then the x_range will be exp_data.index anyway.
+
+            # This uses the experimental data, even if experimental=False
+            # I'm leaving it in because I can't think of a time you would want
+            # to have the x-axes mismatch.
+            x_range = self._get_x_range(species=species_to_plot,
+                                        exp_data=exp_data)
+
+        # Make the column (pd.MultiIndex) and row (pd.Index) indices.
+        columns = []
+        if simulate:
+            columns.append(self._ENVELOPE)
+            sim_cols = [(self._SIMULATED, specie) for specie in sim_species]
+            columns.extend(sim_cols)
+        if experimental:
+            columns.append(self._RAW_EXP)
+            # Gas phase and decontaminate will clean up the raw experimental.
+            if gas_phase or decontaminate:
+                columns.append(self._CLEAN_EXP)
+            if gas_phase:
+                columns.append(self._GAS_PHASE)
+            if deconvolute:
+                decon_cols = [(self._EXPERIMENTAL, specie)
+                              for specie in decon_species]
+                columns.extend(decon_cols)
+            # TODO: (Andrew) Add a decontaminated spectrum
+            # TODO: It would be the extrapolated contribution from contaminants.
+            # TODO: We'd calculate it while decontaminating.
+
+        # Build the DataFrame
+        row_index = pd.Index(x_range, name='eV')
+        col_index = pd.MultiIndex.from_tuples(columns)
+        df = pd.DataFrame(data=0, index=row_index, columns=col_index)
+
+        if experimental:
+            df[self._RAW_EXP] = exp_data
+            df[self._CLEAN_EXP] = exp_data.copy()
+
+        if gas_phase:
+            gas_gauss = self._get_gas_phase(x_range=x_range,
+                                            exp_data=exp_data,
+                                            gas_interval=gas_interval)
+            df[self._GAS_PHASE] = gas_gauss
+            df[self._CLEAN_EXP] -= df[self._GAS_PHASE]
+
+        if contaminate or decontaminate:
+            warnings.warn(UserWarning('Contaminants not implemented.'))
+
+        if deconvolute:
+            # Get a dict {specie: conc}, like sim_concs
+            decon_concs = self._get_deconvolution(
+                x_range=x_range,
+                species=decon_species,
+                species_guesses=sim_concs,
+                exp_to_fit=df[self._CLEAN_EXP]
+            )
+            for dec_col in decon_cols:
+                # dec_col is a tuple (self._EXPERIMENTAL, specie)
+                df[dec_col] = self._get_gaussian(x_range=x_range,
+                                                 specie=dec_col[1],
+                                                 conc=decon_concs[dec_col[1]])
+            df[self._DECON_ENV] = df[decon_cols].sum(axis=1)
+
+        if simulate:
+            for sim_col in sim_cols:
+                # sim_col is a tuple (self._SIMULATED, specie)
+                df[sim_col] = self._get_gaussian(x_range=x_range,
+                                                 specie=sim_col[1],
+                                                 conc=sim_concs[sim_col[1]])
+
+            # Scales the gaussians and envelope by scale_factor
+            # If self.autoscale, scale it to to self._get_autoscale()
+            if autoscale:
+                scale_factor = self._get_autoscale(df=df,
+                                                   columns=sim_cols,
+                                                   exp_data=exp_data)
+                _echo.echo(f'Auto-scaling data to {scale_factor}...')
+            for sim_col in sim_cols:
+                df[sim_col] *= scale_factor
+
+            df[self._ENVELOPE] = df[sim_cols].sum(axis=1)
+
+        return df
+
+    def _get_autoscale(self, df: pd.DataFrame,
+                       columns: List[Tuple[str, sym.Symbol]],
+                       exp_data: Union[pd.Series, None]) -> float:
         """Gets the factor by which to automatically scale.
 
         Currently, gives 1.0 unless there's an experimental, in which case it
@@ -567,37 +813,39 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
 
         Args:
             df: The pd.DataFrame with the gaussians to scale.
-            species: The columns of df which are scale-able gaussians.
+            columns: The columns in df you're going to scale.
+            exp_data: Experimental data, if any, to autoscale to.
         """
-        scale = 1.0
-        if experimental:
+        scale_factor = 1.0
+        if exp_data is not None:
             envelope = df[columns].sum(axis=1)
             raw_max = max(envelope)
-            scale = max(self._exp_data) / raw_max
+            scale_factor = max(exp_data) / raw_max
 
-        _echo.echo(f'Auto-scaling data to {scale}...')
-        return scale
+        return scale_factor
 
     def _get_deconvolution(self, x_range: np.ndarray,
                            species: List[sym.Symbol],
-                           noise: pd.Series) -> Dict[sym.Symbol, float]:
+                           species_guesses: Dict[sym.Symbol, float],
+                           exp_to_fit: pd.Series) -> Dict[sym.Symbol, float]:
         """Get the deconvolution of experimental into species.
 
         Args:
-            species: The species for which we're guessing concentrations.
-            noise: Stuff to exclude from the experimental data.
-                e.g. the gas phase, contaminants, etc.
+            x_range: np.ndarray, the x-range on which to calculate gaussians.
+            species: A list of sym.Symbols, the species for which we're 
+                guessing concentrations.
+            species_guesses: A dict {species: conc} of initial guesses.
+                This should be sim_concs, as far as I can tell.
+            exp_to_fit: pd.Series, the experimental data to fit to.
 
         Returns:
-            A dictionary of {species: conc} of the guessed concentration.
+            A dict of {species: conc} of the guessed concentration.
         """
-        to_fit = self._exp_data - noise
-
         # Guess 1 for everything, unless there's simulated data, then use that.
         conc_guesses = np.ones(len(species))
         for index, specie in enumerate(species):
-            if specie in self.species_concs:
-                conc_guesses[index] = self.species_concs[specie]
+            if specie in species_guesses:
+                conc_guesses[index] = species_guesses[specie]
             # In case we'd get an out of bounds error.
             conc_guesses[index] = max(0.0, conc_guesses[index])
 
@@ -611,27 +859,36 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
 
         fitted_concs, covariance = optimize.curve_fit(f=envelope_from_concs,
                                                       xdata=x_range,
-                                                      ydata=to_fit,
+                                                      ydata=exp_to_fit,
                                                       p0=conc_guesses,
                                                       bounds=(0, np.inf))
         return dict(zip(species, fitted_concs))
 
+    def _get_gas_phase(self, x_range: np.ndarray,
+                       exp_data: pd.Series,
+                       gas_interval: Tuple[float, float]) -> np.ndarray:
+        """Calculates the gas phase given an experimental.
 
-    def _get_gas_phase(self, x_range: np.ndarray) -> np.ndarray:
-        """Calculates the gas phase given the current experimental.
+        It picks as the peak of the gas phase the maximum of exp_data in
+        gas_interval.
 
         Args:
-            x_range: The x-values on which to caluclate the gaussian.
+            x_range: np.ndarray, the x-values on which to caluclate the
+                gaussian.
+            exp_data: pd.Series, the experimental data to use.
+            gas_interval: An interval (2-ple), wherein you expect the peak of
+                the gas phase to lie. Make it small, as otherwise it might pick
+                the foot of a taller gaussian as the 'peak'.
 
         Returns:
-            An ndarray of the gas phase gaussian.
+            An np.ndarray of the gas phase gaussian.
         """
         # Get the range to search for the gas peak in.
-        search = self._exp_data[self._gas_interval[0]:self._gas_interval[1]]
+        search = exp_data[gas_interval[0]:gas_interval[1]]
 
         # Get the location of the highest part of the experimental data in range
         peak_x = max(search.index, key=lambda index: search[index])
-        peak = self._exp_data[peak_x]
+        peak = exp_data[peak_x]
 
         # Make a gaussian the same height as the experimental gas phase peak
         gas_gaussian = stats.norm.pdf(x_range, peak_x, self._SIGMA)
@@ -639,13 +896,16 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
 
         return gas_gaussian
 
-    def _get_gaussian(self, x_range: np.ndarray, specie: sym.Symbol,
+    def _get_gaussian(self, x_range: np.ndarray,
+                      specie: sym.Symbol,
                       conc: float) -> np.ndarray:
         """Calculates the (unscaled) gaussian for the given species.
 
         Args:
-            specie: The specie for which to get the gaussian.
-            x_range: The x-values on which to caluclate the gaussian.
+            x_range: np.ndarray, the x-values on which to caluclate the
+                gaussian.
+            specie: sym.Symbol, the specie for which to get the gaussian.
+            conc: float, the concentration of the specie.
 
         Returns:
             A x_range-sized ndarray with a normal distribtuion centered at the
@@ -659,7 +919,8 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
 
         return gaussian
 
-    def _get_x_range(self, species: List[sym.Symbol]) -> np.ndarray:
+    def _get_x_range(self, species: List[sym.Symbol],
+                     exp_data: Union[pd.Series, None]) -> np.ndarray:
         """Gets an adequate x-range on which to calculate gaussians.
 
         If there's experimental data, it'll just return the x-range of it. If
@@ -667,14 +928,17 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
         energies in question.
 
         Args:
-            species: The species to include in the x_range.
+            species: A list of sym.Symbols, the species to include in the
+                x_range.
+            exp_data: a pd.Series or None: space for experimental data, if
+                there is any.
 
         Returns:
-            An ndarray on which we're going to calculate gaussians.
+            An np.ndarray on which we're going to calculate gaussians.
         """
         # If there's experimental data, we have to use that x-range.
-        if self._exp_data is not None:
-            return np.asarray(self._exp_data.index)
+        if exp_data is not None:
+            return np.asarray(exp_data.index)
 
         # Otherwise, pick intelligently based on binding energies.
         binding_energies = []
@@ -690,32 +954,72 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
 
     # --- Plotting -----------------------------------------------------------
 
-    def _plot(self, species: List[sym.Symbol], ax: plt.Axes,
-              experimental=True, simulated=True,
-              gas_phase=True, deconvolute=True, **kwargs) -> plt.Axes:
+    def _plot(self, ax: plt.Axes,
+              species: List[sym.Symbol],
+              # Args passed to resample
+              simulate: Optional[bool] = None,
+              autoscale: Optional[bool] = None,
+              experimental: Optional[bool] = None,
+              gas_phase: Optional[bool] = None,
+              decontaminate: Optional[bool] = None,
+              contaminate: Optional[bool] = None,
+              deconvolute: Optional[bool] = None,
+              # Args passed only to plotter
+              sim_gaussians: bool = True,
+              envelope: bool = True,
+              experimental_raw: bool = True,
+              experimental_clean: bool = True,
+              decon_gaussians: bool = True,
+              decon_envelope: bool = True,
+              **kwargs) -> plt.Axes:
         """Plot the XPS observable.
 
         Args:
-            ax: The plt.Axes on which to plot.
-            species: A list of sym.Symbols, the species to plot.
-            **kwargs: Forwarded.
+            # TODO
 
         Returns:
             The plt.Axes of the plot.
         """
         # This makes an XPSObservable.
-        xps_obs = self.resample(overwrite=False, species=species,
-                                experimental=experimental,
-                                simulated=simulated,
-                                gas_phase=gas_phase,
-                                deconvolute=deconvolute)
+        xps_obs = self.resample(
+            overwrite=False,
+            species=species,
+            simulate=simulate,
+            autoscale=autoscale,
+            experimental=experimental,
+            gas_phase=gas_phase,
+            decontaminate=decontaminate,
+            contaminate=contaminate,
+            deconvolute=deconvolute,
+        )
+
+        # Default behavior; yes I know there are shorter ways to do this, but
+        # this is the most explicit.
+        if simulate is None:
+            simulate = True
+        if experimental is None:
+            experimental = True
+        if gas_phase is None:
+            gas_phase = True
+        if decontaminate is None:
+            decontaminate = True
+        if deconvolute is None:
+            deconvolute = True
+
         # XPSExperiment.plot is overridden by Experiment.plot, but
         # this is an XPSObservable, so this doesn't make an infinite loop.
         return xps_obs.plot(ax=ax,
+                            simulate=simulate,
+                            sim_gaussians=sim_gaussians,
+                            envelope=envelope,
                             experimental=experimental,
-                            simulated=simulated,
+                            experimental_raw=experimental_raw,
+                            experimental_clean=experimental_clean,
                             gas_phase=gas_phase,
                             deconvolute=deconvolute,
+                            decon_gaussians=decon_gaussians,
+                            decon_envelope=decon_envelope,
+                            # TODO: Plot contaminants
                             **kwargs)
 
     # --- Utility -------------------------------------------------------------
@@ -724,7 +1028,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
         """Return a MSON-serializable dict representation."""
         d = super().as_dict()
         d['species_concs'] = {str(symbol): conc for symbol, conc in
-                              self.species_concs.items()}
+                              self._sim_concs.items()}
         d['species_manager'] = self.species_manager.as_dict()
         d['autoresample'] = self.autoresample
         d['autoscale'] = self.autoscale
@@ -758,7 +1062,7 @@ def simulate_xps(rsys: reaction.RxnSystem,
                  autoscale: bool = True,
                  experimental: pd.Series = None,
                  gas_interval: Tuple[float, float] = None,
-                 scale_factor: float = 0.0,
+                 scale_factor: float = None,
                  title: str = '',
                  **options) -> XPSExperiment:
     """Simulate the given reaction system over time.
