@@ -379,7 +379,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
 
     @property
     def scale_factor(self) -> float:
-        """The factor by which to scale the simulated data."""
+        """The factor by which the simulated data is currently scaled."""
         return self._scale_factor
 
     @property
@@ -389,77 +389,6 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
 
     # --- Mutators -----------------------------------------------------------
     # If autoresample is on, these will prompt an overwriting resample.
-
-    def set_experimental(self, experimental: pd.Series):
-        """Set the experimental data, prompting an autoresample."""
-        self._exp_data = experimental
-        self._autoresample()
-
-    def del_experimental(self):
-        """Deletes experimental, prompting an autoresample.."""
-        self._exp_data = None
-        del self.df['experimental']
-        del self.df['gas_phase']
-        self._autoresample()
-
-    def set_gas_interval(self, lower: float, upper: float):
-        """Sets the interval in which the gas phase peak should be.
-
-        Give bounds for where the _peak_ is: if your bounds are too broad, it
-        will get greedy, as it assumes that that interval is dominated by the
-        gas phase. You can make lower equal to upper if you know the peak.
-
-        Args:
-            lower: float, the lower bound.
-            upper: float, the upper bound.
-        """
-        if lower > upper:
-            raise ValueError(f'Invalid interval ({lower}, {upper})')
-        self._gas_interval = (lower, upper)
-        self._autoresample()
-
-    def del_gas_interval(self):
-        """Deletes the gas interval, prompting a resample."""
-        self._gas_interval = None
-        del self.df['gas_phase']
-        self._autoresample()
-
-    def scale(self, factor: Optional[float] = None,
-              by: Optional[float] = None,
-              to: Optional[float] = None) -> float:
-        """Scales according to the inputs you give.
-
-        If you give no inputs, it autoscales. If you give inputs, it disables
-        autoscaling.
-
-        Args:
-            factor: Optional, float, sets the scale factor exactly.
-            by: Optional, float, multiplies the scale factor by this amount.
-            to: Optional, float, makes the peak simulated envelope equal to it.
-
-        Returns:
-            The new scale factor.
-
-        Raises:
-            ValueError: If you supply more than one argument.
-        """
-        if sum([factor is None, by is None, to is None]) > 1:
-            raise ValueError('Only one or zero arguments is acceptable.')
-
-        if factor is not None:
-            self.autoscale = False
-            self._scale_factor = factor
-        elif by is not None:
-            self.autoscale = False
-            self._scale_factor *= by
-        elif to is not None:
-            self.autoscale = False
-            raise NotImplementedError()  # TODO
-        else:
-            raise NotImplementedError()  # TODO
-
-        self._autoresample()
-        return self._scale_factor
 
     def include(self, *species: sym.Symbol):
         """Add the species to the experiment.
@@ -689,7 +618,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
             x_range = self._x_range
 
         # --- Resample and Overwrite -----------------------------------------
-        df = self._resample(
+        df, scale_factor = self._resample(
             x_range=x_range,
             simulate=simulate,
             sim_concs=sim_concs,
@@ -740,7 +669,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
             decontaminate: bool,
             contaminate: bool,
             deconvolute: bool,
-    ) -> pd.DataFrame:
+    ) -> Tuple[pd.DataFrame, float]:
         """TODO"""
         # Find the x_range based on what species we need to see.
         if x_range is None:
@@ -825,7 +754,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
 
             df[self._ENVELOPE] = df[sim_cols].sum(axis=1)
 
-        return df
+        return df, scale_factor
 
     def _get_autoscale(self, df: pd.DataFrame,
                        columns: List[Tuple[str, sym.Symbol]],
