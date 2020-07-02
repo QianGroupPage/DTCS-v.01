@@ -290,11 +290,13 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
     _SIGMA = 0.75 * np.sqrt(2) / (np.sqrt(2 * np.log(2)) * 2)
 
     def __init__(self,
-                 # XPSObservable args
+                 # XPSObservable args:
                  species_manager: species.SpeciesManager,
                  title: Optional[str] = '',
-                 # These act as defaults for resample()
+                 # XPSExperiment args:
                  species: Optional[List[sym.Symbol]] = None,
+                 # The 'cache' for self.resample() to default to.
+                 x_range: Optional[np.ndarray] = None,
                  sim_concs: Optional[Dict[sym.Symbol, float]] = None,
                  scale_factor: Optional[float] = None,
                  experimental: Optional[pd.Series] = None,
@@ -321,6 +323,8 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
                              f'species_concs or experimental defined.')
 
         # Make everything match its intended type.
+        if x_range is not None:
+            x_range = x_range.copy()
         if sim_concs is None:
             sim_concs = {}
         if contam_spectra is None:
@@ -350,9 +354,12 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
         # Flags
         self.autoresample: bool = autoresample
         self.autoscale: bool = autoscale
-        # Internal data, these act like defaults for resampling.
-        # If you resample with overwrite=True, they will be overwritten.
+        # self.species, it will never involve a species outside this list.
         self._species: List[sym.Symbol] = species
+        # Internal data, these act like defaults for resampling.
+        # If you resample with overwrite=True, they will be overwritten
+        # Think of it like a cache.
+        self._x_range: Union[np.ndarray, None] = x_range
         self._sim_concs: Dict[sym.Symbol, float] = sim_concs
         self._scale_factor: float = scale_factor
         self._exp_data: Union[pd.Series, None] = experimental
@@ -491,7 +498,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
             overwrite: bool = True,
             species: Optional[Union[List[sym.Symbol], sym.Symbol]] = None,
             ignore: Optional[Union[List[sym.Symbol], sym.Symbol]] = None,
-            x_range: Optional[np.ndarray] = None,  # TODO: cache?
+            x_range: Optional[np.ndarray] = None,
             # Arguments for the simulated data
             simulate: Optional[bool] = None,
             autoscale: Optional[bool] = None,
@@ -542,32 +549,35 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
         # Handle: species, ignore
         species = self._get_species_not_ignored(species, ignore)
 
-        # x-range is handled in _resample, as it might require everything else
-        # to be defined.
-
         # --- Simulation-Related ---------------------------------------------
         # Handle: sim_concs
         if sim_concs is None:
             sim_concs = self._sim_concs
         # Only take into account species given by _get_species_not_ignored
         sim_species = [specie for specie in sim_concs.keys()
-                       if specie in species]  # Everything subsets species
+                       if specie in species]
 
         # Handle: simulate
-        # Default to True, requires that sim_species is nonempty
-        if not sim_species:
-            if simulate:
-                warnings.warn(UserWarning('Cannot simulate without simulated '
-                                          'concentrations defined.'))
-            simulate = False
+        # Require that sim_species is nonempty
+        if simulate and not sim_species:
+            raise ValueError('Cannot simulate without simulated concentrations '
+                             'defined. Input sim_concs.')
         elif simulate is None:
-            simulate = True
+            # Default to whether or not sim_species is empty
+            simulate = bool(sim_species)
 
         # Handle: autoscale, scale_factor
         # scale_factor and autoscale are only used in simulated data.
-        if (scale_factor or autoscale) and not simulate:
-            warnings.warn(UserWarning('Scaling is only used in '
-                                      'simulated data.'))
+        if scale_factor is not None and not simulate:
+            warnings.warn(UserWarning('Scaling is only used in simulated data;'
+                                      ' user specified scale_factor, but there'
+                                      ' is no simulated data, so it will not'
+                                      'be used.'))
+        if autoscale and not simulate:
+            warnings.warn(UserWarning('Scaling is only used in simulated data;'
+                                      ' user specified autoscale=True, but '
+                                      'there is no simulated data, so it will '
+                                      'not be used.'))
         # Default scale_factor to self._scale_factor/autoscale.
         if scale_factor is None:
             # If autoscale was not given, default to self.autoscale
@@ -575,8 +585,8 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
                 autoscale = self.autoscale
             scale_factor = self._scale_factor  # Won't get used if autoscale.
         elif autoscale:
-            warnings.warn(UserWarning('Cannot specify both scale_factor and '
-                                      'autoscale=True.'))
+            raise ValueError('Cannot specify both scale_factor and '
+                             'autoscale=True.')
 
         # --- Experimental-Related -------------------------------------------
         # Handle: exp_data
@@ -584,60 +594,58 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
             exp_data = self._exp_data  # Might still be None
 
         # Handle: experimental
-        # Default to True, experimental requires exp_data
-        if exp_data is None:
-            if experimental:
-                warnings.warn(UserWarning('Experimental data required for '
-                                          'experimental-related functions.'))
-            experimental = False
+        # Experimental requires exp_data
+        if experimental and exp_data is None:
+            raise ValueError('Experimental data required for experimental-'
+                             'related functions.')
         elif experimental is None:
-            experimental = True
+            # Default to whether or not there's experimental data.
+            experimental = (exp_data is not None)
 
         # Handle: gas_interval
-        if gas_interval is None:
+        if gas_interval and not experimental:
+            warnings.warn(UserWarning('Experimental required for gas phase '
+                                      'evaluation.'))
+        elif gas_interval is None:
             gas_interval = self._gas_interval
-        elif not experimental:
-            warnings.warn(UserWarning('experimental=True required for '
-                                      'gas phase evaluation.'))
 
         # Handle: gas_phase
         # gas_phase requires a valid gas_interval
         def valid_gas_interval(interval):
             return len(interval) == 2 and interval[0] <= interval[1]
 
-        if gas_phase is None:
-            if experimental and valid_gas_interval(gas_interval):
-                gas_phase = True
-            else:
-                gas_phase = False
-        elif gas_phase:
-            if not (experimental and valid_gas_interval(gas_interval)):
-                warnings.warn(UserWarning('Cannot evaluate gas phase without '
-                                          'experimental and a valid gas phase'
-                                          'interval.'))
-                gas_phase = False
+        if gas_phase and experimental:
+            raise ValueError('Cannot evaluate gas phase without experimental.')
+        elif gas_phase and not valid_gas_interval(gas_interval):
+            raise ValueError(f'Invalid gas interval {gas_interval}')
+        elif gas_phase is None:
+            gas_phase = experimental
 
         # Handle: contam_spectra
+        if contam_spectra and not experimental:
+            warnings.warn(UserWarning('Experimental data required for '
+                                      'contaminant evaluation.'))
         if contam_spectra is None:
-            contam_spectra = {}
+            contam_spectra = self._contam_spectra
+        # Only take into account species given by _get_species_not_ignored
         contam_species = [specie for specie in contam_spectra.keys()
                           if specie in species]  # Everything subsets species
 
         # Handle: decontaminate, contaminate
+        # (de)contaminate requires experimental
+        if decontaminate and not experimental:
+            raise ValueError('Decontamination requires experimental.')
+        elif contaminate and not experimental:
+            raise ValueError('Contamination requires experimental.')
         # (de)contaminate requires contam_species to be nonempty
-        if not contam_species:
-            if decontaminate:
-                warnings.warn(UserWarning('decontaminate=True requries '
-                                          'contaminants.'))
-            if contaminate:
-                warnings.warn(UserWarning('contaminate=True requries '
-                                          'contaminants.'))
-            decontaminate = False
-            contaminate = False
+        elif decontaminate and not contam_species:
+            raise ValueError('Decontamination requries contaminants.')
+        elif contaminate and not contam_species:
+            raise ValueError('Contamination requires contaminants.')
         else:
-            # decontaminate defaults to True, contaminate to False
+            # decontaminate defaults to experimental, contaminate to False
             if decontaminate is None:
-                decontaminate = True
+                decontaminate = experimental
             if contaminate is None:
                 contaminate = False
 
@@ -647,18 +655,38 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
             # If the default is unspecified, default to species
             if not decon_species:
                 decon_species = species
+        # Only take into account species given by _get_species_not_ignored
         decon_species = [specie for specie in decon_species
                          if specie in species]  # Everything subsets species
 
         # Handle: deconvolute
+        # deconvolute requires experimental
+        if deconvolute and not experimental:
+            raise ValueError('Deconvolution requires experimental.')
         # deconvolute requires decon_species to be nonempty
-        if not decon_species:
-            if deconvolute:
-                warnings.warn(UserWarning('deconvolute=True requires '
-                                          'more than zero species.'))
-            deconvolute = False
+        elif deconvolute and not decon_species:
+            raise ValueError('Deconvolution requires more than zero species.')
         elif deconvolute is None:
-            deconvolute = True
+            # Default deconvolute to experimental
+            deconvolute = experimental
+
+        # --- X-Range --------------------------------------------------------
+        # Handle: x_range
+        # If the user gave an x_range, use it unless there's experimental data
+        # and the sizes don't match.
+        if x_range is not None and exp_data is not None:
+            if x_range.size != exp_data.size:
+                raise ValueError(f'Experimental data and supplied x-range have'
+                                 f'mismatched dimensions {x_range.size}, '
+                                 f'{exp_data.size}')
+        elif exp_data is not None:
+            # If the user gave no x_range, default to exp_data.index
+            x_range = exp_data.index
+        elif x_range is None:
+            # This might be None, in which case _resample() will scale it
+            # automatically. Note that _x_range will never be overridden by
+            # the automatic x_ranges, only by the user and exp_data.
+            x_range = self._x_range
 
         # --- Resample and Overwrite -----------------------------------------
         df = self._resample(
@@ -681,6 +709,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
         )
 
         if overwrite:
+            self._x_range = x_range
             self._sim_concs = sim_concs
             self._scale_factor = scale_factor
             self._exp_data = exp_data
@@ -720,12 +749,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
                 species_to_plot.extend(sim_species)
             # Don't bother with deconv_/contam_species, because if they're
             # defined, then the x_range will be exp_data.index anyway.
-
-            # This uses the experimental data, even if experimental=False
-            # I'm leaving it in because I can't think of a time you would want
-            # to have the x-axes mismatch.
-            x_range = self._get_x_range(species=species_to_plot,
-                                        exp_data=exp_data)
+            x_range = self._get_x_range(species=species_to_plot)
 
         # Make the column (pd.MultiIndex) and row (pd.Index) indices.
         columns = []
@@ -919,28 +943,16 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
 
         return gaussian
 
-    def _get_x_range(self, species: List[sym.Symbol],
-                     exp_data: Union[pd.Series, None]) -> np.ndarray:
-        """Gets an adequate x-range on which to calculate gaussians.
-
-        If there's experimental data, it'll just return the x-range of it. If
-        there isn't, then it will pick a range which contains all the binding
-        energies in question.
+    def _get_x_range(self, species: List[sym.Symbol]) -> np.ndarray:
+        """Picks an x-range on which to calculate gaussians.
 
         Args:
-            species: A list of sym.Symbols, the species to include in the
-                x_range.
-            exp_data: a pd.Series or None: space for experimental data, if
-                there is any.
+            species: A list of sym.Symbols, the species you want to be visible
+                in the x_range.
 
         Returns:
             An np.ndarray on which we're going to calculate gaussians.
         """
-        # If there's experimental data, we have to use that x-range.
-        if exp_data is not None:
-            return np.asarray(exp_data.index)
-
-        # Otherwise, pick intelligently based on binding energies.
         binding_energies = []
         for specie in species:
             for orbital in self.species_manager[specie].orbitals:
