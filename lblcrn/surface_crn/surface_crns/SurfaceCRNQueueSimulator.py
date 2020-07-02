@@ -20,6 +20,7 @@ import os
 
 from lblcrn.surface_crn.surface_crns.options.option_processor import SurfaceCRNOptionParser
 from lblcrn.surface_crn.surface_crns.models.grids import SquareGrid, HexGrid
+from lblcrn.surface_crn.surface_crns.views.text_display import TextDisplay
 from lblcrn.surface_crn.surface_crns.views.time_display import TimeDisplay
 from lblcrn.surface_crn.surface_crns.views.grid_display import SquareGridDisplay, HexGridDisplay
 from lblcrn.surface_crn.surface_crns.views.legend_display import LegendDisplay
@@ -40,8 +41,11 @@ from time import process_time
 import pygame
 from pygame.locals import *
 
-pygame.display.init()
-pygame.font.init()
+# TODO: study whether commenting these out would cause any unintended effects.
+# These prevent pygame from opening when the entire library is loaded or when
+# individual simulation is run.
+# pygame.display.init()
+# pygame.font.init()
 
 #############
 # CONSTANTS #
@@ -215,6 +219,12 @@ def simulate_surface_crn(manifest_filename, display_class = None,
     # Width used to calculate time label and button placements
     time_display  = TimeDisplay(display_width)
 
+    # Display for the additional title
+    title_display = TextDisplay(display_width, text="Surface CRN Trajectory")
+    show_title = False
+    if spectra_in_video:
+        show_title = True
+
     button_y      = time_display.display_height + grid_display.display_height+1
             # max(legend_display.display_height, grid_display.display_height) + 1
     #(int(display_width/2) - (button_width + button_buffer), button_y,
@@ -243,9 +253,14 @@ def simulate_surface_crn(manifest_filename, display_class = None,
          button_width * 1.1, button_height),
                             caption = 'Uncache')
 
-    display_height = max(legend_display.display_height + \
-                2*legend_display.VERTICAL_BUFFER + time_display.display_height,
-                         button_y + button_height + 2*button_buffer)
+    if show_title:
+        display_height = max(legend_display.display_height + 2*legend_display.VERTICAL_BUFFER +
+                             time_display.display_height + title_display.display_height,
+                             button_y + button_height + 2*button_buffer)
+    else:
+        display_height = max(legend_display.display_height + \
+                             2 * legend_display.VERTICAL_BUFFER + time_display.display_height,
+                             button_y + button_height + 2 * button_buffer)
 
     if opts.debug:
         print("Initializing display of size " + str(display_width) + ", " +
@@ -277,8 +292,14 @@ def simulate_surface_crn(manifest_filename, display_class = None,
 
     # TODO:
     # these do the rendering on the surface
-    time_display.render(display_surface, x_pos = 0,
-                                         y_pos = 0)
+    if show_title:
+        title_display.render(display_surface, x_pos = 0,
+                                              y_pos = 0)
+        time_display.render(display_surface, x_pos = 0,
+                                            y_pos = title_display.y_pos +
+                                                  title_display.display_height)
+    else:
+        time_display.render(display_surface, x_pos=0, y_pos=0)
     legend_display.render(display_surface, x_pos = 0,
                                           y_pos = time_display.y_pos +
                                                   time_display.display_height)
@@ -297,7 +318,7 @@ def simulate_surface_crn(manifest_filename, display_class = None,
         clip_button.draw(display_surface)
 
     pygame.display.flip()
-    update_display(opts, simulation, FRAME_DIRECTORY, time_display=time_display)
+    update_display(opts, simulation, FRAME_DIRECTORY, time_display=time_display, title_display=title_display)
 
     # State variables for simulation
     next_reaction_time = 0
@@ -325,7 +346,7 @@ def simulate_surface_crn(manifest_filename, display_class = None,
                 if event_history.at_beginning():
                     time = 0
                     time_display.time = 0
-                    time_display.render(display_surface, x_pos = 0, y_pos = 0)
+                    time_display.render(display_surface, x_pos=time_display.x_pos, y_pos=time_display.y_pos)
                     pygame.display.update()
                 else:
                     prev_reaction = event_history.previous_event()
@@ -345,7 +366,7 @@ def simulate_surface_crn(manifest_filename, display_class = None,
                         # we just undid.
                         time = event_history.previous_event().time
                     time_display.time = time
-                    time_display.render(display_surface, x_pos = 0, y_pos = 0)
+                    time_display.render(display_surface, x_pos=time_display.x_pos, y_pos=time_display.y_pos)
                     pygame.display.update()
             if 'click' in pause_button.handleEvent(event):
                 running = False
@@ -372,7 +393,7 @@ def simulate_surface_crn(manifest_filename, display_class = None,
                 display_next_event(next_reaction, grid_display)
                 time = next_reaction_time
                 time_display.time = time
-                time_display.render(display_surface, x_pos = 0, y_pos = 0)
+                time_display.render(display_surface, x_pos=time_display.x_pos, y_pos=time_display.y_pos)
                 pygame.display.update()
                 next_reaction = None
                 if opts.debug:
@@ -413,8 +434,7 @@ def simulate_surface_crn(manifest_filename, display_class = None,
         if opts.debug:
             print(f"Updating time to {time}")
         time_display.time = time
-        time_display.render(display_surface, x_pos = 0,
-                            y_pos = 0)
+        time_display.render(display_surface, x_pos=time_display.x_pos, y_pos=time_display.y_pos)
 
         # Process any simulation events that have happened since the last tick.
         if opts.debug:
@@ -474,7 +494,7 @@ def simulate_surface_crn(manifest_filename, display_class = None,
         # Render updates and make the next clock tick.
         if opts.debug:
             print("Updating display.")
-        update_display(opts, simulation, FRAME_DIRECTORY, time_display=time_display)
+        update_display(opts, simulation, FRAME_DIRECTORY, time_display=time_display, title_display=title_display)
         fpsClock.tick(opts.fps)
 
         # Check for simulation completion...
@@ -489,11 +509,10 @@ def simulate_surface_crn(manifest_filename, display_class = None,
             # Set the time to final time when done.
             time = opts.max_duration
             time_display.time = time
-            time_display.render(display_surface, x_pos = 0,
-                                y_pos = 0)#opts_menu.display_height)
+            time_display.render(display_surface, x_pos=time_display.x_pos, y_pos=time_display.y_pos) #opts_menu.display_height)
             if next_reaction:
                 display_next_event(next_reaction, grid_display)
-            update_display(opts, simulation, FRAME_DIRECTORY, time_display=time_display)
+            update_display(opts, simulation, FRAME_DIRECTORY, time_display=time_display, title_display=title_display)
             if opts.debug:
                 print("Simulation state at final time " + \
                       str(opts.max_duration) + ":")
@@ -608,7 +627,7 @@ def cleanup_and_exit(simulation):
     print(str(simulation.surface))
     sys.exit()
 
-def update_display(opts, simulation, FRAME_DIRECTORY = None, time_display=None):
+def update_display(opts, simulation, FRAME_DIRECTORY = None, time_display=None, title_display=None):
     if opts.capture_directory == None:
         pygame.display.update()
         pygame.display.flip()
@@ -644,6 +663,7 @@ def update_display(opts, simulation, FRAME_DIRECTORY = None, time_display=None):
             screen = simulation.display_surface
             if simulation.spectra_in_video:
 
+
                 half_size = simulation.display_surface.get_size()
                 h_gap = 40
                 up_gap = 50
@@ -652,13 +672,30 @@ def update_display(opts, simulation, FRAME_DIRECTORY = None, time_display=None):
                 temp_screen.blit(simulation.display_surface, (0, 0))
                 r = Results.from_counts(simulation.rxns, simulation.surface.species_count())
                 dpi = 100
-                raw_data, size = r.raw_string_gaussian(y_upper_limit=simulation.surface.num_nodes,
-                                                   fig_size=(half_size[0]/dpi, (half_size[1] - up_gap)/dpi), dpi=dpi)
-                gaussian = pygame.image.fromstring(raw_data, size, "RGB")
-                temp_screen.blit(gaussian, (half_size[0] + h_gap, up_gap - 10))
+
                 if time_display is not None:
-                    time_display.render(temp_screen, x_pos=half_size[0] + h_gap,
-                                        y_pos=0)
+                    title_x, title_y = title_display.x_pos, title_display.y_pos
+                    title_width = title_display.display_width
+                    display = TextDisplay(title_width, text="Dynamical XPS Spectrum")
+                    display.render(temp_screen, title_x + half_size[0] + h_gap, title_y)
+
+                    # Don't save time display's x, y locations.
+                    time_x, time_y = time_display.x_pos, time_display.y_pos
+                    time_display.render(temp_screen, x_pos=time_x + half_size[0] + h_gap, y_pos=time_y)
+                    gap = 0
+                    raw_data, size = r.raw_string_gaussian(y_upper_limit=simulation.surface.num_nodes,
+                                                           fig_size=(half_size[0] / dpi, (half_size[1] - title_display.display_height - time_display.display_height - gap) / dpi),
+                                                           dpi=dpi)
+                    gaussian = pygame.image.fromstring(raw_data, size, "RGB")
+                    temp_screen.blit(gaussian, (time_display.x_pos, time_display.y_pos + time_display.display_height + gap))
+                    time_display.x_pos, time_display.y_pos = time_x, time_y
+                else:
+                    raw_data, size = r.raw_string_gaussian(y_upper_limit=simulation.surface.num_nodes,
+                                                           fig_size=(half_size[0] / dpi, (half_size[1] - up_gap) / dpi),
+                                                           dpi=dpi)
+                    gaussian = pygame.image.fromstring(raw_data, size, "RGB")
+                    temp_screen.blit(gaussian, (half_size[0] + h_gap, up_gap - 10))
+
                 screen = temp_screen
             pygame.image.save(screen, frame_filename)
 

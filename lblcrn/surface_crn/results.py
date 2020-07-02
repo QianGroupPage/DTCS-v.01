@@ -1,6 +1,9 @@
 import pandas as pd
 import seaborn as sns
+import matplotlib
 import matplotlib.pyplot as plt
+# Set default font
+matplotlib.rcParams["font.family"] = "aria"
 import csv
 import numpy as np
 from scipy.stats import norm

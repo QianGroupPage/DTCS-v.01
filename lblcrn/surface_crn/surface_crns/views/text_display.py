@@ -10,7 +10,7 @@ class TextDisplay(object):
     space.
     '''
     # TODO: make sure this works across all systems
-    FONT_NAME         = 'ariaboldttc'  # This is good for MacOS
+    FONT_NAME         = 'ariattc'  # This is good for MacOS
     BLACK             = (0,0,0)
     WHITE             = (255,255,255)
     HORIZONTAL_BUFFER = 5
