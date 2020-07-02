@@ -23,12 +23,6 @@ class Experiment(monty.json.MSONable, abc.ABC):
         """Initialize required instance variables."""
         self.df = None
 
-    @property
-    @abc.abstractmethod
-    def species(self) -> List[sym.Symbol]:
-        """All the species in the experiment."""
-        return []
-
     # --- Plotting -----------------------------------------------------------
 
     def plot(self, ax: Optional[plt.Axes] = None,
@@ -71,6 +65,12 @@ class Experiment(monty.json.MSONable, abc.ABC):
         pass
 
     # --- Utility ------------------------------------------------------------
+
+    @property
+    @abc.abstractmethod
+    def species(self) -> List[sym.Symbol]:
+        """All the species in the experiment."""
+        pass
 
     def _get_species_not_ignored(self,
                                  species: Union[sym.Symbol,

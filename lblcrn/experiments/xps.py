@@ -61,7 +61,9 @@ class XPSObservable:
     _CLEAN_EXP = (_EXPERIMENTAL, 'clean')
     _RAW = (_EXPERIMENTAL, 'raw')
 
-    def __init__(self, df: pd.DataFrame, title: str = ''):
+    def __init__(self, species_manager: species.SpeciesManager,
+                 df: pd.DataFrame, title: str = ''):
+        self.species_manager = species_manager
         self.df = df
         self.title = title
 
@@ -287,13 +289,14 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
 
     def __init__(self,
                  species_manager: species.SpeciesManager,
+                 title: str = '',
+                 species: List[sym.Symbol] = None,
                  species_concs: Dict[sym.Symbol, float] = None,
-                 autoresample: bool = True,
-                 autoscale: bool = True,
+                 scale_factor: float = 0.0,
                  experimental: pd.Series = None,
                  gas_interval: Tuple[float, float] = None,
-                 scale_factor: float = 0.0,
-                 title: str = ''):  # TODO: Add init resample options
+                 autoresample: bool = True,
+                 autoscale: bool = True,):  # TODO: Add init resample options
         """Initialze the XPSExperiment.
 
         Pass arguments instead of setting to prevent excessive re-sampling.
@@ -312,39 +315,44 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
             scale_factor: Optional, the factor by which to scale the gaussians.
             title: The title to name the default plot.
         """
-        # This doesn't call XPSObservable.__init__(), which is correct.
         super().__init__()
-        XPSObservable.__init__(self, df=None, title=title)
+        XPSObservable.__init__(self, species_manager=species_manager,
+                               df=None, title=title)
 
         # Deal with required arguments
-        self.species_manager = species_manager
         if not (species_concs or experimental is not None):
             raise ValueError(f'{self.__class__.__name__} needs at least'
                              f'species_concs or experimental defined.')
 
+        if not species_concs:
+            species_concs = {}
+        if experimental is not None:
+            experimental = experimental.copy()
+        if not species:
+            if species_concs:
+                species = list(species_concs.keys())
+            else:
+                # TODO: perhaps an echo saying that we're assuming this?
+                species = species_manager.species
+
+        # Default scale factor to 1
+        # If they pick 1.0 on their own, then it disables autoscale.
+        if scale_factor == 0.0:
+            scale_factor = 1.0
+        else:
+            autoscale = False
+
+        # Flags
         self.autoresample = autoresample
         self.autoscale = autoscale
-
-        # Simulated data-related
-        self.species_concs = {}
-        if species_concs:
-            self.species_concs.update(species_concs)
-
-        # Experimental data-related
-        self._exp_data = None
-        if experimental is not None:
-            self._exp_data = experimental.copy()
+        # Internal data, meant to act like a descriptor of state.
+        self._species = species
+        self.species_concs = species_concs
+        self._exp_data = experimental
         self._gas_interval = gas_interval
+        self._scale_factor = scale_factor
 
-        # Scaling-related
-        if scale_factor == 0.0:
-            # Default it to 1
-            # If they pick 1.0 on their own, then it disables autoscale.
-            self._scale_factor = 1.0
-        else:
-            self._scale_factor = scale_factor
-            self.autoscale = False
-
+        # Resample if autoresample is True.
         self._autoresample()
 
     # --- Accessors ----------------------------------------------------------
@@ -361,8 +369,8 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
 
     @property
     def species(self) -> List[sym.Symbol]:
-        """Give the species' symbols in this solution."""
-        return list(self.species_concs.keys())
+        """All the species in the experiment."""
+        return self._species
 
     # --- Mutators -----------------------------------------------------------
     # If autoresample is on, these will prompt an overwriting resample.
@@ -413,6 +421,28 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
         autoresample."""
         self.autoscale = True
         self._scale_factor = 0
+        self._autoresample()
+
+    def include(self, *species: sym.Symbol):
+        """Add the species to the experiment.
+
+        It won't simulate data for them (unless you also edit species_concs),
+        but it will involve the species in deconvolution and the like.
+
+        Prompts and autoresample.
+        """
+        self._species.extend(species)
+        self._autoresample()
+
+    def drop(self, *species: sym.Symbol):
+        """Remove the species from the experiment.
+
+        It won't deconvolute with or simulate data from them.
+
+        Prompts and autoresample.
+        """
+        for specie in species:
+            self._species.pop(specie)
         self._autoresample()
 
     def _autoresample(self):
@@ -524,7 +554,9 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
         if overwrite:
             self._scale_factor = scale
             self.df = df
-        return XPSObservable(df, title=self.title)
+        return XPSObservable(species_manager=self.species_manager,
+                             df=df,
+                             title=self.title)
 
     def _get_autoscale(self, df: pd.DataFrame, columns: Tuple[str, sym.Symbol],
                        experimental=False) -> float:

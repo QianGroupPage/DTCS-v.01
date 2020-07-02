@@ -99,6 +99,11 @@ class SpeciesManager(monty.json.MSONable):
         else:
             self._species = {}
 
+    @property
+    def species(self) -> List[sym.Symbol]:
+        """All of the species."""
+        return list(self._species.keys())
+
     def make_species(self, name: str,
                      orbitals: Union[Orbital, List[Orbital]]) -> sym.Symbol:
         """Makes a sym.Symbol and a corresponding Species
