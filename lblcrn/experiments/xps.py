@@ -204,8 +204,8 @@ class XPSObservable:
                         color=self._COLORS[index])
 
         if deconv_envelope and self.decon_envelope is not None:
-            ax.plot(self.x_range, self.envelope, label='Deconv. Envelope',
-                    color='black', linewidth=3)
+            ax.plot(self.x_range, self.decon_envelope,
+                    label='Deconv. Envelope', color='black', linewidth=3)
 
         if gas_phase and self.gas_phase is not None:
             ax.fill(self.x_range, self.gas_phase, label='Gas Phase',
@@ -267,8 +267,8 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
     _SIGMA = 0.75 * np.sqrt(2) / (np.sqrt(2 * np.log(2)) * 2)
 
     def __init__(self,
-                 species_concs: Dict[sym.Symbol, float],
                  species_manager: species.SpeciesManager,
+                 species_concs: Dict[sym.Symbol, float] = None,
                  autoresample: bool = True,
                  autoscale: bool = True,
                  experimental: pd.Series = None,
@@ -280,13 +280,14 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
         Pass arguments instead of setting to prevent excessive re-sampling.
 
         Args:
-            species_concs: A dictionary {specie: concentration} of the species
-                and their concentrations.
             species_manager: A SpeciesManager, for binding energies.
+            species_concs: A dictionary {specie: concentration} of the species
+                and their concentrations. This or experimental is required.
+            experimental: The experimental data. This or species_concs is
+                required.
             autoresample: Defaults to true, decides if it resamples on edits.
             autoscale: Defaults to true, decides if it will automatically scale
                 the gaussians and envelope to match the experimental data.
-            experimental: Optional, the experimental data.
             gas_interval: Optional, the interval in which to find the peak of
                 the gas phase's gaussian.
             scale_factor: Optional, the factor by which to scale the gaussians.
@@ -296,10 +297,19 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
         super().__init__()
         XPSObservable.__init__(self, df=None, title=title)
 
-        self.species_concs = species_concs
+        # Deal with required arguments
         self.species_manager = species_manager
+        if not (species_concs or experimental is not None):
+            raise ValueError(f'{self.__class__.__name__} needs at least'
+                             f'species_concs or experimental defined.')
+
         self.autoresample = autoresample
         self.autoscale = autoscale
+
+        # Simulated data-related
+        self.species_concs = {}
+        if species_concs:
+            self.species_concs.update(species_concs)
 
         # Experimental data-related
         self._exp_data = None
@@ -503,7 +513,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
                                                  dec_col[1],
                                                  decon_concs[dec_col[1]])
 
-            df[self._DEC_ENV] = df[self._SIMULATED].sum(axis=1)
+            df[self._DEC_ENV] = df[dec_cols].sum(axis=1)
 
         # Make the gaussians on the new x-range
         if simulated:
@@ -520,7 +530,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
             for sim_col in sim_cols:
                 df[sim_col] *= scale
 
-            df[self._ENVELOPE] = df[self._SIMULATED].sum(axis=1)
+            df[self._ENVELOPE] = df[sim_cols].sum(axis=1)
 
         if overwrite:
             self._scale_factor = scale
@@ -562,13 +572,13 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
         """
         to_fit = self._exp_data - noise
 
-        # TODO: the following comment
         # Guess 1 for everything, unless there's simulated data, then use that.
         conc_guesses = np.ones(len(species))
         for index, specie in enumerate(species):
-            guess = self.species_concs[specie]
-            guess = max(0.0, guess)  # In case we'd get an out of bounds error.
-            conc_guesses[index] = guess
+            if specie in self.species_concs:
+                conc_guesses[index] = self.species_concs[specie]
+            # In case we'd get an out of bounds error.
+            conc_guesses[index] = max(0.0, conc_guesses[index])
 
         # Make the function to pass scipy.optimize.curve_fit. Needs signature
         # f(x-values, *y-values) -> ndarray of size to_fit.size
