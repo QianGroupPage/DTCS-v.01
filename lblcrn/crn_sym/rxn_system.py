@@ -201,6 +201,12 @@ class RxnSystem:
                     colors.append(color)
                     self.surface.color = color
                 self.color_index[self.surface.symbol()] = color
+
+                for s in self.surface.sites:
+                    color = color_to_RGB(generate_new_color(colors))
+                    colors.append(color)
+                    self.color_index[sym.Symbol(s.name)] = color
+
         return self.color_index
 
     def show_colors(self):

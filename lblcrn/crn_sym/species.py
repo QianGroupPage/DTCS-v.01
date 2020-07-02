@@ -61,7 +61,8 @@ class Species:
         if self.site and self.site != Site.default:
             self.create_sub_species(suffix=site.name, color=self.color)
 
-    def create_sub_species(self, suffix: str = "", color: Union[Tuple[int], List[int], str] = "", entire_name: str =""):
+    def create_sub_species(self, suffix: str = "", color: Union[Tuple[int], List[int], str] = "", entire_name: str ="",
+                           orbitals: Union[Orbital, List[Orbital]] = None):
         if not entire_name:
             if not suffix:
                 suffix = f"sub_{len(self.sub_species)}"
@@ -71,7 +72,10 @@ class Species:
                             f"create_sub_species_function")
         if not color:
             color = self.color
-        sub_species = Species(entire_name, self.orbitals, color=color, parent=self)
+        if orbitals is None:
+            orbitals = self.orbitals
+
+        sub_species = Species(entire_name, orbitals, color=color, parent=self)
 
         if entire_name in self.sub_species:
             raise Exception(f"species {self.name} already has sub species {repr(self.sub_species[entire_name])} " +
@@ -79,6 +83,30 @@ class Species:
         else:
             self.sub_species[entire_name] = sub_species
         return sub_species
+
+    def sub_species_by_name(self, name: str):
+        """
+        :param name: name of the species
+        :return: the species, if found
+        """
+        if name in self.sub_species:
+            return self.sub_species[name]
+        else:
+            raise Exception(f"Species {self.name} doesn't have a sub-species with name {name}.")
+
+    def sub_species_by_suffix(self, suffix: str):
+        """
+        :param suffix: the suffix of the species
+        :return: the sub_species with the suffix, if found
+        """
+        return self.sub_species_by_name(self.sub_species_name(suffix))
+
+    def sub_species_name(self, suffix: str):
+        """
+        :param suffix: suffix of the sub_species
+        :return: the sub_species's name
+        """
+        return f"{self.name}_{suffix}"
 
     def __str__(self):
         if self.color:
@@ -101,25 +129,38 @@ class SpeciesManager:
     def __init__(self):
         self._species = {} # As of current, initializes empty
 
-    def make_species(self, name: str, orbitals: Union[Orbital, List[Orbital]], site: Site = None) -> sym.Symbol:
+    def make_species(self, name: Union[str, sym.Symbol], orbitals: Union[Orbital, List[Orbital]] = None,
+                     site: Site = None, sub_species_name: str = "") -> sym.Symbol:
         """
         Makes a sym.Symbol and a corresponding Species and keeps track of their correspondence.
         Returns the symbol.
 
         Orbitals can be either a list of orbitals or just one orbital, just to be kind.
         """
-        symbol = sym.Symbol(name)
+        if isinstance(name, sym.Symbol):
+            parent = self.species_from_symbol(name)
 
-        if not isinstance(orbitals, list):
-            orbitals = [orbitals]
-
-        if symbol in self._species:
-            s = self._species[symbol].create_sub_species(suffix=site.name)
-            symbol = sym.Symbol(s.name)
+            if sub_species_name:
+                name = sub_species_name
+                if site:
+                    name += site.name
+                s = parent.create_sub_species(entire_name=name)
+                symbol = sym.Symbol(name)
+            else:
+                s = parent.create_sub_species(suffix=site.name)
+                symbol = sym.Symbol(parent.sub_species_name(site.name))
         else:
+            symbol = sym.Symbol(name)
+            if not isinstance(orbitals, list):
+                orbitals = [orbitals]
+
+            # if symbol in self._species:
+            #     s = self._species[symbol].create_sub_species(suffix=site.name)
+            #     symbol = sym.Symbol(s.name)
+            # else:
             s = Species(name, orbitals, site=site)
-            for name, new_species in s.sub_species.items():
-                self._species[sym.Symbol(name)] = new_species
+            # for name, new_species in s.sub_species.items():
+            #     self._species[sym.Symbol(name)] = new_species
 
         self._species[symbol] = s
         return symbol

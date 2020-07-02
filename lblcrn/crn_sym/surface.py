@@ -48,6 +48,14 @@ class Surface:
             return ["top", "threefold"]
 
     @property
+    def sites(self):
+        res = []
+        for s in self.allowed_sites:
+            if s != "top":
+                res.append(getattr(self, s))
+        return res
+
+    @property
     def top(self):
         """
         A surface itself can represent its top site.
@@ -57,7 +65,9 @@ class Surface:
 
     def populate_sites(self):
         for site_name in self.allowed_sites:
-            if site_name != "top":
+            if site_name == "threefold":
+                setattr(self, site_name, Site("3F", self))
+            elif site_name != "top":
                 setattr(self, site_name, Site(site_name, self))
 
     # @property
@@ -88,4 +98,8 @@ class Site:
             self.color = color_to_RGB(color)
         else:
             self.color = color
+
+    @property
+    def symbol(self):
+        return sym.Symbol(self.name)
 

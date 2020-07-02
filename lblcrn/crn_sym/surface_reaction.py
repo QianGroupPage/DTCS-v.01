@@ -1,5 +1,5 @@
 from lblcrn.crn_sym.reaction import Rxn
-from lblcrn.crn_sym.surface import Surface
+from lblcrn.crn_sym.surface import Surface, Site
 from typing import Set, Tuple
 import sympy as sym
 
@@ -23,17 +23,19 @@ class SurfaceRxn(Rxn):
                             + " be equal length.")
 
         for s in reactants + products:
-            if s is not None and (not isinstance(s, sym.Symbol) and not isinstance(s, Surface)):
-                raise Exception(f"{s} is not a of sympy.Symbol class or Surface class. \n" +
+            if s is not None and (not isinstance(s, sym.Symbol) and not isinstance(s, Surface)) and not isinstance(s, Site):
+                raise Exception(f"{s} is not a of sympy.Symbol, Site, or Surface class. \n" +
                                 "please create it using the sp method of a species manager")
 
         self.reactants = []
         for s in reactants:
-            if s is not None and (not isinstance(s, sym.Symbol) and not isinstance(s, Surface)):
-                raise Exception(f"{s} is not a of sympy.Symbol class or Surface class. \n" +
-                                "please create it using the sp method of a species manager")
+            # if s is not None and (not isinstance(s, sym.Symbol) and not isinstance(s, Surface)):
+            #     raise Exception(f"{s} is not a of sympy.Symbol class or Surface class. \n" +
+            #                     "please create it using the sp method of a species manager")
             if isinstance(s, Surface):
                 self.reactants.append(s.symbol())
+            elif isinstance(s, Site):
+                self.reactants.append(s.symbol)
             else:
                 self.reactants.append(s)
 
@@ -41,6 +43,8 @@ class SurfaceRxn(Rxn):
         for s in products:
             if isinstance(s, Surface):
                 self.products.append(s.symbol())
+            elif isinstance(s, Site):
+                self.products.append(s.symbol)
             else:
                 self.products.append(s)
 
@@ -89,7 +93,7 @@ class SurfaceRevRxn(SurfaceRxn):
         If you don't specify a k2, it will assume that k2 = 1/k1.
         """
 
-        Rxn.__init__(self, reactants, products, k1)
+        SurfaceRxn.__init__(self, reactants, products, k1)
 
         if k2 is None:
             self.rate_constant_reverse = 1 / k1
