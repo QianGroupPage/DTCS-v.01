@@ -27,6 +27,7 @@ import monty.json
 import numpy as np
 import pandas as pd
 from scipy import integrate
+from scipy import optimize
 from scipy import stats
 from sklearn import metrics
 import sympy as sym
@@ -411,12 +412,13 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
             self.resample(overwrite=True)
 
     # --- Calculations -------------------------------------------------------
-    # Note that the only function in this section which modifies the state is
-    # self.resample(), and that's only if overwrite=True.
+    # Note that functions in this section will only modify state if
+    # overwwrite=True.
 
     def resample(self, overwrite=True, species=None, ignore=None,
                  experimental=True, simulated=True,
-                 gas_phase=True, envelope=True) -> XPSObservable:  # TODO(Andrew) Typehints?
+                 gas_phase=True, envelope=True,
+                 deconvolute=True) -> XPSObservable:  # TODO(Andrew) Typehints?
         """Recalculates the dataframe in case anything updated.
 
         Args:
@@ -430,19 +432,23 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
             An XPSObservable with the resampled data.
         """
         species = self._get_species_not_ignored(species, ignore)
+
+        # This uses the experimental data, even if experimental=False
+        # I'm leaving it in because I can't think of a time you would want
+        # to have the x-axes mismatch.
         x_range = self._get_x_range(species)
+
+        # TODO: Warn the user if I override what they asked
         if not self.species_concs:
-            # TODO: if simulated, warn
             simulated = False
         if not simulated:
-            # TODO: if envelope, warn (?)
             envelope = False
         if self._exp_data is None:
-            # TODO: if experimental, warn
             experimental = False
         if not self._gas_interval or not experimental:
-            # TODO: if gas_phase, warn
             gas_phase = False
+        if not experimental:
+            deconvolute = False
 
         # Make the pd.Index-s
         columns = []
@@ -450,6 +456,9 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
             columns.append(self._RAW)
             if gas_phase:
                 columns.append(self._GAS_PHASE)
+            if deconvolute:
+                dec_cols = [(self._EXPERIMENTAL, specie) for specie in species]
+                columns.extend(dec_cols)
         if simulated:
             if envelope:
                 columns.append(self._ENVELOPE)
@@ -465,15 +474,31 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
         if experimental:
             df[self._RAW] = self._exp_data
 
+        if gas_phase:
+            gas_gauss = self._get_gas_phase(x_range)
+            df[self._GAS_PHASE] = gas_gauss
+
+        if deconvolute:
+            noise = np.zeros(x_range.size)
             if gas_phase:
-                gas_phase = self._get_gas_phase(x_range)
-                df[self._GAS_PHASE] = gas_phase
+                noise += df[self._GAS_PHASE]
+
+            # A dict {specie: conc}, like self.species_concs
+            decon_concs = self._get_deconvolution(x_range, species, noise)
+            for dec_col in dec_cols:
+                # dec_col is a tuple (self._EXPERIMENTAL, specie)
+                df[dec_col] = self._get_gaussian(x_range,
+                                                 dec_col[1],
+                                                 decon_concs[dec_col[1]])
+
 
         # Make the gaussians on the new x-range
         if simulated:
             for sim_col in sim_cols:
                 # sim_col is a tuple (self._SIMULATED, specie)
-                df[sim_col] = self._get_gaussian(sim_col[1], x_range)
+                df[sim_col] = self._get_gaussian(x_range,
+                                                 sim_col[1],
+                                                 self.species_concs[sim_col[1]])
 
             # Scales the gaussians and envelope by self._scale_factor
             # If self.autoscale, scale it to to self._get_autoscale()
@@ -483,8 +508,8 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
             for sim_col in sim_cols:
                 df[sim_col] *= scale
 
-            if envelope:
-                df[self._ENVELOPE] = df[self._SIMULATED].sum(axis=1)
+        if envelope:
+            df[self._ENVELOPE] = df[self._SIMULATED].sum(axis=1)
 
         if overwrite:
             self._scale_factor = scale
@@ -511,24 +536,54 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
         _echo.echo(f'Auto-scaling data to {scale}...')
         return scale
 
-    def _get_deconvolution(self, species: List[sym.Symbol]) -> pd.DataFrame:
-        """Get the deconvolution of experimental into species."""
-        pass
+    def _get_deconvolution(self, x_range: np.ndarray,
+                           species: List[sym.Symbol],
+                           noise: pd.Series) -> Dict[sym.Symbol, float]:
+        """Get the deconvolution of experimental into species.
 
-    def _get_gas_phase(self, x_range: np.ndarray) -> Optional[np.ndarray]:
+        Args:
+            species: The species for which we're guessing concentrations.
+            noise: Stuff to exclude from the experimental data.
+                e.g. the gas phase, contaminants, etc.
+
+        Returns:
+            A dictionary of {species: conc} of the guessed concentration.
+        """
+        to_fit = self._exp_data - noise
+
+        # TODO: the following comment
+        # Guess 1 for everything, unless there's simulated data, then use that.
+        conc_guesses = np.ones(len(species))
+        for index, specie in enumerate(species):
+            guess = self.species_concs[specie]
+            guess = max(0.0, guess)  # In case we'd get an out of bounds error.
+            conc_guesses[index] = guess
+
+        # Make the function to pass scipy.optimize.curve_fit. Needs signature
+        # f(x-values, *y-values) -> ndarray of size to_fit.size
+        def envelope_from_concs(x_range, *concs: float):
+            envelope = np.zeros(x_range.size)
+            for index, specie in enumerate(species):
+                envelope += self._get_gaussian(x_range, specie, concs[index])
+            return envelope
+
+        fitted_concs, covariance = optimize.curve_fit(f=envelope_from_concs,
+                                                      xdata=x_range,
+                                                      ydata=to_fit,
+                                                      p0=conc_guesses,
+                                                      bounds=(0, np.inf))
+        return dict(zip(species, fitted_concs))
+
+
+    def _get_gas_phase(self, x_range: np.ndarray) -> np.ndarray:
         """Calculates the gas phase given the current experimental.
 
         Args:
             x_range: The x-values on which to caluclate the gaussian.
 
         Returns:
-            None, if there isn't a gas interval or experimental, or an ndarray
-            of the gas phase gaussian.
+            An ndarray of the gas phase gaussian.
         """
-        # If there is no gas interval or experimental, do nothing.
-        if not self._gas_interval or self._exp_data is None:
-            return
-
         # Get the range to search for the gas peak in.
         search = self._exp_data[self._gas_interval[0]:self._gas_interval[1]]
 
@@ -542,8 +597,8 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
 
         return gas_gaussian
 
-    def _get_gaussian(self, specie: sym.Symbol,
-                      x_range: np.ndarray) -> np.ndarray:
+    def _get_gaussian(self, x_range: np.ndarray, specie: sym.Symbol,
+                      conc: float) -> np.ndarray:
         """Calculates the (unscaled) gaussian for the given species.
 
         Args:
@@ -557,9 +612,8 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
         gaussian = np.zeros(x_range.size)
 
         for orbital in self.species_manager[specie].orbitals:
-            gaussian += self.species_concs[specie] * orbital.splitting * \
-                        stats.norm.pdf(x_range, orbital.binding_energy,
-                                       self._SIGMA)
+            hill = stats.norm.pdf(x_range, orbital.binding_energy, self._SIGMA)
+            gaussian += conc * orbital.splitting * hill
 
         return gaussian
 
