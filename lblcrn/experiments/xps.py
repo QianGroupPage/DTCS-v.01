@@ -259,8 +259,8 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
                  autoscale: bool = True,
                  experimental: pd.Series = None,
                  gas_interval: Tuple[float, float] = None,
-                 scale_factor: float = 1.0,
-                 title: str = ''):
+                 scale_factor: float = 0.0,
+                 title: str = ''):  # TODO: Add init resample options
         """Initialze the XPSExperiment.
 
         Pass arguments instead of setting to prevent excessive re-sampling.
@@ -294,8 +294,12 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
         self._gas_interval = gas_interval
 
         # Scaling-related
-        self._scale_factor = scale_factor
-        if scale_factor != 0.0:
+        if scale_factor == 0.0:
+            # Default it to 1
+            # If they pick 1.0 on their own, then it disables autoscale.
+            self._scale_factor = 1.0
+        else:
+            self._scale_factor = scale_factor
             self.autoscale = False
 
         self._autoresample()
@@ -476,7 +480,6 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
             scale = self._scale_factor
             if self.autoscale:
                 scale = self._get_autoscale(df, sim_cols, experimental)
-                self._scale_factor = scale
             for sim_col in sim_cols:
                 df[sim_col] *= scale
 
@@ -484,6 +487,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
                 df[self._ENVELOPE] = df[self._SIMULATED].sum(axis=1)
 
         if overwrite:
+            self._scale_factor = scale
             self.df = df
         return XPSObservable(df, title=self.title)
 
