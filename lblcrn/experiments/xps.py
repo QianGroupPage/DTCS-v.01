@@ -56,6 +56,7 @@ class XPSObservable:
     _EXPERIMENTAL = 'experimental'
     _ENVELOPE = (_SIMULATED, 'envelope')
     _GAS_PHASE = (_EXPERIMENTAL, 'gas_phase')
+    _DEC_ENV = (_EXPERIMENTAL, 'deconv_envelope')
     _RAW = (_EXPERIMENTAL, 'raw')
 
     def __init__(self, df: pd.DataFrame, title: str = ''):
@@ -74,6 +75,13 @@ class XPSObservable:
         """The raw experimental data. Might be None."""
         if self._RAW in self.df:
             return self.df[self._RAW]
+        return None
+
+    @property
+    def decon_envelope(self):
+        """The envelope of the deconvoluted experimental data."""
+        if self._DEC_ENV in self.df:
+            return self.df[self._DEC_ENV]
         return None
 
     @property
@@ -148,9 +156,10 @@ class XPSObservable:
              experimental=True,
              sim_gaussians=True,
              deconvoluted=True,
+             deconv_envelope=True,
              gas_phase=True,
              envelope=True,
-             experimental_raw=True,
+             experimental_raw=True, # TODO: perhaps rename these all to show_ or show=?
              **kwargs) -> plt.Axes:
         """Default plotting behavior for an XPS observable.
 
@@ -193,6 +202,10 @@ class XPSObservable:
                 ax.plot(self.x_range, self.df[column],
                         label=f'Deconv. {column[1]}',
                         color=self._COLORS[index])
+
+        if deconv_envelope and self.decon_envelope is not None:
+            ax.plot(self.x_range, self.envelope, label='Deconv. Envelope',
+                    color='black', linewidth=3)
 
         if gas_phase and self.gas_phase is not None:
             ax.fill(self.x_range, self.gas_phase, label='Gas Phase',
@@ -416,8 +429,9 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
     # overwwrite=True.
 
     def resample(self, overwrite=True, species=None, ignore=None,
-                 experimental=True, simulated=True,
-                 gas_phase=True, envelope=True,
+                 experimental=True,
+                 simulated=True,
+                 gas_phase=True,
                  deconvolute=True) -> XPSObservable:  # TODO(Andrew) Typehints?
         """Recalculates the dataframe in case anything updated.
 
@@ -437,12 +451,11 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
         # I'm leaving it in because I can't think of a time you would want
         # to have the x-axes mismatch.
         x_range = self._get_x_range(species)
+        scale = self._scale_factor
 
         # TODO: Warn the user if I override what they asked
         if not self.species_concs:
             simulated = False
-        if not simulated:
-            envelope = False
         if self._exp_data is None:
             experimental = False
         if not self._gas_interval or not experimental:
@@ -460,8 +473,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
                 dec_cols = [(self._EXPERIMENTAL, specie) for specie in species]
                 columns.extend(dec_cols)
         if simulated:
-            if envelope:
-                columns.append(self._ENVELOPE)
+            columns.append(self._ENVELOPE)
             sim_cols = [(self._SIMULATED, specie) for specie in species]
             columns.extend(sim_cols)
 
@@ -491,6 +503,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
                                                  dec_col[1],
                                                  decon_concs[dec_col[1]])
 
+            df[self._DEC_ENV] = df[self._SIMULATED].sum(axis=1)
 
         # Make the gaussians on the new x-range
         if simulated:
@@ -502,13 +515,11 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
 
             # Scales the gaussians and envelope by self._scale_factor
             # If self.autoscale, scale it to to self._get_autoscale()
-            scale = self._scale_factor
             if self.autoscale:
                 scale = self._get_autoscale(df, sim_cols, experimental)
             for sim_col in sim_cols:
                 df[sim_col] *= scale
 
-        if envelope:
             df[self._ENVELOPE] = df[self._SIMULATED].sum(axis=1)
 
         if overwrite:
@@ -650,7 +661,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
 
     def _plot(self, species: List[sym.Symbol], ax: plt.Axes,
               experimental=True, simulated=True,
-              gas_phase=True, envelope=True, **kwargs) -> plt.Axes:
+              gas_phase=True, deconvolute=True, **kwargs) -> plt.Axes:
         """Plot the XPS observable.
 
         Args:
@@ -659,21 +670,21 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
             **kwargs: Forwarded.
 
         Returns:
-            The
+            The plt.Axes of the plot.
         """
         # This makes an XPSObservable.
         xps_obs = self.resample(overwrite=False, species=species,
                                 experimental=experimental,
                                 simulated=simulated,
                                 gas_phase=gas_phase,
-                                envelope=envelope)
+                                deconvolute=deconvolute)
         # XPSExperiment.plot is overridden by Experiment.plot, but
         # this is an XPSObservable, so this doesn't make an infinite loop.
         return xps_obs.plot(ax=ax,
                             experimental=experimental,
                             simulated=simulated,
                             gas_phase=gas_phase,
-                            envelope=envelope,
+                            deconvolute=deconvolute,
                             **kwargs)
 
     # --- Utility -------------------------------------------------------------
