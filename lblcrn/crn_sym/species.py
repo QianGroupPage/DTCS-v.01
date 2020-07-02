@@ -47,7 +47,7 @@ class Species:
     """
 
     def __init__(self, name: str, orbitals: List[Orbital], color: Union[Tuple[int], List[int], str] = None,
-                 parent=None, site: Site = None):
+                 parent=None, site: Site = None, include_sub_species: bool=True):
         self.name = name
         self.orbitals = orbitals
         if color:
@@ -58,13 +58,15 @@ class Species:
         self.sub_species = {}   # The dictionary of sub species from name to the object
 
         self.site = site
-        if self.site and self.site != Site.default:
+        if include_sub_species and self.site and self.site != Site.default:
             self.create_sub_species(suffix=site.name, color=self.color)
 
     def create_sub_species(self, suffix: str = "", color: Union[Tuple[int], List[int], str] = "", entire_name: str ="",
-                           orbitals: Union[Orbital, List[Orbital]] = None):
+                           orbitals: Union[Orbital, List[Orbital]] = None, site: Site = None):
         if not entire_name:
-            if not suffix:
+            if site:
+                suffix = site.name
+            elif not suffix:
                 suffix = f"sub_{len(self.sub_species)}"
             entire_name = f"{self.name}_{suffix}"
         elif suffix:
@@ -75,7 +77,7 @@ class Species:
         if orbitals is None:
             orbitals = self.orbitals
 
-        sub_species = Species(entire_name, orbitals, color=color, parent=self)
+        sub_species = Species(entire_name, orbitals, color=color, parent=self, site=site, include_sub_species=False)
 
         if entire_name in self.sub_species:
             raise Exception(f"species {self.name} already has sub species {repr(self.sub_species[entire_name])} " +
@@ -144,10 +146,10 @@ class SpeciesManager:
                 name = sub_species_name
                 if site:
                     name += site.name
-                s = parent.create_sub_species(entire_name=name)
+                s = parent.create_sub_species(entire_name=name, site=site)
                 symbol = sym.Symbol(name)
             else:
-                s = parent.create_sub_species(suffix=site.name)
+                s = parent.create_sub_species(site=site)
                 symbol = sym.Symbol(parent.sub_species_name(site.name))
         else:
             symbol = sym.Symbol(name)

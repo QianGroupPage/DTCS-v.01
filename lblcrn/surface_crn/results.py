@@ -84,7 +84,7 @@ class Results:
                 f'{head}/{name}_{slowdown_factor}x_slower{ext}').run()
             video = slowmo_name
         return HTML(f"""
-        <video width="640" height="480" controls>
+        <video width="960" height="720" controls>
           <source src="{video}" type="video/mp4">
         </video>
         """)
@@ -129,6 +129,9 @@ class Results:
         :return: a results object representing only 1 timestep.
         """
         concs = {s: [c] for s, c in counter.items()}
+        for s in rxns.get_symbols():
+            if str(s) not in concs:
+                concs[str(s)] = [0]
         return Results.from_concs_times(None, rxns, concs, [0])
 
     @staticmethod

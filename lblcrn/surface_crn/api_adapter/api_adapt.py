@@ -90,13 +90,18 @@ def generate_surface(rsys, random_seed=30):
                    rsys.species_manager.species_from_symbol(c.symbol).site.name == "top":
                 species["top"].extend([str(c.symbol) for _ in range(int(str(c.concentration)))])
             elif rsys.species_manager.species_from_symbol(c.symbol).site.name == "3F":
-                print(c.symbol)
                 species["3F"].extend([str(c.symbol) for _ in range(int(str(c.concentration)))])
 
         rows = rsys.surface.size[0]
         cols = rsys.surface.size[1]
 
         surface = HexGridPlusIntersections(rows, cols)
+
+        for n in surface:
+            if n.is_intersection:
+                n.state = "3F"
+            else:
+                n.state = rsys.surface.name
 
         # Popultate the structure with initial atoms.
         initial_nodes = {"3F": [], "top": []}
@@ -113,9 +118,7 @@ def generate_surface(rsys, random_seed=30):
             chosen = [nodes[i] for i in indices]
             for i, n in enumerate(chosen):
                 n.state = species[k][i]
-
         return surface
-
     elif rsys.surface.structure == "rectangle":
         return None
 
@@ -126,7 +129,7 @@ def generate_settings(rsys, max_duration, random_seed=923123122):
     :return: a string representing the initial surface.
     """
     return f"# Run settings\n" + \
-           "pixels_per_node     = 50\n" + \
+           "pixels_per_node     = 80\n" + \
            "speedup_factor      = 0.5\n" + \
            "debug               = False\n" + \
            f"rng_seed           = {random_seed}\n" + \

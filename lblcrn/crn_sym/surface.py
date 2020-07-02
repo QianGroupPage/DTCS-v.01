@@ -74,6 +74,13 @@ class Surface:
     def symbol(self):
         return sym.Symbol(self.name)
 
+    @property
+    def symbols(self):
+        symbols = set([self.symbol()])
+        for s in self.sites:
+            symbols.add(sym.Symbol(s.name))
+        return symbols
+
     def __str__(self):
         row = " ".join([self.name] * self.size[1])
         if self.color:
@@ -102,4 +109,7 @@ class Site:
     @property
     def symbol(self):
         return sym.Symbol(self.name)
+
+    def set_color(self, color):
+        self.color = color_to_RGB(color)
 

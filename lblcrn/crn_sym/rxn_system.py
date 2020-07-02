@@ -42,6 +42,7 @@ class RxnSystem:
         # Split into terms, schedules, and conc (diff.) eq.s
         # These are not sorted by the symbol index.
         self.terms = []
+        self.surface_rxns = []
         self.schedules = []
         self.conc_eqs = []
         self.conc_diffeqs = []
@@ -52,7 +53,9 @@ class RxnSystem:
             if isinstance(component, conditions.Schedule):
                 self.schedules.append(component)
             elif isinstance(component, SurfaceRxn):
-                pass
+                # self.terms.extend(component.to_terms())
+                # pass
+                self.surface_rxns.append(component)
             elif isinstance(component, Rxn):
                 self.terms.extend(component.to_terms())
             elif isinstance(component, conditions.Term):
@@ -70,6 +73,10 @@ class RxnSystem:
 
         # Pick an order for the symbol
         self._symbols = set()
+        for rxn in self.surface_rxns:
+            for s in rxn.get_symbols():
+                if s not in self.surface.symbols:
+                    self._symbols.add(s)
         for term in self.terms:
             self._symbols.update(term.get_symbols())
         for schedule in self.schedules:
@@ -181,6 +188,8 @@ class RxnSystem:
         if self.color_index is None:
             self.color_index = {}
         for index, symbol in enumerate(self._symbols):
+            if symbol in self.surface.symbols:
+                continue
             if self.color_index and symbol in self.color_index:
                 continue
             color = self.species_manager[symbol].color
@@ -192,20 +201,21 @@ class RxnSystem:
             self.color_index[symbol] = self.species_manager[symbol].color
 
         if self.surface:
-            if self.color_index and self.surface.symbol in self.color_index:
-                pass
-            else:
-                color = self.surface.color
-                if color is None:
-                    color = color_to_RGB(generate_new_color(colors))
-                    colors.append(color)
-                    self.surface.color = color
-                self.color_index[self.surface.symbol()] = color
+            color = self.surface.color
+            if color is None:
+                color = color_to_RGB(generate_new_color(colors))
+                colors.append(color)
+                self.surface.color = color
+            self.color_index[self.surface.symbol()] = color
 
-                for s in self.surface.sites:
+            for s in self.surface.sites:
+                if not s.color:
                     color = color_to_RGB(generate_new_color(colors))
-                    colors.append(color)
-                    self.color_index[sym.Symbol(s.name)] = color
+                    s.color = color
+                else:
+                    color = s.color
+                colors.append(color)
+                self.color_index[sym.Symbol(s.name)] = color
 
         return self.color_index
 
