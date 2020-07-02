@@ -17,7 +17,8 @@ class TextDisplay(object):
     VERTICAL_BUFFER   = 5
 
 
-    def __init__(self, width, font_size=24, text=""):
+    # def __init__(self, width, font_size=24, text=""):
+    def __init__(self, width, font_size=36, text=""):
         debug = False
 
         self.display_width = width

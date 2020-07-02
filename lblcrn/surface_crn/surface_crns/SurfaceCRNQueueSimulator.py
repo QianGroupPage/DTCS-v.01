@@ -667,7 +667,8 @@ def update_display(opts, simulation, FRAME_DIRECTORY = None, time_display=None, 
                 half_size = simulation.display_surface.get_size()
                 h_gap = 40
                 up_gap = 50
-                temp_screen = pygame.Surface([half_size[0] * 2 + h_gap, half_size[1]])
+                xps_width = half_size[0] * 2 / 3
+                temp_screen = pygame.Surface([half_size[0] + xps_width + h_gap, half_size[1]])
                 temp_screen.fill((255,255,255))
                 temp_screen.blit(simulation.display_surface, (0, 0))
                 r = Results.from_counts(simulation.rxns, simulation.surface.species_count())
@@ -675,20 +676,29 @@ def update_display(opts, simulation, FRAME_DIRECTORY = None, time_display=None, 
 
                 if time_display is not None:
                     title_x, title_y = title_display.x_pos, title_display.y_pos
-                    title_width = title_display.display_width
-                    display = TextDisplay(title_width, text="Dynamical XPS Spectrum")
+                    display = TextDisplay(xps_width, text="Dynamical XPS Spectrum")
                     display.render(temp_screen, title_x + half_size[0] + h_gap, title_y)
 
                     # Don't save time display's x, y locations.
                     time_x, time_y = time_display.x_pos, time_display.y_pos
-                    time_display.render(temp_screen, x_pos=time_x + half_size[0] + h_gap, y_pos=time_y)
+                    time = time_display.get_time()
+                    new_time_display = TimeDisplay(xps_width)
+                    new_time_display.set_time(time)
+                    new_time_display.render(temp_screen, x_pos=time_x + half_size[0] + h_gap, y_pos=time_y)
                     gap = 0
+                    fig_height = min(xps_width, (half_size[1] -
+                                                 title_display.display_height - new_time_display.display_height - gap))
                     raw_data, size = r.raw_string_gaussian(y_upper_limit=simulation.surface.num_nodes,
-                                                           fig_size=(half_size[0] / dpi, (half_size[1] - title_display.display_height - time_display.display_height - gap) / dpi),
+                                                           fig_size=(xps_width / dpi,  fig_height / dpi),
                                                            dpi=dpi)
                     gaussian = pygame.image.fromstring(raw_data, size, "RGB")
-                    temp_screen.blit(gaussian, (time_display.x_pos, time_display.y_pos + time_display.display_height + gap))
-                    time_display.x_pos, time_display.y_pos = time_x, time_y
+
+                    total_height = half_size[1]
+                    start = new_time_display.y_pos + new_time_display.display_height + gap
+                    if start + fig_height < total_height:
+                        start += (total_height - start - fig_height) / 2
+                    temp_screen.blit(gaussian, (new_time_display.x_pos, start))
+                    # time_display.x_pos, time_display.y_pos = time_x, time_y
                 else:
                     raw_data, size = r.raw_string_gaussian(y_upper_limit=simulation.surface.num_nodes,
                                                            fig_size=(half_size[0] / dpi, (half_size[1] - up_gap) / dpi),
