@@ -41,7 +41,7 @@ class Experiment(monty.json.MSONable, abc.ABC):
         Returns:
             #TODO
         """
-        species = self._get_species_not_ignored(species, ignore)
+        species = _get_species_not_ignored(species, ignore, self.species)
         if ax is None:
             ax = plt.gca()
 
@@ -71,37 +71,6 @@ class Experiment(monty.json.MSONable, abc.ABC):
     def species(self) -> List[sym.Symbol]:
         """All the species in the experiment."""
         pass
-
-    def _get_species_not_ignored(self,
-                                 species: Union[sym.Symbol,
-                                                List[sym.Symbol], None] = None,
-                                 ignore: Union[sym.Symbol,
-                                               List[sym.Symbol], None] = None):
-        """Get the specified subset of species.
-
-        Gets [species...] less [ignored...]. If speices is None, defaults to
-        all species.
-
-        Args:
-            species: A list of (or single) symbol representing a species.
-            ignore: A list of (or single) symbol representing a species.
-
-        Returns:
-            Species - ignored, with species defaulting to self.species.
-        """
-        # Wrap everything to be a list
-        if isinstance(species, sym.Symbol):
-            species = [species]
-        if isinstance(ignore, sym.Symbol):
-            ignore = [ignore]
-
-        # Default values
-        if not species:
-            species = self.species
-        if not ignore:
-            ignore = []
-
-        return [specie for specie in species if specie not in ignore]
 
     def as_dict(self) -> dict:
         """Return a MSON-serializable dict representation."""
@@ -136,3 +105,35 @@ class Experiment(monty.json.MSONable, abc.ABC):
         s = f'{self.__class__.__name__} with head:\n{df_str}'
 
         return s
+
+def _get_species_not_ignored(species: Union[sym.Symbol,
+                                            List[sym.Symbol], None] = None,
+                             ignore: Union[sym.Symbol,
+                                           List[sym.Symbol], None] = None,
+                             all_species: Union[sym.Symbol,
+                                            List[sym.Symbol], None] = None):
+    """Get the specified subset of species.
+
+    Gets [species...] less [ignored...]. If speices is None, defaults to
+    all species.
+
+    Args:
+        species: A list of (or single) symbol representing a species.
+        ignore: A list of (or single) symbol representing a species.
+
+    Returns:
+        Species - ignored, with species defaulting to self.species.
+    """
+    # Wrap everything to be a list
+    if isinstance(species, sym.Symbol):
+        species = [species]
+    if isinstance(ignore, sym.Symbol):
+        ignore = [ignore]
+
+    # Default values
+    if not species:
+        species = all_species
+    if not ignore:
+        ignore = []
+
+    return [specie for specie in species if specie not in ignore]

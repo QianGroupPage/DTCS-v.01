@@ -126,7 +126,8 @@ class CRNTimeSeries(experiment.Experiment):
         Returns:
             An XPSExperiment object with the parameters you specified.
         """
-        species = self._get_species_not_ignored(species, ignore)
+        species = experiment._get_species_not_ignored(species, ignore,
+                                                      self.species)
         snapshot = self.at(t)
         species_concs = {}
         for specie, conc in snapshot.items():

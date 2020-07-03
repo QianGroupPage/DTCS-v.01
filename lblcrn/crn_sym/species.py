@@ -15,7 +15,7 @@ Usage:
     print(sm[x])
 """
 
-from typing import List, Union
+from typing import List, Optional, Union
 
 import lblcrn
 import monty.json
@@ -93,11 +93,16 @@ class SpeciesManager(monty.json.MSONable):
     for example you loaded the SpeciesManager from a file.
     """
 
-    def __init__(self, species: dict = None):
+    def __init__(self, species: dict = None, colors: dict = None):
         if species:
             self._species = species
         else:
             self._species = {}
+
+        if colors:
+            self._colors = colors
+        else:
+            self._colors = {}
 
     @property
     def species(self) -> List[sym.Symbol]:
@@ -105,7 +110,8 @@ class SpeciesManager(monty.json.MSONable):
         return list(self._species.keys())
 
     def make_species(self, name: str,
-                     orbitals: Union[Orbital, List[Orbital]]) -> sym.Symbol:
+                     orbitals: Union[Orbital, List[Orbital]],
+                     color: Optional[str]) -> sym.Symbol:
         """Makes a sym.Symbol and a corresponding Species
 
         Keeps track of their correspondence.
@@ -115,6 +121,7 @@ class SpeciesManager(monty.json.MSONable):
             name: The name of the new species and of the symbol.
             orbitals: The Orbitals of the species. Can be an Orbital or a list
                 of Orbitals, just to be nice
+            color: The color you want this species to plot as.
 
         Returns:
              The sym.Symbol corresponding to the new Species.
@@ -125,6 +132,7 @@ class SpeciesManager(monty.json.MSONable):
             orbitals = [orbitals]
 
         self._species[symbol] = Species(name, orbitals)
+        self._colors[symbol] = color  # TODO: Make this
         return symbol
 
     def species_from_symbol(self, key: sym.Symbol) -> Species:
@@ -149,6 +157,12 @@ class SpeciesManager(monty.json.MSONable):
             return symbol
         else:
             raise KeyError(f'Name {name} corresponds to no species.')
+
+    def color(self, specie: sym.Symbol) -> str:
+        """Return the color for the given specie."""
+        # TODO(Ye): I needed this stub for plotting purposes, feel free to
+        # TODO: replace it with whatever system you made
+        return self._colors[specie]
 
     def as_dict(self) -> dict:
         """Return a MSON-serializable dict representation."""
