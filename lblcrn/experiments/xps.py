@@ -20,7 +20,6 @@ Example:
     xps.plot()
 """
 
-import collections
 from typing import Dict, List, Optional, Tuple, Union
 import warnings
 
@@ -657,10 +656,10 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
                 deconv_species = species
         # Only take into account species given by _get_species_not_ignored
         deconv_species = [specie for specie in deconv_species
-                         if specie in species]
+                          if specie in species]
         # Don't deconvolute species which are being decontaminated out
         deconv_species = [specie for specie in deconv_species
-                         if specie not in contam_species]
+                          if specie not in contam_species]
 
         # Handle: deconvolute
         # deconvolute requires experimental
@@ -768,6 +767,8 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
             # Don't bother with deconv_/contam_species, because if they're
             # defined, then the x_range will be exp_data.index anyway.
             x_range = self._get_x_range(species=species_to_plot)
+            _echo.echo(f'Using automatically-generated x-range '
+                       f'[{x_range[0]}, ..., {x_range[-1]}]...')
 
         # --- Make Empty DataFrame -------------------------------------------
         # I add all of the columns early for sorting reasons;
@@ -781,7 +782,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
         if experimental:
             columns.append(self._RAW_EXP)
             # Gas phase and decontaminate will clean up the raw experimental.
-        if gas_phase or decontaminate:
+        if gas_interval or decontaminate:
             columns.append(self._CLEAN_EXP)
         if gas_phase:
             columns.append(self._GAS_PHASE)
@@ -791,7 +792,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
         if deconvolute:
             columns.append(self._DECON_ENV)
             deconv_cols = [(self._EXPERIMENTAL, specie)
-                          for specie in deconv_species]
+                           for specie in deconv_species]
             columns.extend(deconv_cols)
 
         row_index = pd.Index(x_range, name='eV')
@@ -800,6 +801,11 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
 
         # --- Calculations ---------------------------------------------------
         if simulate:
+            if _echo.do_echo:
+                sim_concs_used = {specie: conc for specie, conc in
+                                  sim_concs.items() if specie in sim_species}
+                _echo.echo(f'Simulating XPS experiment for species with '
+                           f'concentrations {sim_concs_used}...')
             for sim_col in sim_cols:
                 # sim_col is a tuple (self._SIMULATED, specie)
                 sim_specie = sim_col[1]
@@ -810,14 +816,18 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
             envelope = df[self._ENVELOPE]
 
         if experimental:
+            _echo.echo(f'Processing experimental data...')
             df[self._RAW_EXP] = exp_data
-            df[self._CLEAN_EXP] = exp_data.copy()
+            if self._CLEAN_EXP in df:
+                df[self._CLEAN_EXP] = exp_data.copy()
 
         if gas_phase:
+            _echo.echo(f'Calculating gas phase...')
             gas_gauss = self._get_gas_phase(x_range=x_range,
                                             exp_data=exp_data,
                                             gas_interval=gas_interval)
             df[self._GAS_PHASE] = gas_gauss
+            _echo.echo(f'Removing gas phase from experimental...')
             df[self._CLEAN_EXP] -= df[self._GAS_PHASE]
 
         # Must go after simulate
@@ -825,7 +835,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
             scale_factor = self._get_autoscale(df=df,
                                                sim_data=envelope,
                                                exp_data=exp_data)
-            _echo.echo(f'Auto-scaling data to {scale_factor}...')
+            _echo.echo(f'Generating auto-scale factor {scale_factor}...')
 
         # Must go after autoscale
         if contaminate or decontaminate:
@@ -842,8 +852,11 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
                 )
                 contam_concs[cont_specie] = contam_conc
                 df[cont_col] = contamination
+                _echo.echo(f'Calculated contaminant concentrations at '
+                           f'{contam_concs}...')
 
         if contaminate:
+            _echo.echo('Adding contaminants to simulated data...')
             for cont_col in contam_cols:
                 df[self._ENVELOPE] += df[cont_col]
 
@@ -864,8 +877,11 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
                                                  specie=dec_specie,
                                                  conc=deconv_concs[dec_specie])
             df[self._DECON_ENV] = df[deconv_cols].sum(axis=1)
+            _echo.echo(f'Deconvoluted experimental to get concentrations '
+                       f'{deconv_concs}...')
 
         # Scale everything which needs to be scaled
+        _echo.echo(f'Scaling data by factor {scale_factor}...')
         for sim_col in sim_cols:
             df[sim_col] *= scale_factor
         for dec_col in deconv_cols:
@@ -875,6 +891,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
 
         # Must happen after scaling
         if decontaminate:
+            _echo.echo('Removing contaminants from experimental data...')
             for cont_col in contam_cols:
                 df[self._CLEAN_EXP] -= df[cont_col]
 
@@ -1216,4 +1233,4 @@ def simulate_xps(rsys: reaction.RxnSystem,
                         contam_spectra=contam_spectra,
                         deconv_species=deconv_species,
                         autoresample=autoresample,
-                        autoscale=autoscale,)
+                        autoscale=autoscale, )
