@@ -186,19 +186,20 @@ class XPSObservable:
              title: str = '',
              species: Optional[Union[List[sym.Symbol], sym.Symbol]] = None,
              ignore: Optional[Union[List[sym.Symbol], sym.Symbol]] = None,
-             peak_lines: Optional[bool] = None,
-             gaussians: Optional[bool] = None,
-             simulate: Optional[bool] = None,
-             sim_gaussians: Optional[bool] = None,
-             envelope: Optional[bool] = None,
-             experimental: Optional[bool] = None,
-             experimental_raw: Optional[bool] = None,
-             experimental_clean: Optional[bool] = None,
-             gas_phase: Optional[bool] = None,
-             contaminants: Optional[bool] = None,
-             deconvolute: Optional[bool] = None,
-             deconv_gaussians: Optional[bool] = None,
-             deconv_envelope: Optional[bool] = None, ) -> plt.Axes:
+             peak_lines: Optional[Union[dict, bool]] = None,
+             gaussians: Optional[Union[dict, bool]] = None,
+             simulate: Optional[Union[dict, bool]] = None,
+             sim_gaussians: Optional[Union[dict, bool]] = None,
+             envelope: Optional[Union[dict, bool]] = None,
+             experimental: Optional[Union[dict, bool]] = None,
+             experimental_raw: Optional[Union[dict, bool]] = None,
+             experimental_clean: Optional[Union[dict, bool]] = None,
+             gas_phase: Optional[Union[dict, bool]] = None,
+             contaminants: Optional[Union[dict, bool]] = None,
+             deconvolute: Optional[Union[dict, bool]] = None,
+             deconv_gaussians: Optional[Union[dict, bool]] = None,
+             deconv_envelope: Optional[Union[dict, bool]] = None,
+             ) -> plt.Axes:
         """Default plotting behavior for an XPS observable.
 
         Args:
@@ -224,23 +225,27 @@ class XPSObservable:
 
         # Some switches count for more than one thing.
         # We ignore these switches if they aren't explicitly specified.
-        if gaussians is not None:
-            if sim_gaussians is None: sim_gaussians = gaussians
-            if gas_phase is None: gas_phase = gaussians
-            if contaminants is None: contaminants = gaussians
-            if deconv_gaussians is None: deconv_gaussians = gaussians
-        if simulate is not None:
-            if sim_gaussians is None: sim_gaussians = simulate
-            if envelope is None: envelope = simulate
-        if experimental is not None:
-            if experimental_raw is None: experimental_raw = experimental
-            if experimental_clean is None: experimental_clean = experimental
-            if gas_phase is None: gas_phase = experimental
-        if deconvolute is not None:
-            if deconv_gaussians is None: deconv_gaussians = deconvolute
-            if deconv_envelope is None: deconv_envelope = deconvolute
-
         # I don't care if this goes against PEP 8 this would be a mess!
+        if gaussians is not None:
+            default = gaussians or isinstance(gaussians, dict)
+            if sim_gaussians is None: sim_gaussians = default
+            if gas_phase is None: gas_phase = default
+            if contaminants is None: contaminants = default
+            if deconv_gaussians is None: deconv_gaussians = default
+        if simulate is not None:
+            default = simulate or isinstance(simulate, dict)
+            if sim_gaussians is None: sim_gaussians = default
+            if envelope is None: envelope = default
+        if experimental is not None:
+            default = experimental or isinstance(experimental, dict)
+            if experimental_raw is None: experimental_raw = default
+            if experimental_clean is None: experimental_clean = default
+            if gas_phase is None: gas_phase = bool(experimental)
+        if deconvolute is not None:
+            default = deconvolute or isinstance(deconvolute, dict)
+            if deconv_gaussians is None: deconv_gaussians = default
+            if deconv_envelope is None: deconv_envelope = default
+
         if peak_lines is None: peak_lines = not only
         if sim_gaussians is None: sim_gaussians = not only
         if envelope is None: envelope = not only
@@ -273,11 +278,11 @@ class XPSObservable:
         # When plotting simulated/deconvoluted species, we're going to have
         # gaussians on top of other gaussians which might be the same color.
         # Hence, we have default behavior for gaussians by front-ness.
-        # for whichever gaussians are farthest back
+        # for whichever gaussians are farthest back.
         ordered_gauss_args = [
-            dict(fill=True,),
-            dict(fill=False, brightness=0.7,),
-            dict(fill=False, brightness=0.5,),
+            dict(fill=True, ),
+            dict(fill=False, brightness=0.7, ),
+            dict(fill=False, brightness=0.5, ),
         ]
 
         # Arguments for groups
@@ -347,7 +352,7 @@ class XPSObservable:
             label='Raw Experimental',
             color='0.3',
             linestyle='-.',
-            linewidth=2,
+            linewidth=3,
         )
         # Args: experimental_clean
         exp_clean_args = copy.copy(experimental_args)
@@ -356,6 +361,35 @@ class XPSObservable:
             color='0',
             linewidth=3,
         )
+
+        # If the user gave a dictionary, use those
+        if isinstance(gaussians, dict):
+            gas_phase_args.update(gaussians)
+            sim_gauss_args.update(gaussians)
+            deconv_gauss_args.update(gaussians)
+            contam_args.update(gaussians)
+        if isinstance(simulate, dict):
+            sim_gauss_args.update(simulate)
+            envelope_args.update(simulate)
+        if isinstance(experimental, dict):
+            gas_phase_args.update(experimental)
+            exp_raw_args.update(experimental)
+            exp_clean_args.update(experimental)
+        if isinstance(deconvolute, dict):
+            deconv_gauss_args.update(deconvolute)
+            deconv_env_args.update(deconvolute)
+
+        for inputted, args_dict in [(peak_lines, peak_line_args),
+                                    (sim_gaussians, sim_gauss_args),
+                                    (envelope, envelope_args),
+                                    (experimental_raw, exp_raw_args),
+                                    (experimental_clean, exp_clean_args),
+                                    (gas_phase, gas_phase_args),
+                                    (contaminants, contam_args),
+                                    (deconv_gaussians, deconv_gauss_args),
+                                    (deconv_envelope, deconv_env_args)]:
+            if isinstance(inputted, dict):
+                args_dict.update(inputted)
 
         # --- Plot -----------------------------------------------------------
         # These two functions sort gaussians to put shorter ones in front.
@@ -367,18 +401,18 @@ class XPSObservable:
 
         # Function to retrieve with arguments not to be passed to pyplot
         # You must let it modify the dict you give it.
-        def get_special_args(args_dict):
+        def pop_special_args(args_dict):
             brightness = 1.0
             if 'brightness' in args_dict:
                 brightness = args_dict.pop('brightness')
             return brightness
 
-        if peak_lines:
+        if peak_lines and species_to_plot:
+            brightness = pop_special_args(peak_line_args)
             for specie in species_to_plot:
                 for orbital in self.species_manager[specie].orbitals:
                     if orbital.binding_energy not in self.x_range:
                         continue
-                    brightness = get_special_args(peak_line_args)
                     color = self.species_manager.color(specie)
                     color = util.scale_color_brightness(color, brightness)
 
@@ -387,56 +421,64 @@ class XPSObservable:
                                **peak_line_args)
 
         if gas_phase and self.gas_phase is not None:
+            _ = pop_special_args(gas_phase_args)
             ax.fill(self.x_range, self.gas_phase, **gas_phase_args)
 
-        for column in sorted(sim_gauss_cols,
-                             key=gauss_col_sort_key,
-                             reverse=True):
-            specie = column[1]
-            brightness = get_special_args(sim_gauss_args)
-            color = self.species_manager.color(specie)
-            color = util.scale_color_brightness(color, brightness)
+        if sim_gaussians and sim_gauss_cols:
+            brightness = pop_special_args(sim_gauss_args)
+            for column in sorted(sim_gauss_cols,
+                                 key=gauss_col_sort_key,
+                                 reverse=True):
+                specie = column[1]
+                color = self.species_manager.color(specie)
+                color = util.scale_color_brightness(color, brightness)
 
-            ax.fill(self.x_range, self.df[column],
-                    label=f'Sim. {specie}',
-                    color=color,
-                    **sim_gauss_args)
+                ax.fill(self.x_range, self.df[column],
+                        label=f'Sim. {specie}',
+                        color=color,
+                        **sim_gauss_args)
 
-        for column in sorted(deconv_gauss_cols,
-                             key=gauss_col_sort_key,
-                             reverse=True):
-            specie = column[1]
-            brightness = get_special_args(deconv_gauss_args)
-            color = self.species_manager.color(specie)
-            color = util.scale_color_brightness(color, brightness)
+        if deconv_gaussians and deconv_gauss_cols:
+            brightness = pop_special_args(deconv_gauss_args)
+            for column in sorted(deconv_gauss_cols,
+                                 key=gauss_col_sort_key,
+                                 reverse=True):
+                specie = column[1]
+                color = self.species_manager.color(specie)
+                color = util.scale_color_brightness(color, brightness)
 
-            ax.fill(self.x_range, self.df[column],
-                    label=f'Deconv. {column[1]}',
-                    color=color,
-                    **deconv_gauss_args)
+                ax.fill(self.x_range, self.df[column],
+                        label=f'Deconv. {column[1]}',
+                        color=color,
+                        **deconv_gauss_args)
 
-        for specie in sorted(contam_gauss_cols,
-                             key=contaminant_sort_key,
-                             reverse=True):
-            brightness = get_special_args(contam_args)
-            color = self.species_manager.color(specie)
-            color = util.scale_color_brightness(color, brightness)
+        if contaminants and contam_gauss_cols:
+            brightness = pop_special_args(contam_args)
+            for specie in sorted(contam_gauss_cols,
+                                 key=contaminant_sort_key,
+                                 reverse=True):
+                color = self.species_manager.color(specie)
+                color = util.scale_color_brightness(color, brightness)
 
-            ax.fill(self.x_range, self.contaminants[specie],
-                    label=f'Contam. {specie}',
-                    color=self.species_manager.color(specie),
-                    **contam_args)
+                ax.fill(self.x_range, self.contaminants[specie],
+                        label=f'Contam. {specie}',
+                        color=self.species_manager.color(specie),
+                        **contam_args)
 
         if deconv_envelope and self.deconv_envelope is not None:
+            _ = pop_special_args(deconv_env_args)
             ax.plot(self.x_range, self.deconv_envelope, **deconv_env_args)
 
         if envelope and self.envelope is not None:
+            _ = pop_special_args(envelope_args)
             ax.plot(self.x_range, self.envelope, **envelope_args)
 
         if experimental_raw and self.experimental_raw is not None:
+            _ = pop_special_args(exp_raw_args)
             ax.plot(self.x_range, self.experimental_raw, **exp_raw_args)
 
         if experimental_clean and self.experimental_clean is not None:
+            _ = pop_special_args(exp_clean_args)
             ax.plot(self.x_range, self.experimental_clean, **exp_clean_args)
 
         ax.legend()
