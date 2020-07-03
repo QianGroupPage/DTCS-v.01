@@ -85,7 +85,7 @@ class RxnSystem:
             self._symbols.update(equation.get_symbols())
         for equation in self.conc_diffeqs:
             self._symbols.update(equation.get_symbols())
-        self._symbols = list(self._symbols)
+        self._symbols = sorted(list(self._symbols), key=lambda s: str(s))
 
         # Make an indexing dictionary
         self.symbol_index = {}
