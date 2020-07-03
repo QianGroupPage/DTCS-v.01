@@ -25,7 +25,7 @@ Example:
 """
 
 import bisect
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 
 from matplotlib import pyplot as plt
 import monty.json
@@ -93,14 +93,18 @@ class CRNTimeSeries(experiment.Experiment):
             self.xps_with()
         return self._xps
 
-    def xps_with(self, t: float = -1, species: List[sym.Symbol] = None,
+    def xps_with(self, t: float = -1,
+                 title: str = '',
+                 species: List[sym.Symbol] = None,
                  ignore: List[sym.Symbol] = None,
-                 autoresample: bool = True,
-                 autoscale: bool = True,
+                 x_range: np.ndarray = None,
+                 scale_factor: float = None,
                  experimental: pd.Series = None,
                  gas_interval: Tuple[float, float] = None,
-                 scale_factor: float = None,
-                 title: str = ''):
+                 contam_spectra: Dict[sym.Symbol, pd.Series] = None,
+                 decon_species: List[sym.Symbol] = None,
+                 autoresample: bool = True,
+                 autoscale: bool = True,):
         """Calculates a simulated XPS observable at time t.
 
         In addition to returning, saves the information into self.xps.
@@ -131,13 +135,16 @@ class CRNTimeSeries(experiment.Experiment):
         if not title:
             title = f'time={snapshot.name}'
         self._xps = xps.XPSExperiment(species_manager=self.species_manager,
+                                      title=title,
+                                      x_range=x_range,
+                                      scale_factor=scale_factor,
                                       sim_concs=species_concs,
-                                      autoresample=autoresample,
-                                      autoscale=autoscale,
                                       experimental=experimental,
                                       gas_interval=gas_interval,
-                                      scale_factor=scale_factor,
-                                      title=title)
+                                      contam_spectra=contam_spectra,
+                                      decon_species=decon_species,
+                                      autoresample=autoresample,
+                                      autoscale=autoscale,)
         return self._xps
 
     # --- Plotting -----------------------------------------------------------
