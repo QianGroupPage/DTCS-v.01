@@ -753,6 +753,22 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
                Union[Dict[sym.Symbol, float], None],
                Union[Dict[sym.Symbol, float], None]]:
         """TODO"""
+        # --- Invariants -----------------------------------------------------
+        assert not (simulate and not sim_concs)
+        assert not (simulate and not sim_species)
+        assert not (experimental and exp_data is None)
+        assert not (gas_phase and not experimental)
+        assert not (gas_phase and (len(gas_interval) > 2 or
+                                   gas_interval[0] > gas_interval[1]))
+        assert not (decontaminate and not experimental)
+        assert not (contaminate and not simulate)
+        assert not ((decontaminate or contaminate) and not contam_spectra)
+        assert not ((decontaminate or contaminate) and not contam_species)
+        assert not (contaminate and decontaminate)
+        assert not (deconvolute and not experimental)
+        assert not (deconvolute and not deconv_species)
+        assert scale_factor != 0
+
         # --- Variables for Later --------------------------------------------
         envelope: Union[pd.Series, None] = None
         deconv_concs: Union[Dict[sym.Symbol, float], None] = None
@@ -835,8 +851,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
 
         # Must go after simulate
         if autoscale:
-            scale_factor = self._get_autoscale(df=df,
-                                               sim_data=envelope,
+            scale_factor = self._get_autoscale(sim_data=envelope,
                                                exp_data=exp_data)
             _echo.echo(f'Generating auto-scale factor {scale_factor}...')
 
@@ -900,7 +915,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
 
         return df, scale_factor, deconv_concs, contam_concs
 
-    def _get_autoscale(self, df: pd.DataFrame,
+    def _get_autoscale(self,
                        sim_data: Union[pd.Series, None],
                        exp_data: Union[pd.Series, None]) -> float:
         """Gets the factor by which to automatically scale.
