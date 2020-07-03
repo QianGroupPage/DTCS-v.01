@@ -183,7 +183,6 @@ class XPSObservable:
 
     def plot(self, ax: plt.Axes = None,
              only: bool = False,
-             title: str = '',
              species: Optional[Union[List[sym.Symbol], sym.Symbol]] = None,
              ignore: Optional[Union[List[sym.Symbol], sym.Symbol]] = None,
              peak_lines: Optional[Union[dict, bool]] = None,
@@ -200,22 +199,10 @@ class XPSObservable:
              deconv_gaussians: Optional[Union[dict, bool]] = None,
              deconv_envelope: Optional[Union[dict, bool]] = None,
              ) -> plt.Axes:
-        """Default plotting behavior for an XPS observable.
-
-        Args:
-            ax: The plt.Axes on which to plot.
-            **kwargs: Forwarded. # TODO: how to use?
-            # TODO
-
-        Returns:
-            # TODO
-        """
+        """TODO"""
         # --- Parse Arguments ------------------------------------------------
         if ax is None:
             ax = plt.gca()
-
-        if not title:
-            title = self.title
 
         species = experiment._get_species_not_ignored(
             species,
@@ -482,7 +469,7 @@ class XPSObservable:
             ax.plot(self.x_range, self.experimental_clean, **exp_clean_args)
 
         ax.legend()
-        ax.set_title(title)
+        ax.set_title(self.title)
         ax.invert_xaxis()  # XPS Plots are backwards
         return ax
 
