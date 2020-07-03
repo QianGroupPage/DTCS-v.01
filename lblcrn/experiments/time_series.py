@@ -102,7 +102,7 @@ class CRNTimeSeries(experiment.Experiment):
                  experimental: pd.Series = None,
                  gas_interval: Tuple[float, float] = None,
                  contam_spectra: Dict[sym.Symbol, pd.Series] = None,
-                 decon_species: List[sym.Symbol] = None,
+                 deconv_species: List[sym.Symbol] = None,
                  autoresample: bool = True,
                  autoscale: bool = True,):
         """Calculates a simulated XPS observable at time t.
@@ -142,7 +142,7 @@ class CRNTimeSeries(experiment.Experiment):
                                       experimental=experimental,
                                       gas_interval=gas_interval,
                                       contam_spectra=contam_spectra,
-                                      decon_species=decon_species,
+                                      deconv_species=deconv_species,
                                       autoresample=autoresample,
                                       autoscale=autoscale,)
         return self._xps
