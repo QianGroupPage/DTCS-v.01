@@ -34,6 +34,7 @@ def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=Fa
         species_tracked = list(rxns.get_symbols())
     if not lattice:
         lattice = generate_surface(rsys=rxns)
+    #  TODO: infer spectra's scale from here.
     times, concs = simulate_without_display(manifest, lattice, [str(s) for s in species_tracked])
     if manifest_file:
         r = Results.from_concs_times(manifest_file, rxns, concs, times)
@@ -62,14 +63,9 @@ def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=Fa
         # TODO: fix the issue that the video will fail if there is already file in
         # the frames folder.
         # TODO: progress bar for the video
+        # TODO: add this as an argument spectra_max_conc=r.df_raw.max()
         simulate_with_display(manifest, lattice, rxns=rxns, spectra_in_video=spectra_in_video)
-
     r.video = video_link
-    color_index = rxns.get_colors()
-    r.species_ordering = species_tracked
-    r.species_colors = {s: color_index[s] for s in r.species_ordering}
-    r.species_ordering = [str(s) for s in r.species_ordering]
-    r.species_colors = {str(s): color_to_HEX(c) for s, c in r.species_colors.items()}
 
     # TODO: warn the user if termination is early.
     return r

@@ -170,6 +170,24 @@ class SpeciesManager:
     def species_from_symbol(self, key: sym.Symbol) -> Species:
         return self._species[key]
 
+    @property
+    def sub_species_dict(self):
+        """
+        :return: a dictionary from all parent species to a list of its subspecies
+        """
+        d = {}
+        for k, v in self._species.items():
+            for n, sub_s in v.sub_species.items():
+                if sym.Symbol(n) in self._species:
+                    if k in d:
+                        d[k].append(sym.Symbol(n))
+                    else:
+                        d[k] = [sym.Symbol(n)]
+            if k in d and d[k]:
+                d[k].append(k)
+        return d
+
+
     def __str__(self):
         return str(self._species)  # TODO
 
