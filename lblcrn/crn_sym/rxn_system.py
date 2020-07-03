@@ -1,6 +1,7 @@
 import copy
 from typing import List
 import sympy as sym
+import random
 
 from lblcrn.crn_sym import species
 from lblcrn.crn_sym import surface
@@ -184,6 +185,7 @@ class RxnSystem:
         """
         :return: colors for each species, if color is assigned.
         """
+        random.seed(1)
         colors = [] if not self.surface.color else [self.surface.color]
         if self.color_index is None:
             self.color_index = {}

@@ -17,18 +17,18 @@ Originally from surface_crns, found by Samuel Clamons
 import random
 
 
-def get_random_color(pastel_factor = 0.5):
+def get_random_color(pastel_factor=0.7):
     return [255*(x+pastel_factor)/(1.0+pastel_factor) for x in [random.uniform(0,1.0) for i in [1,2,3]]]
  
 def color_distance(c1,c2):
     #print("C1: " + str(c1) + "\nC2: " + str(c2))
     return sum([abs(x[0]-x[1]) for x in zip(c1,c2)])
  
-def generate_new_color(existing_colors,pastel_factor = 0.5):
+def generate_new_color(existing_colors, pastel_factor = 0.7):
     max_distance = None
     best_color = None
     for i in range(0,100):
-        color = get_random_color(pastel_factor = pastel_factor)
+        color = get_random_color(pastel_factor=pastel_factor)
         if not existing_colors:
             return color
         best_distance = min([color_distance(color,c) for c in existing_colors])
