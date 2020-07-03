@@ -671,6 +671,9 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
         elif deconvolute is None:
             # Default deconvolute to experimental
             deconvolute = experimental
+            if deconvolute:
+                deconvolute = _echo.prompt_yn('Deconvolute experimental?',
+                                              default=True)
 
         # --- X-Range --------------------------------------------------------
         # Handle: x_range
