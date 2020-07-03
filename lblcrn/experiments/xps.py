@@ -20,6 +20,7 @@ Example:
     xps.plot()
 """
 
+import copy
 from typing import Dict, List, Optional, Tuple, Union
 import warnings
 
@@ -185,7 +186,8 @@ class XPSObservable:
              title: str = '',
              species: Optional[Union[List[sym.Symbol], sym.Symbol]] = None,
              ignore: Optional[Union[List[sym.Symbol], sym.Symbol]] = None,
-             peak_lines: Optional[ bool] = None,
+             peak_lines: Optional[bool] = None,
+             gaussians: Optional[bool] = None,
              simulate: Optional[bool] = None,
              sim_gaussians: Optional[bool] = None,
              envelope: Optional[bool] = None,
@@ -196,7 +198,7 @@ class XPSObservable:
              contaminants: Optional[bool] = None,
              deconvolute: Optional[bool] = None,
              deconv_gaussians: Optional[bool] = None,
-             deconv_envelope: Optional[bool] = None,) -> plt.Axes:
+             deconv_envelope: Optional[bool] = None, ) -> plt.Axes:
         """Default plotting behavior for an XPS observable.
 
         Args:
@@ -222,6 +224,11 @@ class XPSObservable:
 
         # Some switches count for more than one thing.
         # We ignore these switches if they aren't explicitly specified.
+        if gaussians is not None:
+            if sim_gaussians is None: sim_gaussians = gaussians
+            if gas_phase is None: gas_phase = gaussians
+            if contaminants is None: contaminants = gaussians
+            if deconv_gaussians is None: deconv_gaussians = gaussians
         if simulate is not None:
             if sim_gaussians is None: sim_gaussians = simulate
             if envelope is None: envelope = simulate
@@ -244,82 +251,122 @@ class XPSObservable:
         if deconv_gaussians is None: deconv_gaussians = not only
         if deconv_envelope is None: deconv_envelope = not only
 
+        # Get the gaussians we're going to be plotting
+        sim_gauss_cols = []
+        deconv_gauss_cols = []
+        contam_gauss_cols = []
+        species_to_plot = []
+        if sim_gaussians and self.gaussians_simulated is not None:
+            sim_gauss_cols.extend(col for col in self.gaussians_simulated
+                                  if col[1] in species)
+        if deconv_gaussians and self.gaussians_deconvoluted is not None:
+            deconv_gauss_cols.extend(col for col in self.gaussians_deconvoluted
+                                     if col[1] in species)
+        if contaminants and self.contaminants is not None:
+            contam_gauss_cols.extend(specie for specie in self.contaminants
+                                     if specie in species)
+        species_to_plot.extend(col[1] for col in sim_gauss_cols)
+        species_to_plot.extend(col[1] for col in deconv_gauss_cols)
+        species_to_plot.extend(contam_gauss_cols)
+
         # --- Plotting Arguments ---------------------------------------------
         # When plotting simulated/deconvoluted species, we're going to have
-        # gaussians on top of other gaussians which are the same color.
+        # gaussians on top of other gaussians which might be the same color.
         # Hence, we have default behavior for gaussians by front-ness.
         # for whichever gaussians are farthest back
-        first_gauss_args = dict(
-            fill=True,
-        )
-        # for whichever gaussians are second from back
-        second_gauss_args = dict(
-            fill=False,
-            brightness=0.6,
-        )
+        ordered_gauss_args = [
+            dict(fill=True,),
+            dict(fill=False, brightness=0.7,),
+            dict(fill=False, brightness=0.5,),
+        ]
 
-        # Default arugments, these are forwarded to the plotter.
+        # Arguments for groups
+        gaussians_args = dict()
+        simulate_args = dict()
+        experimental_args = dict()
+        deconvolute_args = dict()
+
+        # Args: peak_lines
         peak_line_args = dict(
             ymin=0.05,
             ymax=1,
             linestyle='dashed',
             linewidth=1
         )
-        gas_phase_args = dict(
+        # Args: gas_phase
+        gas_phase_args = copy.copy(gaussians_args)
+        gas_phase_args.update(experimental_args)
+        gas_phase_args.update(
             label='Gas Phase',
             color='#666666',
             fill=False,
             hatch='++'
         )
-        sim_gauss_args = dict(  # Populated by first/second_gauss_args
+        # Args: sim_gaussians
+        sim_gauss_args = copy.copy(gaussians_args)
+        if sim_gauss_cols:
+            sim_gauss_args.update(ordered_gauss_args.pop(0))
+        sim_gauss_args.update(simulate_args)
+        sim_gauss_args.update(
             hatch='xxx',
         )
-        deconv_gauss_args = dict(  # Populated by first/second_gauss_args
+        # Args: deconv_gaussians
+        deconv_gauss_args = copy.copy(gaussians_args)
+        if deconv_gauss_cols:
+            deconv_gauss_args.update(ordered_gauss_args.pop(0))
+        deconv_gauss_args.update(deconvolute_args)
+        deconv_gauss_args.update(
             hatch='///',
         )
-        contam_args = dict(
-            fill=False,
+        # Args: contaminants
+        contam_args = copy.copy(gaussians_args)
+        if contam_gauss_cols:
+            contam_args.update(ordered_gauss_args.pop(0))
+        contam_args.update(
             hatch='...',
         )
-        deconv_env_args = dict(
+        # Args: deconv_envelope
+        deconv_env_args = copy.copy(deconvolute_args)
+        deconv_env_args.update(
             label='Deconv. Envelope',
             color='#3d663d',
             linestyle=':',
             linewidth=3,
         )
-        envelope_args = dict(
+        # Args: envelope
+        envelope_args = copy.copy(simulate_args)
+        envelope_args.update(
             label='Sim. Envelope',
             color='#663d3d',
             linestyle='--',
             linewidth=3,
         )
-        exp_raw_args = dict(
+        # Args: experimental_raw
+        exp_raw_args = copy.copy(experimental_args)
+        exp_raw_args.update(
             label='Raw Experimental',
             color='0.3',
             linestyle='-.',
             linewidth=2,
         )
-        exp_clean_args = dict(
+        # Args: experimental_clean
+        exp_clean_args = copy.copy(experimental_args)
+        exp_clean_args.update(
             label='Clean Experimental',
             color='0',
             linewidth=3,
         )
 
-        # Simulated gaussians show behind deconvoluted ones.
-        if sim_gaussians:
-            sim_gauss_args.update(first_gauss_args)
-            deconv_gauss_args.update(second_gauss_args)
-        else:
-            deconv_gauss_args.update(first_gauss_args)
-
         # --- Plot -----------------------------------------------------------
-        # Sort the gaussian columns so shorter ones show in front.
+        # These two functions sort gaussians to put shorter ones in front.
         def gauss_col_sort_key(col):
             return max(self.df[col])
 
         def contaminant_sort_key(col):
             return max(self.contaminants[col])
 
+        # Function to retrieve with arguments not to be passed to pyplot
+        # You must let it modify the dict you give it.
         def get_special_args(args_dict):
             brightness = 1.0
             if 'brightness' in args_dict:
@@ -327,7 +374,7 @@ class XPSObservable:
             return brightness
 
         if peak_lines:
-            for specie in species:
+            for specie in species_to_plot:
                 for orbital in self.species_manager[specie].orbitals:
                     if orbital.binding_energy not in self.x_range:
                         continue
@@ -342,52 +389,43 @@ class XPSObservable:
         if gas_phase and self.gas_phase is not None:
             ax.fill(self.x_range, self.gas_phase, **gas_phase_args)
 
-        if sim_gaussians and self.gaussians_simulated is not None:
-            sim_gauss_cols = [col for col in self.gaussians_simulated
-                              if col[1] in species]
-            for column in sorted(sim_gauss_cols,
-                                 key=gauss_col_sort_key,
-                                 reverse=True):
-                specie = column[1]
-                brightness = get_special_args(sim_gauss_args)
-                color = self.species_manager.color(specie)
-                color = util.scale_color_brightness(color, brightness)
+        for column in sorted(sim_gauss_cols,
+                             key=gauss_col_sort_key,
+                             reverse=True):
+            specie = column[1]
+            brightness = get_special_args(sim_gauss_args)
+            color = self.species_manager.color(specie)
+            color = util.scale_color_brightness(color, brightness)
 
-                ax.fill(self.x_range, self.df[column],
-                        label=f'Sim. {specie}',
-                        color=color,
-                        **sim_gauss_args)
+            ax.fill(self.x_range, self.df[column],
+                    label=f'Sim. {specie}',
+                    color=color,
+                    **sim_gauss_args)
 
-        if deconv_gaussians and self.gaussians_deconvoluted is not None:
-            deconv_gauss_cols = [col for col in self.gaussians_deconvoluted
-                                 if col[1] in species]
-            for column in sorted(deconv_gauss_cols,
-                                 key=gauss_col_sort_key,
-                                 reverse=True):
-                specie = column[1]
-                brightness = get_special_args(deconv_gauss_args)
-                color = self.species_manager.color(specie)
-                color = util.scale_color_brightness(color, brightness)
+        for column in sorted(deconv_gauss_cols,
+                             key=gauss_col_sort_key,
+                             reverse=True):
+            specie = column[1]
+            brightness = get_special_args(deconv_gauss_args)
+            color = self.species_manager.color(specie)
+            color = util.scale_color_brightness(color, brightness)
 
-                ax.fill(self.x_range, self.df[column],
-                        label=f'Deconv. {column[1]}',
-                        color=color,
-                        **deconv_gauss_args)
+            ax.fill(self.x_range, self.df[column],
+                    label=f'Deconv. {column[1]}',
+                    color=color,
+                    **deconv_gauss_args)
 
-        if contaminants and self.contaminants is not None:
-            contam_gauss_cols = [specie for specie in self.contaminants
-                                 if specie in species]
-            for specie in sorted(contam_gauss_cols,
-                                 key=contaminant_sort_key,
-                                 reverse=True):
-                brightness = get_special_args(contam_args)
-                color = self.species_manager.color(specie)
-                color = util.scale_color_brightness(color, brightness)
+        for specie in sorted(contam_gauss_cols,
+                             key=contaminant_sort_key,
+                             reverse=True):
+            brightness = get_special_args(contam_args)
+            color = self.species_manager.color(specie)
+            color = util.scale_color_brightness(color, brightness)
 
-                ax.fill(self.x_range, self.contaminants[specie],
-                        label=f'Contam. {specie}',
-                        color=self.species_manager.color(specie),
-                        **contam_args)
+            ax.fill(self.x_range, self.contaminants[specie],
+                    label=f'Contam. {specie}',
+                    color=self.species_manager.color(specie),
+                    **contam_args)
 
         if deconv_envelope and self.deconv_envelope is not None:
             ax.plot(self.x_range, self.deconv_envelope, **deconv_env_args)
