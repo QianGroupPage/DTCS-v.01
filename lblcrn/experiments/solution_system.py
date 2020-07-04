@@ -31,7 +31,7 @@ class SolutionSystem:
         """Find the maximum peak and return the scaling factor for that data
         and the system index."""
         self.systems[0][0].scale_factor = 1
-        max_env = max(self.systems[0][0].envelope)
+        max_env = max(self.systems[0][0].sim_envelope)
         max_index = -1
         max_exp = max(self.systems[0][0].experimental)
 
@@ -45,7 +45,7 @@ class SolutionSystem:
                 if potential > max_exp:
                     max_exp = potential
                     max_index = i
-                    max_env = max(self.systems[i][j].envelope)
+                    max_env = max(self.systems[i][j].sim_envelope)
 
         return max_exp / max_env, max_index
 

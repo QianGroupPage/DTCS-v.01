@@ -44,43 +44,45 @@ from lblcrn import _echo
 
 
 class XPSObservable:
-    """A wrapper around a dataframe, formatted to act like an XPS observable.
-
-    Attributes:
-        df: The pandas DataFrame in which the observables are stored.
-        title: A str used for the title during plotting.
-    """
+    """TODO"""
 
     # Settings for the column names
     _SIMULATED = 'simulated'
     _EXPERIMENTAL = 'experimental'
-    _CONTAMINANT = 'contaminant'
-    _ENVELOPE = (_SIMULATED, 'envelope')
-    _GAS_PHASE = (_EXPERIMENTAL, 'gas_phase')
-    _DECONV_ENV = (_EXPERIMENTAL, 'deconv_envelope')
+    _CONTAMINANTS = 'contaminants'
+    _DECONVOLUTED = 'deconvoluted'
+    _SIM_ENV = (_SIMULATED, 'envelope')
     _CLEAN_EXP = (_EXPERIMENTAL, 'clean')
     _RAW_EXP = (_EXPERIMENTAL, 'raw')
+    _GAS_PHASE = (_EXPERIMENTAL, 'gas_phase')
+    _DECONV_ENV = (_DECONVOLUTED, 'envelope')
 
-    def __init__(self, species_manager: species.SpeciesManager,
-                 df: pd.DataFrame, title: str = ''):
-        self.species_manager = species_manager
+    def __init__(self, df: pd.DataFrame,
+                 species_manager: species.SpeciesManager,
+                 title: str = ''):
         self.df = df
+        self.species_manager = species_manager
         self.title = title
 
     @property
-    def simulated(self) -> Optional[pd.DataFrame]:
-        """The simulated data. Might be None."""
-        if self._SIMULATED in self.df:
-            return self.df[self._EXPERIMENTAL]
-        return None
+    def x_range(self) -> np.ndarray:
+        """The x-values, energies, on which there is data."""
+        return np.asarray(self.df.index)
+
+    # TODO: Perhaps add an 'envelopes' property. It would be useful for
+    #  error analysis and changing the opacity/line-width of all the
+    #  envelopes at once.
 
     @property
-    def gaussians_simulated(self) -> Optional[pd.DataFrame]:
-        """The simulated gaussians of the XPS observable."""
-        # If they picked simulated gaussians, return those
+    def gaussians(self) -> Optional[pd.DataFrame]:
+        """The gaussians of the XPS observable."""
+        # Columns are a pair (simulated/experimental, str/species)
+        # If they're a species, we want them.
         gauss_cols = []
+        if self.gas_phase is not None:
+            gauss_cols.append(self._GAS_PHASE)
         for col in self.df.columns:
-            if col[0] == self._SIMULATED and isinstance(col[1], sym.Symbol):
+            if isinstance(col[1], sym.Symbol):
                 gauss_cols.append(col)
         if gauss_cols:
             return self.df[gauss_cols]
@@ -88,10 +90,30 @@ class XPSObservable:
             return None
 
     @property
-    def envelope(self) -> Optional[pd.Series]:
+    def simulated(self) -> Optional[pd.DataFrame]:
+        """The simulated data. Might be None."""
+        if self._SIMULATED in self.df:
+            return self.df[self._SIMULATED]
+        return None
+
+    @property
+    def sim_gaussians(self) -> Optional[pd.DataFrame]:
+        """The simulated gaussians of the XPS observable."""
+        # Gaussians have a species as their column name
+        gauss_cols = []
+        for col in self.simulated:
+            if isinstance(col, sym.Symbol):
+                gauss_cols.append(col)
+        if gauss_cols:
+            return self.simulated[gauss_cols]
+        else:
+            return None
+
+    @property
+    def sim_envelope(self) -> Optional[pd.Series]:
         """The simulated envelope, the sum of all species' gaussians."""
-        if self._ENVELOPE in self.df:
-            return self.df[self._ENVELOPE]
+        if self._SIM_ENV in self.df:
+            return self.df[self._SIM_ENV]
         return None
 
     @property
@@ -102,14 +124,14 @@ class XPSObservable:
         return None
 
     @property
-    def experimental_clean(self) -> Optional[pd.Series]:
+    def exp_clean(self) -> Optional[pd.Series]:
         """The experimental data without the gas phase or contaminants."""
         if self._CLEAN_EXP in self.df:
             return self.df[self._CLEAN_EXP]
         return None
 
     @property
-    def experimental_raw(self) -> Optional[pd.Series]:
+    def exp_raw(self) -> Optional[pd.Series]:
         """The raw experimental data. Might be None."""
         if self._RAW_EXP in self.df:
             return self.df[self._RAW_EXP]
@@ -125,33 +147,27 @@ class XPSObservable:
     @property
     def contaminants(self) -> Optional[pd.DataFrame]:
         """The contaminants' contribution to the spectrum."""
-        if self._CONTAMINANT in self.df:
-            return self.df[self._CONTAMINANT]
+        if self._CONTAMINANTS in self.df:
+            return self.df[self._CONTAMINANTS]
         return None
 
     @property
-    def deconvolution(self) -> Optional[pd.DataFrame]:
+    def deconvoluted(self) -> Optional[pd.DataFrame]:
         """All of the deconvolution data."""
-        if self._DECONV_ENV not in self.df:
-            return None
-
-        cols = [self._DECONV_ENV]
-        for col in self.df.columns:
-            if col[0] == self._EXPERIMENTAL and isinstance(col[1], sym.Symbol):
-                cols.append(col)
-        return self.df[cols]
+        if self._DECONVOLUTED in self.df:
+            return self.df[self._DECONVOLUTED]
+        return None
 
     @property
-    def gaussians_deconvoluted(self) -> Optional[pd.DataFrame]:
+    def deconv_gaussians(self) -> Optional[pd.DataFrame]:
         """The deconvoluted gaussians of the XPS observable."""
-        # Columns are a pair (simulated/experimental, str/species)
-        # If they're a (experimental, species), we want them.
+        # Gaussians have a species as their column name
         gauss_cols = []
-        for col in self.df.columns:
-            if col[0] == self._EXPERIMENTAL and isinstance(col[1], sym.Symbol):
+        for col in self.deconvoluted:
+            if isinstance(col, sym.Symbol):
                 gauss_cols.append(col)
         if gauss_cols:
-            return self.df[gauss_cols]
+            return self.deconvoluted[gauss_cols]
         else:
             return None
 
@@ -162,42 +178,23 @@ class XPSObservable:
             return self.df[self._DECONV_ENV]
         return None
 
-    @property
-    def gaussians(self) -> Optional[pd.DataFrame]:
-        """The gaussians of the XPS observable."""
-        # Columns are a pair (simulated/experimental, str/species)
-        # If they're a species, we want them.
-        gauss_cols = []
-        for col in self.df.columns:
-            if isinstance(col[1], sym.Symbol):
-                gauss_cols.append(col)
-        if gauss_cols:
-            return self.df[gauss_cols]
-        else:
-            return None
-
-    @property
-    def x_range(self) -> np.ndarray:
-        """The x-values, energies, on which there is data."""
-        return np.asarray(self.df.index)
-
     def plot(self, ax: plt.Axes = None,
              only: bool = False,
              species: Optional[Union[List[sym.Symbol], sym.Symbol]] = None,
              ignore: Optional[Union[List[sym.Symbol], sym.Symbol]] = None,
              peak_lines: Optional[Union[dict, bool]] = None,
              gaussians: Optional[Union[dict, bool]] = None,
-             simulate: Optional[Union[dict, bool]] = None,
+             simulated: Optional[Union[dict, bool]] = None,
+             sim_envelope: Optional[Union[dict, bool]] = None,
              sim_gaussians: Optional[Union[dict, bool]] = None,
-             envelope: Optional[Union[dict, bool]] = None,
              experimental: Optional[Union[dict, bool]] = None,
-             experimental_raw: Optional[Union[dict, bool]] = None,
-             experimental_clean: Optional[Union[dict, bool]] = None,
+             exp_clean: Optional[Union[dict, bool]] = None,
+             exp_raw: Optional[Union[dict, bool]] = None,
              gas_phase: Optional[Union[dict, bool]] = None,
              contaminants: Optional[Union[dict, bool]] = None,
-             deconvolute: Optional[Union[dict, bool]] = None,
-             deconv_gaussians: Optional[Union[dict, bool]] = None,
+             deconvoluted: Optional[Union[dict, bool]] = None,
              deconv_envelope: Optional[Union[dict, bool]] = None,
+             deconv_gaussians: Optional[Union[dict, bool]] = None,
              ) -> plt.Axes:
         """TODO"""
         # --- Parse Arguments ------------------------------------------------
@@ -211,7 +208,7 @@ class XPSObservable:
         )
 
         # Some switches count for more than one thing.
-        # We ignore these switches if they aren't explicitly specified.
+        #  We ignore these switches if they aren't explicitly specified.
         # I don't care if this goes against PEP 8 this would be a mess!
         if gaussians is not None:
             default = gaussians or isinstance(gaussians, dict)
@@ -219,64 +216,65 @@ class XPSObservable:
             if gas_phase is None: gas_phase = default
             if contaminants is None: contaminants = default
             if deconv_gaussians is None: deconv_gaussians = default
-        if simulate is not None:
-            default = simulate or isinstance(simulate, dict)
+        if simulated is not None:
+            default = simulated or isinstance(simulated, dict)
             if sim_gaussians is None: sim_gaussians = default
-            if envelope is None: envelope = default
+            if sim_envelope is None: sim_envelope = default
         if experimental is not None:
             default = experimental or isinstance(experimental, dict)
-            if experimental_raw is None: experimental_raw = default
-            if experimental_clean is None: experimental_clean = default
+            if exp_raw is None: exp_raw = default
+            if exp_clean is None: exp_clean = default
             if gas_phase is None: gas_phase = bool(experimental)
-        if deconvolute is not None:
-            default = deconvolute or isinstance(deconvolute, dict)
+        if deconvoluted is not None:
+            default = deconvoluted or isinstance(deconvoluted, dict)
             if deconv_gaussians is None: deconv_gaussians = default
             if deconv_envelope is None: deconv_envelope = default
 
         if peak_lines is None: peak_lines = not only
+        if sim_envelope is None: sim_envelope = not only
         if sim_gaussians is None: sim_gaussians = not only
-        if envelope is None: envelope = not only
-        if experimental_raw is None: experimental_raw = not only
-        if experimental_clean is None: experimental_clean = not only
+        if exp_clean is None: exp_clean = not only
+        if exp_raw is None: exp_raw = not only
         if gas_phase is None: gas_phase = not only
         if contaminants is None: contaminants = not only
-        if deconv_gaussians is None: deconv_gaussians = not only
         if deconv_envelope is None: deconv_envelope = not only
+        if deconv_gaussians is None: deconv_gaussians = not only
 
         # Get the gaussians we're going to be plotting
-        sim_gauss_cols = []
-        deconv_gauss_cols = []
-        contam_gauss_cols = []
+        sim_gauss_species = []
+        deconv_gauss_species = []
+        contam_gauss_species = []
         species_to_plot = []
-        if sim_gaussians and self.gaussians_simulated is not None:
-            sim_gauss_cols.extend(col for col in self.gaussians_simulated
-                                  if col[1] in species)
-        if deconv_gaussians and self.gaussians_deconvoluted is not None:
-            deconv_gauss_cols.extend(col for col in self.gaussians_deconvoluted
-                                     if col[1] in species)
+        if sim_gaussians and self.sim_gaussians is not None:
+            sim_gauss_species.extend(col for col in self.sim_gaussians
+                                  if col in species)
+        if deconv_gaussians and self.deconv_gaussians is not None:
+            deconv_gauss_species.extend(col for col in self.deconv_gaussians
+                                     if col in species)
         if contaminants and self.contaminants is not None:
-            contam_gauss_cols.extend(specie for specie in self.contaminants
+            contam_gauss_species.extend(specie for specie in self.contaminants
                                      if specie in species)
-        species_to_plot.extend(col[1] for col in sim_gauss_cols)
-        species_to_plot.extend(col[1] for col in deconv_gauss_cols)
-        species_to_plot.extend(contam_gauss_cols)
+        species_to_plot.extend(sim_gauss_species)
+        species_to_plot.extend(deconv_gauss_species)
+        species_to_plot.extend(contam_gauss_species)
 
         # --- Plotting Arguments ---------------------------------------------
         # When plotting simulated/deconvoluted species, we're going to have
-        # gaussians on top of other gaussians which might be the same color.
-        # Hence, we have default behavior for gaussians by front-ness.
-        # for whichever gaussians are farthest back.
+        #  gaussians on top of other gaussians which might be the same color.
+        #  Hence, we have different arguments for gaussians which are plotted
+        #  first, second, etc.
         ordered_gauss_args = [
             dict(fill=True, ),
-            dict(fill=False, brightness=0.7, ),
-            dict(fill=False, brightness=0.5, ),
+            dict(fill=False, brightness=0.8, ),
+            dict(fill=False, brightness=0.6, ),
+            dict(fill=False, brightness=0.4, ),
         ]
 
         # Arguments for groups
         gaussians_args = dict()
-        simulate_args = dict()
+        simulated_args = dict()
         experimental_args = dict()
-        deconvolute_args = dict()
+        deconvoluted_args = dict()
 
         # Args: peak_lines
         peak_line_args = dict(
@@ -284,6 +282,37 @@ class XPSObservable:
             ymax=1,
             linestyle='dashed',
             linewidth=1
+        )
+        # Args: sim_envelope
+        envelope_args = copy.copy(simulated_args)
+        envelope_args.update(
+            label='Sim. Envelope',
+            color='#663d3d',
+            linestyle='--',
+            linewidth=3,
+        )
+        # Args: sim_gaussians
+        sim_gauss_args = copy.copy(gaussians_args)
+        if sim_gauss_species:
+            sim_gauss_args.update(ordered_gauss_args.pop(0))
+        sim_gauss_args.update(simulated_args)
+        sim_gauss_args.update(
+            hatch='xxx',
+        )
+        # Args: exp_clean
+        exp_clean_args = copy.copy(experimental_args)
+        exp_clean_args.update(
+            label='Clean Experimental',
+            color='0',
+            linewidth=3,
+        )
+        # Args: exp_raw
+        exp_raw_args = copy.copy(experimental_args)
+        exp_raw_args.update(
+            label='Raw Experimental',
+            color='0.3',
+            linestyle='-.',
+            linewidth=3,
         )
         # Args: gas_phase
         gas_phase_args = copy.copy(gaussians_args)
@@ -294,83 +323,52 @@ class XPSObservable:
             fill=False,
             hatch='++'
         )
-        # Args: sim_gaussians
-        sim_gauss_args = copy.copy(gaussians_args)
-        if sim_gauss_cols:
-            sim_gauss_args.update(ordered_gauss_args.pop(0))
-        sim_gauss_args.update(simulate_args)
-        sim_gauss_args.update(
-            hatch='xxx',
-        )
-        # Args: deconv_gaussians
-        deconv_gauss_args = copy.copy(gaussians_args)
-        if deconv_gauss_cols:
-            deconv_gauss_args.update(ordered_gauss_args.pop(0))
-        deconv_gauss_args.update(deconvolute_args)
-        deconv_gauss_args.update(
-            hatch='///',
-        )
         # Args: contaminants
         contam_args = copy.copy(gaussians_args)
-        if contam_gauss_cols:
+        if contam_gauss_species:
             contam_args.update(ordered_gauss_args.pop(0))
         contam_args.update(
             hatch='...',
         )
         # Args: deconv_envelope
-        deconv_env_args = copy.copy(deconvolute_args)
+        deconv_env_args = copy.copy(deconvoluted_args)
         deconv_env_args.update(
             label='Deconv. Envelope',
             color='#3d663d',
             linestyle=':',
             linewidth=3,
         )
-        # Args: envelope
-        envelope_args = copy.copy(simulate_args)
-        envelope_args.update(
-            label='Sim. Envelope',
-            color='#663d3d',
-            linestyle='--',
-            linewidth=3,
-        )
-        # Args: experimental_raw
-        exp_raw_args = copy.copy(experimental_args)
-        exp_raw_args.update(
-            label='Raw Experimental',
-            color='0.3',
-            linestyle='-.',
-            linewidth=3,
-        )
-        # Args: experimental_clean
-        exp_clean_args = copy.copy(experimental_args)
-        exp_clean_args.update(
-            label='Clean Experimental',
-            color='0',
-            linewidth=3,
+        # Args: deconv_gaussians
+        deconv_gauss_args = copy.copy(gaussians_args)
+        if deconv_gauss_species:
+            deconv_gauss_args.update(ordered_gauss_args.pop(0))
+        deconv_gauss_args.update(deconvoluted_args)
+        deconv_gauss_args.update(
+            hatch='///',
         )
 
-        # If the user gave a dictionary, use those
+        # If the user gave a dictionary, use those.
         if isinstance(gaussians, dict):
             gas_phase_args.update(gaussians)
             sim_gauss_args.update(gaussians)
             deconv_gauss_args.update(gaussians)
             contam_args.update(gaussians)
-        if isinstance(simulate, dict):
-            sim_gauss_args.update(simulate)
-            envelope_args.update(simulate)
+        if isinstance(simulated, dict):
+            sim_gauss_args.update(simulated)
+            envelope_args.update(simulated)
         if isinstance(experimental, dict):
             gas_phase_args.update(experimental)
             exp_raw_args.update(experimental)
             exp_clean_args.update(experimental)
-        if isinstance(deconvolute, dict):
-            deconv_gauss_args.update(deconvolute)
-            deconv_env_args.update(deconvolute)
+        if isinstance(deconvoluted, dict):
+            deconv_gauss_args.update(deconvoluted)
+            deconv_env_args.update(deconvoluted)
 
         for inputted, args_dict in [(peak_lines, peak_line_args),
                                     (sim_gaussians, sim_gauss_args),
-                                    (envelope, envelope_args),
-                                    (experimental_raw, exp_raw_args),
-                                    (experimental_clean, exp_clean_args),
+                                    (sim_envelope, envelope_args),
+                                    (exp_raw, exp_raw_args),
+                                    (exp_clean, exp_clean_args),
                                     (gas_phase, gas_phase_args),
                                     (contaminants, contam_args),
                                     (deconv_gaussians, deconv_gauss_args),
@@ -379,15 +377,9 @@ class XPSObservable:
                 args_dict.update(inputted)
 
         # --- Plot -----------------------------------------------------------
-        # These two functions sort gaussians to put shorter ones in front.
-        def gauss_col_sort_key(col):
-            return max(self.df[col])
-
-        def contaminant_sort_key(col):
-            return max(self.contaminants[col])
-
-        # Function to retrieve with arguments not to be passed to pyplot
-        # You must let it modify the dict you give it.
+        # Function to retrieve with arguments not to be passed to pyplot,
+        #  you must let it modify the dict you give it, or else it'll pass
+        #  bad arguments to pyplot.
         def pop_special_args(args_dict):
             brightness = 1.0
             if 'brightness' in args_dict:
@@ -411,62 +403,75 @@ class XPSObservable:
             _ = pop_special_args(gas_phase_args)
             ax.fill(self.x_range, self.gas_phase, **gas_phase_args)
 
-        if sim_gaussians and sim_gauss_cols:
+        if sim_gaussians and sim_gauss_species:
             brightness = pop_special_args(sim_gauss_args)
-            for column in sorted(sim_gauss_cols,
-                                 key=gauss_col_sort_key,
+
+            # Sort so that the shorter peaks are first
+            def get_max_of_sim_column(specie):
+                return max(self.sim_gaussians[specie])
+            
+            for specie in sorted(sim_gauss_species,
+                                 key=get_max_of_sim_column,
                                  reverse=True):
-                specie = column[1]
                 color = self.species_manager.color(specie)
                 color = util.scale_color_brightness(color, brightness)
 
-                ax.fill(self.x_range, self.df[column],
+                ax.fill(self.x_range, self.sim_gaussians[specie],
                         label=f'Sim. {specie}',
                         color=color,
                         **sim_gauss_args)
 
-        if deconv_gaussians and deconv_gauss_cols:
-            brightness = pop_special_args(deconv_gauss_args)
-            for column in sorted(deconv_gauss_cols,
-                                 key=gauss_col_sort_key,
-                                 reverse=True):
-                specie = column[1]
-                color = self.species_manager.color(specie)
-                color = util.scale_color_brightness(color, brightness)
-
-                ax.fill(self.x_range, self.df[column],
-                        label=f'Deconv. {column[1]}',
-                        color=color,
-                        **deconv_gauss_args)
-
-        if contaminants and contam_gauss_cols:
+        if contaminants and contam_gauss_species:
             brightness = pop_special_args(contam_args)
-            for specie in sorted(contam_gauss_cols,
-                                 key=contaminant_sort_key,
+
+            # Sort so that the shorter peaks are first
+            def get_max_of_contam_column(specie):
+                return max(self.contaminants[specie])
+
+            for specie in sorted(contam_gauss_species,
+                                 key=get_max_of_contam_column,
                                  reverse=True):
                 color = self.species_manager.color(specie)
                 color = util.scale_color_brightness(color, brightness)
 
                 ax.fill(self.x_range, self.contaminants[specie],
                         label=f'Contam. {specie}',
-                        color=self.species_manager.color(specie),
+                        color=color,
                         **contam_args)
+
+        if deconv_gaussians and deconv_gauss_species:
+            brightness = pop_special_args(deconv_gauss_args)
+
+            # Sort so that the shorter peaks are first
+            def get_max_of_deconv_column(specie):
+                return max(self.deconv_gaussians[specie])
+            
+            for specie in sorted(deconv_gauss_species,
+                                 key=get_max_of_deconv_column,
+                                 reverse=True):
+                color = self.species_manager.color(specie)
+                color = util.scale_color_brightness(color, brightness)
+
+                ax.fill(self.x_range, self.deconv_gaussians[specie],
+                        label=f'Deconv. {specie}',
+                        color=color,
+                        **deconv_gauss_args)
 
         if deconv_envelope and self.deconv_envelope is not None:
             _ = pop_special_args(deconv_env_args)
             ax.plot(self.x_range, self.deconv_envelope, **deconv_env_args)
 
-        if envelope and self.envelope is not None:
+        if sim_envelope and self.sim_envelope is not None:
             _ = pop_special_args(envelope_args)
-            ax.plot(self.x_range, self.envelope, **envelope_args)
+            ax.plot(self.x_range, self.sim_envelope, **envelope_args)
 
-        if experimental_raw and self.experimental_raw is not None:
+        if exp_raw and self.exp_raw is not None:
             _ = pop_special_args(exp_raw_args)
-            ax.plot(self.x_range, self.experimental_raw, **exp_raw_args)
+            ax.plot(self.x_range, self.exp_raw, **exp_raw_args)
 
-        if experimental_clean and self.experimental_clean is not None:
+        if exp_clean and self.exp_clean is not None:
             _ = pop_special_args(exp_clean_args)
-            ax.plot(self.x_range, self.experimental_clean, **exp_clean_args)
+            ax.plot(self.x_range, self.exp_clean, **exp_clean_args)
 
         ax.legend()
         ax.set_title(self.title)
@@ -476,27 +481,27 @@ class XPSObservable:
     # --- Data Analysis ------------------------------------------------------
 
     def rmse(self):
-        return np.sqrt(metrics.mean_squared_error(self.experimental_raw,
-                                                  self.envelope))
+        return np.sqrt(metrics.mean_squared_error(self.exp_raw,
+                                                  self.sim_envelope))
 
     def mae(self):
-        return metrics.mean_absolute_error(self.experimental_raw,
-                                           self.envelope)
+        return metrics.mean_absolute_error(self.exp_raw,
+                                           self.sim_envelope)
 
     def integral_diff_outside_experimental(self):
-        return integrate.trapz(self.envelope - self.experimental_raw,
+        return integrate.trapz(self.sim_envelope - self.exp_raw,
                                self.x_range)
 
     def integral_diff_inside_experimental(self):
-        return integrate.trapz(self.experimental_raw - self.envelope,
+        return integrate.trapz(self.exp_raw - self.sim_envelope,
                                self.x_range)
 
     def integral_diff_between(self):
-        return integrate.trapz(np.absolute(self.experimental_raw -
-                                           self.envelope), self.x_range)
+        return integrate.trapz(np.absolute(self.exp_raw -
+                                           self.sim_envelope), self.x_range)
 
     def envelope_integral(self):
-        return integrate.trapz(self.envelope, self.x_range)
+        return integrate.trapz(self.sim_envelope, self.x_range)
 
 
 class XPSExperiment(experiment.Experiment, XPSObservable):
@@ -600,7 +605,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
     # --- Accessors ----------------------------------------------------------
 
     @property
-    def experimental_raw(self) -> Optional[pd.Series]:
+    def exp_raw(self) -> Optional[pd.Series]:
         """The raw experimental data. Might be None.
 
         Overrides XPSObservable.experimental_raw, as otherwise resampling
@@ -989,7 +994,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
         # easily sort the columns.
         columns = []
         if simulate:
-            columns.append(self._ENVELOPE)
+            columns.append(self._SIM_ENV)
             sim_cols = [(self._SIMULATED, specie) for specie in sim_species]
             columns.extend(sim_cols)
         if experimental:
@@ -1000,11 +1005,11 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
         if gas_phase:
             columns.append(self._GAS_PHASE)
         if decontaminate or contaminate:
-            contam_cols = [(self._CONTAMINANT, specie)
+            contam_cols = [(self._CONTAMINANTS, specie)
                            for specie in contam_species]
         if deconvolute:
             columns.append(self._DECONV_ENV)
-            deconv_cols = [(self._EXPERIMENTAL, specie)
+            deconv_cols = [(self._DECONVOLUTED, specie)
                            for specie in deconv_species]
             columns.extend(deconv_cols)
 
@@ -1025,8 +1030,8 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
                 df[sim_col] = self._get_gaussian(x_range=x_range,
                                                  specie=sim_specie,
                                                  conc=sim_concs[sim_specie])
-            df[self._ENVELOPE] = df[sim_cols].sum(axis=1)
-            envelope = df[self._ENVELOPE]
+            df[self._SIM_ENV] = df[sim_cols].sum(axis=1)
+            envelope = df[self._SIM_ENV]
 
         if experimental:
             _echo.echo(f'Processing experimental data...')
@@ -1070,7 +1075,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
         if contaminate:
             _echo.echo('Adding contaminants to simulated data...')
             for cont_col in contam_cols:
-                df[self._ENVELOPE] += df[cont_col]
+                df[self._SIM_ENV] += df[cont_col]
 
         # Scale everything which needs to be scaled
         _echo.echo(f'Scaling data by factor {scale_factor}...')
@@ -1078,8 +1083,8 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
             df[sim_col] *= scale_factor
         for cont_col in contam_cols:
             df[cont_col] *= scale_factor
-        if self._ENVELOPE in df:
-            df[self._ENVELOPE] *= scale_factor
+        if self._SIM_ENV in df:
+            df[self._SIM_ENV] *= scale_factor
 
         # Must happen after scaling
         if decontaminate:
@@ -1098,7 +1103,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
                 to_fit=df[self._CLEAN_EXP]
             )
             for dec_col in deconv_cols:
-                # dec_col is a tuple (self._EXPERIMENTAL, specie)
+                # dec_col is a tuple (self._DECONV, specie)
                 dec_specie = dec_col[1]
                 df[dec_col] = self._get_gaussian(x_range=x_range,
                                                  specie=dec_specie,
@@ -1355,14 +1360,14 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
         # XPSExperiment.plot is overridden by Experiment.plot, but
         # this is an XPSObservable, so this doesn't make an infinite loop.
         return xps_obs.plot(ax=ax,
-                            simulate=simulate,
+                            simulated=simulate,
                             sim_gaussians=sim_gaussians,
-                            envelope=envelope,
+                            sim_envelope=envelope,
                             experimental=experimental,
-                            experimental_raw=experimental_raw,
-                            experimental_clean=experimental_clean,
+                            exp_raw=experimental_raw,
+                            exp_clean=experimental_clean,
                             gas_phase=gas_phase,
-                            deconvolute=deconvolute,
+                            deconvoluted=deconvolute,
                             deconv_gaussians=deconv_gaussians,
                             deconv_envelope=deconv_envelope,
                             contaminants=contaminants)
