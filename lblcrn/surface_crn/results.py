@@ -216,11 +216,12 @@ class Results:
             # Transform from symbol to strs
             k = str(k)
             v = [str(s) for s in v]
-            self.df[k] = pd.Series(0, self.df.index)
+            summed_series = pd.Series(0, self.df.index)
             for s in v:
                 if s not in self.df.columns:
                     raise Exception(f"Subspecies {s} has not been recorded in the results data frame.")
-                self.df[k] += self.df[s]
+                summed_series += self.df[s]
+            self.df[k] = summed_series
         self.resample_evolution()
 
     # TODO: decrease the figure size in case zoom = False

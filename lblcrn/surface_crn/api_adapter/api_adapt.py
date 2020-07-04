@@ -118,6 +118,7 @@ def generate_surface(rsys, random_seed=30):
             chosen = [nodes[i] for i in indices]
             for i, n in enumerate(chosen):
                 n.state = species[k][i]
+
         return surface
     elif rsys.surface.structure == "rectangle":
         return None

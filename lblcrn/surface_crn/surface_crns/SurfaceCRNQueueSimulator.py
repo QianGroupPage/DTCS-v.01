@@ -150,6 +150,7 @@ def simulate_surface_crn(manifest_filename, display_class = None,
         if opts.grid is None:
             raise Exception("Initial grid state required.")
         grid = opts.grid
+
     if opts.simulation_type == "asynchronous":
         if opts.debug:
             print("Grid is type " + str(type(grid)))

@@ -33,9 +33,11 @@ def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=Fa
     if not species_tracked:
         species_tracked = list(rxns.get_symbols())
     if not lattice:
-        lattice = generate_surface(rsys=rxns)
+        surface = generate_surface(rsys=rxns)
+    else:
+        surface = lattice
     #  TODO: infer spectra's scale from here.
-    times, concs = simulate_without_display(manifest, lattice, [str(s) for s in species_tracked])
+    times, concs = simulate_without_display(manifest, surface, [str(s) for s in species_tracked])
     if manifest_file:
         r = Results.from_concs_times(manifest_file, rxns, concs, times)
     else:
@@ -58,13 +60,15 @@ def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=Fa
         if not manifest_file:
             manifest = generate_manifest_stream(rxns, time_max)
         if not lattice:
-            lattice = generate_surface(rsys=rxns)
+            surface = generate_surface(rsys=rxns)
+        else:
+            surface = lattice
 
         # TODO: fix the issue that the video will fail if there is already file in
         # the frames folder.
         # TODO: progress bar for the video
         # TODO: add this as an argument spectra_max_conc=r.df_raw.max()
-        simulate_with_display(manifest, lattice, rxns=rxns, spectra_in_video=spectra_in_video,
+        simulate_with_display(manifest, surface, rxns=rxns, spectra_in_video=spectra_in_video,
                               spectra_max_conc=r.df_raw.to_numpy().max())
     r.video = video_link
 
