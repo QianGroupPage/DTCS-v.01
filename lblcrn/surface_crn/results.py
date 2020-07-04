@@ -211,6 +211,7 @@ class Results:
 
         Append the resulting series of total concentration to concs.
         """
+        self.df = self.df_raw
         for k, v in sub_species_dict.items():
             # Transform from symbol to strs
             k = str(k)
@@ -220,6 +221,7 @@ class Results:
                 if s not in self.df.columns:
                     raise Exception(f"Subspecies {s} has not been recorded in the results data frame.")
                 self.df[k] += self.df[s]
+        self.resample_evolution()
 
     # TODO: decrease the figure size in case zoom = False
     def plot_evolution(self, species_in_figure=None, start_time=0, end_time=-1, title="", ax=None, save=False,

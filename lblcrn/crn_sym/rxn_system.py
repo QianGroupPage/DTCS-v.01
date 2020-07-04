@@ -185,7 +185,7 @@ class RxnSystem:
         """
         :return: colors for each species, if color is assigned.
         """
-        random.seed(1)
+        random.seed(3)
         colors = [] if not self.surface.color else [self.surface.color]
         if self.color_index is None:
             self.color_index = {}

@@ -99,7 +99,8 @@ def main():
 
 
 def simulate_surface_crn(manifest_filename, display_class = None,
-                         init_state=None, rxns=None, spectra_in_video=True):
+                         init_state=None, rxns=None, spectra_in_video=True,
+                         spectra_max_conc=-1):
     '''
     Runs a simulation, and displays it in a GUI window OR saves all frames
     as PNG images.
@@ -318,7 +319,8 @@ def simulate_surface_crn(manifest_filename, display_class = None,
         clip_button.draw(display_surface)
 
     pygame.display.flip()
-    update_display(opts, simulation, FRAME_DIRECTORY, time_display=time_display, title_display=title_display)
+    update_display(opts, simulation, FRAME_DIRECTORY, time_display=time_display, title_display=title_display,
+                   spectra_max_conc=spectra_max_conc)
 
     # State variables for simulation
     next_reaction_time = 0
@@ -494,7 +496,8 @@ def simulate_surface_crn(manifest_filename, display_class = None,
         # Render updates and make the next clock tick.
         if opts.debug:
             print("Updating display.")
-        update_display(opts, simulation, FRAME_DIRECTORY, time_display=time_display, title_display=title_display)
+        update_display(opts, simulation, FRAME_DIRECTORY, time_display=time_display, title_display=title_display,
+                       spectra_max_conc=spectra_max_conc)
         fpsClock.tick(opts.fps)
 
         # Check for simulation completion...
@@ -512,7 +515,8 @@ def simulate_surface_crn(manifest_filename, display_class = None,
             time_display.render(display_surface, x_pos=time_display.x_pos, y_pos=time_display.y_pos) #opts_menu.display_height)
             if next_reaction:
                 display_next_event(next_reaction, grid_display)
-            update_display(opts, simulation, FRAME_DIRECTORY, time_display=time_display, title_display=title_display)
+            update_display(opts, simulation, FRAME_DIRECTORY, time_display=time_display, title_display=title_display,
+                           spectra_max_conc=spectra_max_conc)
             if opts.debug:
                 print("Simulation state at final time " + \
                       str(opts.max_duration) + ":")
@@ -627,7 +631,9 @@ def cleanup_and_exit(simulation):
     print(str(simulation.surface))
     sys.exit()
 
-def update_display(opts, simulation, FRAME_DIRECTORY = None, time_display=None, title_display=None):
+
+def update_display(opts, simulation, FRAME_DIRECTORY=None, time_display=None, title_display=None,
+                   spectra_max_conc=-1):
     if opts.capture_directory == None:
         pygame.display.update()
         pygame.display.flip()
@@ -688,7 +694,8 @@ def update_display(opts, simulation, FRAME_DIRECTORY = None, time_display=None, 
                     gap = 0
                     fig_height = min(xps_width, (half_size[1] -
                                                  title_display.display_height - new_time_display.display_height - gap))
-                    raw_data, size = r.raw_string_gaussian(y_upper_limit=simulation.surface.num_nodes,
+                    y_lim = round(1.1 * spectra_max_conc) if spectra_max_conc != -1 else simulation.surface.num_nodes
+                    raw_data, size = r.raw_string_gaussian(y_upper_limit=y_lim,
                                                            fig_size=(xps_width / dpi,  fig_height / dpi),
                                                            dpi=dpi)
                     gaussian = pygame.image.fromstring(raw_data, size, "RGB")

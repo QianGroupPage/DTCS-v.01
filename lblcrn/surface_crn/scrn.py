@@ -64,7 +64,8 @@ def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=Fa
         # the frames folder.
         # TODO: progress bar for the video
         # TODO: add this as an argument spectra_max_conc=r.df_raw.max()
-        simulate_with_display(manifest, lattice, rxns=rxns, spectra_in_video=spectra_in_video)
+        simulate_with_display(manifest, lattice, rxns=rxns, spectra_in_video=spectra_in_video,
+                              spectra_max_conc=r.df_raw.to_numpy().max())
     r.video = video_link
 
     # TODO: warn the user if termination is early.
@@ -94,13 +95,13 @@ def get_frames_link(manifest):
     return f"{opts.capture_directory}/frames"
 
 
-def simulate_with_display(manifest_file, lattice, rxns=None, spectra_in_video=True):
+def simulate_with_display(manifest_file, lattice, rxns=None, spectra_in_video=True, spectra_max_conc=-1):
     if rxns.surface.structure == "hexagon":
         display_class = HexGridPlusIntersectionDisplay
     else:
         display_class = None
     SurfaceCRNQueueSimulator.simulate_surface_crn(manifest_file, display_class, init_state=lattice, rxns=rxns,
-                                                  spectra_in_video=spectra_in_video)
+                                                  spectra_in_video=spectra_in_video, spectra_max_conc=spectra_max_conc)
 
 
 def simulate_without_display(manifest_file, lattice, species_tracked):
