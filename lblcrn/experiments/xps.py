@@ -291,14 +291,6 @@ class XPSObservable:
             linestyle='--',
             linewidth=3,
         )
-        # Args: sim_gaussians
-        sim_gauss_args = copy.copy(gaussians_args)
-        if sim_gauss_species:
-            sim_gauss_args.update(ordered_gauss_args.pop(0))
-        sim_gauss_args.update(simulated_args)
-        sim_gauss_args.update(
-            hatch='xxx',
-        )
         # Args: exp_clean
         exp_clean_args = copy.copy(experimental_args)
         exp_clean_args.update(
@@ -323,13 +315,6 @@ class XPSObservable:
             fill=False,
             hatch='++'
         )
-        # Args: contaminants
-        contam_args = copy.copy(gaussians_args)
-        if contam_gauss_species:
-            contam_args.update(ordered_gauss_args.pop(0))
-        contam_args.update(
-            hatch='...',
-        )
         # Args: deconv_envelope
         deconv_env_args = copy.copy(deconvoluted_args)
         deconv_env_args.update(
@@ -338,6 +323,17 @@ class XPSObservable:
             linestyle=':',
             linewidth=3,
         )
+
+        # These should be in plotting order, or else ordered_gauss_args
+        #  won't work.
+        # Args: sim_gaussians
+        sim_gauss_args = copy.copy(gaussians_args)
+        if sim_gauss_species:
+            sim_gauss_args.update(ordered_gauss_args.pop(0))
+        sim_gauss_args.update(simulated_args)
+        sim_gauss_args.update(
+            hatch='xxx',
+        )
         # Args: deconv_gaussians
         deconv_gauss_args = copy.copy(gaussians_args)
         if deconv_gauss_species:
@@ -345,6 +341,13 @@ class XPSObservable:
         deconv_gauss_args.update(deconvoluted_args)
         deconv_gauss_args.update(
             hatch='///',
+        )
+        # Args: contaminants
+        contam_args = copy.copy(gaussians_args)
+        if contam_gauss_species:
+            contam_args.update(ordered_gauss_args.pop(0))
+        contam_args.update(
+            hatch='...',
         )
 
         # If the user gave a dictionary, use those.
@@ -421,24 +424,6 @@ class XPSObservable:
                         color=color,
                         **sim_gauss_args)
 
-        if contaminants and contam_gauss_species:
-            brightness = pop_special_args(contam_args)
-
-            # Sort so that the shorter peaks are first
-            def get_max_of_contam_column(specie):
-                return max(self.contaminants[specie])
-
-            for specie in sorted(contam_gauss_species,
-                                 key=get_max_of_contam_column,
-                                 reverse=True):
-                color = self.species_manager.color(specie)
-                color = util.scale_color_brightness(color, brightness)
-
-                ax.fill(self.x_range, self.contaminants[specie],
-                        label=f'Contam. {specie}',
-                        color=color,
-                        **contam_args)
-
         if deconv_gaussians and deconv_gauss_species:
             brightness = pop_special_args(deconv_gauss_args)
 
@@ -457,6 +442,24 @@ class XPSObservable:
                         color=color,
                         **deconv_gauss_args)
 
+        if contaminants and contam_gauss_species:
+            brightness = pop_special_args(contam_args)
+
+            # Sort so that the shorter peaks are first
+            def get_max_of_contam_column(specie):
+                return max(self.contaminants[specie])
+
+            for specie in sorted(contam_gauss_species,
+                                 key=get_max_of_contam_column,
+                                 reverse=True):
+                color = self.species_manager.color(specie)
+                color = util.scale_color_brightness(color, brightness)
+
+                ax.fill(self.x_range, self.contaminants[specie],
+                        label=f'Contam. {specie}',
+                        color=color,
+                        **contam_args)
+
         if deconv_envelope and self.deconv_envelope is not None:
             _ = pop_special_args(deconv_env_args)
             ax.plot(self.x_range, self.deconv_envelope, **deconv_env_args)
@@ -474,6 +477,9 @@ class XPSObservable:
             ax.plot(self.x_range, self.exp_clean, **exp_clean_args)
 
         ax.legend()
+        # TODO: This overrides whatever title they set for the axis
+        #  beforehand. Make it an option which XPSExperiment/CRNTimeSeries
+        #  passes itself?
         ax.set_title(self.title)
         ax.invert_xaxis()  # XPS Plots are backwards
         return ax
