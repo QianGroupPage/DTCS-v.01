@@ -47,7 +47,7 @@ class Species:
     """
 
     def __init__(self, name: str, orbitals: List[Orbital], color: Union[Tuple[int], List[int], str] = None,
-                 parent=None, site: Site = None, include_sub_species: bool=True):
+                 parent=None, site: Site = None, include_sub_species: bool=True, size: int = 1):
         self.name = name
         self.orbitals = orbitals
         if color:
@@ -58,6 +58,7 @@ class Species:
         self.sub_species = {}   # The dictionary of sub species from name to the object
 
         self.site = site
+        self.size = size
         if include_sub_species and self.site and self.site != Site.default:
             self.create_sub_species(suffix=site.name, color=self.color)
 
@@ -112,11 +113,13 @@ class Species:
 
     def __str__(self):
         if self.color:
-            return self.name + ", orbitals: " + str(self.orbitals) + ", color: " + str(self.color)
-        return self.name + ", orbitals: " + str(self.orbitals)
+            return self.name + ", orbitals: " + str(self.orbitals) + ", color: " + str(self.color) +  \
+                   ", size: " + str(self.size)
+        return self.name + ", orbitals: " + str(self.orbitals) + ", size: " + str(self.size)
 
     def __repr__(self):
-        return 'Species(name=' + self.name + ', orbitals=' + repr(self.orbitals) + ', size=' + repr(self.color) + ')'
+        return 'Species(name=' + self.name + ', orbitals=' + repr(self.orbitals) + ', color=' + repr(self.color) + \
+               ', size=' + repr(self.size) + ')'
 
 
 class SpeciesManager:
@@ -132,7 +135,7 @@ class SpeciesManager:
         self._species = {} # As of current, initializes empty
 
     def make_species(self, name: Union[str, sym.Symbol], orbitals: Union[Orbital, List[Orbital]] = None,
-                     site: Site = None, sub_species_name: str = "") -> sym.Symbol:
+                     site: Site = None, sub_species_name: str = "", size=1) -> sym.Symbol:
         """
         Makes a sym.Symbol and a corresponding Species and keeps track of their correspondence.
         Returns the symbol.
@@ -160,7 +163,8 @@ class SpeciesManager:
             #     s = self._species[symbol].create_sub_species(suffix=site.name)
             #     symbol = sym.Symbol(s.name)
             # else:
-            s = Species(name, orbitals, site=site)
+            # TODO: size for other occasions
+            s = Species(name, orbitals, site=site, size=size)
             # for name, new_species in s.sub_species.items():
             #     self._species[sym.Symbol(name)] = new_species
 
@@ -169,6 +173,18 @@ class SpeciesManager:
 
     def species_from_symbol(self, key: sym.Symbol) -> Species:
         return self._species[key]
+
+    @property
+    def all_species(self):
+        return set(self._species.values())
+
+    @property
+    def large_species(self):
+        res = set()
+        for s in self.all_species:
+            if s.size > 1:
+                res.add(s)
+        return res
 
     @property
     def all_symbols(self):

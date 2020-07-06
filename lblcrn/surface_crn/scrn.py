@@ -37,7 +37,7 @@ def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=Fa
     else:
         surface = lattice
     #  TODO: infer spectra's scale from here.
-    times, concs = simulate_without_display(manifest, surface, [str(s) for s in species_tracked])
+    times, concs = simulate_without_display(manifest, surface, [str(s) for s in species_tracked], rxns)
     if manifest_file:
         r = Results.from_concs_times(manifest_file, rxns, concs, times)
     else:
@@ -108,7 +108,37 @@ def simulate_with_display(manifest_file, lattice, rxns=None, spectra_in_video=Tr
                                                   spectra_in_video=spectra_in_video, spectra_max_conc=spectra_max_conc)
 
 
-def simulate_without_display(manifest_file, lattice, species_tracked):
+def add_groups(surface, rsys):
+    """
+    Update the surface with groups in the species manager.
+
+    :param surface: a surface structure
+    :param rsys: a rxn system
+    """
+    sm = rsys.species_manager
+    size_dict = {s.name: s.size for s in sm.large_species}
+    seen = set()
+    for s in surface:
+        if s not in seen and s.state in size_dict:
+            group_size = size_dict[s.state]
+            # Build the group
+            free_neighbors = []
+            for t in s.neighbors:
+                n = t[0]
+                if n not in seen and n.state in rsys.surface_names:
+                    free_neighbors.append(n)
+                seen.add(n)
+            seen.add(s)
+
+            # Pick from free neighbors as part of the group
+            group = random.sample(free_neighbors, group_size - 1) + [s]
+
+            for n in group:
+                n.group = group
+                n.state = s.state
+
+
+def simulate_without_display(manifest_file, lattice, species_tracked, rxns):
     '''
     Run until completion or max time, storing an array of species counts at
     the times of each reaction, along with an array of times. At the end,
@@ -118,8 +148,13 @@ def simulate_without_display(manifest_file, lattice, species_tracked):
 
     opts = SurfaceCRNOptionParser(manifest_options)
     if not lattice:
-        # If no grid is made, use the initial grid
+        # If no grid is made, use the inåitial grid
         lattice = opts.grid
+
+    print(lattice)
+    add_groups(lattice, rxns)
+    print(lattice)
+
     simulator = QueueSimulator(surface=lattice,
                                transition_rules=opts.transition_rules,
                                seed=opts.rng_seed,

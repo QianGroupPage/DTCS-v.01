@@ -180,6 +180,13 @@ class RxnSystem:
         """
         return copy.copy(self._symbols)
 
+    @property
+    def surface_names(self) -> List[str]:
+        """
+        :return: a list for names for appearance on the surface
+        """
+        return [self.surface.name] + [s.name for s in self.surface.sites]
+
     # TODO
     def get_colors(self):
         """
