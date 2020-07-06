@@ -25,6 +25,7 @@ class Results:
         self.manifest_file = manifest_file
         self.rxns = rxns
         self.df = df
+        print(self.df.head)
         self.resample_evolution()
 
         self.xps_df = None  # The xps dataframe we have for reference
@@ -37,12 +38,15 @@ class Results:
         [sub_s_list.extend(l) for l in rxns.species_manager.sub_species_dict.values()]
         # print(sub_s_list)
         primary_s = rxns.species_manager.sub_species_dict.keys()
-        species_tracked = list(rxns.get_symbols())
-        self.species_ordering = [s for s in species_tracked if s in primary_s or s not in sub_s_list]
+        species_tracked = list(rxns.get_symbols() + list(primary_s))
+        self.species_ordering = [rxns.species_manager.species_from_symbol(s) for s in species_tracked
+                                 if rxns.species_manager.symbol_in_sm(s) and (s in primary_s or s not in sub_s_list)]
         self.species_colors = {s: color_index[s] for s in self.species_ordering}
-        self.species_ordering = [str(s) for s in self.species_ordering]
-        self.species_colors = {str(s): color_to_HEX(c) for s, c in self.species_colors.items()}
-        self.substances = dict(zip([repr(s) for s in rxns.get_symbols()], rxns.get_species())) if rxns else {}
+        self.substances = {s.name: s for s in self.species_ordering}
+        self.species_ordering = [s.name for s in self.species_ordering]
+        self.species_colors = {s.name: color_to_HEX(c) for s, c in self.species_colors.items()}
+        # self.substances = dict(zip([repr(s) for s in rxns.get_symbols()], rxns.get_species())) if rxns else {}
+
 
         sub_s = rxns.species_manager.sub_species_dict
         self.sum_sub_species(sub_s)
@@ -218,9 +222,10 @@ class Results:
             v = [str(s) for s in v]
             summed_series = pd.Series(0, self.df.index)
             for s in v:
-                if s not in self.df.columns:
+                if s != k and s not in self.df.columns:
                     raise Exception(f"Subspecies {s} has not been recorded in the results data frame.")
-                summed_series += self.df[s]
+                if s in self.df.columns:
+                    summed_series += self.df[s]
             self.df[k] = summed_series
         self.resample_evolution()
 

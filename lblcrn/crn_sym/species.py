@@ -49,6 +49,8 @@ class Species:
     def __init__(self, name: str, orbitals: List[Orbital], color: Union[Tuple[int], List[int], str] = None,
                  parent=None, site: Site = None, include_sub_species: bool=True):
         self.name = name
+        self.name_without_suffix = name
+
         self.orbitals = orbitals
         if color:
             self.color = color_to_RGB(color)
@@ -68,7 +70,11 @@ class Species:
                 suffix = site.name
             elif not suffix:
                 suffix = f"sub_{len(self.sub_species)}"
-            entire_name = f"{self.name}_{suffix}"
+            entire_name = f"{self.name_without_suffix}_{suffix}"
+
+            # If a non-default site is added, add a new species
+            self.name = f"{self.name_without_suffix}_{Site.default}"
+
         elif suffix:
             raise Exception(f"Both suffix={suffix} and entire_name {entire_name} provided to " +
                             f"create_sub_species_function")
@@ -78,6 +84,7 @@ class Species:
             orbitals = self.orbitals
 
         sub_species = Species(entire_name, orbitals, color=color, parent=self, site=site, include_sub_species=False)
+        sub_species.name_without_suffix = self.name_without_suffix
 
         if entire_name in self.sub_species:
             raise Exception(f"species {self.name} already has sub species {repr(self.sub_species[entire_name])} " +
@@ -108,7 +115,7 @@ class Species:
         :param suffix: suffix of the sub_species
         :return: the sub_species's name
         """
-        return f"{self.name}_{suffix}"
+        return f"{self.name_without_suffix}_{suffix}"
 
     def __str__(self):
         if self.color:
@@ -151,6 +158,12 @@ class SpeciesManager:
             else:
                 s = parent.create_sub_species(site=site)
                 symbol = sym.Symbol(parent.sub_species_name(site.name))
+
+                default_site_sym = sym.Symbol(parent.sub_species_name(Site.default))
+                if default_site_sym not in self._species:
+                    # TODO: change site.default to default name, as appropriate
+                    self._species[default_site_sym] = parent.create_sub_species(site=Site(Site.default,
+                                                                                      parent.site))
         else:
             symbol = sym.Symbol(name)
             if not isinstance(orbitals, list):
@@ -170,6 +183,13 @@ class SpeciesManager:
     def species_from_symbol(self, key: sym.Symbol) -> Species:
         return self._species[key]
 
+    def symbol_in_sm(self, key: sym.Symbol) -> bool:
+        return key in self._species
+
+    @property
+    def symbols_ordering(self):
+        return sorted(self._species, key=lambda s: str(s))
+
     @property
     def sub_species_dict(self):
         """
@@ -177,12 +197,18 @@ class SpeciesManager:
         """
         d = {}
         for k, v in self._species.items():
+            all_default = False
             for n, sub_s in v.sub_species.items():
                 if sym.Symbol(n) in self._species:
                     if k in d:
                         d[k].append(sym.Symbol(n))
                     else:
                         d[k] = [sym.Symbol(n)]
+
+                # if sub_s.site.name == Site.default:
+                #     all_defauly
+                #
+
             if k in d and d[k]:
                 d[k].append(k)
         return d

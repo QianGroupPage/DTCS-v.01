@@ -147,7 +147,7 @@ def generate_colors(rsys):
     for s, color in rsys.get_colors().items():
         if isinstance(color, str):
             color = (c for c in color_to_RGB(color))
-        color_strs += str(s) + ": " + str(color) + "\n"
+        color_strs += s.name + ": " + str(color) + "\n"
 
     return f"""!START_COLORMAP\n{color_strs}!END_COLORMAP\n"""
 

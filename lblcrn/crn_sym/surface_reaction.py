@@ -29,14 +29,15 @@ class SurfaceRxn(Rxn):
 
         self.reactants = []
         for s in reactants:
-            # if s is not None and (not isinstance(s, sym.Symbol) and not isinstance(s, Surface)):
-            #     raise Exception(f"{s} is not a of sympy.Symbol class or Surface class. \n" +
-            #                     "please create it using the sp method of a species manager")
+            if s is not None and (not isinstance(s, sym.Symbol) and not isinstance(s, Surface)):
+                raise Exception(f"{s} is not a of sympy.Symbol class or Surface class. \n" +
+                                "please create it using the sp method of a species manager")
             if isinstance(s, Surface):
                 self.reactants.append(s.symbol())
             elif isinstance(s, Site):
                 self.reactants.append(s.symbol)
             else:
+                # TODO: store species objects only
                 self.reactants.append(s)
 
         self.products = []
@@ -52,6 +53,7 @@ class SurfaceRxn(Rxn):
         self.products = tuple(self.products)
         self.rate_constant = k
 
+    # TODO: reactants are input as symbols and need sm to get the species object.
     def get_symbols(self) -> Set[sym.Symbol]:
         symbol = set()
         symbol.update(self.reactants)
@@ -63,11 +65,11 @@ class SurfaceRxn(Rxn):
 
     @property
     def reactants_str(self):
-        return " + ".join([str(s) for s in self.reactants])
+        return " + ".join([s.name for s in self.reactants])
 
     @property
     def products_str(self):
-        return " + ".join([str(s) for s in self.products])
+        return " + ".join([s.name for s in self.products])
 
     def __str__(self):
         return self.reactants_str + ' → ' + self.products_str + ' @ k=' + str(self.rate_constant)

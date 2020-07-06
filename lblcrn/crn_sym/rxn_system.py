@@ -189,7 +189,7 @@ class RxnSystem:
         colors = [] if not self.surface.color else [self.surface.color]
         if self.color_index is None:
             self.color_index = {}
-        for index, symbol in enumerate(self._symbols):
+        for index, symbol in enumerate(self.species_manager.symbols_ordering):
             if symbol in self.surface.symbols:
                 continue
             if self.color_index and symbol in self.color_index:
@@ -200,7 +200,7 @@ class RxnSystem:
                 colors.append(color)
                 self.species_manager[symbol].color = color
 
-            self.color_index[symbol] = self.species_manager[symbol].color
+            self.color_index[self.species_manager[symbol]] = self.species_manager[symbol].color
 
         if self.surface:
             color = self.surface.color
@@ -208,7 +208,7 @@ class RxnSystem:
                 color = color_to_RGB(generate_new_color(colors))
                 colors.append(color)
                 self.surface.color = color
-            self.color_index[self.surface.symbol()] = color
+            self.color_index[self.surface] = color
 
             for s in self.surface.sites:
                 if not s.color:
@@ -217,7 +217,7 @@ class RxnSystem:
                 else:
                     color = s.color
                 colors.append(color)
-                self.color_index[sym.Symbol(s.name)] = color
+                self.color_index[s] = color
 
         return self.color_index
 
