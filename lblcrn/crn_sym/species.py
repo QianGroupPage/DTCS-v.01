@@ -171,6 +171,10 @@ class SpeciesManager:
         return self._species[key]
 
     @property
+    def all_symbols(self):
+        return sorted(list(self._species.keys()), key=lambda s: str(s))
+
+    @property
     def sub_species_dict(self):
         """
         :return: a dictionary from all parent species to a list of its subspecies

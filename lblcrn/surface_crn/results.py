@@ -37,12 +37,14 @@ class Results:
         [sub_s_list.extend(l) for l in rxns.species_manager.sub_species_dict.values()]
         # print(sub_s_list)
         primary_s = rxns.species_manager.sub_species_dict.keys()
-        species_tracked = list(rxns.get_symbols())
+        species_tracked = sorted(list(set(list(rxns.get_symbols()) + list(primary_s))), key=lambda s: str(s))
         self.species_ordering = [s for s in species_tracked if s in primary_s or s not in sub_s_list]
         self.species_colors = {s: color_index[s] for s in self.species_ordering}
         self.species_ordering = [str(s) for s in self.species_ordering]
         self.species_colors = {str(s): color_to_HEX(c) for s, c in self.species_colors.items()}
-        self.substances = dict(zip([repr(s) for s in rxns.get_symbols()], rxns.get_species())) if rxns else {}
+        import sympy as sym
+        self.substances = {s: rxns.species_manager.species_from_symbol(sym.Symbol(s)) for s in self.species_ordering}\
+            if rxns else {}
 
         sub_s = rxns.species_manager.sub_species_dict
         self.sum_sub_species(sub_s)
@@ -215,9 +217,15 @@ class Results:
         for k, v in sub_species_dict.items():
             # Transform from symbol to strs
             k = str(k)
+
             v = [str(s) for s in v]
+
             summed_series = pd.Series(0, self.df.index)
             for s in v:
+                # If parent is in the list of children, but not in the data column,
+                # assume that parent is not a valid species in the underlying system.
+                if s not in self.df.columns and s == k:
+                    continue
                 if s not in self.df.columns:
                     raise Exception(f"Subspecies {s} has not been recorded in the results data frame.")
                 summed_series += self.df[s]

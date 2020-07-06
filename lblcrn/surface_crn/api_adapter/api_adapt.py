@@ -144,11 +144,12 @@ def generate_settings(rsys, max_duration, random_seed=923123122):
 
 def generate_colors(rsys):
     color_strs = ""
-    for s, color in rsys.get_colors().items():
+    colors = rsys.get_colors()
+    for s in rsys.get_symbols() + [rsys.surface.symbol()] + [s.symbol for s in rsys.surface.sites]:
+        color = colors[s]
         if isinstance(color, str):
             color = (c for c in color_to_RGB(color))
         color_strs += str(s) + ": " + str(color) + "\n"
-
     return f"""!START_COLORMAP\n{color_strs}!END_COLORMAP\n"""
 
 
