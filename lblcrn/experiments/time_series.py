@@ -185,7 +185,7 @@ class CRNTimeSeries(experiment.Experiment):
         return cls(**d)
 
 
-def simulate_crn(rsys: reaction.RxnSystem, time_max: float = 1,
+def simulate_crn(rsys: reaction.RxnSystem, time: float, end_when_settled: bool = False,
                  **options) -> CRNTimeSeries:
     """Simulate the given reaction system over time.
 
@@ -198,7 +198,7 @@ def simulate_crn(rsys: reaction.RxnSystem, time_max: float = 1,
         A CRNTimeSeries object with the concentrations over time.
     """
 
-    sol_t, sol_y = bulk_crn.solve_rsys_ode(rsys, time_max, **options)
+    sol_t, sol_y = bulk_crn.solve_rsys_ode(rsys, time, end_when_settled, **options)
     return CRNTimeSeries(sol_t, sol_y, rsys)
 
 

@@ -498,7 +498,8 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
         return cls(**d)
 
 
-def simulate_xps(rsys: reaction.RxnSystem, time: float = 1,
+def simulate_xps(rsys: reaction.RxnSystem, time: float,
+                 end_when_settled: bool = False,
                  species: List[sym.Symbol] = None,
                  ignore: List[sym.Symbol] = None,
                  autoresample: bool = True,
@@ -530,7 +531,7 @@ def simulate_xps(rsys: reaction.RxnSystem, time: float = 1,
         A Solution object describing the solution.
     """
     # TODO(Andrew): Solve at equilibrium when no time is specified.
-    sol_t, sol_y = bulk_crn.solve_rsys_ode(rsys, time, **options)
+    sol_t, sol_y = bulk_crn.solve_rsys_ode(rsys, time, end_when_settled, **options)
     sol = time_series.CRNTimeSeries(sol_t, sol_y, rsys)
     ignore = []
     return sol.xps_with(species=species,
