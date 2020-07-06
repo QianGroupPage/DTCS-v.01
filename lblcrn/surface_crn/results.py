@@ -25,6 +25,12 @@ class Results:
         self.manifest_file = manifest_file
         self.rxns = rxns
         self.df = df
+
+        # Correct the count values for larger species
+        for s in rxns.species_manager.large_species:
+            if s.name in self.df.columns:
+                self.df[s.name] = self.df[s.name] / s.size
+
         self.resample_evolution()
 
         self.xps_df = None  # The xps dataframe we have for reference
