@@ -46,7 +46,7 @@ class Rxn(monty.json.MSONable):
     """
 
     def __init__(self, reactants: Optional[sym.Expr],
-                 products: Optional[sym.Expr], k: float):
+                 products: Optional[sym.Expr], k: float = 0):
         """Create a new reaction by giving equation of the reactants.
 
         This is intended to look like reactants -> products @ rate k. That is,
@@ -139,6 +139,7 @@ class Rxn(monty.json.MSONable):
         d['reactants'] = sympy_parser.parse_expr(d['reactants'])
         d['products'] = sympy_parser.parse_expr(d['products'])
         return cls(**d)
+
 
     def __str__(self):
         return f'{self.reactants} -> {self.products} @ k={self.rate_constant}'

@@ -146,6 +146,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
         species_concs: The concentrations of each species, for the creation of
             simulated data.
         species_manager: The SpeciesManager in use.
+        ignore: Species to ignore during processing.
     """
 
     _PLOT_MARGIN = 5
@@ -185,6 +186,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
         self.autoresample = autoresample
         self.autoscale = autoscale
         self.title = title
+        self.ignore = []
 
         # Experimental data-related
         self._experimental = None
@@ -321,7 +323,8 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
 
         Returns:
             An XPSObservable with the resampled data.
-        """  # TODO(Andrew) Typehints?
+        """ 
+        # TODO(Andrew) Typehints?
         species = self._get_species_not_ignored(species, ignore + self.ignore)
 
         x_range = self._get_x_range(species)
@@ -502,7 +505,7 @@ def simulate_xps(rsys: reaction.RxnSystem, time: float = 1,
                  autoscale: bool = True,
                  experimental: pd.Series = None,
                  gas_interval: Tuple[float, float] = None,
-                 scale_factor: float = 0.0,
+                 scale_factor: float = 1.0,
                  title: str = '',
                  **options) -> XPSExperiment:
     """Simulate the given reaction system over time.
@@ -529,6 +532,7 @@ def simulate_xps(rsys: reaction.RxnSystem, time: float = 1,
     # TODO(Andrew): Solve at equilibrium when no time is specified.
     sol_t, sol_y = bulk_crn.solve_rsys_ode(rsys, time, **options)
     sol = time_series.CRNTimeSeries(sol_t, sol_y, rsys)
+    ignore = []
     return sol.xps_with(species=species,
                         ignore=ignore,
                         autoresample=autoresample,
