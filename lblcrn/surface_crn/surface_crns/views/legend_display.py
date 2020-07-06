@@ -14,6 +14,7 @@ class LegendDisplay:
     MIN_BOX_HEIGHT    = 10
     LINE_HEIGHT       = max(MIN_BOX_HEIGHT,
                             LEGEND_FONT.get_linesize() + 2 * VERTICAL_BUFFER)
+    RIGHT_GAP = 10
 
     def __init__(self, colormap, min_x = 0, min_y = 0):
         debug = False
@@ -73,12 +74,13 @@ class LegendDisplay:
         self.box_width  = self.box_height
         self.display_height = self.LINE_HEIGHT * \
                               len(self.text_surfaces.keys())
-        self.display_width  = 2*LegendDisplay.HORIZONTAL_BUFFER + \
-                              self.box_width + \
-                              max(map(
+        self.display_width = 2*LegendDisplay.HORIZONTAL_BUFFER + \
+                             self.box_width + \
+                             max(map(
                                 lambda color:
-                                    self.text_surfaces[color].get_rect().width,
-                                self.text_surfaces.keys()))
+                                self.text_surfaces[color].get_rect().width,
+                                self.text_surfaces.keys())) + \
+                             LegendDisplay.RIGHT_GAP
         if debug:
             print()
 

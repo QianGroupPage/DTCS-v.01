@@ -219,9 +219,6 @@ class RxnSystem:
                     color = s.color
                 colors.append(color)
                 self.color_index[sym.Symbol(s.name)] = color
-
-        print(self.color_index)
-
         return self.color_index
 
     def show_colors(self):
