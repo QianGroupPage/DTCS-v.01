@@ -151,9 +151,7 @@ def simulate_without_display(manifest_file, lattice, species_tracked, rxns):
         # If no grid is made, use the inåitial grid
         lattice = opts.grid
 
-    print(lattice)
     add_groups(lattice, rxns)
-    print(lattice)
 
     simulator = QueueSimulator(surface=lattice,
                                transition_rules=opts.transition_rules,
