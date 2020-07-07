@@ -14,7 +14,7 @@ import numpy as np
 from scipy import integrate
 
 
-def solve_rsys_ode(rsys, time_max: float = 1, **options):
+def solve_rsys_ode(rsys, time_max: float, end_when_settled: bool, **options):
     """Simulate the given reaction system over time.
 
     Private in case we want to add multiple possible solving methods.
@@ -55,8 +55,12 @@ def solve_rsys_ode(rsys, time_max: float = 1, **options):
         for index, amount in enumerate(schedule[current_time]):
             current_concs[index] += amount
 
+        events = None
+        if end_when_settled:
+            events = settle_event_creator()
+
         partial_sol = integrate.solve_ivp(ode_func, (current_time, next_time),
-                                          current_concs, **options)
+                                          current_concs, events=events, **options)
 
         # Add the partial solution to the whole solution.
         if current_time == 0:
@@ -77,3 +81,21 @@ def solve_rsys_ode(rsys, time_max: float = 1, **options):
             sol_y[index][tindex] = func(sol_t[tindex], sol_y[:, tindex])
 
     return sol_t, sol_y
+
+
+SETTLE_EVENT_THRESHOLD = 5e-7
+def settle_event_creator():
+    last_y = None
+    
+    def settle(t, y):
+        nonlocal last_y
+        if last_y is None:
+            last_y = np.array(y)
+        diff = abs(np.sum(np.array(y) - last_y))
+        if diff < SETTLE_EVENT_THRESHOLD:
+            return 0
+        last_y = np.array(y)
+        print(diff)
+        return diff
+    settle.terminal = True
+    return settle

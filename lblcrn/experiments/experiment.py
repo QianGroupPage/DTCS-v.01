@@ -2,14 +2,17 @@
 
 """
 
+import abc
 from typing import List, Optional, Union
 
-import abc
 from matplotlib import pyplot as plt
+import monty.json
 import sympy as sym
 
+import lblcrn
 
-class Experiment(abc.ABC):
+
+class Experiment(monty.json.MSONable, abc.ABC):
     """A base class for experiments.
 
     Attributes:
@@ -93,8 +96,23 @@ class Experiment(abc.ABC):
 
         return [specie for specie in species if specie not in ignore]
 
+    def as_dict(self) -> dict:
+        """Return a MSON-serializable dict representation."""
+        d = {
+            '@module': self.__class__.__module__,
+            '@class': self.__class__.__name__,
+            '@version': lblcrn.__version__,  # TODO: Better way to do this?
+        }
+        return d
+
+    @classmethod
+    @abc.abstractmethod
+    def from_dict(cls, d: dict):
+        """Load from a dict representation."""
+        return cls()
+
     def _repr_html_(self) -> Optional[str]:
-        """For iPython; mostly just gives the DataFrame."""
+        """For iPython; mostly just gives the head of the DataFrame."""
         # TODO: do this without accessing private member?
         df_html = self.df.head()._repr_html_()
 
@@ -102,3 +120,12 @@ class Experiment(abc.ABC):
         {df_html}"""
 
         return html
+
+    def __str__(self) -> str:
+        """Mostly just the head of the DataFrame."""
+        # TODO: do this without accessing private member?
+        df_str = str(self.df.head())
+
+        s = f'{self.__class__.__name__} with head:\n{df_str}'
+
+        return s
