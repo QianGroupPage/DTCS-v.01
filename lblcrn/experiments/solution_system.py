@@ -13,9 +13,10 @@ class SolutionSystem:
 
     Instance Variables:
         ignore: A list of sympy symbols to ignore
-        systems: A list of diction
+        systems: A list of lists of XPS experiments.
+        multipliers: A list of multipliers used in simulation.
     """
-    def __init__(self, experiments: List, experimental_files: List[str]):
+    def __init__(self, experiments: List, experimental_files: List[str], multipliers: List[float]):
         """Create a new solution system
 
         Given a list of lists of XPSExperiments (for all variations that are simulated) and a
@@ -34,6 +35,7 @@ class SolutionSystem:
         scaling_factor, max_index = self.max_scaling_factor()
         self.scale(scaling_factor)
         self._ignore = []
+        self.multipliers = multipliers
 
         print('scaling factor:', scaling_factor, '\tmax index:', max_index)
 
@@ -87,7 +89,9 @@ class SolutionSystem:
     def __getitem__(self, index):
         return self.systems[index]
     
-    def plot(self, index, rows=0, cols=0):
+    def plot(self, index):
+        cols = len(self.multipliers)
+        rows = len(self.systems[index]) // cols
         fig, axs = plt.subplots(nrows=rows, ncols=cols, figsize=(60, 60))
         plt.figure(fig.number)
 
@@ -173,4 +177,5 @@ class XPSSystemRunner:
         if not all(self.complete):
             print("All experiments have not yet been simulated.")
             return
-        return SolutionSystem(self.solutions, [x.experimental_file for x in self.initializer_data])
+        return SolutionSystem(self.solutions, [x.experimental_file for x in self.initializer_data],
+                self.multipliers)
