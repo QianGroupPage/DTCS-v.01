@@ -62,5 +62,4 @@ urllib3
 wcwidth
 webencodings
 ffmpeg
-pygame
-
+pygame==2.0.0.dev4
