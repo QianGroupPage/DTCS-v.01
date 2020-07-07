@@ -1,29 +1,42 @@
 import copy
 from typing import List
 import sympy as sym
-import random
+import monty.json
 
 from lblcrn.crn_sym import species
-from lblcrn.crn_sym import surface
 from lblcrn.crn_sym import conditions
 from lblcrn.crn_sym.reaction import Rxn
-from lblcrn.crn_sym.surface_reaction import SurfaceRxn
-from lblcrn.common import generate_new_color, color_to_RGB
 
+class RxnSystem(monty.json.MSONable):
+    """A chemical reaction system, for simulation.
 
-class RxnSystem:
-    """
-    A collection of Terms, Rxns, Schedules, etc. which describes a chemical reaction system
-    for the purpose of simulating it (namely the concentrations of each chemical) over time.
+    A collection of Terms, Rxns, Schedules, etc. which describes a chemical
+    reaction system for the purpose of simulating it (namely the concentrations
+    of each chemical) over time.
+
+    Attributes:
+        components: Everything the RxnSystem contains
+        terms: Terms in the ODE of the system.
+        schedules: The Schedules and Concs passed during initialization.
+        conc_eqs: The ConcEqs in the system.
+        conc_diffeqs: The ConcDiffEqs in the system.
+        species_manager: The SpeciesManager the system uses.
+        symbol_index: A dictionary {sym.Symbol: int} to keep track of the order
+            of the symbols.
+        scheduler: A comprehensive Schedule of the system, has entries (which
+            might be Conc(species, 0) for each species which isn't set by a
+            ConcEq.
     """
 
     def __init__(self, *components):
-        """
-        Create a new reaction system by giving it Rxns, Revrxns, Concs, Schedules, Terms, ConcEqs, and
-        ConcDiffEqs in any order.
+        """Create a new reaction system. Requires a SpeciesManager.
 
-        If you have a function returning a collection of the above, you do not have to worry about
-        unpacking the collection: it will unpack and flatten lists and tuples for you.
+        Accepts Rxns, Revrxns, Concs, Schedules, Terms, ConcEqs,
+        ConcDiffEqs, and (one) SpeciesManager in any order.
+
+        If you have a function returning a collection of the above, you do
+        not have to worry about unpacking the collection: it will unpack and
+        flatten lists and tuples for you.
         """
 
         # Flatten the components
@@ -38,25 +51,19 @@ class RxnSystem:
                 else:
                     flatter_components.append(component)
             components = flatter_components
-        self.components = flatter_components  # pyint: disable=
+        self.components = flatter_components
 
         # Split into terms, schedules, and conc (diff.) eq.s
         # These are not sorted by the symbol index.
         self.terms = []
-        self.surface_rxns = []
         self.schedules = []
         self.conc_eqs = []
         self.conc_diffeqs = []
         self.species_manager = None
-        self.surface = None
 
         for component in self.components:
             if isinstance(component, conditions.Schedule):
                 self.schedules.append(component)
-            elif isinstance(component, SurfaceRxn):
-                # self.terms.extend(component.to_terms())
-                # pass
-                self.surface_rxns.append(component)
             elif isinstance(component, Rxn):
                 self.terms.extend(component.to_terms())
             elif isinstance(component, conditions.Term):
@@ -67,17 +74,11 @@ class RxnSystem:
                 self.conc_diffeqs.append(component)
             elif isinstance(component, species.SpeciesManager):
                 self.species_manager = component
-            elif isinstance(component, surface.Surface):
-                self.surface = component
             else:
-                assert False, f'Unknown input {component} of type ' + str(type(component))
+                assert False, 'Unknown input type ' + str(type(component))
 
         # Pick an order for the symbol
         self._symbols = set()
-        for rxn in self.surface_rxns:
-            for s in rxn.get_symbols():
-                if s not in self.surface.symbols:
-                    self._symbols.add(s)
         for term in self.terms:
             self._symbols.update(term.get_symbols())
         for schedule in self.schedules:
@@ -86,7 +87,7 @@ class RxnSystem:
             self._symbols.update(equation.get_symbols())
         for equation in self.conc_diffeqs:
             self._symbols.update(equation.get_symbols())
-        self._symbols = sorted(list(self._symbols), key=lambda s: str(s))
+        self._symbols = list(self._symbols)
 
         # Make an indexing dictionary
         self.symbol_index = {}
@@ -100,16 +101,12 @@ class RxnSystem:
         for schedule in self.schedules:
             self.scheduler[self.symbol_index[schedule.symbol]] = schedule
 
-        # an index from symbols to their colors
-        self.color_index = None
-
     def get_ode_expressions(self) -> List[sym.Expr]:
-        """
-        Return a list of expressions, corresponding to the derivative of the concentration of
-        each symbol in the reaction system.
+        """Return a list of expressions, corresponding to the derivative of the
+        concentration of each symbol in the reaction system.
 
-        The collection is ordered, and that order is accessible through symbol_index or
-        through get_symbols.
+        The collection is ordered, and that order is accessible through
+        symbol_index or through get_symbols.
         """
 
         # Make an emtpy ODE list
@@ -126,9 +123,7 @@ class RxnSystem:
         return odes
 
     def get_ode_functions(self):
-        """
-        Return a function with signature func(t, y) representing the reaction system.
-        """
+        """Return the ODE function with signature func(t, y) of the system."""
 
         symbols = self.get_symbols()
         odes = self.get_ode_expressions()
@@ -151,10 +146,9 @@ class RxnSystem:
         return decorated_ode
 
     def get_conc_functions(self):
-        """
-        TODO
-        Returns:
-        """
+        """Return the functions corresponding to the ConcEqs.
+
+        Used internally by get_ode_functions."""
         symbols = self.get_symbols()
         time = sym.symbols('t')
 
@@ -180,65 +174,29 @@ class RxnSystem:
         """
         return copy.copy(self._symbols)
 
-    @property
-    def surface_names(self) -> List[str]:
-        """
-        :return: a list for names for appearance on the surface
-        """
-        return [self.surface.name] + [s.name for s in self.surface.sites]
+    def as_dict(self) -> dict:
+        """Return a MSON-serializable dict representation."""
+        d = {
+            '@module': self.__class__.__module__,
+            '@class': self.__class__.__name__,
+            '@version': lblcrn.__version__,  # TODO: Better way to do this?
+            'components': [comp.as_dict() for comp in self.components]
+        }
+        return d
 
-    # TODO
-    def get_colors(self):
-        """
-        :return: colors for each species, if color is assigned.
-        """
-        random.seed(3)
-        colors = [] if not self.surface.color else [self.surface.color]
-        if self.color_index is None:
-            self.color_index = {}
-        #  TODO: this is awkard, should be in the species manager
-        for index, symbol in enumerate(self.species_manager.all_symbols):
-            if symbol in self.surface.symbols:
-                continue
-            if self.color_index and symbol in self.color_index:
-                continue
-            color = self.species_manager[symbol].color
-            if color is None:
-                color = color_to_RGB(generate_new_color(colors))
-                colors.append(color)
-                self.species_manager[symbol].color = color
-
-            self.color_index[symbol] = self.species_manager[symbol].color
-
-        if self.surface:
-            color = self.surface.color
-            if color is None:
-                color = color_to_RGB(generate_new_color(colors))
-                self.surface.color = color
-            # colors.append(color)
-            self.color_index[self.surface.symbol()] = color
-
-            for s in self.surface.sites:
-                if not s.color:
-                    color = color_to_RGB(generate_new_color(colors))
-                    s.color = color
-                else:
-                    color = s.color
-                colors.append(color)
-                self.color_index[sym.Symbol(s.name)] = color
-        return self.color_index
-
-    def show_colors(self):
-        # TODO: write a function to show the colors.
-        if self.color_index is None:
-            pass
-        pass
+    @classmethod
+    def from_dict(cls, d: dict):
+        """Load from a dict representation."""
+        decode = monty.json.MontyDecoder().process_decoded
+        components = [decode(comp) for comp in d['components']]
+        return cls(*components)
 
     def __str__(self):
-        s = 'rxn system with components:\n'
+        s = self.__class__.__name__ + ' with components:\n'
         for component in self.components:
-            s += str(component) + '\n'
+            comp_lines = str(component).splitlines()
+            s += ''.join([f'\t{line}\n' for line in comp_lines])
         return s[:-1]
 
     def __repr__(self):
-        return 'RxnSystem(components=' + repr(self.components) + ')'
+        return f'{self.__class__.__name__}(components={repr(self.components)})'
