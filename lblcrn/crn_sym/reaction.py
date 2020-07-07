@@ -25,7 +25,7 @@ Usage:
 """
 
 import copy
-from typing import List, Optional, Set
+from typing import List, Optional, Set, Tuple
 
 import monty.json
 import sympy as sym
