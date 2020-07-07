@@ -1,4 +1,5 @@
 import numpy as np
+from collections import Counter
 from lblcrn.surface_crn.surface_crns.base.node import *
 from warnings import *
 
@@ -94,6 +95,16 @@ class SquareGrid(object):
 
     def getnode(self, x, y):
         return self.grid[x,y]
+
+    def species_count(self):
+        """
+        :return: count of each species in the grid
+        """
+        return Counter([str(n.state) for n in self])
+
+    @property
+    def num_nodes(self):
+        return sum([1 for _ in self])
 
     def __iter__(self):
         return SquareGridIterator(self)

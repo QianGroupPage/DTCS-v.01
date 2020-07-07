@@ -1,12 +1,18 @@
 import pandas as pd
 import seaborn as sns
+import matplotlib
 import matplotlib.pyplot as plt
+# Set default font
+matplotlib.rcParams["font.family"] = "aria"
 import csv
 import numpy as np
 from scipy.stats import norm
 import lblcrn.surface_crn.xps as xps
 import os
-
+from IPython.display import HTML
+import ffmpeg
+from lblcrn.common import color_to_HEX
+import matplotlib.backends.backend_agg as agg
 
 class Results:
     """
@@ -17,13 +23,96 @@ class Results:
 
     def __init__(self, manifest_file, rxns, df=None):
         self.manifest_file = manifest_file
+        self.rxns = rxns
         self.df = df
 
-        self.xps_df = None # The xps dataframe we have for reference
+        # Correct the count values for larger species
+        for s in rxns.species_manager.large_species:
+            if s.name in self.df.columns:
+                self.df[s.name] = self.df[s.name] / s.size
+
+        self.resample_evolution()
+
+        self.xps_df = None  # The xps dataframe we have for reference
 
         self.species_ordering = None  # The ordering of species as they appear in our figures.
         self.species_colors = {}  # A dictionary from species names to their colors
-        self.substances = dict(zip([repr(s) for s in rxns.get_symbols()], rxns.get_species())) if rxns else {}
+
+        color_index = rxns.get_colors()
+        sub_s_list = []
+        [sub_s_list.extend(l) for l in rxns.species_manager.sub_species_dict.values()]
+        # print(sub_s_list)
+        primary_s = rxns.species_manager.sub_species_dict.keys()
+        species_tracked = sorted(list(set(list(rxns.get_symbols()) + list(primary_s))), key=lambda s: str(s))
+        self.species_ordering = [s for s in species_tracked if s in primary_s or s not in sub_s_list]
+        self.species_colors = {s: color_index[s] for s in self.species_ordering}
+        self.species_ordering = [str(s) for s in self.species_ordering]
+        self.species_colors = {str(s): color_to_HEX(c) for s, c in self.species_colors.items()}
+        import sympy as sym
+        self.substances = {s: rxns.species_manager.species_from_symbol(sym.Symbol(s)) for s in self.species_ordering}\
+            if rxns else {}
+
+        sub_s = rxns.species_manager.sub_species_dict
+        self.sum_sub_species(sub_s)
+
+        # Play the videos
+        self.video = None
+
+    @staticmethod
+    def side_by_side_axes(num_axes=2, output_fig=False):
+        """
+        A function designed to wrap around matplotlib to encourage
+        people to do side by side comparisons more often.
+        :param num_axes: number of axes to generate
+        :param output_fig: output fig, axes if set to True
+        :return: a list of axes
+        """
+        fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+        if output_fig:
+            return fig, axes
+        else:
+            return axes
+
+    def play_video(self, slowdown_factor=1):
+        """
+        Play the simulation video if a video is produced.
+
+
+        :slowdown_factor: 1 by default, 30 is suggested for reasonable viewing by humans.
+        :return: HTML object for playing a video in the IPython Notebook
+        """
+        if self.video is None:
+            # TODO: does absolute path work?
+            # self.video = "/Users/ye/Desktop/lbl-crn/Surface CRN Videos/scrn simulation.mp4"
+            # self.video = "Surface CRN Videos/scrn simulation.mp4"
+            raise Exception("There is no video generated for the reaction system.")
+
+        if slowdown_factor == 1:
+            video = self.video
+        else:
+            # Use a factor for slowing down the video
+            head, name = os.path.split(self.video)
+            name, ext = os.path.splitext(name)
+            slowmo_name = f'{head}/{name}_{slowdown_factor}x_slower{ext}'
+            # Overwrite existing files.
+            if os.path.isfile(slowmo_name):
+                os.remove(slowmo_name)
+            ffmpeg.input(self.video).setpts(f"{slowdown_factor}*PTS").output(
+                f'{head}/{name}_{slowdown_factor}x_slower{ext}').run()
+            video = slowmo_name
+        return HTML(f"""
+        <video width="960" height="720" controls>
+          <source src="{video}" type="video/mp4">
+        </video>
+        """)
+
+    def resample_evolution(self, round=1):
+        df = self.df.copy()
+        df["Time (s)"] = df.index
+        df["Time (s)"] = df["Time (s)"].round(round)
+        df = df.groupby("Time (s)").mean()
+        self.df_raw = self.df
+        self.df = df.reset_index().set_index("Time (s)")
 
     @staticmethod
     def from_directory(path, rxns):
@@ -48,6 +137,19 @@ class Results:
         """
         r = Results(manifest_file, rxns, Results.concs_times_df(concs, times))
         return r
+
+    @staticmethod
+    def from_counts(rxns, counter):
+        """
+        :param rxns: a rxn_system object
+        :param counter: a dictionary from species name to counts
+        :return: a results object representing only 1 timestep.
+        """
+        concs = {s: [c] for s, c in counter.items()}
+        for s in rxns.get_symbols():
+            if str(s) not in concs:
+                concs[str(s)] = [0]
+        return Results.from_concs_times(None, rxns, concs, [0])
 
     @staticmethod
     def concs_times_df(concentrations, times):
@@ -117,50 +219,86 @@ class Results:
 
         Append the resulting series of total concentration to concs.
         """
+        self.df = self.df_raw
         for k, v in sub_species_dict.items():
-            self.df[k] = pd.Series(0, self.df.index)
+            # Transform from symbol to strs
+            k = str(k)
+
+            v = [str(s) for s in v]
+
+            summed_series = pd.Series(0, self.df.index)
             for s in v:
+                # If parent is in the list of children, but not in the data column,
+                # assume that parent is not a valid species in the underlying system.
+                if s not in self.df.columns and s == k:
+                    continue
                 if s not in self.df.columns:
                     raise Exception(f"Subspecies {s} has not been recorded in the results data frame.")
-                self.df[k] += self.df[s]
+                summed_series += self.df[s]
+            self.df[k] = summed_series
+        self.resample_evolution()
 
     # TODO: decrease the figure size in case zoom = False
-    def plot_evolution(self, species_in_figure=None, start_time=0, end_time=-1, title="", save=False, path="",
-                       zoom=False):
+    def plot_evolution(self, species_in_figure=None, start_time=0, end_time=-1, title="", ax=None, save=False,
+                       return_fig=False, path="", use_raw_data=False, zoom=False):
         """
         Plot the concentrations from start_time until time step end_time. -1 means till the end.
 
         Name is the specific name of this plot.
         """
+        plt.style.use('seaborn-white')
         if end_time == -1:
             end_time = self.df.index.max()
-        df = self.df[(self.df.index <= end_time) & (self.df.index >= start_time)]
+
+        if use_raw_data:
+            df = self.df_raw
+        else:
+            df = self.df
+        df = df[(df.index <= end_time) & (df.index >= start_time)]
 
         if species_in_figure is None:
             species_in_figure = self.species_ordering
-
-        fig = plt.figure(figsize=(50, 100))
-        fig.subplots_adjust(top=0.95)
-        fig.suptitle(f"{title}", fontsize=48)
 
         if zoom:
             irange = range(len(species_in_figure) - 1)
         else:
             irange = [0]
+
+        if not ax:
+            ax_given = False
+            fig, axes = plt.subplots(len(irange), 1)
+            # TODO: fix this for multiple axes
+            fig.set_figheight(6)
+            fig.set_figwidth(8)
+            # fig.subplots_adjust(top=0.95)
+            # fig.suptitle(f"{title}", fontsize=48)
+        else:
+            ax_given = True
+            axes = [ax]
+
+        if not isinstance(axes, list):
+            axes = [axes]
+
         for i in irange:
-            plt.subplot(len(species_in_figure), 1, i + 1)
+            ax = axes[i]
             for j in range(i, len(species_in_figure)):
                 species = species_in_figure[j]
-                plt.tick_params(axis='both', which='both', labelsize=36)
-                plt.plot(df[species], color=self.species_colors[species], label=species, linewidth=5)
-                plt.legend(fontsize=36, numpoints=30)
+                ax.tick_params(axis='both', which='both', labelsize=12)
+                ax.plot(df[species], color=self.species_colors[species], label=species, linewidth=2)
+                ax.legend(fontsize=12, numpoints=30)
 
-            plt.xlabel("Time (s)", fontsize=36)
-            plt.ylabel("Molecule Count (#)", fontsize=36)
+            ax.set_title(title)
+            ax.set_xlabel("Time (s)", fontsize=12)
+            ax.set_ylabel("Molecule Count (#)", fontsize=12)
         if save:
+            if ax_given:
+                raise Exception("Ax is given as a parameter. Please save outside of this function. \n" +
+                                "Alternatively, try not giving ax as a parameter to this function")
             fig.savefig(f"{path}/{title}")
-        plt.close()
-        return fig
+        if return_fig:
+            # if ax_given:
+            #     raise Exception("Ax is given as a parameter, and therefore fig
+            return ax.figure
 
     def reference_with_xps(self, path="", scaling_factor=1):
         self.xps_df = xps.read_and_process(path, round=1) / scaling_factor
@@ -203,9 +341,8 @@ class Results:
         max_be = max(gaussian.index.max(), xps_df.index.max())
         return xps.fill_zeros(gaussian, min_be, max_be), xps.fill_zeros(xps_df, min_be, max_be)
 
-    def plot_gaussian(self, t=-1, path="", xps_path="", xps_scaling=1, save=False, show_fig=True, fig_size="Default",
-                      scaling_factor=1,
-                      ax=None):
+    def plot_gaussian(self, t=-1, path="", xps_path="", xps_scaling=1, save=False, return_fig=False, fig_size="Default",
+                      dpi=100, scaling_factor=1, ax=None, envelope_name="CRN"):
         """
         Plot the Gaussian function from time t to time t + 1.
         """
@@ -223,9 +360,17 @@ class Results:
         curves = []
         if not ax:
             fig, ax = plt.subplots()
+            if fig_size == "Default":
+                fig.set_figheight(6)
+                fig.set_figwidth(8)
+            else:
+                # For the plotting used in videos
+                fig.set_dpi(dpi)
+                fig.set_figheight(fig_size[1])
+                fig.set_figwidth(fig_size[0])
         plt.style.use('seaborn-white')
-        # ax.tick_params(axis="x", direction="out", length=8, width=2)
-        # plt.tick_params(axis='both', which='minor', labelsize=36)
+        ax.tick_params(axis="x", direction="out", length=8, width=2)
+        ax.tick_params(axis='both', which='minor', labelsize=12)
 
         gaussian_peaks = {}
         for n in sorted([n for n in gaussian.columns if n != "Envelope"],
@@ -247,11 +392,12 @@ class Results:
             curves.append(curve)
             legend_labels += ["Experiment"] + legend_labels
 
-        curve = ax.plot(gaussian.index, gaussian["Envelope"], linewidth=4, color='black', label="CRN", alpha=0.8)
+        curve = ax.plot(gaussian.index, gaussian["Envelope"], linewidth=2, color='black', label="CRN", alpha=0.8)
         curves.append(curve)
-        legend_labels += ["CRN"] + [gaussian_peaks[n][0].get_label() for n in self.species_ordering]
+        legend_labels += [envelope_name] + [gaussian_peaks[n][0].get_label() for n in self.species_ordering]
 
-        ax.legend([c[0] for c in curves] + [gaussian_peaks[n][0] for n in self.species_ordering], legend_labels)
+        ax.legend([c[0] for c in curves] + [gaussian_peaks[n][0] for n in self.species_ordering], legend_labels,
+                  fontsize=12)
         # if fig_size == "Default":
         #     ax.legend([c[0] for c in curves] + [gaussian_peaks[n][0] for n in names], legend_labels,
         #               fontsize=14)
@@ -259,12 +405,36 @@ class Results:
         #     ax.legend([c[0] for c in curves] + [gaussian_peaks[n][0] for n in names], legend_labels,
         #               fontsize=12)
 
+        ax.set_xlabel("Binding Energy", fontsize=12)
+        ax.set_ylabel("Intensity", fontsize=12)
+
         ax.set_xlim(max_be, min_be)
-        if show_fig:
-            plt.show()
+
         if save:
             ax.figure.savefig("{}/spectrum.png".format(path))
-        return ax.figure
+        if return_fig:
+            # Usually, you don't need to return because plot would draw the graph in the current
+            # Jupter Notebbok. Return only when you need the figure.
+            return ax.figure
+
+    def raw_string_gaussian(self, t=-1, y_upper_limit=None,  xps_scaling=1, fig_size="Default", dpi=100,
+                        scaling_factor=1, ax=None):
+        """
+        A wrapper function for self.plot_gaussian intended for generating frames in Pygame videos.
+        :return: raw string representation of the figure
+        """
+        import matplotlib
+        backend = matplotlib.rcParams['backend']
+        matplotlib.use("Agg")
+        fig = self.plot_gaussian(t=t,  xps_scaling=xps_scaling, return_fig=True, fig_size=fig_size, dpi=dpi,
+                                 scaling_factor=scaling_factor, ax=ax, envelope_name="total")
+        fig.tight_layout()
+        matplotlib.pyplot.ylim((0, y_upper_limit))
+        canvas = agg.FigureCanvasAgg(fig)
+        canvas.draw()
+        renderer = canvas.get_renderer()
+        matplotlib.use(backend)
+        return renderer.tostring_rgb(),  canvas.get_width_height()
 
     def save(self, directory=None):
         """
@@ -273,6 +443,7 @@ class Results:
         :param directory: a path in the file system; if None, infer the directory from the rules file.
         :return:
         """
+        self.df_raw.to_csv("{}/Data_raw.gz".format(directory), compression='gzip')
         self.df.to_csv("{}/Data.gz".format(directory), compression='gzip')
 
     def save_converged_values(self, directory="", convergence_time=None, annotations=None):

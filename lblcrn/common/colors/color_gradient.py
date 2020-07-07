@@ -1,4 +1,4 @@
-# Citation https://bsou.io/posts/color-gradients-with-python
+# based on https://bsou.io/posts/color-gradients-with-python
 
 def hex_to_RGB(hex):
   ''' "#FFFFFF" -> [255,255,255] '''
@@ -12,6 +12,19 @@ def RGB_to_hex(RGB):
   RGB = [int(x) for x in RGB]
   return "#"+"".join(["0{0:x}".format(v) if v < 16 else
             "{0:x}".format(v) for v in RGB])
+
+
+def color_to_RGB(color):
+    if isinstance(color, str):
+        color = hex_to_RGB(color)
+    return tuple([round(d) for d in color])
+
+
+def color_to_HEX(color):
+    if isinstance(color, list) or isinstance(color, tuple):
+        return RGB_to_hex(color)
+    else:
+        return color
 
 
 def color_dict(gradient):

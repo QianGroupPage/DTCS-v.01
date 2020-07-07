@@ -38,9 +38,13 @@ class QueueSimulator:
                 if not rule in self.rules_by_state[input_state]:
                     self.rules_by_state[input_state].append(rule)
 
+        # TODO:
+        # print(self.rules_by_state)
+
         self.time = 0
         self.surface.set_global_state(self.init_state)
-        print("QueueSimulator initialized with global state:\n" + str(self.init_state))
+        if self.debugging:
+            print("QueueSimulator initialized with global state:\n" + str(self.init_state))
         self.reset()
         if self.debugging:
             print(self.surface)
@@ -90,6 +94,7 @@ class QueueSimulator:
                 return None
             self.time     = next_reaction.time
             participants  = next_reaction.participants
+            # TODO: add a group of species when appropriate
             outputs       = next_reaction.rule.outputs
             if local_debugging:
                 print("Processing event " + str(next_reaction.rule) +
@@ -122,6 +127,17 @@ class QueueSimulator:
             # Change first reactant
             participants[0].state = outputs[0]
             participants[0].timestamp = self.time
+
+            # TODO: group edits:
+            # Remove the outgoing group
+            if len(participants[0].group) > 1:
+                for n in participants[0].group:
+                    n.group = []
+                    # Other members of the group should be set to default surface species.
+                    # n.state =
+                    n.timestamp = self.time
+                participants[0].group = []
+
 
             if local_debugging:
                 print("processed.")

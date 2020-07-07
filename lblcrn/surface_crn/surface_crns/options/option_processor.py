@@ -169,8 +169,9 @@ class SurfaceCRNOptionParser:
                     for node_state in line:
                         self.update_colormap(str(node_state))
             if self.surface_geometry == "square":
-                print("init_state: " + str(init_state))
-                print("shape: " + str(init_state.shape))
+                if self.debug:
+                    print("init_state: " + str(init_state))
+                    print("shape: " + str(init_state.shape))
                 self.grid = SquareGrid(init_state.shape[0], init_state.shape[1],
                                        wrap = self.wrap_grid)
             elif self.surface_geometry == "hex":

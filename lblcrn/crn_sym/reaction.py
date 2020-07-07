@@ -25,7 +25,7 @@ Usage:
 """
 
 import copy
-from typing import List, Optional, Set, Tuple
+from typing import List, Optional, Set
 
 import monty.json
 import sympy as sym
@@ -80,6 +80,7 @@ class Rxn(monty.json.MSONable):
         symbol.update(self.products.free_symbols)
         return symbol
 
+    # TODO: this is bulk crn-specific method, and as a result should be removed.
     def to_terms(self) -> List[conditions.Term]:
         """Create a list of terms from the reaction.
 
@@ -150,6 +151,7 @@ class Rxn(monty.json.MSONable):
                f'products={repr(self.products)}, ' \
                f'k={self.rate_constant})'
 
+
 class RevRxn(Rxn):
     """A reversible reaction, essentially a reaction with two rate constants.
 
@@ -207,6 +209,7 @@ class RevRxn(Rxn):
                f'(reactants={repr(self.reactants)}, ' \
                f'products={repr(self.products)}, ' \
                f'k={self.rate_constant}, k2={self.rate_constant_reverse})'
+
 
 class RxnSystem(monty.json.MSONable):
     """A chemical reaction system, for simulation.

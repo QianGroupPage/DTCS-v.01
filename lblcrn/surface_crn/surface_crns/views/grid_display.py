@@ -214,7 +214,8 @@ class SquareGridDisplay(object):
             text_color = WHITE
         else:
             text_color = BLACK
-        font = pygame.font.SysFont('monospace', 10)
+        # font = pygame.font.SysFont('monospace', 10)
+        font = pygame.font.SysFont('menlottc', 16)
         text_surface = font.render(node.state, True, text_color)
         return text_surface
 #end class SquareGridDisplay

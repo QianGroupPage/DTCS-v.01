@@ -20,7 +20,7 @@ Example:
     xps.plot()
 """
 
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple
 
 from matplotlib import pyplot as plt
 import monty.json
@@ -30,7 +30,7 @@ from scipy import integrate
 from scipy import stats
 from sklearn import metrics
 import sympy as sym
-
+from lblcrn.bulk_crn import time_series
 from lblcrn import bulk_crn
 from lblcrn.experiments import experiment
 from lblcrn.experiments import time_series

@@ -10,7 +10,7 @@ class Node:
     given).
     '''
     def __init__(self, state = None, neighbors = None, timestamp = 0,\
-                 position = None):
+                 position = None, group=None):
         if state == None:
             self.state = ""
         else:
@@ -32,6 +32,12 @@ class Node:
             position = ()
         self.position = position
 
+        # List of nodes in the same group, these should appear and disappear at the same time
+        if group == None:
+            self.group = []
+        else:
+            self.group = group
+
     def __str__(self):
         str_rep = "<State: " + self.state + " (updated at time " + \
             str(self.timestamp) + ")"
@@ -44,8 +50,19 @@ class Node:
                             else "<node is NoneType>"
         else:
             str_rep += "; No neighbors"
+
+        if len(self.group) > 0:
+            str_rep += "; neighbor states: "
+            str_rep += self.group[0][0].state if self.group[0] \
+                       else "<node is NoneType>"
+            for i in range(1, len(self.group)):
+                str_rep += ", "+self.group[i][0].state if self.group[i]\
+                            else "<node is NoneType>"
+        else:
+            str_rep += "; No group"
         if self.position != ():
             str_rep += "; Position: " + str(self.position)
+
         str_rep += ">"
         return str_rep
 

@@ -33,6 +33,7 @@ import numpy as np
 import pandas as pd
 import sympy as sym
 
+from lblcrn.bulk_crn import xps
 from lblcrn import bulk_crn
 from lblcrn.experiments import experiment
 from lblcrn.experiments import xps
@@ -200,5 +201,3 @@ def simulate_crn(rsys: reaction.RxnSystem, time: float, end_when_settled: bool =
 
     sol_t, sol_y = bulk_crn.solve_rsys_ode(rsys, time, end_when_settled, **options)
     return CRNTimeSeries(sol_t, sol_y, rsys)
-
-

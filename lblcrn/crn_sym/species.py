@@ -15,12 +15,11 @@ Usage:
     print(sm[x])
 """
 
-from typing import List, Union
-
-import lblcrn
 import monty.json
 import sympy as sym
-
+from lblcrn.common import color_to_RGB
+from lblcrn.crn_sym.surface import Site
+from typing import List, Tuple, Union
 
 class Orbital(monty.json.MSONable):
     """An orbital in a species.
@@ -65,17 +64,80 @@ class Species(monty.json.MSONable):
         orbitals: A list of Orbitals.
     """
 
-    def __init__(self, name: str, orbitals: List[Orbital]):
+    def __init__(self, name: str, orbitals: List[Orbital], color: Union[Tuple[int], List[int], str] = None,
+                 parent=None, site: Site = None, include_sub_species: bool=True, size: int = 1):
         self.name = name
         self.orbitals = orbitals
+        if color:
+            self.color = color_to_RGB(color)
+        else:
+            self.color = color
+        self.parent = parent   # The parent of the species
+        self.sub_species = {}   # The dictionary of sub species from name to the object
+
+        self.site = site
+        self.size = size
+        if include_sub_species and self.site and self.site != Site.default:
+            self.create_sub_species(suffix=site.name, color=self.color)
+
+    def create_sub_species(self, suffix: str = "", color: Union[Tuple[int], List[int], str] = "", entire_name: str ="",
+                           orbitals: Union[Orbital, List[Orbital]] = None, site: Site = None):
+        if not entire_name:
+            if site:
+                suffix = site.name
+            elif not suffix:
+                suffix = f"sub_{len(self.sub_species)}"
+            entire_name = f"{self.name}_{suffix}"
+        elif suffix:
+            raise Exception(f"Both suffix={suffix} and entire_name {entire_name} provided to " +
+                            f"create_sub_species_function")
+        if not color:
+            color = self.color
+        if orbitals is None:
+            orbitals = self.orbitals
+
+        sub_species = Species(entire_name, orbitals, color=color, parent=self, site=site, include_sub_species=False)
+
+        if entire_name in self.sub_species:
+            raise Exception(f"species {self.name} already has sub species {repr(self.sub_species[entire_name])} " +
+                            f"with name {entire_name}.")
+        else:
+            self.sub_species[entire_name] = sub_species
+        return sub_species
+
+    def sub_species_by_name(self, name: str):
+        """
+        :param name: name of the species
+        :return: the species, if found
+        """
+        if name in self.sub_species:
+            return self.sub_species[name]
+        else:
+            raise Exception(f"Species {self.name} doesn't have a sub-species with name {name}.")
+
+    def sub_species_by_suffix(self, suffix: str):
+        """
+        :param suffix: the suffix of the species
+        :return: the sub_species with the suffix, if found
+        """
+        return self.sub_species_by_name(self.sub_species_name(suffix))
+
+    def sub_species_name(self, suffix: str):
+        """
+        :param suffix: suffix of the sub_species
+        :return: the sub_species's name
+        """
+        return f"{self.name}_{suffix}"
 
     def __str__(self):
         orbitals = [str(orbital) for orbital in self.orbitals]
-        return f'{self.name}, orbitals: {orbitals}'
+        if self.color:
+            return f'{self.name}, orbitals: {orbitals}, color: {str(self.color)}, size: {str(self.size)}'
+        return f'{self.name}, orbitals: {orbitals}, size: {str(self.size)}'
 
     def __repr__(self):
         return f'{self.__class__.__name__}(name={repr(self.name)}, ' \
-               f'orbitals={repr(self.orbitals)})'
+               f'orbitals={repr(self.orbitals)}' + f'color={repr(self.color)}, size={self.size})'
 
 
 class SpeciesManager(monty.json.MSONable):
@@ -99,9 +161,10 @@ class SpeciesManager(monty.json.MSONable):
         else:
             self._species = {}
 
-    def make_species(self, name: str,
-                     orbitals: Union[Orbital, List[Orbital]]) -> sym.Symbol:
-        """Makes a sym.Symbol and a corresponding Species
+    def make_species(self, name: Union[str, sym.Symbol], orbitals: Union[Orbital, List[Orbital]] = None,
+                     site: Site = None, sub_species_name: str = "", size=1) -> sym.Symbol:
+        """
+        Makes a sym.Symbol and a corresponding Species and keeps track of their correspondence.
 
         Keeps track of their correspondence.
         Orbitals can be either a list of orbitals or just one orbital
@@ -114,16 +177,70 @@ class SpeciesManager(monty.json.MSONable):
         Returns:
              The sym.Symbol corresponding to the new Species.
         """
-        symbol = sym.Symbol(name)
+        if isinstance(name, sym.Symbol):
+            parent = self.species_from_symbol(name)
 
-        if not isinstance(orbitals, list):
-            orbitals = [orbitals]
+            if sub_species_name:
+                name = sub_species_name
+                if site:
+                    name += site.name
+                s = parent.create_sub_species(entire_name=name, site=site)
+                symbol = sym.Symbol(name)
+            else:
+                s = parent.create_sub_species(site=site)
+                symbol = sym.Symbol(parent.sub_species_name(site.name))
+        else:
+            symbol = sym.Symbol(name)
+            if not isinstance(orbitals, list):
+                orbitals = [orbitals]
 
-        self._species[symbol] = Species(name, orbitals)
+            # if symbol in self._species:
+            #     s = self._species[symbol].create_sub_species(suffix=site.name)
+            #     symbol = sym.Symbol(s.name)
+            # else:
+            # TODO: size for other occasions
+            s = Species(name, orbitals, site=site, size=size)
+            # for name, new_species in s.sub_species.items():
+            #     self._species[sym.Symbol(name)] = new_species
+
+        self._species[symbol] = s
         return symbol
 
     def species_from_symbol(self, key: sym.Symbol) -> Species:
         return self._species[key]
+
+    @property
+    def all_species(self):
+        return set(self._species.values())
+
+    @property
+    def large_species(self):
+        res = set()
+        for s in self.all_species:
+            if s.size > 1:
+                res.add(s)
+        return res
+
+    @property
+    def all_symbols(self):
+        return sorted(list(self._species.keys()), key=lambda s: str(s))
+
+    @property
+    def sub_species_dict(self):
+        """
+        :return: a dictionary from all parent species to a list of its subspecies
+        """
+        d = {}
+        for k, v in self._species.items():
+            for n, sub_s in v.sub_species.items():
+                if sym.Symbol(n) in self._species:
+                    if k in d:
+                        d[k].append(sym.Symbol(n))
+                    else:
+                        d[k] = [sym.Symbol(n)]
+            if k in d and d[k]:
+                d[k].append(k)
+        return d
 
     def symbol_from_name(self, name: str) -> sym.Symbol:
         """Gets the symbol for the given name, if it is a species.
