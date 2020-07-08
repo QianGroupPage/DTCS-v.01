@@ -2,10 +2,16 @@ import copy
 from typing import List
 import sympy as sym
 import monty.json
+import random
 
+import lblcrn
 from lblcrn.crn_sym import species
 from lblcrn.crn_sym import conditions
 from lblcrn.crn_sym.reaction import Rxn
+
+from lblcrn.crn_sym import surface
+from lblcrn.crn_sym.surface_reaction import SurfaceRxn
+from lblcrn.common import generate_new_color, color_to_RGB
 
 class RxnSystem(monty.json.MSONable):
     """A chemical reaction system, for simulation.
@@ -190,6 +196,53 @@ class RxnSystem(monty.json.MSONable):
         decode = monty.json.MontyDecoder().process_decoded
         components = [decode(comp) for comp in d['components']]
         return cls(*components)
+
+    # TODO
+    def get_colors(self):
+        """
+        :return: colors for each species, if color is assigned.
+        """
+        random.seed(3)
+        colors = [] if not self.surface.color else [self.surface.color]
+        if self.color_index is None:
+            self.color_index = {}
+        for index, symbol in enumerate(self.species_manager.symbols_ordering):
+            if symbol in self.surface.symbols:
+                continue
+            if self.color_index and symbol in self.color_index:
+                continue
+            color = self.species_manager[symbol].color
+            if color is None:
+                color = color_to_RGB(generate_new_color(colors))
+                colors.append(color)
+                self.species_manager[symbol].color = color
+
+            self.color_index[self.species_manager[symbol]] = self.species_manager[symbol].color
+
+        if self.surface:
+            color = self.surface.color
+            if color is None:
+                color = color_to_RGB(generate_new_color(colors))
+                colors.append(color)
+                self.surface.color = color
+            self.color_index[self.surface] = color
+
+            for s in self.surface.sites:
+                if not s.color:
+                    color = color_to_RGB(generate_new_color(colors))
+                    s.color = color
+                else:
+                    color = s.color
+                colors.append(color)
+                self.color_index[s] = color
+
+        return self.color_index
+
+    def show_colors(self):
+        # TODO: write a function to show the colors.
+        if self.color_index is None:
+            pass
+        pass
 
     def __str__(self):
         s = self.__class__.__name__ + ' with components:\n'

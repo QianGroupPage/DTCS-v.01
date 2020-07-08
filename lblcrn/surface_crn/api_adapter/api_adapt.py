@@ -154,7 +154,8 @@ def generate_colors(rsys):
         color = colors[s]
         if isinstance(color, str):
             color = (c for c in color_to_RGB(color))
-        color_strs += str(s) + ": " + str(color) + "\n"
+
+        color_strs += s.name + ": " + str(color) + "\n"
     return f"""!START_COLORMAP\n{color_strs}!END_COLORMAP\n"""
 
 
@@ -204,9 +205,10 @@ class HexGridPlusIntersections(HexGrid):
     '''
     def __init__(self, x_size, y_size, wrap = False):
         if not isinstance(x_size, int) or not isinstance(y_size, int):
-            raise TypeException("SimGrid dimensions must be integers")
+            # TODO: use TypeException here
+            raise Exception("SimGrid dimensions must be integers")
         if wrap and y_size%2 == 1:
-            raise reduc("Can't make a wrapping hex grid with an odd " + \
+            raise Exception("Can't make a wrapping hex grid with an odd " + \
                             "number of rows. It just doesn't work out.")
 
         self.x_size     = x_size

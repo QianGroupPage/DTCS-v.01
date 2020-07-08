@@ -2,8 +2,6 @@ import pandas as pd
 import seaborn as sns
 import matplotlib
 import matplotlib.pyplot as plt
-# Set default font
-matplotlib.rcParams["font.family"] = "arial"
 import csv
 import numpy as np
 from scipy.stats import norm
@@ -13,6 +11,9 @@ from IPython.display import HTML
 import ffmpeg
 from lblcrn.common import color_to_HEX
 import matplotlib.backends.backend_agg as agg
+# Set default font
+matplotlib.rcParams["font.family"] = "arial"
+
 
 class Results:
     """
@@ -50,6 +51,14 @@ class Results:
         import sympy as sym
         self.substances = {s: rxns.species_manager.species_from_symbol(sym.Symbol(s)) for s in self.species_ordering}\
             if rxns else {}
+        # species_tracked = list(rxns.get_symbols() + list(primary_s))
+        # self.species_ordering = [rxns.species_manager.species_from_symbol(s) for s in species_tracked
+        #                          if rxns.species_manager.symbol_in_sm(s) and (s in primary_s or s not in sub_s_list)]
+        # self.species_colors = {s: color_index[s] for s in self.species_ordering}
+        # self.substances = {s.name: s for s in self.species_ordering}
+        # self.species_ordering = [s.name for s in self.species_ordering]
+        # self.species_colors = {s.name: color_to_HEX(c) for s, c in self.species_colors.items()}
+
 
         sub_s = rxns.species_manager.sub_species_dict
         self.sum_sub_species(sub_s)
@@ -232,8 +241,10 @@ class Results:
                 if s not in self.df.columns and s == k:
                     continue
                 if s not in self.df.columns:
+                # if s != k and s not in self.df.columns:
                     raise Exception(f"Subspecies {s} has not been recorded in the results data frame.")
-                summed_series += self.df[s]
+                if s in self.df.columns:
+                    summed_series += self.df[s]
             self.df[k] = summed_series
         self.resample_evolution()
 
