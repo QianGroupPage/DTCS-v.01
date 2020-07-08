@@ -16,7 +16,7 @@ except ImportError:
     sys.path.append("./")
 import lblcrn.surface_crn.surface_crns.readers as readers
 
-import os
+import sys
 
 from lblcrn.surface_crn.surface_crns.options.option_processor import SurfaceCRNOptionParser
 from lblcrn.surface_crn.surface_crns.models.grids import SquareGrid, HexGrid
@@ -36,6 +36,7 @@ from lblcrn.surface_crn.results import Results
 import cProfile
 import optparse
 import sys
+import os
 from time import process_time
 
 import pygame
@@ -128,6 +129,8 @@ def simulate_surface_crn(manifest_filename, display_class = None,
 
     if opts.capture_directory != None:
         from signal import signal, SIGPIPE, SIG_DFL
+        if not sys.platform.startswith('win'):
+            from signal import SIGPIPE
         import subprocess as sp
         base_dir = opts.capture_directory
         MOVIE_DIRECTORY = base_dir
@@ -541,7 +544,8 @@ def simulate_surface_crn(manifest_filename, display_class = None,
                 else:
                     raise Exception("Unexpected OS name '" + os.name + "'")
 
-                signal(SIGPIPE, SIG_DFL)
+                if not sys.platform.startswith('win'):
+                    signal(SIGPIPE, SIG_DFL)
                 width = display_surface.get_width()
                 height = display_surface.get_height()
                 movie_filename = os.path.join(".", MOVIE_DIRECTORY,
