@@ -59,7 +59,7 @@ class QueueSimulator:
         species_count["Time (s)"] = self.time
 
         if not self.concentration_trajectory:
-            self.concentration_trajectory = pd.from_dict(species_count)
+            self.concentration_trajectory = pd.DataFrame.from_dict(species_count)
             self.concentration_trajectory.set_index("Time (s)")
         else:
             self.concentration_trajectory.append(species_count)

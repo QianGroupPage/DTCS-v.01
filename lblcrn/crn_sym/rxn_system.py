@@ -44,7 +44,6 @@ class RxnSystem(monty.json.MSONable):
         not have to worry about unpacking the collection: it will unpack and
         flatten lists and tuples for you.
         """
-
         # Flatten the components
         flat = False
         while not flat:
@@ -57,19 +56,25 @@ class RxnSystem(monty.json.MSONable):
                 else:
                     flatter_components.append(component)
             components = flatter_components
-        self.components = flatter_components
+        self.components = flatter_components  # pyint: disable=
 
         # Split into terms, schedules, and conc (diff.) eq.s
         # These are not sorted by the symbol index.
         self.terms = []
+        self.surface_rxns = []
         self.schedules = []
         self.conc_eqs = []
         self.conc_diffeqs = []
         self.species_manager = None
+        self.surface = None
 
         for component in self.components:
             if isinstance(component, conditions.Schedule):
                 self.schedules.append(component)
+            elif isinstance(component, SurfaceRxn):
+                # self.terms.extend(component.to_terms())
+                # pass
+                self.surface_rxns.append(component)
             elif isinstance(component, Rxn):
                 self.terms.extend(component.to_terms())
             elif isinstance(component, conditions.Term):
@@ -80,11 +85,17 @@ class RxnSystem(monty.json.MSONable):
                 self.conc_diffeqs.append(component)
             elif isinstance(component, species.SpeciesManager):
                 self.species_manager = component
+            elif isinstance(component, surface.Surface):
+                self.surface = component
             else:
-                assert False, 'Unknown input type ' + str(type(component))
+                assert False, f'Unknown input {component} of type ' + str(type(component))
 
         # Pick an order for the symbol
         self._symbols = set()
+        for rxn in self.surface_rxns:
+            for s in rxn.get_symbols():
+                if s not in self.surface.symbols:
+                    self._symbols.add(s)
         for term in self.terms:
             self._symbols.update(term.get_symbols())
         for schedule in self.schedules:
@@ -93,7 +104,7 @@ class RxnSystem(monty.json.MSONable):
             self._symbols.update(equation.get_symbols())
         for equation in self.conc_diffeqs:
             self._symbols.update(equation.get_symbols())
-        self._symbols = list(self._symbols)
+        self._symbols = sorted(list(self._symbols), key=lambda s: str(s))
 
         # Make an indexing dictionary
         self.symbol_index = {}
@@ -106,6 +117,9 @@ class RxnSystem(monty.json.MSONable):
         # Overwrite scheduler with Concs and Schedules
         for schedule in self.schedules:
             self.scheduler[self.symbol_index[schedule.symbol]] = schedule
+
+        # an index from symbols to their colors
+        self.color_index = None
 
     def get_ode_expressions(self) -> List[sym.Expr]:
         """Return a list of expressions, corresponding to the derivative of the
@@ -217,7 +231,7 @@ class RxnSystem(monty.json.MSONable):
                 colors.append(color)
                 self.species_manager[symbol].color = color
 
-            self.color_index[self.species_manager[symbol]] = self.species_manager[symbol].color
+            self.color_index[symbol] = self.species_manager[symbol].color
 
         if self.surface:
             color = self.surface.color
@@ -225,7 +239,7 @@ class RxnSystem(monty.json.MSONable):
                 color = color_to_RGB(generate_new_color(colors))
                 colors.append(color)
                 self.surface.color = color
-            self.color_index[self.surface] = color
+            self.color_index[self.surface.symbol()] = color
 
             for s in self.surface.sites:
                 if not s.color:
@@ -234,7 +248,7 @@ class RxnSystem(monty.json.MSONable):
                 else:
                     color = s.color
                 colors.append(color)
-                self.color_index[s] = color
+                self.color_index[s.symbol] = color
 
         return self.color_index
 
@@ -243,6 +257,13 @@ class RxnSystem(monty.json.MSONable):
         if self.color_index is None:
             pass
         pass
+
+    @property
+    def surface_names(self) -> List[str]:
+        """
+        :return: a list for names for appearance on the surface
+        """
+        return [self.surface.name] + [s.name for s in self.surface.sites]
 
     def __str__(self):
         s = self.__class__.__name__ + ' with components:\n'
