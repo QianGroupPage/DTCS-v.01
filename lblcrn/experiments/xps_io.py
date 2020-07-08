@@ -184,7 +184,7 @@ def parse_new_data(it, be):
 
 
 class XPSData:
-    def __init__(self, info, binding_energy, intensity):
+    def __init__(self, info, binding_energies, intensities):
         self.info = info
-        self.binding_energy = np.asarray(binding_energy)
-        self.intensity = np.asarray(intensity)
+        self.binding_energies = np.asarray(binding_energies)
+        self.intensities = np.asarray(intensities)

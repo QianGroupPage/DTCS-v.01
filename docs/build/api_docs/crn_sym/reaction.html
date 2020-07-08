@@ -1,0 +1,319 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>&lt;no title&gt; &#8212; LBL CRN dev0.1.2.2 documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <span class="target" id="module-lblcrn.crn_sym.reaction"></span><p>Classes for defining a chemical reaction system.</p>
+<dl>
+<dt>Exports:</dt><dd><p>Rxn: A chemical reaction
+RevRxn: A reversible chemical reaction
+RxnSystem: A collection of reactions and conditions (e.g. initial</p>
+<blockquote>
+<div><p>concentrations).</p>
+</div></blockquote>
+</dd>
+<dt>Usage:</dt><dd><p>Usage essentially always looks like the following, where you make a
+reaction system with other classes as inputs.</p>
+<dl>
+<dt>RxnSystem(</dt><dd><p>sm,</p>
+<p>Rxn(x, y, k=3.2),
+RevRxn(x + y, 2z, k1=0.01, k2=100),</p>
+<p>Conc(x, 2),
+…</p>
+</dd>
+</dl>
+<p>)</p>
+<p>It looks like this because it was made to imitate the predecessor
+mathematica project.</p>
+</dd>
+</dl>
+<dl class="py class">
+<dt id="lblcrn.crn_sym.reaction.RevRxn">
+<em class="property">class </em><code class="sig-prename descclassname">lblcrn.crn_sym.reaction.</code><code class="sig-name descname">RevRxn</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">reactants</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>sympy.core.expr.Expr<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">products</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>sympy.core.expr.Expr<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">k</span><span class="p">:</span> <span class="n">float</span></em>, <em class="sig-param"><span class="n">k2</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#lblcrn.crn_sym.reaction.RevRxn" title="Permalink to this definition">¶</a></dt>
+<dd><p>A reversible reaction, essentially a reaction with two rate constants.</p>
+<p>Its use is to be quickly unpacked into two Rxns.</p>
+<dl class="py method">
+<dt id="lblcrn.crn_sym.reaction.RevRxn.as_dict">
+<code class="sig-name descname">as_dict</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; dict<a class="headerlink" href="#lblcrn.crn_sym.reaction.RevRxn.as_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a MSON-serializable dict representation.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="lblcrn.crn_sym.reaction.RevRxn.get_symbols">
+<code class="sig-name descname">get_symbols</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Set<span class="p">[</span>sympy.core.symbol.Symbol<span class="p">]</span><a class="headerlink" href="#lblcrn.crn_sym.reaction.RevRxn.get_symbols" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="lblcrn.crn_sym.reaction.RevRxn.to_rxns">
+<code class="sig-name descname">to_rxns</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Tuple<span class="p">[</span><a class="reference internal" href="#lblcrn.crn_sym.reaction.Rxn" title="lblcrn.crn_sym.reaction.Rxn">lblcrn.crn_sym.reaction.Rxn</a><span class="p">, </span><a class="reference internal" href="#lblcrn.crn_sym.reaction.Rxn" title="lblcrn.crn_sym.reaction.Rxn">lblcrn.crn_sym.reaction.Rxn</a><span class="p">]</span><a class="headerlink" href="#lblcrn.crn_sym.reaction.RevRxn.to_rxns" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="lblcrn.crn_sym.reaction.RevRxn.to_terms">
+<code class="sig-name descname">to_terms</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; List<span class="p">[</span><a class="reference internal" href="conditions.html#lblcrn.crn_sym.conditions.Term" title="lblcrn.crn_sym.conditions.Term">lblcrn.crn_sym.conditions.Term</a><span class="p">]</span><a class="headerlink" href="#lblcrn.crn_sym.reaction.RevRxn.to_terms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a list of terms from the reaction.</p>
+<p>Each term is essentially the reaction rate but positive or negative,
+depending on if it is a reactand or the product.</p>
+<p>This uses the reaction rate formula r =
+k*(concentration of products^coefficient of product):
+if this is false for your chemical equation, you will get an error.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="lblcrn.crn_sym.reaction.Rxn">
+<em class="property">class </em><code class="sig-prename descclassname">lblcrn.crn_sym.reaction.</code><code class="sig-name descname">Rxn</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">reactants</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>sympy.core.expr.Expr<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">products</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>sympy.core.expr.Expr<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">k</span><span class="p">:</span> <span class="n">float</span></em><span class="sig-paren">)</span><a class="headerlink" href="#lblcrn.crn_sym.reaction.Rxn" title="Permalink to this definition">¶</a></dt>
+<dd><p>A chemical reaction with reactants, products, and a rate constant.</p>
+<dl class="py attribute">
+<dt id="lblcrn.crn_sym.reaction.Rxn.reactants">
+<code class="sig-name descname">reactants</code><a class="headerlink" href="#lblcrn.crn_sym.reaction.Rxn.reactants" title="Permalink to this definition">¶</a></dt>
+<dd><p>A sym.Expr of the reactants.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="lblcrn.crn_sym.reaction.Rxn.products">
+<code class="sig-name descname">products</code><a class="headerlink" href="#lblcrn.crn_sym.reaction.Rxn.products" title="Permalink to this definition">¶</a></dt>
+<dd><p>A sym.Expr of the products.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="lblcrn.crn_sym.reaction.Rxn.rate_constant">
+<code class="sig-name descname">rate_constant</code><a class="headerlink" href="#lblcrn.crn_sym.reaction.Rxn.rate_constant" title="Permalink to this definition">¶</a></dt>
+<dd><p>A float, the rate constant of the chemical reaction.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="lblcrn.crn_sym.reaction.Rxn.as_dict">
+<code class="sig-name descname">as_dict</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; dict<a class="headerlink" href="#lblcrn.crn_sym.reaction.Rxn.as_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a MSON-serializable dict representation.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="lblcrn.crn_sym.reaction.Rxn.from_dict">
+<em class="property">classmethod </em><code class="sig-name descname">from_dict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">d</span><span class="p">:</span> <span class="n">dict</span></em><span class="sig-paren">)</span><a class="headerlink" href="#lblcrn.crn_sym.reaction.Rxn.from_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load from a dict representation.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="lblcrn.crn_sym.reaction.Rxn.get_symbols">
+<code class="sig-name descname">get_symbols</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Set<span class="p">[</span>sympy.core.symbol.Symbol<span class="p">]</span><a class="headerlink" href="#lblcrn.crn_sym.reaction.Rxn.get_symbols" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="lblcrn.crn_sym.reaction.Rxn.to_terms">
+<code class="sig-name descname">to_terms</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; List<span class="p">[</span><a class="reference internal" href="conditions.html#lblcrn.crn_sym.conditions.Term" title="lblcrn.crn_sym.conditions.Term">lblcrn.crn_sym.conditions.Term</a><span class="p">]</span><a class="headerlink" href="#lblcrn.crn_sym.reaction.Rxn.to_terms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a list of terms from the reaction.</p>
+<p>Each term is essentially the reaction rate but positive or negative,
+depending on if it is a reactand or the product.</p>
+<p>This uses the reaction rate formula r =
+k*(concentration of products^coefficient of product):
+if this is false for your chemical equation, you will get an error.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="lblcrn.crn_sym.reaction.RxnSystem">
+<em class="property">class </em><code class="sig-prename descclassname">lblcrn.crn_sym.reaction.</code><code class="sig-name descname">RxnSystem</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">components</span></em><span class="sig-paren">)</span><a class="headerlink" href="#lblcrn.crn_sym.reaction.RxnSystem" title="Permalink to this definition">¶</a></dt>
+<dd><p>A chemical reaction system, for simulation.</p>
+<p>A collection of Terms, Rxns, Schedules, etc. which describes a chemical
+reaction system for the purpose of simulating it (namely the concentrations
+of each chemical) over time.</p>
+<dl class="py attribute">
+<dt id="lblcrn.crn_sym.reaction.RxnSystem.components">
+<code class="sig-name descname">components</code><a class="headerlink" href="#lblcrn.crn_sym.reaction.RxnSystem.components" title="Permalink to this definition">¶</a></dt>
+<dd><p>Everything the RxnSystem contains</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="lblcrn.crn_sym.reaction.RxnSystem.terms">
+<code class="sig-name descname">terms</code><a class="headerlink" href="#lblcrn.crn_sym.reaction.RxnSystem.terms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Terms in the ODE of the system.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="lblcrn.crn_sym.reaction.RxnSystem.schedules">
+<code class="sig-name descname">schedules</code><a class="headerlink" href="#lblcrn.crn_sym.reaction.RxnSystem.schedules" title="Permalink to this definition">¶</a></dt>
+<dd><p>The Schedules and Concs passed during initialization.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="lblcrn.crn_sym.reaction.RxnSystem.conc_eqs">
+<code class="sig-name descname">conc_eqs</code><a class="headerlink" href="#lblcrn.crn_sym.reaction.RxnSystem.conc_eqs" title="Permalink to this definition">¶</a></dt>
+<dd><p>The ConcEqs in the system.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="lblcrn.crn_sym.reaction.RxnSystem.conc_diffeqs">
+<code class="sig-name descname">conc_diffeqs</code><a class="headerlink" href="#lblcrn.crn_sym.reaction.RxnSystem.conc_diffeqs" title="Permalink to this definition">¶</a></dt>
+<dd><p>The ConcDiffEqs in the system.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="lblcrn.crn_sym.reaction.RxnSystem.species_manager">
+<code class="sig-name descname">species_manager</code><a class="headerlink" href="#lblcrn.crn_sym.reaction.RxnSystem.species_manager" title="Permalink to this definition">¶</a></dt>
+<dd><p>The SpeciesManager the system uses.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="lblcrn.crn_sym.reaction.RxnSystem.symbol_index">
+<code class="sig-name descname">symbol_index</code><a class="headerlink" href="#lblcrn.crn_sym.reaction.RxnSystem.symbol_index" title="Permalink to this definition">¶</a></dt>
+<dd><p>A dictionary {sym.Symbol: int} to keep track of the order
+of the symbols.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="lblcrn.crn_sym.reaction.RxnSystem.scheduler">
+<code class="sig-name descname">scheduler</code><a class="headerlink" href="#lblcrn.crn_sym.reaction.RxnSystem.scheduler" title="Permalink to this definition">¶</a></dt>
+<dd><p>A comprehensive Schedule of the system, has entries (which
+might be Conc(species, 0) for each species which isn’t set by a
+ConcEq.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="lblcrn.crn_sym.reaction.RxnSystem.as_dict">
+<code class="sig-name descname">as_dict</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; dict<a class="headerlink" href="#lblcrn.crn_sym.reaction.RxnSystem.as_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a MSON-serializable dict representation.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="lblcrn.crn_sym.reaction.RxnSystem.from_dict">
+<em class="property">classmethod </em><code class="sig-name descname">from_dict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">d</span><span class="p">:</span> <span class="n">dict</span></em><span class="sig-paren">)</span><a class="headerlink" href="#lblcrn.crn_sym.reaction.RxnSystem.from_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load from a dict representation.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="lblcrn.crn_sym.reaction.RxnSystem.get_conc_functions">
+<code class="sig-name descname">get_conc_functions</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#lblcrn.crn_sym.reaction.RxnSystem.get_conc_functions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the functions corresponding to the ConcEqs.</p>
+<p>Used internally by get_ode_functions.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="lblcrn.crn_sym.reaction.RxnSystem.get_ode_expressions">
+<code class="sig-name descname">get_ode_expressions</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; List<span class="p">[</span>sympy.core.expr.Expr<span class="p">]</span><a class="headerlink" href="#lblcrn.crn_sym.reaction.RxnSystem.get_ode_expressions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a list of expressions, corresponding to the derivative of the
+concentration of each symbol in the reaction system.</p>
+<p>The collection is ordered, and that order is accessible through
+symbol_index or through get_symbols.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="lblcrn.crn_sym.reaction.RxnSystem.get_ode_functions">
+<code class="sig-name descname">get_ode_functions</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#lblcrn.crn_sym.reaction.RxnSystem.get_ode_functions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the ODE function with signature func(t, y) of the system.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="lblcrn.crn_sym.reaction.RxnSystem.get_species">
+<code class="sig-name descname">get_species</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; List<span class="p">[</span>lblcrn.crn_sym.species.Species<span class="p">]</span><a class="headerlink" href="#lblcrn.crn_sym.reaction.RxnSystem.get_species" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="lblcrn.crn_sym.reaction.RxnSystem.get_symbols">
+<code class="sig-name descname">get_symbols</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; List<span class="p">[</span>sympy.core.symbol.Symbol<span class="p">]</span><a class="headerlink" href="#lblcrn.crn_sym.reaction.RxnSystem.get_symbols" title="Permalink to this definition">¶</a></dt>
+<dd><p>Give all the symbols in the reaction system in a fixed order.</p>
+</dd></dl>
+
+</dd></dl>
+
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">LBL CRN</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contact.html">Contact</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../license.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">API Documentation</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, Lawrence Berkeley National Laboratory.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.1.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../../_sources/api_docs/crn_sym/reaction.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

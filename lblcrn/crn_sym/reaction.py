@@ -24,31 +24,42 @@ Usage:
     mathematica project.
 """
 
+import copy
+from typing import List, Optional, Set
 
+import monty.json
 import sympy as sym
-from typing import List, Set, Tuple
+from sympy.parsing import sympy_parser
 
+import lblcrn
+from lblcrn.crn_sym import species
 from lblcrn.crn_sym import conditions
 
 
-class Rxn:  # TODO(Andrew) Document here & beyond.
+class Rxn(monty.json.MSONable):
+    """A chemical reaction with reactants, products, and a rate constant.
+
+    Attributes:
+        reactants: A sym.Expr of the reactants.
+        products: A sym.Expr of the products.
+        rate_constant: A float, the rate constant of the chemical reaction.
     """
-    A chemical reaction with reactants, products, and a rate constant.
-    """
 
-    def __init__(self, reactants: sym.Expr, products: sym.Expr, k: float):
+    def __init__(self, reactants: Optional[sym.Expr],
+                 products: Optional[sym.Expr], k: float = 0):
+        """Create a new reaction by giving equation of the reactants.
+
+        This is intended to look like reactants -> products @ rate k. That is,
+        if your chemical equation looks like 2A -> B + C, then your reactants
+        is 2A.
+
+        Args:
+            reactants: The left-hand side of the chemical reaction.
+            products: The right-hand side of the chemical reaction.
+            k: The rate constant.
         """
-        Create a new reaction by giving equation of the reactants, the equation of the products,
-        and the rate constant.
 
-        This is intended to look like reactants -> products @ rate k. That is, if
-        your chemical equation looks like 2A -> B + C, then your reactants is 2A.
-        That is, the reactants is not a list of reactants, but the equation on the left-hand
-        side of the chemical equation. Similarly, products is the equation on the right-hand
-        side of the chemical equation.
-        """
-
-        # Note that although the type suggestion is sym.Expr, that is a suggestion
+        # Note that the type suggestion is Optional[sym.Expr].
         # It is possible that the user could pass None or 0 or 1 in.
         # Hence, sanitize input
         if not isinstance(reactants, sym.Expr):
@@ -71,18 +82,18 @@ class Rxn:  # TODO(Andrew) Document here & beyond.
 
     # TODO: this is bulk crn-specific method, and as a result should be removed.
     def to_terms(self) -> List[conditions.Term]:
-        """
-        Create a list of terms from the reaction.
+        """Create a list of terms from the reaction.
 
         Each term is essentially the reaction rate but positive or negative, 
         depending on if it is a reactand or the product.
 
-        This uses the reaction rate formula r = k*(concentration of products^coefficient of product):
-        if this is not true for your chemical equation, then you will get an error.
+        This uses the reaction rate formula r =
+        k*(concentration of products^coefficient of product):
+        if this is false for your chemical equation, you will get an error.
         """
         
         # Get the lefts and right 
-        # Here we're assuming that reactants and products are linear, chemical equations.
+        # Here we're assuming that reactants and products are linear.
         lefts = self.reactants.as_coefficients_dict()
         rights = self.products.as_coefficients_dict()
 
@@ -111,38 +122,61 @@ class Rxn:  # TODO(Andrew) Document here & beyond.
             
         return terms
 
+    def as_dict(self) -> dict:
+        """Return a MSON-serializable dict representation."""
+        d = {
+            '@module': self.__class__.__module__,
+            '@class': self.__class__.__name__,
+            '@version': lblcrn.__version__,  # TODO: Better way to do this?
+            'reactants': str(self.reactants),
+            'products': str(self.products),
+            'k': self.rate_constant
+        }
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict):
+        """Load from a dict representation."""
+        d['reactants'] = sympy_parser.parse_expr(d['reactants'])
+        d['products'] = sympy_parser.parse_expr(d['products'])
+        return cls(**d)
+
+
     def __str__(self):
-        return str(self.reactants) + ' → ' + str(self.products) + ' @ k=' + str(self.rate_constant)
+        return f'{self.reactants} -> {self.products} @ k={self.rate_constant}'
 
     def __repr__(self):
-        return 'Rxn(reactants=' + repr(self.reactants) + ', products=' + repr(self.products) + ', k=' + \
-               str(self.rate_constant) + ')'
+        return f'{self.__class__.__name__}' \
+               f'(reactants={repr(self.reactants)}, ' \
+               f'products={repr(self.products)}, ' \
+               f'k={self.rate_constant})'
 
 
 class RevRxn(Rxn):
-    """
-    A reversible reaction, essentially a reaction with two rate constants.
+    """A reversible reaction, essentially a reaction with two rate constants.
 
     Its use is to be quickly unpacked into two Rxns.
     """
 
-    def __init__(self, reactants: sym.Expr, products: sym.Expr, k1: float, k2: float = None):
+    def __init__(self, reactants: Optional[sym.Expr],
+                 products: Optional[sym.Expr], k: float, k2: float = None):
+        """Create a reversible reaction by giving equation.
+
+        This is intended to look like reactants <-> products @ rate k1,
+        with the reverse rate k2.
+
+        Args:
+            reactants: The left-hand side of the chemical reaction.
+            products: The right-hand side of the chemical reaction.
+            k: The rate constant.
+            k2: Optional, the rate constant for the reverse reaction. If not
+                supplied, it's assumed to be 1/k.
         """
-        Create a reversible reaction by giving equation of the reactants, the equation of the products,
-        and the rate constant.
 
-        This is intended to look like reactants <-> products @ rate k1, with the reverse rate k2.
-        If you don't specify a k2, it will assume that k2 = 1/k1.
-
-        The reactants is not a list of reactants, but the equation on the left-hand
-        side of the chemical equation. Similarly, products is the equation on the right-hand
-        side of the chemical equation.
-        """
-
-        Rxn.__init__(self, reactants, products, k1)
+        super().__init__(reactants, products, k)
 
         if k2 is None:
-            self.rate_constant_reverse = 1 / k1
+            self.rate_constant_reverse = 1 / k
         else:
             self.rate_constant_reverse = k2
 
@@ -153,14 +187,25 @@ class RevRxn(Rxn):
         return symbol
 
     def to_rxns(self) -> Tuple[Rxn, Rxn]:
-        return Rxn(self.reactants, self.products, k=self.rate_constant), Rxn(self.products, self.reactants, k=self.rate_constant_reverse)
+        return Rxn(self.reactants, self.products, k=self.rate_constant), \
+               Rxn(self.products, self.reactants, k=self.rate_constant_reverse)
 
     def to_terms(self) -> List[conditions.Term]:
         rxns = self.to_rxns()
         return [*rxns[0].to_terms(), *rxns[1].to_terms()]
-    
+
+    def as_dict(self) -> dict:
+        """Return a MSON-serializable dict representation."""
+        d = super().as_dict()
+        d['k2'] = self.rate_constant_reverse
+        return d
+
     def __str__(self):
-        return str(self.reactants) + ' ↔ ' + str(self.products) + ' @ k1=' + str(self.rate_constant) + ', k2=' + str(self.rate_constant_reverse)
+        return f'{self.reactants} <-> {self.products} ' \
+               f'@ k={self.rate_constant}, k2={self.rate_constant_reverse}'
 
     def __repr__(self):
-        return 'RevRxn(reactants=' + repr(self.reactants) + ', products=' + repr(self.products) + ', k1=' + str(self.rate_constant) + ', k2=' + str(self.rate_constant_reverse) + ')'
+        return f'{self.__class__.__name__}' \
+               f'(reactants={repr(self.reactants)}, ' \
+               f'products={repr(self.products)}, ' \
+               f'k={self.rate_constant}, k2={self.rate_constant_reverse})'

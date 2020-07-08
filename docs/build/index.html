@@ -1,0 +1,222 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LBL Chemical Reaction Simulator &#8212; LBL CRN dev0.1.2.2 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Examples" href="examples.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="lbl-chemical-reaction-simulator">
+<h1>LBL Chemical Reaction Simulator<a class="headerlink" href="#lbl-chemical-reaction-simulator" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound" id="mastertoc">
+</div>
+<div class="section" id="how-to-install">
+<h2>How to Install<a class="headerlink" href="#how-to-install" title="Permalink to this headline">¶</a></h2>
+<p>If you are using Anaconda:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">install</span> <span class="n">pip</span>
+<span class="n">conda</span> <span class="n">install</span> <span class="n">git</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="n">git</span><span class="o">+</span><span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">rithvikp</span><span class="o">/</span><span class="n">lbl</span><span class="o">-</span><span class="n">crn</span>
+</pre></div>
+</div>
+<p>If you are using normal Python:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">git</span><span class="o">+</span><span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">rithvikp</span><span class="o">/</span><span class="n">lbl</span><span class="o">-</span><span class="n">crn</span>
+</pre></div>
+</div>
+<p>Once it’s installed (it might take a while), run <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">lblcrn</span> <span class="pre">--version</span></code>
+to check if everything installed.</p>
+</div>
+<div class="section" id="api-rundown">
+<h2>API Rundown<a class="headerlink" href="#api-rundown" title="Permalink to this headline">¶</a></h2>
+<p>For exhaustive documentation, see the full <a class="reference internal" href="api_docs/index.html#api-docs"><span class="std std-ref">API Docs</span></a></p>
+<ul class="simple">
+<li><dl class="simple">
+<dt>Help Utilities</dt><dd><ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">lblcrn_help()</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">lblcrn_docs()</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">lblcrn_echo_on()</span></code> and <code class="docutils literal notranslate"><span class="pre">lblcrn_echo_off()</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">lblcrn_examples.load()</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p>Monty JSON save/load utilities</p></li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">RxnSystem</span></code>, which takes as input:</dt><dd><ul>
+<li><p>one <code class="docutils literal notranslate"><span class="pre">SpeciesManager</span></code></p></li>
+<li><p>any amount of: <code class="docutils literal notranslate"><span class="pre">Rxn</span></code>, <code class="docutils literal notranslate"><span class="pre">RevRxn</span></code>, <code class="docutils literal notranslate"><span class="pre">Schedule</span></code>, <code class="docutils literal notranslate"><span class="pre">Conc</span></code>, <code class="docutils literal notranslate"><span class="pre">ConcEq</span></code>, <code class="docutils literal notranslate"><span class="pre">ConcDiffEq</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">simulate_crn()</span></code>, which takes a <code class="docutils literal notranslate"><span class="pre">RxnSystem</span></code> and creates a <code class="docutils literal notranslate"><span class="pre">CRNTimeSeries</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">simulate_xps()</span></code>, which takes a <code class="docutils literal notranslate"><span class="pre">RxnSystem</span></code> and creates an <code class="docutils literal notranslate"><span class="pre">XPSExperiment</span></code></p></li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">CRNTimeSeries</span></code></dt><dd><ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">.df</span></code>, a pandas DataFrame</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.at()</span></code>, to look at one time</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.xps_with()</span></code> to make an <code class="docutils literal notranslate"><span class="pre">XPSExperiment</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.plot()</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>XPSExperiment</dt><dd><ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">.df</span></code>, a pandas DataFrame</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.set_experimental()</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.set_gas_interval()</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.set_scale_factor()</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.plot()</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</div>
+<div class="section" id="walkthrough">
+<h2>Walkthrough<a class="headerlink" href="#walkthrough" title="Permalink to this headline">¶</a></h2>
+<p>This will walk you through the workflow of a predator-prey system. Import:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">lblcrn</span> <span class="kn">import</span> <span class="o">*</span>
+</pre></div>
+</div>
+<p>First, you need to make a SpeciesManager to keep track of all your species.
+Then, you can create some species:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sm</span> <span class="o">=</span> <span class="n">SpeciesManager</span><span class="p">()</span>
+<span class="n">prey</span> <span class="o">=</span> <span class="n">sm</span><span class="o">.</span><span class="n">sp</span><span class="p">(</span><span class="s1">&#39;rabbit&#39;</span><span class="p">,</span> <span class="n">Orbital</span><span class="p">(</span><span class="s1">&#39;1s&#39;</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">))</span>
+<span class="n">pred</span> <span class="o">=</span> <span class="n">sm</span><span class="o">.</span><span class="n">sp</span><span class="p">(</span><span class="s1">&#39;fox&#39;</span><span class="p">,</span> <span class="n">Orbital</span><span class="p">(</span><span class="s1">&#39;1s&#39;</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Then, you define your reaction system:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rsys</span> <span class="o">=</span> <span class="n">RxnSystem</span><span class="p">(</span>
+    <span class="n">sm</span><span class="p">,</span>
+
+    <span class="n">Rxn</span><span class="p">(</span><span class="n">prey</span> <span class="o">+</span> <span class="n">pred</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">pred</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+    <span class="n">Rxn</span><span class="p">(</span><span class="n">prey</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">prey</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+    <span class="n">Rxn</span><span class="p">(</span><span class="n">pred</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+
+    <span class="n">Conc</span><span class="p">(</span><span class="n">pred</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+    <span class="n">Conc</span><span class="p">(</span><span class="n">prey</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Then, you solve the system. This simulates the system for <code class="docutils literal notranslate"><span class="pre">time</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">time_series</span> <span class="o">=</span> <span class="n">simulate_crn</span><span class="p">(</span><span class="n">rsys</span><span class="p">,</span> <span class="n">time_max</span><span class="o">=</span><span class="mi">45</span><span class="p">,</span> <span class="n">max_step</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
+<span class="n">time_series</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>And then to plot some x-ray spectroscopy gaussians:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">time_series</span><span class="o">.</span><span class="n">xps_with</span><span class="p">(</span><span class="n">t</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>You can access this example through:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">lblcrn_examples</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s1">&#39;predator-prey&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="indices-and-tables">
+<h2>Indices and Tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="#">LBL CRN</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contact.html">Contact</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api_docs/index.html">API Documentation</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="#">Documentation overview</a><ul>
+      <li>Next: <a href="examples.html" title="next chapter">Examples</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, Lawrence Berkeley National Laboratory.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.1.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

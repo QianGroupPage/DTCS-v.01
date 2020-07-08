@@ -20,20 +20,21 @@ Example:
     xps.plot()
 """
 
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple
 
 from matplotlib import pyplot as plt
+import monty.json
 import numpy as np
 import pandas as pd
 from scipy import integrate
 from scipy import stats
 from sklearn import metrics
 import sympy as sym
-
-from lblcrn.bulk_crn import common
-from lblcrn.bulk_crn import experiment
 from lblcrn.bulk_crn import time_series
-from lblcrn.crn_sym.rxn_system import RxnSystem
+from lblcrn import bulk_crn
+from lblcrn.experiments import experiment
+from lblcrn.experiments import time_series
+from lblcrn.crn_sym import reaction
 from lblcrn.crn_sym import species
 from lblcrn import _echo
 
@@ -94,7 +95,8 @@ class XPSObservable:
             ax: The plt.Axes on which to plot.
             **kwargs: Forwarded.
         """
-        for index, specie in enumerate(self.gaussians):
+        # Sort the Gaussians before plotting to overlay smaller peaks on top of larger ones
+        for index, specie in sorted(enumerate(self.gaussians), key=lambda x: max(self.gaussians[x[1]]), reverse=True):
             ax.fill(self.x_range, self.gaussians[specie], label=specie,
                     color=self._COLORS[index])
 
@@ -144,6 +146,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
         species_concs: The concentrations of each species, for the creation of
             simulated data.
         species_manager: The SpeciesManager in use.
+        ignore: Species to ignore during processing.
     """
 
     _PLOT_MARGIN = 5
@@ -157,7 +160,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
                  autoscale: bool = True,
                  experimental: pd.Series = None,
                  gas_interval: Tuple[float, float] = None,
-                 scale_factor: float = 0.0,
+                 scale_factor: float = 1.0,
                  title: str = ''):
         """Initialze the XPSExperiment.
 
@@ -183,6 +186,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
         self.autoresample = autoresample
         self.autoscale = autoscale
         self.title = title
+        self.ignore = []
 
         # Experimental data-related
         self._experimental = None
@@ -308,7 +312,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
     # self.resample(), and that's only if overwrite=True.
 
     def resample(self, overwrite=True, species=None,
-                 ignore=None) -> XPSObservable:
+                 ignore=[]) -> XPSObservable:
         """Recalculates the dataframe in case anything updated.
 
         Args:
@@ -319,8 +323,9 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
 
         Returns:
             An XPSObservable with the resampled data.
-        """  # TODO(Andrew) Typehints?
-        species = self._get_species_not_ignored(species, ignore)
+        """ 
+        # TODO(Andrew) Typehints?
+        species = self._get_species_not_ignored(species, ignore + self.ignore)
 
         x_range = self._get_x_range(species)
         df = pd.DataFrame(data=0, index=x_range, columns=['envelope'])
@@ -461,15 +466,47 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
         xps_obs = self.resample(overwrite=False, species=species)
         xps_obs.plot(ax=ax, **kwargs)
 
+    # --- Utility -------------------------------------------------------------
 
-def simulate_xps(rsys: RxnSystem, time: float = 1,
+    def as_dict(self) -> dict:
+        """Return a MSON-serializable dict representation."""
+        d = super().as_dict()
+        d['species_concs'] = {str(symbol): conc for symbol, conc in
+                              self.species_concs.items()}
+        d['species_manager'] = self.species_manager.as_dict()
+        d['autoresample'] = self.autoresample
+        d['autoscale'] = self.autoscale
+        d['experimental'] = self._experimental.to_json() if \
+            self._experimental is not None else None
+        d['gas_interval'] = self._gas_interval
+        d['scale_factor'] = self._scale_factor
+        d['title'] = self.title
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict):
+        """Load from a dict representation."""
+        decode = monty.json.MontyDecoder().process_decoded
+        d['species_concs'] = {sym.Symbol(name): conc for name, conc in
+                              d['species_concs'].items()}
+        d['species_manager'] = decode(d['species_manager'])
+        if d['experimental'] is not None:
+            d['experimental'] = pd.read_json(d['experimental'],
+                                             typ='series',
+                                             convert_axes=False)
+            d['experimental'].index = d['experimental'].index.map(float)
+        return cls(**d)
+
+
+def simulate_xps(rsys: reaction.RxnSystem, time: float,
+                 end_when_settled: bool = False,
                  species: List[sym.Symbol] = None,
                  ignore: List[sym.Symbol] = None,
                  autoresample: bool = True,
                  autoscale: bool = True,
                  experimental: pd.Series = None,
                  gas_interval: Tuple[float, float] = None,
-                 scale_factor: float = 0.0,
+                 scale_factor: float = 1.0,
                  title: str = '',
                  **options) -> XPSExperiment:
     """Simulate the given reaction system over time.
@@ -494,8 +531,9 @@ def simulate_xps(rsys: RxnSystem, time: float = 1,
         A Solution object describing the solution.
     """
     # TODO(Andrew): Solve at equilibrium when no time is specified.
-    sol_t, sol_y = common.solve_rsys_ode(rsys, time, **options)
+    sol_t, sol_y = bulk_crn.solve_rsys_ode(rsys, time, end_when_settled, **options)
     sol = time_series.CRNTimeSeries(sol_t, sol_y, rsys)
+    ignore = []
     return sol.xps_with(species=species,
                         ignore=ignore,
                         autoresample=autoresample,
