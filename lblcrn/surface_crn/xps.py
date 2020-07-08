@@ -11,12 +11,12 @@ def read(filename):
     :return:
     """
     names, header_row = process_header(filename)
-    print("Column names found in the {}".format(filename), names)
+    # print("Column names found in the {}".format(filename), names)
 
 
     res = pd.read_csv(filename, delim_whitespace=True, skip_blank_lines=True,
                        names=names, skiprows=header_row+1)
-    print("Read from {}\n".format(filename), res)
+    # print("Read from {}\n".format(filename), res)
     return res
 
 

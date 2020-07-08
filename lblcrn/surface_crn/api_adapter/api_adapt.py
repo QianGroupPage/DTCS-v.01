@@ -46,11 +46,16 @@ def generate_initial_surface(rsys, random_seed=30):
     :return: a string representing the initial surface.
     """
     species = []
+    locs = {}
     for c in rsys.schedules:
         # TODO
         if isinstance(c, Schedule) and not isinstance(c, Conc):
             raise Exception(f"{c} is a schedule, not an initial concentration." +
                             f" This is not currently supported in the Surface CRN.")
+
+        if c.locs:
+            locs[str(c.symbol)] = c.locs
+        num_random = int(str(c.concentration)) - len(c.locs)
 
         # if not re.match('[1-9][0-9]*', str(c.expression)):
         #     raise Exception(f"{c.symbol} must have a positive integer number of initial counts. Currently, " +

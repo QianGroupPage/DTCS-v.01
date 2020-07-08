@@ -168,13 +168,14 @@ class Conc(Schedule):
     Internally, it is a schedule where the symbol gets its initial concentration added at t=0.
     """
 
-    def __init__(self, symbol, concentration):
+    def __init__(self, symbol, concentration, locs=[]):
         """
         Make a new Conc: it's a Schedule where it all gets added at t=0.
         """
 
         Schedule.__init__(self, symbol, {0: concentration})
         self.concentration = concentration
+        self.locs = locs
 
     def __str__(self):
         return '[' + str(self.symbol) + '] (@ t=0) = ' + str(self.concentration)
