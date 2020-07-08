@@ -128,7 +128,8 @@ def simulate_surface_crn(manifest_filename, display_class = None,
     # print(" Done.")
 
     if opts.capture_directory != None:
-        from signal import signal, SIGPIPE, SIG_DFL
+        from signal import signal, SIG_DFL
+        # SIGPIPE is not used on any Windows system.
         if not sys.platform.startswith('win'):
             from signal import SIGPIPE
         import subprocess as sp
