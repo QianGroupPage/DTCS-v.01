@@ -33,7 +33,6 @@ import numpy as np
 import pandas as pd
 import sympy as sym
 
-from lblcrn.bulk_crn import xps
 from lblcrn import bulk_crn
 from lblcrn.experiments import experiment
 from lblcrn.experiments import xps

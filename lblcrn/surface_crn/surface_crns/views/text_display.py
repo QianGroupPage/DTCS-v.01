@@ -10,7 +10,7 @@ class TextDisplay(object):
     space.
     '''
     # TODO: make sure this works across all systems
-    FONT_NAME         = 'ariattc'  # This is good for MacOS
+    FONT_NAME         = 'arialboldttf'  # This is good for MacOS
     BLACK             = (0,0,0)
     WHITE             = (255,255,255)
     HORIZONTAL_BUFFER = 5
@@ -18,7 +18,7 @@ class TextDisplay(object):
 
 
     # def __init__(self, width, font_size=24, text=""):
-    def __init__(self, width, font_size=36, text=""):
+    def __init__(self, width, font_size=24, text=""):
         debug = False
 
         self.display_width = width

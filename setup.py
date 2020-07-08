@@ -69,7 +69,8 @@ if __name__ == '__main__':
                          'seaborn',
                          'setuptools',
                          'sklearn',
-                         'sympy'],
+                         'sympy',
+                         'ffmpeg'],
                      requires=[
                          'jupyterlab',
                      ],
