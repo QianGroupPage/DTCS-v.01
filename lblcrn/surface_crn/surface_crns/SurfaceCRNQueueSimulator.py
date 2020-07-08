@@ -99,8 +99,8 @@ def main():
     simulate_surface_crn(manifest_filename)
 
 
-def simulate_surface_crn(manifest_filename, display_class = None,
-                         init_state=None, rxns=None, spectra_in_video=True,
+def simulate_surface_crn(manifest_filename, display_class=None,
+                         init_state=None, rxns=None, spectra_in_video=True, running_average=10,
                          spectra_max_conc=-1):
     '''
     Runs a simulation, and displays it in a GUI window OR saves all frames
@@ -165,14 +165,17 @@ def simulate_surface_crn(manifest_filename, display_class = None,
         simulation = QueueSimulator(surface = grid,
                                     transition_rules = opts.transition_rules,
                                     seed = opts.rng_seed,
-                                    simulation_duration = opts.max_duration)
+                                    simulation_duration = opts.max_duration,
+                                    )
         simulation.init_wall_time = process_time()
+    # TODO: support synchronous mode.
     elif opts.simulation_type == "synchronous":
         simulation = SynchronousSimulator(
                                     surface = grid,
                                     update_rule = opts.update_rule,
                                     seed = opts.rng_seed,
-                                    simulation_duration = opts.max_duration)
+                                    simulation_duration = opts.max_duration,
+                                    )
         simulation.init_wall_time = process_time()
     else:
         raise Exception('Unknown simulation type "' + opts.simulation_type+'".')
@@ -683,6 +686,7 @@ def update_display(opts, simulation, FRAME_DIRECTORY=None, time_display=None, ti
                 temp_screen = pygame.Surface([half_size[0] + xps_width + h_gap, half_size[1]])
                 temp_screen.fill((255,255,255))
                 temp_screen.blit(simulation.display_surface, (0, 0))
+
                 r = Results.from_counts(simulation.rxns, simulation.surface.species_count())
                 dpi = 100
 
@@ -700,6 +704,9 @@ def update_display(opts, simulation, FRAME_DIRECTORY=None, time_display=None, ti
                     gap = 0
                     fig_height = min(xps_width, (half_size[1] -
                                                  title_display.display_height - new_time_display.display_height - gap))
+
+                    # Fit two pictures
+                    fig_height = fig_height / 2
                     y_lim = round(1.1 * spectra_max_conc) if spectra_max_conc != -1 else simulation.surface.num_nodes
                     raw_data, size = r.raw_string_gaussian(y_upper_limit=y_lim,
                                                            fig_size=(xps_width / dpi,  fig_height / dpi),
@@ -712,6 +719,8 @@ def update_display(opts, simulation, FRAME_DIRECTORY=None, time_display=None, ti
                         start += (total_height - start - fig_height) / 2
                     temp_screen.blit(gaussian, (new_time_display.x_pos, start))
                     # time_display.x_pos, time_display.y_pos = time_x, time_y
+
+                    # r = Results.from_counts(simulation.rxns, simulation.concentration_trajectory)
                 else:
                     raw_data, size = r.raw_string_gaussian(y_upper_limit=simulation.surface.num_nodes,
                                                            fig_size=(half_size[0] / dpi, (half_size[1] - up_gap) / dpi),

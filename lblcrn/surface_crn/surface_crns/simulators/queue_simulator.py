@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import random
 import math
 from queue import *
@@ -38,8 +39,8 @@ class QueueSimulator:
                 if not rule in self.rules_by_state[input_state]:
                     self.rules_by_state[input_state].append(rule)
 
-        # TODO:
-        # print(self.rules_by_state)
+        # TODO
+        self.concentration_trajectory = None
 
         self.time = 0
         self.surface.set_global_state(self.init_state)
@@ -48,6 +49,20 @@ class QueueSimulator:
         self.reset()
         if self.debugging:
             print(self.surface)
+
+    # TODO:
+    def add_concs(self):
+        """
+        Add the concentrations from the current timestamps to concentration_trajectory dataframe.
+        """
+        species_count = self.surface.species_count()
+        species_count["Time (s)"] = self.time
+
+        if not self.concentration_trajectory:
+            self.concentration_trajectory = pd.from_dict(species_count)
+            self.concentration_trajectory.set_index("Time (s)")
+        else:
+            self.concentration_trajectory.append(species_count)
 
     def reset(self):
         '''
@@ -161,6 +176,8 @@ class QueueSimulator:
         if local_debugging:
             print("process_next_reaction() returning event " +
                   str(next_reaction))
+
+        self.add_concs()
         return next_reaction
     #end def process_next_reaction
 

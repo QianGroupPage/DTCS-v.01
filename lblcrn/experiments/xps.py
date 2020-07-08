@@ -33,7 +33,7 @@ import sympy as sym
 from lblcrn import bulk_crn
 from lblcrn.experiments import experiment
 from lblcrn.experiments import time_series
-from lblcrn.crn_sym import reaction
+from lblcrn.crn_sym.rxn_system import RxnSystem
 from lblcrn.crn_sym import species
 from lblcrn import _echo
 
@@ -497,7 +497,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
         return cls(**d)
 
 
-def simulate_xps(rsys: reaction.RxnSystem, time: float,
+def simulate_xps(rsys: RxnSystem, time: float,
                  end_when_settled: bool = False,
                  species: List[sym.Symbol] = None,
                  ignore: List[sym.Symbol] = None,

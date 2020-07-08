@@ -12,9 +12,8 @@ from shutil import rmtree
 
 
 def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=False, spectra_in_video=True,
-             species_tracked=[], manifest_file=""):
+                  running_average=10, species_tracked=[], manifest_file=""):
     """
-
     :param rxns:
     :param time_max:
     :param lattice:
@@ -69,7 +68,7 @@ def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=Fa
         # TODO: progress bar for the video
         # TODO: add this as an argument spectra_max_conc=r.df_raw.max()
         simulate_with_display(manifest, surface, rxns=rxns, spectra_in_video=spectra_in_video,
-                              spectra_max_conc=r.df_raw.to_numpy().max())
+                              running_average=running_average, spectra_max_conc=r.df_raw.to_numpy().max())
     r.video = video_link
 
     # TODO: warn the user if termination is early.
@@ -99,13 +98,15 @@ def get_frames_link(manifest):
     return f"{opts.capture_directory}/frames"
 
 
-def simulate_with_display(manifest_file, lattice, rxns=None, spectra_in_video=True, spectra_max_conc=-1):
+def simulate_with_display(manifest_file, lattice, rxns=None, spectra_in_video=True, running_average=10,
+                          spectra_max_conc=-1):
     if rxns.surface.structure == "hexagon":
         display_class = HexGridPlusIntersectionDisplay
     else:
         display_class = None
     SurfaceCRNQueueSimulator.simulate_surface_crn(manifest_file, display_class, init_state=lattice, rxns=rxns,
-                                                  spectra_in_video=spectra_in_video, spectra_max_conc=spectra_max_conc)
+                                                  spectra_in_video=spectra_in_video, running_average=running_average,
+                                                  spectra_max_conc=spectra_max_conc)
 
 
 def add_groups(surface, rsys):
@@ -184,5 +185,3 @@ def simulate_without_display(manifest_file, lattice, species_tracked, rxns):
                 concs[product][-1] += 1
 
     return times, concs
-
-
