@@ -70,8 +70,7 @@ if __name__ == '__main__':
                          'setuptools',
                          'sklearn',
                          'sympy',
-                         'ffmpeg',
-                         'signal'],
+                         'ffmpeg'],
                      requires=[
                          'jupyterlab',
                      ],
