@@ -29,15 +29,14 @@ class SurfaceRxn(Rxn):
 
         self.reactants = []
         for s in reactants:
-            if s is not None and (not isinstance(s, sym.Symbol) and not isinstance(s, Surface)):
-                raise Exception(f"{s} is not a of sympy.Symbol class or Surface class. \n" +
-                                "please create it using the sp method of a species manager")
+            # if s is not None and (not isinstance(s, sym.Symbol) and not isinstance(s, Surface)):
+            #     raise Exception(f"{s} is not a of sympy.Symbol class or Surface class. \n" +
+            #                     "please create it using the sp method of a species manager")
             if isinstance(s, Surface):
                 self.reactants.append(s.symbol())
             elif isinstance(s, Site):
                 self.reactants.append(s.symbol)
             else:
-                # TODO: store species objects only
                 self.reactants.append(s)
 
         self.products = []

@@ -55,14 +55,12 @@ class QueueSimulator:
         """
         Add the concentrations from the current timestamps to concentration_trajectory dataframe.
         """
-        species_count = self.surface.species_count()
-        species_count["Time (s)"] = self.time
+        species_count = dict(self.surface.species_count())
 
-        if not self.concentration_trajectory:
-            self.concentration_trajectory = pd.DataFrame.from_dict(species_count)
-            self.concentration_trajectory.set_index("Time (s)")
+        if self.concentration_trajectory is None:
+            self.concentration_trajectory = pd.DataFrame(species_count, index=[self.time])
         else:
-            self.concentration_trajectory.append(species_count)
+            self.concentration_trajectory = self.concentration_trajectory.append(pd.DataFrame(species_count, index=[self.time]))
 
     def reset(self):
         '''

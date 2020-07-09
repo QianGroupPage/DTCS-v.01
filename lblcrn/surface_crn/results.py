@@ -238,10 +238,12 @@ class Results:
             for s in v:
                 # If parent is in the list of children, but not in the data column,
                 # assume that parent is not a valid species in the underlying system.
+                # TODO: improve the logic here
+                if s not in self.df.columns:
+                    continue
                 if s not in self.df.columns and s == k:
                     continue
-                if s not in self.df.columns:
-                # if s != k and s not in self.df.columns:
+                if s != k and s not in self.df.columns:
                     raise Exception(f"Subspecies {s} has not been recorded in the results data frame.")
                 if s in self.df.columns:
                     summed_series += self.df[s]
@@ -433,7 +435,6 @@ class Results:
         A wrapper function for self.plot_gaussian intended for generating frames in Pygame videos.
         :return: raw string representation of the figure
         """
-        import matplotlib
         backend = matplotlib.rcParams['backend']
         matplotlib.use("Agg")
         fig = self.plot_gaussian(t=t,  xps_scaling=xps_scaling, return_fig=True, fig_size=fig_size, dpi=dpi,
