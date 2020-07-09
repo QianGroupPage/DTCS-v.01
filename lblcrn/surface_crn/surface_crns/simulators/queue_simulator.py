@@ -57,10 +57,14 @@ class QueueSimulator:
         """
         species_count = dict(self.surface.species_count())
 
+        current_row = pd.DataFrame(species_count, index=[self.time])
+
         if self.concentration_trajectory is None:
-            self.concentration_trajectory = pd.DataFrame(species_count, index=[self.time])
+            self.concentration_trajectory = current_row
         else:
-            self.concentration_trajectory = self.concentration_trajectory.append(pd.DataFrame(species_count, index=[self.time]))
+            self.concentration_trajectory = self.concentration_trajectory.append(current_row)
+        self.concentration_trajectory.fillna(0, inplace=True)
+
 
     def reset(self):
         '''

@@ -23,9 +23,16 @@ class Results:
     TIME_COL_NAME = "Time (s) "  # column name used for the time entry
 
     def __init__(self, manifest_file, rxns, df=None):
+        """
+        :param manifest_file:
+        :param rxns:
+        :param df: a df whose index may be unnamed but will be reset into TIME_COL_NAME
+        """
+
         self.manifest_file = manifest_file
         self.rxns = rxns
-        self.df = df
+        self.df = df.copy()
+        self.df.rename_axis(Results.TIME_COL_NAME, inplace=True)
 
         # Correct the count values for larger species
         for s in rxns.species_manager.large_species:
@@ -186,11 +193,13 @@ class Results:
         """
         return self.average_values(convergence_time, self.df.index[-1])
 
-    def average_values(self, start, end):
+    def average_values(self, start, end=-1):
         """
         Average the result df from time start to time end.
         :return: a df with time column dropped
         """
+        if end == -1:
+            end = self.df.index[-1]
         df = self.df
         return df.loc[(start <= df.index) & (df.index <= end)].mean()
 
@@ -315,10 +324,10 @@ class Results:
     def reference_with_xps(self, path="", scaling_factor=1):
         self.xps_df = xps.read_and_process(path, round=1) / scaling_factor
 
-    def gaussian_df(self, t=-1, scaling_factor=1):
+    def gaussian_df(self, t=-1, avg_duration=1, scaling_factor=1):
         if t == -1:
             t = self.df.index.max()
-        s = self.average_values(t, t + 1) / scaling_factor
+        s = self.average_values(t, t + avg_duration) / scaling_factor
 
         sigma = 0.75 * np.sqrt(2) / (np.sqrt(2 * np.log(2)) * 2)
         bes = [self.substances[name].orbitals[0].binding_energy for name in self.species_ordering]
@@ -328,7 +337,7 @@ class Results:
         res = {}
 
         for name in self.species_ordering:
-            sol = s[name]
+            sol = s[name] if name in s else 0
             for o in self.substances[name].orbitals:
                 be = o.binding_energy
                 dist = sol * norm.pdf(x_axis, be, sigma)
@@ -353,7 +362,7 @@ class Results:
         max_be = max(gaussian.index.max(), xps_df.index.max())
         return xps.fill_zeros(gaussian, min_be, max_be), xps.fill_zeros(xps_df, min_be, max_be)
 
-    def plot_gaussian(self, t=-1, path="", xps_path="", xps_scaling=1, save=False, return_fig=False, fig_size="Default",
+    def plot_gaussian(self, t=-1, avg_duration=1, path="", xps_path="", xps_scaling=1, save=False, return_fig=False, fig_size="Default",
                       dpi=100, scaling_factor=1, ax=None, envelope_name="CRN"):
         """
         Plot the Gaussian function from time t to time t + 1.
@@ -364,7 +373,7 @@ class Results:
         #     plt.rcParams['figure.figsize'] = [0.6 * 27 / 2.54, 0.6 * 18 / 2.54]
         # else:
         #     plt.rcParams['figure.figsize'] = fig_size
-        gaussian = self.gaussian_df(t, scaling_factor)
+        gaussian = self.gaussian_df(t, avg_duration=avg_duration, scaling_factor=scaling_factor)
         min_be = gaussian.index.min()
         max_be = gaussian.index.max()
         bes = self.bes()
@@ -429,15 +438,15 @@ class Results:
             # Jupter Notebbok. Return only when you need the figure.
             return ax.figure
 
-    def raw_string_gaussian(self, t=-1, y_upper_limit=None,  xps_scaling=1, fig_size="Default", dpi=100,
-                        scaling_factor=1, ax=None):
+    def raw_string_gaussian(self, t=-1, avg_duration=1, y_upper_limit=None,  xps_scaling=1, fig_size="Default", dpi=100,
+                            scaling_factor=1, ax=None):
         """
         A wrapper function for self.plot_gaussian intended for generating frames in Pygame videos.
         :return: raw string representation of the figure
         """
         backend = matplotlib.rcParams['backend']
         matplotlib.use("Agg")
-        fig = self.plot_gaussian(t=t,  xps_scaling=xps_scaling, return_fig=True, fig_size=fig_size, dpi=dpi,
+        fig = self.plot_gaussian(t=t, avg_duration=avg_duration, xps_scaling=xps_scaling, return_fig=True, fig_size=fig_size, dpi=dpi,
                                  scaling_factor=scaling_factor, ax=ax, envelope_name="total")
         fig.tight_layout()
         matplotlib.pyplot.ylim((0, y_upper_limit))

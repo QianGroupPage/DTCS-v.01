@@ -10,7 +10,7 @@ class TimeDisplay(TextDisplay):
     space.
     '''
     def __init__(self, width):
-        super(TimeDisplay, self).__init__(width)
+        super(TimeDisplay, self).__init__(width, font_size=18)
         self.time = 0
 
     def update_time_text(self):
