@@ -12,7 +12,7 @@ from shutil import rmtree
 
 
 def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=False, spectra_in_video=True,
-                  running_average=10, species_tracked=[], manifest_file=""):
+                  running_average=2, species_tracked=[], manifest_file=""):
     """
     :param rxns:
     :param time_max:

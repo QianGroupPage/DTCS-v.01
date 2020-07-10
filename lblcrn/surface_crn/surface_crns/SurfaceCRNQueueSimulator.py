@@ -74,7 +74,7 @@ MIN_GRID_WIDTH = 6 * button_width + 10 * button_buffer
 MOVIE_SUBDIRECTORY = "movies"
 DEBUG_SUBDIRECTORY = "debug"
 FRAME_SUBDIRECTORY = "frames"
-CUTOFF_TIME     = 600 # Cut off simulation at 10 minutes
+CUTOFF_TIME     = 6000 # Cut off simulation at 10 minutes
 CUTOFF_SIZE     = 10000 * 500000 # Cut off simulation at roughly 1000 frames for
                                 # a typical image size.
 
@@ -182,6 +182,7 @@ def simulate_surface_crn(manifest_filename, display_class=None,
     time = simulation.time
     event_history = EventHistory()
     simulation.rxns = rxns
+    simulation.running_average = running_average
     simulation.spectra_in_video = spectra_in_video
 
 
@@ -698,9 +699,18 @@ def update_display(opts, simulation, FRAME_DIRECTORY=None, time_display=None, ti
                     display = TextDisplay(spectrum_width, text="Dynamical XPS Spectrum")
                     display.render(temp_screen, title_x + trajectory_width + h_gap, title_y)
 
-
                     # TODO: add a text display
-                    running_avg_display = TextDisplay(spectrum_width, font_size=18, text=f"Last {2} Seconds")
+
+                    if time_display.get_time() > simulation.running_average:
+                        start_time = time_display.get_time() - simulation.running_average
+                    else:
+                        start_time = 0
+                    if time_display.get_time() == 0:
+                        time_period_string = f"T = {time_display.get_time()}"
+                    else:
+                        time_period_string = f"T = {start_time} to T = {time_display.get_time()}"
+                    running_avg_display = TextDisplay(spectrum_width, font_size=18,
+                                                      text=time_period_string)
 
                     # Don't save time display's x, y locations.
                     time_x, time_y = time_display.x_pos, time_display.y_pos
@@ -722,24 +732,22 @@ def update_display(opts, simulation, FRAME_DIRECTORY=None, time_display=None, ti
                                                            dpi=dpi)
                     gaussian = pygame.image.fromstring(raw_data, size, "RGB")
 
-                    total_height = trajectory_height
                     start = new_time_display.y_pos + new_time_display.display_height + gap
-
-                    # if start + 2 * fig_height + fig_gap < total_height:
-                    #     start += (total_height - start - 2 * fig_height) / 2
                     temp_screen.blit(gaussian, (new_time_display.x_pos, start))
 
                     start += fig_height
                     running_avg_display.render(temp_screen, x_pos=new_time_display.x_pos, y_pos=start)
 
-                    # time_display.x_pos, time_display.y_pos = time_x, time_y
-                    if simulation.concentration_trajectory is not None:
-                        r = Results(None, simulation.rxns, simulation.concentration_trajectory)
+                    if simulation.concs:
+                        r = Results.from_concs_times(None, simulation.rxns, simulation.concs, simulation.times)
                     else:
                         r = r
 
+                    # print(r.df_raw)
+
                     raw_data, size = r.raw_string_gaussian(y_upper_limit=y_lim,
-                                                           t=simulation.time - 2, avg_duration=2,
+                                                           t=simulation.time - simulation.running_average,
+                                                           avg_duration=simulation.running_average,
                                                            fig_size=(spectrum_width / dpi, fig_height / dpi),
                                                            dpi=dpi)
                     gaussian = pygame.image.fromstring(raw_data, size, "RGB")
@@ -748,7 +756,8 @@ def update_display(opts, simulation, FRAME_DIRECTORY=None, time_display=None, ti
 
                 else:
                     raw_data, size = r.raw_string_gaussian(y_upper_limit=simulation.surface.num_nodes,
-                                                           fig_size=(trajectory_width / dpi, (trajectory_height - up_gap) / dpi),
+                                                           fig_size=(trajectory_width / dpi,
+                                                                     (trajectory_height - up_gap) / dpi),
                                                            dpi=dpi)
                     gaussian = pygame.image.fromstring(raw_data, size, "RGB")
                     temp_screen.blit(gaussian, (trajectory_width + h_gap, up_gap - 10))
@@ -782,6 +791,9 @@ def update_display(opts, simulation, FRAME_DIRECTORY=None, time_display=None, ti
                 terminate = True
 
             if terminate:
+                # TODO: clean up this section
+                print(termination_string)
+
                 text_display = TextDisplay(display_width)
                 text_display.text = termination_string
                 text_display.render(display_surface, x_pos = 0, y_pos = 0)

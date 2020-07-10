@@ -73,6 +73,15 @@ class Results:
         # Play the videos
         self.video = None
 
+
+    # def extend(self, df):
+    #     """
+    #     A
+    #     :param df:
+    #     :return:
+    #     """
+
+
     @staticmethod
     def side_by_side_axes(num_axes=2, output_fig=False):
         """
@@ -446,6 +455,8 @@ class Results:
         """
         backend = matplotlib.rcParams['backend']
         matplotlib.use("Agg")
+        # TODO: determine if this solves the issue with inconsistent font.
+        matplotlib.rcParams["font.family"] = "arial"
         fig = self.plot_gaussian(t=t, avg_duration=avg_duration, xps_scaling=xps_scaling, return_fig=True, fig_size=fig_size, dpi=dpi,
                                  scaling_factor=scaling_factor, ax=ax, envelope_name="total")
         fig.tight_layout()

@@ -50,20 +50,43 @@ class QueueSimulator:
         if self.debugging:
             print(self.surface)
 
+        # TODO: make this a dictionary from species to concentration.
+        self.concs = {}
+        self.times = []
+
     # TODO:
     def add_concs(self):
         """
         Add the concentrations from the current timestamps to concentration_trajectory dataframe.
         """
-        species_count = dict(self.surface.species_count())
+        # TODO: sum things up here.
+        # TODO: easy ways to average out the last 2s, including cutting out the "unqualified" seconds each
+        # time before you do averaging.
+        species_count = self.surface.species_count()
 
-        current_row = pd.DataFrame(species_count, index=[self.time])
+        for k, l in self.concs.items():
+            if k not in species_count:
+                l.append(0)
+            else:
+                l.append(species_count[k])
 
-        if self.concentration_trajectory is None:
-            self.concentration_trajectory = current_row
-        else:
-            self.concentration_trajectory = self.concentration_trajectory.append(current_row)
-        self.concentration_trajectory.fillna(0, inplace=True)
+        for k, v in self.surface.species_count().items():
+            if k not in self.concs:
+                self.concs[k] = [0 for _ in self.times]
+                self.concs[k].append(v)
+
+        # self.concs.append(species_count)
+        #
+        self.times.append(self.time)
+        #
+        # current_row = pd.DataFrame(species_count, index=[self.time])
+        #
+        # if self.concentration_trajectory is None:
+        #     self.concentration_trajectory = current_row
+        # else:
+        #     # TODO: this will cause serious speed issues. Fix them.
+        #     self.concentration_trajectory = self.concentration_trajectory.append(current_row)
+        # self.concentration_trajectory.fillna(0, inplace=True)
 
 
     def reset(self):
