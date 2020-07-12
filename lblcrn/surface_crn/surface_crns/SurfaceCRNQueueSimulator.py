@@ -74,8 +74,8 @@ MIN_GRID_WIDTH = 6 * button_width + 10 * button_buffer
 MOVIE_SUBDIRECTORY = "movies"
 DEBUG_SUBDIRECTORY = "debug"
 FRAME_SUBDIRECTORY = "frames"
-CUTOFF_TIME     = 600 # Cut off simulation at 10 minutes
-CUTOFF_SIZE     = 10000 * 500000 # Cut off simulation at roughly 1000 frames for
+CUTOFF_TIME     = 600000000 # Cut off simulation at 10 minutes
+CUTOFF_SIZE     = 10000 * 500000000000 # Cut off simulation at roughly 1000 frames for
                                 # a typical image size.
 
 #############
