@@ -62,6 +62,9 @@ class SurfaceRxn(Rxn):
     def to_terms(self) -> None:
         raise Exception("SurfaceRxn doesn't support to_terms method.")
 
+    # TODO: produce a version that takes in the species manager, replace default sites with top sites on appropriate
+    # occasions
+
     @property
     def reactants_str(self):
         return " + ".join([s.name for s in self.reactants])

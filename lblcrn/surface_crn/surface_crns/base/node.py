@@ -38,6 +38,9 @@ class Node:
         else:
             self.group = group
 
+    def is_empty(self):
+        return self.state == ""
+
     def __str__(self):
         str_rep = "<State: " + self.state + " (updated at time " + \
             str(self.timestamp) + ")"

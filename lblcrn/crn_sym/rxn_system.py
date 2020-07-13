@@ -83,12 +83,16 @@ class RxnSystem(monty.json.MSONable):
                 self.conc_eqs.append(component)
             elif isinstance(component, conditions.ConcDiffEq):
                 self.conc_diffeqs.append(component)
-            elif isinstance(component, species.SpeciesManager):
-                self.species_manager = component
             elif isinstance(component, surface.Surface):
                 self.surface = component
+            elif isinstance(component, species.SpeciesManager):
+                self.species_manager = component
             else:
                 assert False, f'Unknown input {component} of type ' + str(type(component))
+
+         # Share the surface name to the species manager
+        if self.surface is not None:
+            self.species_manager.default_surface_name = self.surface.name
 
         # Pick an order for the symbol
         self._symbols = set()

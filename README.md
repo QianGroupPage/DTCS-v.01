@@ -42,7 +42,7 @@ Then, you define your reaction system.
 
 Then, you solve the system. This simulates the system for 45 time units.
 
-    time_series = simulate_crn(rsys, time_max=45, max_step=0.01)
+    time_series = simulate(rsys, time_max=45, max_step=0.01)
     time_series.plot()
     
 And then to plot the gaussian:

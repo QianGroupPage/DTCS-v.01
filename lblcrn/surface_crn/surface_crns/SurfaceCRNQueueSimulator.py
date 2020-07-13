@@ -166,10 +166,12 @@ def simulate_surface_crn(manifest_filename, display_class=None,
                                     transition_rules = opts.transition_rules,
                                     seed = opts.rng_seed,
                                     simulation_duration = opts.max_duration,
-                                    )
+                                    rxns=rxns)
         simulation.init_wall_time = process_time()
     # TODO: support synchronous mode.
     elif opts.simulation_type == "synchronous":
+        # TODO: study when to use it;
+        # TODO: update the synchronous simulator to be the same fashion as the queue simulator
         simulation = SynchronousSimulator(
                                     surface = grid,
                                     update_rule = opts.update_rule,
@@ -579,13 +581,13 @@ def simulate_surface_crn(manifest_filename, display_class=None,
 
                     print("Writing movie with command:\n")
                     print("\t" + str(command) + "\n")
-                debug_output_stream = open(os.path.join(opts.capture_directory,
+                    debug_output_stream = open(os.path.join(opts.capture_directory,
                                                         "debug",
                                                         "ffmpeg_debug.dbg"),'w')
-                proc = sp.Popen(command,
+                    proc = sp.Popen(command,
                                 stdout = debug_output_stream,
                                 stderr = sp.STDOUT)
-                proc.communicate()
+                    proc.communicate()
                 if opts.debug:
                     print("Finished ffmpeg call.")
 
