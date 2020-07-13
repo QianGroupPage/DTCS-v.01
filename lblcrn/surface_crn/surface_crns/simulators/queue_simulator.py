@@ -16,7 +16,7 @@ class QueueSimulator:
     Uses unimolecular and bimolecular reactions only.
     '''
     def __init__(self, surface = None, transition_rules = None, seed = None,
-                 simulation_duration = 100):
+                 simulation_duration = 100, rxns=None):
         self.debugging = False
         if transition_rules == None:
             self.rule_set = []
@@ -26,6 +26,10 @@ class QueueSimulator:
         random.seed(seed)
         self.simulation_duration = simulation_duration
         self.surface = surface
+        self.sm = rxns.species_manager
+        self.rxns = rxns
+        self.add_groups()
+
         self.init_state = surface.get_global_state()
 
         # Build a mapping of states to the possible transitions they could
@@ -43,6 +47,7 @@ class QueueSimulator:
 
         self.time = 0
         self.surface.set_global_state(self.init_state)
+
         if self.debugging:
             print("QueueSimulator initialized with global state:\n" + str(self.init_state))
         self.reset()
@@ -72,6 +77,35 @@ class QueueSimulator:
         '''
         return self.event_queue.empty() or self.time >= self.simulation_duration
 
+    def add_groups(self):
+        """
+        Update the surface with groups in the species manager.
+
+        :param surface: a surface structure
+        :param rsys: a rxn system
+        """
+        size_dict = self.sm.large_species_dict
+        seen = set()
+        for s in self.surface:
+            if s not in seen and s.state in size_dict:
+                group_size = size_dict[s.state]
+                # Build the group
+                free_neighbors = []
+                for t in s.neighbors:
+                    n = t[0]
+                    if n not in seen and n.state in self.rxns.surface_names:
+                        free_neighbors.append(n)
+                    seen.add(n)
+                seen.add(s)
+
+                # TODO: if there are too few free_neighbors, do something else
+                # Pick from free neighbors as part of the group
+                group = random.sample(free_neighbors, group_size - 1) + [s]
+
+                for n in group:
+                    n.group = group
+                    n.state = s.state        
+    
     def process_next_reaction(self):
         local_debugging = False
         '''
@@ -121,24 +155,9 @@ class QueueSimulator:
                               "event issued.")
                     next_reaction = None
                     continue
-                # Change second reactant
-                participants[1].state = outputs[1]
-                participants[1].timestamp = self.time
-            # Change first reactant
-            participants[0].state = outputs[0]
-            participants[0].timestamp = self.time
-
-            # TODO: group edits:
-            # Remove the outgoing group
-            if len(participants[0].group) > 1:
-                for n in participants[0].group:
-                    n.group = []
-                    # Other members of the group should be set to default surface species.
-                    # n.state =
-                    n.timestamp = self.time
-                participants[0].group = []
-
-
+                self.update_node(participants[1], outputs[1])
+            self.update_node(participants[0], outputs[0])
+       
             if local_debugging:
                 print("processed.")
 
@@ -163,6 +182,59 @@ class QueueSimulator:
                   str(next_reaction))
         return next_reaction
     #end def process_next_reaction
+
+    def update_node(self, node, new_state):
+        output_state = new_state
+        default_state = self.sm.get_site_name(output_state)
+        if self.sm and output_state in self.sm.large_species_dict:
+            free_neighbors = 0
+            for neighbor_node, _ in node.neighbors:
+                # TODO: this should be is_default
+                if neighbor_node.state == default_state:
+                   free_neighbors += 1
+            group_size = self.sm.large_species_dict[output_state]
+            # No reaction if not enough free neighbors
+            if free_neighbors + 1 < group_size:
+                
+                print("not enough free neighbors")
+
+                return
+
+        # TODO: the following block shall be placed at appropriate locations.
+        # Cleanup the outgoing group.
+        original_state = node.state
+        default_state = self.sm.get_site_name(original_state)
+        if len(node.group) > 1:
+            for neighbor_node in node.group:
+                neighbor_node.group = []
+                # Other members of the group should be set to default surface species.
+                neighbor_node.state = default_state
+                # Check that this is correct
+                # This implies the node should not be used in this step anymore
+                neighbor_node.timestamp = self.time
+            node.group = []
+
+        # TODO: take account of large species
+        if self.sm and output_state in self.sm.large_species_dict:
+            new_group = [node]
+            free_neighbors = []
+            for neighbor_node, _ in node.neighbors:
+                # TODO: this should be is_default
+                if neighbor_node.state == default_state:
+                   free_neighbors.append(neighbor_node)
+            group_size = self.sm.large_species_dict[output_state]
+            # TODO: ensure this stays positive
+            # TODO: set the seed, to preserve simulation reproducibility.
+            new_group += random.sample(free_neighbors, group_size - 1)
+
+            print("size of new group", len(new_group))
+            for member_node in new_group:
+                member_node.state = output_state
+                member_node.timestamp = self.time
+                member_node.group = new_group
+        else:
+            node.state = output_state
+            node.timestamp = self.time
 
     def add_next_reactions_with_node(self, node, first_reactant_only = False,
                                         exclusion_list = None):

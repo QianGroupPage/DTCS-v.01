@@ -165,9 +165,12 @@ def simulate_surface_crn(manifest_filename, display_class = None,
         simulation = QueueSimulator(surface = grid,
                                     transition_rules = opts.transition_rules,
                                     seed = opts.rng_seed,
-                                    simulation_duration = opts.max_duration)
+                                    simulation_duration = opts.max_duration,
+                                    rxns=rxns)
         simulation.init_wall_time = process_time()
     elif opts.simulation_type == "synchronous":
+        # TODO: study when to use it;
+        # TODO: update the synchronous simulator to be the same fashion as the queue simulator
         simulation = SynchronousSimulator(
                                     surface = grid,
                                     update_rule = opts.update_rule,
