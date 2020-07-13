@@ -69,6 +69,8 @@ class Results:
 
         sub_s = rxns.species_manager.sub_species_dict
         self.sum_sub_species(sub_s)
+        self.sum_same_be()
+
 
         # Play the videos
         self.video = None
@@ -208,8 +210,17 @@ class Results:
         :return: a df with time column dropped
         """
         if end == -1:
-            end = self.df.index[-1]
-        df = self.df
+            end = self.df_raw.index[-1]
+        df = self.df_raw
+
+        # print("Entire df", df)
+        # # TODO: use the raw df
+        # print("Begins the df chosen for averaging")
+        #
+        # print(f"\n start {start}, end {end}")
+        #
+        # print(df.loc[(start <= df.index) & (df.index <= end)])
+        # print("Ends the df chosen for averaging")
         return df.loc[(start <= df.index) & (df.index <= end)].mean()
 
     def concentration_bar_plot(self, t=-1, scale=None):
@@ -267,6 +278,25 @@ class Results:
                     summed_series += self.df[s]
             self.df[k] = summed_series
         self.resample_evolution()
+
+    def sum_same_be(self):
+        """
+        Sum the number of species with the same binding energy.
+        :return:
+        """
+        bes_to_names = {}
+        to_sum = {}
+        for name in self.species_ordering:
+            for o in self.substances[name].orbitals:
+                be = o.binding_energy
+                if be in to_sum:
+                    to_sum[be].append(name)
+                elif be in bes_to_names:
+                    to_sum[be] = bes_to_names[name] + [name]
+                else:
+                    bes_to_names[be] = [name]
+        # for v in to_sum.values:
+        # TODO: how shall we name the summed species?
 
     # TODO: decrease the figure size in case zoom = False
     def plot_evolution(self, species_in_figure=None, start_time=0, end_time=-1, title="", ax=None, save=False,
@@ -335,8 +365,11 @@ class Results:
 
     def gaussian_df(self, t=-1, avg_duration=1, scaling_factor=1):
         if t == -1:
-            t = self.df.index.max()
+            t = self.df_raw.index.max()
         s = self.average_values(t, t + avg_duration) / scaling_factor
+
+        # TODO
+        # print(s)
 
         sigma = 0.75 * np.sqrt(2) / (np.sqrt(2 * np.log(2)) * 2)
         bes = [self.substances[name].orbitals[0].binding_energy for name in self.species_ordering]

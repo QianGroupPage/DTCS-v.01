@@ -706,9 +706,9 @@ def update_display(opts, simulation, FRAME_DIRECTORY=None, time_display=None, ti
                     else:
                         start_time = 0
                     if time_display.get_time() == 0:
-                        time_period_string = f"T = {time_display.get_time()}"
+                        time_period_string = f"T = {time_display.get_time():.2f}"
                     else:
-                        time_period_string = f"T = {start_time} to T = {time_display.get_time()}"
+                        time_period_string = f"T = {start_time:.2f} to T = {time_display.get_time():.2f}"
                     running_avg_display = TextDisplay(spectrum_width, font_size=18,
                                                       text=time_period_string)
 
@@ -744,9 +744,13 @@ def update_display(opts, simulation, FRAME_DIRECTORY=None, time_display=None, ti
                         r = r
 
                     # print(r.df_raw)
+                    starting_time = max(0, simulation.time - simulation.running_average)
+                    # print("calculating running average")
+                    # print("starting time", starting_time)
+                    # print("duration", simulation.running_average)
 
                     raw_data, size = r.raw_string_gaussian(y_upper_limit=y_lim,
-                                                           t=simulation.time - simulation.running_average,
+                                                           t=starting_time,
                                                            avg_duration=simulation.running_average,
                                                            fig_size=(spectrum_width / dpi, fig_height / dpi),
                                                            dpi=dpi)

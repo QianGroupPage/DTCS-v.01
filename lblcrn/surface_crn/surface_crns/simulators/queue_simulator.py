@@ -25,6 +25,8 @@ class QueueSimulator:
             self.rule_set = transition_rules
 
         random.seed(seed)
+        # print(f"the random seed {seed}")
+
         self.simulation_duration = simulation_duration
         self.surface = surface
         self.init_state = surface.get_global_state()

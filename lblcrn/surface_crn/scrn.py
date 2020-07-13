@@ -116,6 +116,8 @@ def add_groups(surface, rsys):
     :param surface: a surface structure
     :param rsys: a rxn system
     """
+    # TODO: add this function after the replicability issue is fixed.
+    return
     sm = rsys.species_manager
     size_dict = {s.name: s.size for s in sm.large_species}
     seen = set()
@@ -131,6 +133,7 @@ def add_groups(surface, rsys):
                 seen.add(n)
             seen.add(s)
 
+            # TODO: make sure that this doesn't screw up the random seed system
             # Pick from free neighbors as part of the group
             group = random.sample(free_neighbors, group_size - 1) + [s]
 
