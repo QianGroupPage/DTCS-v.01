@@ -12,7 +12,7 @@ from shutil import rmtree
 
 
 def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=False, spectra_in_video=True,
-                  running_average=2, species_tracked=[], manifest_file=""):
+                  spectra_average_duration=2, species_tracked=[], manifest_file=""):
     """
     :param rxns:
     :param time_max:
@@ -68,7 +68,7 @@ def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=Fa
         # TODO: progress bar for the video
         # TODO: add this as an argument spectra_max_conc=r.df_raw.max()
         simulate_with_display(manifest, surface, rxns=rxns, spectra_in_video=spectra_in_video,
-                              running_average=running_average, spectra_max_conc=r.df_raw.to_numpy().max())
+                              running_average=spectra_average_duration, spectra_max_conc=r.df_raw.to_numpy().max())
     r.video = video_link
 
     # TODO: warn the user if termination is early.
