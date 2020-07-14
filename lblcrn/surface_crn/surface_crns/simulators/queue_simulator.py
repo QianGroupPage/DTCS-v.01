@@ -31,7 +31,7 @@ class QueueSimulator:
         self.surface = surface
         self.sm = rxns.species_manager
         self.rxns = rxns
-        self.add_groups()
+        # self.add_groups()
 
         self.init_state = surface.get_global_state()
 
@@ -228,6 +228,9 @@ class QueueSimulator:
     #end def process_next_reaction
 
     def update_node(self, node, new_state):
+        # TODO
+        # print("updating node")
+        # print(f'{self.time}, from {node.state} at {node.position} to {new_state}')
         output_state = new_state
         default_state = self.sm.get_site_name(output_state)
         if self.sm and output_state in self.sm.large_species_dict:
@@ -235,13 +238,11 @@ class QueueSimulator:
             for neighbor_node, _ in node.neighbors:
                 # TODO: this should be is_default
                 if neighbor_node.state == default_state:
-                   free_neighbors += 1
+                    free_neighbors += 1
             group_size = self.sm.large_species_dict[output_state]
             # No reaction if not enough free neighbors
             if free_neighbors + 1 < group_size:
-                
-                print("not enough free neighbors")
-
+                # print("not enough free neighbors")
                 return
 
         # TODO: the following block shall be placed at appropriate locations.
@@ -250,13 +251,16 @@ class QueueSimulator:
         default_state = self.sm.get_site_name(original_state)
         if len(node.group) > 1:
             for neighbor_node in node.group:
-                neighbor_node.group = []
-                # Other members of the group should be set to default surface species.
-                neighbor_node.state = default_state
-                # Check that this is correct
-                # This implies the node should not be used in this step anymore
-                neighbor_node.timestamp = self.time
+                if neighbor_node is not node:
+                    # print("resetting neighbor node", neighbor_node.state)
+                    neighbor_node.group = []
+                    # Other members of the group should be set to default surface species.
+                    neighbor_node.state = default_state
+                    # Check that this is correct
+                    # This implies the node should not be used in this step anymore
+                    # neighbor_node.timestamp = self.time
             node.group = []
+            node.state = default_state
 
         # TODO: take account of large species
         if self.sm and output_state in self.sm.large_species_dict:
@@ -265,17 +269,19 @@ class QueueSimulator:
             for neighbor_node, _ in node.neighbors:
                 # TODO: this should be is_default
                 if neighbor_node.state == default_state:
-                   free_neighbors.append(neighbor_node)
+                    free_neighbors.append(neighbor_node)
             group_size = self.sm.large_species_dict[output_state]
             # TODO: ensure this stays positive
             # TODO: set the seed, to preserve simulation reproducibility.
             new_group += random.sample(free_neighbors, group_size - 1)
 
-            print("size of new group", len(new_group))
+            # print("size of new group", len(new_group))
             for member_node in new_group:
+                # print(member_node.position)
                 member_node.state = output_state
                 member_node.timestamp = self.time
                 member_node.group = new_group
+
         else:
             node.state = output_state
             node.timestamp = self.time

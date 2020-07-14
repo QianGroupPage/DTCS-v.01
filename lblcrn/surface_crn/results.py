@@ -75,6 +75,7 @@ class Results:
 
         # Play the videos
         self.video = None
+        self.video_trajectory = None
 
 
     # def extend(self, df):

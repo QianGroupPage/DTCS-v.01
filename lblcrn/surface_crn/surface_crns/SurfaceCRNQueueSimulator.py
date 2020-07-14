@@ -37,6 +37,7 @@ import cProfile
 import optparse
 import sys
 import os
+import subprocess as sp
 from time import process_time
 
 import pygame
@@ -132,7 +133,6 @@ def simulate_surface_crn(manifest_filename, display_class=None,
         # SIGPIPE is not used on any Windows system.
         if not sys.platform.startswith('win'):
             from signal import SIGPIPE
-        import subprocess as sp
         base_dir = opts.capture_directory
         MOVIE_DIRECTORY = base_dir
         DEBUG_DIRECTORY = os.path.join(base_dir, DEBUG_SUBDIRECTORY)
@@ -162,10 +162,10 @@ def simulate_surface_crn(manifest_filename, display_class=None,
             for x in range(grid.x_size):
                 for y in range(grid.y_size):
                     print("(" + str(x) + "," + str(y) + "): " + str(grid.grid[x,y]))
-        simulation = QueueSimulator(surface = grid,
-                                    transition_rules = opts.transition_rules,
-                                    seed = opts.rng_seed,
-                                    simulation_duration = opts.max_duration,
+        simulation = QueueSimulator(surface=grid,
+                                    transition_rules=opts.transition_rules,
+                                    seed=opts.rng_seed,
+                                    simulation_duration=opts.max_duration,
                                     rxns=rxns)
         simulation.init_wall_time = process_time()
     # TODO: support synchronous mode.
@@ -226,10 +226,10 @@ def simulate_surface_crn(manifest_filename, display_class=None,
     legend_display = LegendDisplay(colormap = opts.COLORMAP)
 
     # Width only requires legend and grid sizes to calculate
-    display_width  = grid_display.display_width + legend_display.display_width
+    display_width = grid_display.display_width + legend_display.display_width
 
     # Width used to calculate time label and button placements
-    time_display  = TimeDisplay(display_width)
+    time_display = TimeDisplay(display_width)
 
     # Display for the additional title
     title_display = TextDisplay(display_width, text="Surface CRN Trajectory")
@@ -485,13 +485,16 @@ def simulate_surface_crn(manifest_filename, display_class=None,
             while (not event_history.at_end() or not simulation.done()) \
                and next_reaction_time < time:
                 if event_history.at_end():
+                    # Advance the reaction
                     next_reaction = simulation.process_next_reaction()
                     if next_reaction:
                         event_history.add_event(next_reaction)
                         event_history.increment_event(1)
                 else:
+                    print("reading from event history")
                     next_reaction = event_history.next_event()
                     event_history.increment_event(1)
+                    # TODO: does this update the visuals?
                     for i in range(len(next_reaction.participants)):
                         cell = next_reaction.participants[i]
                         state = next_reaction.rule.outputs[i]
@@ -578,20 +581,21 @@ def simulate_surface_crn(manifest_filename, display_class=None,
                     print("Calling ffmpeg with: " + str(command))
                     print("And right now the current dir is " + os.getcwd())
                     print("opts.capture_directory = " + opts.capture_directory)
+                    # if opts.debug:
 
                     print("Writing movie with command:\n")
                     print("\t" + str(command) + "\n")
-                    debug_output_stream = open(os.path.join(opts.capture_directory,
+                debug_output_stream = open(os.path.join(opts.capture_directory,
                                                         "debug",
                                                         "ffmpeg_debug.dbg"),'w')
-                    proc = sp.Popen(command,
-                                stdout = debug_output_stream,
-                                stderr = sp.STDOUT)
-                    proc.communicate()
+                proc = sp.Popen(command,
+                                stdout=debug_output_stream,
+                                stderr=sp.STDOUT)
+                proc.communicate()
                 if opts.debug:
                     print("Finished ffmpeg call.")
 
-                return
+                return simulation.concs, simulation.times
         if event_history.at_beginning() or time == 0:
             first_frame = True
 

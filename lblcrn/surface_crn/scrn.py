@@ -67,7 +67,7 @@ def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=Fa
         # the frames folder.
         # TODO: progress bar for the video
         # TODO: add this as an argument spectra_max_conc=r.df_raw.max()
-        simulate_with_display(manifest, surface, rxns=rxns, spectra_in_video=spectra_in_video,
+        r.video_trajectory = simulate_with_display(manifest, surface, rxns=rxns, spectra_in_video=spectra_in_video,
                               running_average=spectra_average_duration, spectra_max_conc=r.df_raw.to_numpy().max())
     r.video = video_link
 
@@ -104,9 +104,10 @@ def simulate_with_display(manifest_file, lattice, rxns=None, spectra_in_video=Tr
         display_class = HexGridPlusIntersectionDisplay
     else:
         display_class = None
-    SurfaceCRNQueueSimulator.simulate_surface_crn(manifest_file, display_class, init_state=lattice, rxns=rxns,
+    concs, times = SurfaceCRNQueueSimulator.simulate_surface_crn(manifest_file, display_class, init_state=lattice, rxns=rxns,
                                                   spectra_in_video=spectra_in_video, running_average=running_average,
                                                   spectra_max_conc=spectra_max_conc)
+    return Results.concs_times_df(concs, times)
 
 
 def simulate_without_display(manifest_file, lattice, species_tracked, rxns):
@@ -137,6 +138,7 @@ def simulate_without_display(manifest_file, lattice, species_tracked, rxns):
         if node.state in concs:
             concs[node.state][0] += 1
     while not simulator.done():
+        # Advance the reaction
         next_rxn = simulator.process_next_reaction()
         if next_rxn is None:
             break
