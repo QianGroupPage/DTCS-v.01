@@ -220,6 +220,9 @@ class RxnSystem(monty.json.MSONable):
         """
         :return: colors for each species, if color is assigned.
         """
+        if self.color_index:
+            return self.color_index
+
         random.seed(3)
         colors = [] if not self.surface.color else [self.surface.color]
         if self.color_index is None:
