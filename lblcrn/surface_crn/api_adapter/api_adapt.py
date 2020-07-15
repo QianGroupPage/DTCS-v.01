@@ -136,8 +136,8 @@ def generate_settings(rsys, max_duration, random_seed=923123122):
     """
     return f"# Run settings\n" + \
            "pixels_per_node     = 80\n" + \
-           "speedup_factor      = 1\n" + \
-           "debug               = True\n" + \
+           "speedup_factor      = 0.5\n" + \
+           "debug               = False\n" + \
            f"rng_seed           = {random_seed}\n" + \
            f"max_duration       = {max_duration}\n" + \
            "fps                 = 1\n" + \

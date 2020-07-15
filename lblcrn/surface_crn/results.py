@@ -37,6 +37,7 @@ class Results:
         # Correct the count values for larger species
         for s in rxns.species_manager.large_species:
             if s.name in self.df.columns:
+                # print(f"dividing species {s.name} by {s.size}")
                 self.df[s.name] = self.df[s.name] / s.size
 
         self.resample_evolution()

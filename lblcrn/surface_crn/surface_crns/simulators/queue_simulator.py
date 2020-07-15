@@ -186,6 +186,7 @@ class QueueSimulator:
                 next_reaction = None
                 continue
 
+            outgoing_group = []
             if len(participants) > 1:
                 if local_debugging:
                     print("and " + str(participants[1].position) + " ")
@@ -197,8 +198,20 @@ class QueueSimulator:
                               "event issued.")
                     next_reaction = None
                     continue
-                self.update_node(participants[1], outputs[1])
-            self.update_node(participants[0], outputs[0])
+                # TODO: accomodations for 2-sized species
+
+                self.update_node(participants[1], outputs[1], outgoing_group)
+            # TODO: accomodations for 2-sized species
+            self.update_node(participants[0], outputs[0], outgoing_group)
+
+            for member_node in participants[0].group:
+                if member_node is not participants[0]:
+                    next_reaction.participants.append(member_node)
+            if len(participants) > 1:
+                for member_node in participants[1].group:
+                    if member_node is not participants[1]:
+                        next_reaction.participants.append(member_node)
+            next_reaction.participants.extend(outgoing_group)
        
             if local_debugging:
                 print("processed.")
@@ -220,6 +233,9 @@ class QueueSimulator:
                                             first_reactant_only = False,
                                             exclusion_list = [participants[0]])
         if local_debugging:
+        #     # TODO
+        # if (participants[0].group and len(participants[0].group) > 1) or \
+        #         (len(participants) > 1 and participants[1].group and len(participants[1].group) > 1):
             print("process_next_reaction() returning event " +
                   str(next_reaction))
 
@@ -227,7 +243,7 @@ class QueueSimulator:
         return next_reaction
     #end def process_next_reaction
 
-    def update_node(self, node, new_state):
+    def update_node(self, node, new_state, outgoing_members):
         # TODO
         # print("updating node")
         # print(f'{self.time}, from {node.state} at {node.position} to {new_state}')
@@ -258,7 +274,9 @@ class QueueSimulator:
                     neighbor_node.state = default_state
                     # Check that this is correct
                     # This implies the node should not be used in this step anymore
-                    # neighbor_node.timestamp = self.time
+                    neighbor_node.timestamp = self.time
+
+                    outgoing_members.append(neighbor_node)
             node.group = []
             node.state = default_state
 
@@ -275,13 +293,13 @@ class QueueSimulator:
             # TODO: set the seed, to preserve simulation reproducibility.
             new_group += random.sample(free_neighbors, group_size - 1)
 
+            # print("\n\n\n\n\n")
             # print("size of new group", len(new_group))
             for member_node in new_group:
-                # print(member_node.position)
+                print(member_node.position)
                 member_node.state = output_state
                 member_node.timestamp = self.time
                 member_node.group = new_group
-
         else:
             node.state = output_state
             node.timestamp = self.time

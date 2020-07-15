@@ -626,7 +626,10 @@ def display_next_event(next_reaction, grid_display):
     outputs      = next_reaction.rule.outputs
     # Update reactants (if changed)
     for i in range(len(participants)):
-        if inputs[i] != outputs[i]:
+        # TODO: accomodations for 2-sized species
+        if i > len(inputs) - 1:
+            grid_display.update_node(participants[i])
+        elif inputs[i] != outputs[i]:
             grid_display.update_node(participants[i])
         elif DEBUG:
             print("Input " + str(i+1) + " and output " + str(i+1) + " match " +
