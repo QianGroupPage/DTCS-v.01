@@ -4,7 +4,7 @@ from lblcrn.surface_crn.surface_crns.simulators.queue_simulator import *
 from lblcrn.surface_crn.surface_crns.readers.manifest_readers import read_manifest
 from lblcrn.surface_crn.surface_crns.options.option_processor import SurfaceCRNOptionParser
 from lblcrn.surface_crn.results import Results
-from lblcrn.common import color_to_HEX
+from lblcrn.common import ipython_visuals
 from lblcrn.surface_crn.api_adapter.api_adapt import generate_manifest_stream, generate_surface,\
     HexGridPlusIntersectionDisplay
 import os
@@ -137,6 +137,8 @@ def simulate_without_display(manifest_file, lattice, species_tracked, rxns):
     for node in lattice:
         if node.state in concs:
             concs[node.state][0] += 1
+    ipython_visuals.update_progress(0 / opts.max_duration, "Simulation in progress")
+
     while not simulator.done():
         # Advance the reaction
         next_rxn = simulator.process_next_reaction()
@@ -157,5 +159,7 @@ def simulate_without_display(manifest_file, lattice, species_tracked, rxns):
         # for product in next_rxn.rule.outputs:
         #     if product in concs:
         #         concs[product][-1] += 1
+
+        ipython_visuals.update_progress(next_rxn.time/opts.max_duration, "Simulation in progress")
 
     return times, concs

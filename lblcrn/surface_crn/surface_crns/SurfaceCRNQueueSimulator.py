@@ -32,6 +32,7 @@ from lblcrn.surface_crn.surface_crns.base.transition_rule import TransitionRule
 from lblcrn.surface_crn.surface_crns.pygbutton import *
 from lblcrn.surface_crn.surface_crns.views.grid_display import ParallelEmulatedSquareGridDisplay
 from lblcrn.surface_crn.results import Results
+from lblcrn.common import ipython_visuals
 
 import cProfile
 import optparse
@@ -653,6 +654,8 @@ def cleanup_and_exit(simulation):
 
 def update_display(opts, simulation, FRAME_DIRECTORY=None, time_display=None, title_display=None,
                    spectra_max_conc=-1):
+    ipython_visuals.update_progress(simulation.time / opts.max_duration, "Generating video frames")
+
     # TODO
     # print(type(simulation))
     if opts.capture_directory == None:
