@@ -143,14 +143,19 @@ def simulate_without_display(manifest_file, lattice, species_tracked, rxns):
         if next_rxn is None:
             break
         times.append(next_rxn.time)
+
+        counter = simulator.surface.species_count()
         for species in species_tracked:
-            concs[species].append(concs[species][-1])
-        # Very simple mechanism, one reaction at a time.
-        for reactant in next_rxn.rule.inputs:
-            if reactant in concs:
-                concs[reactant][-1] -= 1
-        for product in next_rxn.rule.outputs:
-            if product in concs:
-                concs[product][-1] += 1
+            concs[species].append(counter[species])
+
+        # concs[species].append(concs[species][-1])
+        # # Very simple mechanism, one reaction at a time.
+        # # TODO: these don't account for size 2.
+        # for reactant in next_rxn.rule.inputs:
+        #     if reactant in concs:
+        #         concs[reactant][-1] -= 1
+        # for product in next_rxn.rule.outputs:
+        #     if product in concs:
+        #         concs[product][-1] += 1
 
     return times, concs

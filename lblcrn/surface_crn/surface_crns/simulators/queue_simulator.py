@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 import random
 import math
 from queue import *
@@ -31,8 +30,9 @@ class QueueSimulator:
         self.surface = surface
         self.sm = rxns.species_manager
         self.rxns = rxns
-        # self.add_groups()
+        self.add_groups()
 
+        random.seed(seed)
         self.init_state = surface.get_global_state()
 
         # Build a mapping of states to the possible transitions they could
@@ -296,7 +296,6 @@ class QueueSimulator:
             # print("\n\n\n\n\n")
             # print("size of new group", len(new_group))
             for member_node in new_group:
-                print(member_node.position)
                 member_node.state = output_state
                 member_node.timestamp = self.time
                 member_node.group = new_group
