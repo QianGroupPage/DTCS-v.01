@@ -9,7 +9,7 @@ from lblcrn.surface_crn.api_adapter.api_adapt import generate_manifest_stream, g
     HexGridPlusIntersectionDisplay
 import os
 from shutil import rmtree
-
+from IPython.display import clear_output
 
 def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=False, spectra_in_video=True,
                   spectra_average_duration=2, species_tracked=[], manifest_file="", rng_seed=923123122,
@@ -28,10 +28,64 @@ def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=Fa
     # Dangerous! rng_seed + 1 is used
     group_selection_seed = rng_seed + 1
 
-    if video and not video_path:
+    video_from_argument = True if video_path else False
+    if video and not video_from_argument:
         # TODO: alert when this directory is already used.
         # TODO: display the default is none is provided
         video_path = input(f"Name a directory to store frames and videos: \n{os.getcwd()}/")
+
+        if not video_path:
+            video_path = "Surface CRN Videos"
+            print(f"Using the default directory {os.getcwd()}/{video_path}")
+
+        # TODO: ask users to press return or enter
+        clear_output(wait=False)
+
+    if os.path.isdir(video_path):
+        use_path = False
+        wrong_decision_word = False
+
+        while not use_path:
+            if wrong_decision_word:
+
+                use_path = input(f"Type \"Yes\" to overwrite the directory, or \"No\" if otherwise: ")
+                print('\n')
+            else:
+                use_path = input(f"The directory {os.getcwd()}/{video_path} already exists, would you like to "
+                                 f"overwrite the directory? \nType \"Yes\" if you do, or \"No\" if otherwise: ")
+                # if same_answer:
+                print("\n")
+
+            if use_path.lower() == "yes":
+                use_path = True
+                wrong_decision_word = False
+            elif use_path.lower() == "no":
+                if video_from_argument:
+                    print("Please choose a different path for the videos.")
+                    print("Program exits")
+                    return
+
+                new_video_path = input(f"Name a directory to store frames and videos: \n{os.getcwd()}/")
+
+                if not new_video_path:
+                    new_video_path = "Surface CRN Videos"
+                    print(f"Using default directory name {os.getcwd()}/{new_video_path}")
+
+                if os.path.isdir(new_video_path):
+                    use_path = False
+
+                # TODO: don't clear if the directory is same as before.
+                if new_video_path != video_path:
+                    clear_output(wait=False)
+                else:
+                    same_answer = True
+                wrong_decision_word = False
+                video_path = new_video_path
+            else:
+                wrong_decision_word = True
+                print(f"\"{use_path}\" is not a valid input.")
+                use_path = False
+
 
     if not manifest_file:
         manifest = generate_manifest_stream(rxns, time_max, random_seed_scrn=rng_seed, video_path=video_path)
