@@ -644,9 +644,9 @@ def display_next_event(next_reaction, grid_display):
 
     return next_reaction_time
 
+
 def cleanup_and_exit(simulation):
     pygame.quit()
-    print("Program terminated before simulation comlete.")
     print("Simulation state at termination (T = " + str(simulation.time) + "):")
     print(str(simulation.surface))
     sys.exit()
@@ -794,31 +794,32 @@ def update_display(opts, simulation, FRAME_DIRECTORY=None, time_display=None, ti
 
             terminate = False
             if simulation.pixels_saved > CUTOFF_SIZE:
-                termination_string = "Simulation terminated after " + \
+                termination_string = "Simulation terminated at maximum amount of video frame pixels saved " + \
                                      str(simulation.pixels_saved) + \
-                                     " pixels saved (~" + \
+                                     " pixels (~" + \
                                      str(CUTOFF_SIZE/10000000) +" Mb)."
                 teriminate = True
 
             # Check the timer. If it's been more than an hour, terminate.
             if process_time() - simulation.init_wall_time > CUTOFF_TIME:
-                termination_string = "Simulation cut off at max " \
-                                     "processing time"
+                termination_string = "Simulation terminated at maximum allowed " \
+                                     f"processing time t = {CUTOFF_TIME}s"
                 terminate = True
 
             if terminate:
                 # TODO: clean up this section
                 print(termination_string)
 
+                display_width = simulation.display_surface.get_size()[1]
                 text_display = TextDisplay(display_width)
                 text_display.text = termination_string
-                text_display.render(display_surface, x_pos = 0, y_pos = 0)
+                text_display.render(simulation.display_surface, x_pos = 0, y_pos = 0)
                 frame_filename = os.path.join(FRAME_DIRECTORY,
                                               opts.movie_title + "_" +
                                               str(frame_number) + ".jpeg")
                 if opts.debug:
                     print("Saving final frame at: " + frame_filename)
-                pygame.image.save(display_surface, frame_filename)
+                pygame.image.save(simulation.display_surface, frame_filename)
 
                 cleanup_and_exit(simulation)
 
