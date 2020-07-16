@@ -129,7 +129,7 @@ def generate_surface(rsys, random_seed=30):
         return None
 
 
-def generate_settings(rsys, max_duration, random_seed=923123122):
+def generate_settings(rsys, max_duration, random_seed=923123122, video_path="Surface CRN Videos"):
     """
     :rsys: a rxn_system object
     :return: a string representing the initial surface.
@@ -143,7 +143,7 @@ def generate_settings(rsys, max_duration, random_seed=923123122):
            "fps                 = 1\n" + \
            "node_display        = text\n" + \
            "wrap                = false\n" + \
-           f"capture_directory  = Surface CRN Videos\n" + \
+           f"capture_directory  = {video_path}\n" + \
            "movie_title = SCRN Simulation\n\n"
 
 
@@ -160,12 +160,13 @@ def generate_colors(rsys):
 
 
 # TODO
-def generate_manifest_stream(rsys, max_duration, random_seed_scrn=923123122, random_seed_surface=30):
+def generate_manifest_stream(rsys, max_duration, random_seed_scrn=923123122, random_seed_surface=30,
+                             video_path=""):
     """
     :param rsys: the rxn_system object
     :return: a stream of lines for the corresponding reaction rules.
     """
-    rule = generate_settings(rsys, max_duration, random_seed_scrn)
+    rule = generate_settings(rsys, max_duration, random_seed_scrn, video_path=video_path)
 
     rule += "!START_TRANSITION_RULES\n"
     rule += "\n".join(generate_rules(rsys)) + "\n"

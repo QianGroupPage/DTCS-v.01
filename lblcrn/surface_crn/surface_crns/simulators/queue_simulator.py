@@ -15,8 +15,8 @@ class QueueSimulator:
 
     Uses unimolecular and bimolecular reactions only.
     '''
-    def __init__(self, surface = None, transition_rules = None, seed = None, group_selection_seed=None,
-                 simulation_duration = 100, rxns=None):
+    def __init__(self, surface=None, transition_rules=None, seed=None, group_selection_seed=None,
+                 simulation_duration=100, rxns=None):
         self.debugging = False
         if transition_rules is None:
             self.rule_set = []

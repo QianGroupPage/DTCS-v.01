@@ -12,7 +12,8 @@ from shutil import rmtree
 
 
 def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=False, spectra_in_video=True,
-                  spectra_average_duration=2, species_tracked=[], manifest_file="", rng_seed=923123122):
+                  spectra_average_duration=2, species_tracked=[], manifest_file="", rng_seed=923123122,
+                  video_path=""):
     """
     :param rxns:
     :param time_max:
@@ -26,8 +27,14 @@ def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=Fa
     """
     # Dangerous! rng_seed + 1 is used
     group_selection_seed = rng_seed + 1
+
+    if video and not video_path:
+        # TODO: alert when this directory is already used.
+        # TODO: display the default is none is provided
+        video_path = input(f"Name a directory to store frames and videos: \n{os.getcwd()}/")
+
     if not manifest_file:
-        manifest = generate_manifest_stream(rxns, time_max, random_seed_scrn=rng_seed)
+        manifest = generate_manifest_stream(rxns, time_max, random_seed_scrn=rng_seed, video_path=video_path)
     else:
         manifest = manifest_file
 
@@ -49,18 +56,19 @@ def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=Fa
     if video:
         # Generate the file stream again after it's used.
         if not manifest_file:
-            manifest = generate_manifest_stream(rxns, time_max, random_seed_scrn=rng_seed)
+            manifest = generate_manifest_stream(rxns, time_max, random_seed_scrn=rng_seed, video_path=video_path)
         video_link = get_video_link(manifest)
+
         # Generate the file stream again after it's used.
         if not manifest_file:
-            manifest = generate_manifest_stream(rxns, time_max, random_seed_scrn=rng_seed)
+            manifest = generate_manifest_stream(rxns, time_max, random_seed_scrn=rng_seed, video_path=video_path)
         # TODO: check to not overwrite the video files.
         frames_link = get_frames_link(manifest)
         if os.path.isdir(frames_link):
             rmtree(frames_link)
         # Generate the file stream again after it's used.
         if not manifest_file:
-            manifest = generate_manifest_stream(rxns, time_max, random_seed_scrn=rng_seed)
+            manifest = generate_manifest_stream(rxns, time_max, random_seed_scrn=rng_seed, video_path=video_path)
         if not lattice:
             surface = generate_surface(rsys=rxns)
         else:
