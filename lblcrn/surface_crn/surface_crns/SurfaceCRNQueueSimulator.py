@@ -101,7 +101,7 @@ def main():
     simulate_surface_crn(manifest_filename)
 
 
-def simulate_surface_crn(manifest_filename, display_class=None,
+def simulate_surface_crn(manifest_filename, group_selection_seed, display_class=None,
                          init_state=None, rxns=None, spectra_in_video=True, running_average=10,
                          spectra_max_conc=-1):
     '''
@@ -166,8 +166,10 @@ def simulate_surface_crn(manifest_filename, display_class=None,
         simulation = QueueSimulator(surface=grid,
                                     transition_rules=opts.transition_rules,
                                     seed=opts.rng_seed,
+                                    group_selection_seed=group_selection_seed,
                                     simulation_duration=opts.max_duration,
-                                    rxns=rxns)
+                                    rxns=rxns
+                                    )
         simulation.init_wall_time = process_time()
     # TODO: support synchronous mode.
     elif opts.simulation_type == "synchronous":

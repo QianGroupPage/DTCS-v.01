@@ -15,16 +15,17 @@ class QueueSimulator:
 
     Uses unimolecular and bimolecular reactions only.
     '''
-    def __init__(self, surface = None, transition_rules = None, seed = None,
+    def __init__(self, surface = None, transition_rules = None, seed = None, group_selection_seed=None,
                  simulation_duration = 100, rxns=None):
         self.debugging = False
-        if transition_rules == None:
+        if transition_rules is None:
             self.rule_set = []
         else:
             self.rule_set = transition_rules
 
-        random.seed(seed)
-        # print(f"the random seed {seed}")
+        self.group_selection_rng = random.Random(group_selection_seed)
+        # The primary pseudo-random number generator that decides the timestamps
+        self.main_random_generator = random.Random(seed)
 
         self.simulation_duration = simulation_duration
         self.surface = surface
@@ -32,7 +33,6 @@ class QueueSimulator:
         self.rxns = rxns
         self.add_groups()
 
-        random.seed(seed)
         self.init_state = surface.get_global_state()
 
         # Build a mapping of states to the possible transitions they could
@@ -142,7 +142,7 @@ class QueueSimulator:
 
                 # TODO: if there are too few free_neighbors, do something else
                 # Pick from free neighbors as part of the group
-                group = random.sample(free_neighbors, group_size - 1) + [s]
+                group = self.group_selection_rng.sample(free_neighbors, group_size - 1) + [s]
 
                 for n in group:
                     n.group = group
@@ -295,7 +295,7 @@ class QueueSimulator:
                     free_neighbors.append(neighbor_node)
             group_size = self.sm.large_species_dict[output_state]
             # TODO: set the seed, to preserve simulation reproducibility.
-            new_group += random.sample(free_neighbors, group_size - 1)
+            new_group += self.group_selection_rng.sample(free_neighbors, group_size - 1)
 
             # print("\n\n\n\n\n")
             # print("size of new group", len(new_group))
@@ -344,7 +344,7 @@ class QueueSimulator:
             # If it's a unimolecular reaction, we can now add the reaction to
             # the event queue.
             if len(rule.inputs) == 1:
-                time_to_reaction = np.log(1.0 / random.random()) / rule.rate
+                time_to_reaction = np.log(1.0 / self.main_random_generator.random()) / rule.rate
                 if math.isinf(time_to_reaction):
                     continue
                 event_time       = self.time + time_to_reaction
@@ -392,7 +392,7 @@ class QueueSimulator:
                         num_reactions = 1
                     for x in range(num_reactions):
                         rate = rule.rate * weight
-                        time_to_reaction = np.log(1.0/random.random())/rate
+                        time_to_reaction = np.log(1.0/self.main_random_generator.random())/rate
                         if math.isinf(time_to_reaction):
                             continue
                         event_time       = self.time + time_to_reaction

@@ -12,7 +12,7 @@ from shutil import rmtree
 
 
 def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=False, spectra_in_video=True,
-                  spectra_average_duration=2, species_tracked=[], manifest_file=""):
+                  spectra_average_duration=2, species_tracked=[], manifest_file="", rng_seed=923123122):
     """
     :param rxns:
     :param time_max:
@@ -24,8 +24,10 @@ def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=Fa
     :param manifest_file:
     :return:
     """
+    # Dangerous! rng_seed + 1 is used
+    group_selection_seed = rng_seed + 1
     if not manifest_file:
-        manifest = generate_manifest_stream(rxns, time_max)
+        manifest = generate_manifest_stream(rxns, time_max, random_seed_scrn=rng_seed)
     else:
         manifest = manifest_file
 
@@ -36,7 +38,8 @@ def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=Fa
     else:
         surface = lattice
     #  TODO: infer spectra's scale from here.
-    times, concs = simulate_without_display(manifest, surface, [str(s) for s in species_tracked], rxns)
+    times, concs = simulate_without_display(manifest, surface, [str(s) for s in species_tracked], rxns,
+                                            group_selection_seed)
     if manifest_file:
         r = Results.from_concs_times(manifest_file, rxns, concs, times)
     else:
@@ -46,18 +49,18 @@ def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=Fa
     if video:
         # Generate the file stream again after it's used.
         if not manifest_file:
-            manifest = generate_manifest_stream(rxns, time_max)
+            manifest = generate_manifest_stream(rxns, time_max, random_seed_scrn=rng_seed)
         video_link = get_video_link(manifest)
         # Generate the file stream again after it's used.
         if not manifest_file:
-            manifest = generate_manifest_stream(rxns, time_max)
+            manifest = generate_manifest_stream(rxns, time_max, random_seed_scrn=rng_seed)
         # TODO: check to not overwrite the video files.
         frames_link = get_frames_link(manifest)
         if os.path.isdir(frames_link):
             rmtree(frames_link)
         # Generate the file stream again after it's used.
         if not manifest_file:
-            manifest = generate_manifest_stream(rxns, time_max)
+            manifest = generate_manifest_stream(rxns, time_max, random_seed_scrn=rng_seed)
         if not lattice:
             surface = generate_surface(rsys=rxns)
         else:
@@ -67,8 +70,10 @@ def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=Fa
         # the frames folder.
         # TODO: progress bar for the video
         # TODO: add this as an argument spectra_max_conc=r.df_raw.max()
-        r.video_trajectory = simulate_with_display(manifest, surface, rxns=rxns, spectra_in_video=spectra_in_video,
-                              running_average=spectra_average_duration, spectra_max_conc=r.df_raw.to_numpy().max())
+        r.video_trajectory = simulate_with_display(manifest, surface, group_selection_seed, rxns=rxns,
+                                                   spectra_in_video=spectra_in_video,
+                                                   running_average=spectra_average_duration,
+                                                   spectra_max_conc=r.df_raw.to_numpy().max())
     r.video = video_link
 
     # TODO: warn the user if termination is early.
@@ -98,19 +103,21 @@ def get_frames_link(manifest):
     return f"{opts.capture_directory}/frames"
 
 
-def simulate_with_display(manifest_file, lattice, rxns=None, spectra_in_video=True, running_average=10,
+def simulate_with_display(manifest_file, lattice, group_selection_seed, rxns=None, spectra_in_video=True, running_average=10,
                           spectra_max_conc=-1):
     if rxns.surface.structure == "hexagon":
         display_class = HexGridPlusIntersectionDisplay
     else:
         display_class = None
-    concs, times = SurfaceCRNQueueSimulator.simulate_surface_crn(manifest_file, display_class, init_state=lattice, rxns=rxns,
-                                                  spectra_in_video=spectra_in_video, running_average=running_average,
-                                                  spectra_max_conc=spectra_max_conc)
+    concs, times = SurfaceCRNQueueSimulator.simulate_surface_crn(manifest_file, group_selection_seed, display_class,
+                                                                 init_state=lattice, rxns=rxns,
+                                                                 spectra_in_video=spectra_in_video,
+                                                                 running_average=running_average,
+                                                                 spectra_max_conc=spectra_max_conc)
     return Results.concs_times_df(concs, times)
 
 
-def simulate_without_display(manifest_file, lattice, species_tracked, rxns):
+def simulate_without_display(manifest_file, lattice, species_tracked, rxns, group_selection_seed):
     '''
     Run until completion or max time, storing an array of species counts at
     the times of each reaction, along with an array of times. At the end,
@@ -127,6 +134,7 @@ def simulate_without_display(manifest_file, lattice, species_tracked, rxns):
     simulator = QueueSimulator(surface=lattice,
                                transition_rules=opts.transition_rules,
                                seed=opts.rng_seed,
+                               group_selection_seed=group_selection_seed,
                                simulation_duration=opts.max_duration,
                                rxns=rxns)
 
