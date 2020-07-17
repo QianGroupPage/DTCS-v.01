@@ -3,7 +3,8 @@ import cv2
 import mayavi.mlab as plt3d
 import time
 
-from surface_crn.connectivity.cut_gen import lattice, cut_lattice
+from lblcrn.surface_crn.connectivity.cut_gen import lattice, cut_lattice
+
 
 def connectivity(lattice: dict):
     pass
