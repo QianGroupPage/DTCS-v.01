@@ -2,7 +2,7 @@ from IPython.display import clear_output
 import sys
 import os
 
-def update_progress(progress, header="Progress"):
+def update_progress(progress, header="Progress", beginning=False, terminating=False):
     # https://www.mikulskibartosz.name/how-to-display-a-progress-bar-in-jupyter-notebook/
     bar_length = 80
     if isinstance(progress, int):
@@ -17,22 +17,24 @@ def update_progress(progress, header="Progress"):
     block = int(round(bar_length * progress))
     clear_output(wait=True)
 
-
     pound_dashes = "#" * block + "-" * (bar_length - block)
     text = f"{header}: [{pound_dashes}] {progress * 100:.1f}%"
     print(text)
 
-    # terminal_output = open('/dev/stdout', 'w')
-    # terminal_columns = os.get_terminal_size().columns
-    # if len(text) > terminal_columns:
-    #     bar_length = bar_length - (len(text) - terminal_columns)
-    #     pound_dashes = "#" * block + "-" * (bar_length - block)
-    #     text = f"{header}: [{pound_dashes}] {progress * 100:.1f}%"
-    # terminal_output.write(f"{text} \r")
-    # terminal_output.flush()
+    terminal_output = open('/dev/stdout', 'w')
+    terminal_columns = os.get_terminal_size().columns
+    if len(text) > terminal_columns:
+        bar_length = bar_length - (len(text) - terminal_columns)
+        pound_dashes = "#" * block + "-" * (bar_length - block)
+        text = f"{header}: [{pound_dashes}] {progress * 100:.1f}%"
+    if not terminating:
+        terminal_output.write(f"{text} \r")
+        terminal_output.flush()
+    else:
+        terminal_output.write(f"{text}\n")
 
     # Prevent the progress bar from showing on command line
-    sys.stdout.flush()
+    # sys.stdout.flush()
 
 
 class ProgressBar:

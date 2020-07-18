@@ -257,4 +257,15 @@ def simulate_without_display(manifest_file, lattice, species_tracked, rxns, grou
 
         ipython_visuals.update_progress(next_rxn.time/opts.max_duration, "Simulation in progress")
 
+    if times:
+        last_time_stamp = times[-1]
+    else:
+        last_time_stamp = 0
+    #     TODO: add rel_tol
+    if math.isclose(last_time_stamp, opts.max_duration, abs_tol=0.1):
+        ipython_visuals.update_progress(last_time_stamp / opts.max_duration, "Simulation completed", terminating=True)
+    else:
+        ipython_visuals.update_progress(last_time_stamp / opts.max_duration,
+                                        f"Simulation terminated early at {last_time_stamp:.1f} s", terminating=True)
+
     return times, concs

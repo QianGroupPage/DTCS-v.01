@@ -17,6 +17,7 @@ except ImportError:
 import lblcrn.surface_crn.surface_crns.readers as readers
 
 import sys
+import math
 
 from lblcrn.surface_crn.surface_crns.options.option_processor import SurfaceCRNOptionParser
 from lblcrn.surface_crn.surface_crns.models.grids import SquareGrid, HexGrid
@@ -536,7 +537,7 @@ def simulate_surface_crn(manifest_filename, group_selection_seed, display_class=
             if next_reaction:
                 display_next_event(next_reaction, grid_display)
             update_display(opts, simulation, progress_bar, FRAME_DIRECTORY, time_display=time_display, title_display=title_display,
-                           spectra_max_conc=spectra_max_conc)
+                           spectra_max_conc=spectra_max_conc, check_terminate=True)
             if opts.debug:
                 print("Simulation state at final time " + \
                       str(opts.max_duration) + ":")
@@ -658,8 +659,28 @@ def cleanup_and_exit(simulation):
 
 
 def update_display(opts, simulation, progress_bar, FRAME_DIRECTORY=None, time_display=None, title_display=None,
-                   spectra_max_conc=-1):
-    ipython_visuals.update_progress(simulation.time / opts.max_duration, "Generating video frames")
+                   spectra_max_conc=-1, check_terminate=False):
+    if simulation.times:
+        time = simulation.times[-1]
+    else:
+        time = 0
+    if check_terminate:
+        if math.isclose(time, opts.max_duration, abs_tol=0.1):
+            text = "Generating video frames completed"
+        else:
+            # TODO: don't let this take 2 lines.
+            text = f"Generating video frames completed; simulation terminated early at {time:.1f} s"
+
+        ipython_visuals.update_progress(time / opts.max_duration, text,
+                                        beginning=time == 0,
+                                        terminating=True)
+    else:
+
+        ipython_visuals.update_progress(time / opts.max_duration, "Generating video frames",
+                                        beginning=time == 0,
+                                        terminating=check_terminate)
+    # TODO: display a message on termination
+    # and
     # progress_bar.bar()
 
     # TODO
