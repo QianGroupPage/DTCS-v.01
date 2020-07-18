@@ -32,7 +32,7 @@ from lblcrn.surface_crn.surface_crns.base.transition_rule import TransitionRule
 from lblcrn.surface_crn.surface_crns.pygbutton import *
 from lblcrn.surface_crn.surface_crns.views.grid_display import ParallelEmulatedSquareGridDisplay
 from lblcrn.surface_crn.results import Results
-from lblcrn.common import ipython_visuals
+from lblcrn.common import ipython_visuals, ProgressBar
 
 import cProfile
 import optparse
@@ -333,7 +333,10 @@ def simulate_surface_crn(manifest_filename, group_selection_seed, display_class=
         clip_button.draw(display_surface)
 
     pygame.display.flip()
-    update_display(opts, simulation, FRAME_DIRECTORY, time_display=time_display, title_display=title_display,
+    # TODO
+    # progress_bar = ProgressBar(total_tasks=round(opts.max_duration/opts.fps))
+    progress_bar = None
+    update_display(opts, simulation, progress_bar, FRAME_DIRECTORY, time_display=time_display, title_display=title_display,
                    spectra_max_conc=spectra_max_conc)
 
     # State variables for simulation
@@ -513,7 +516,7 @@ def simulate_surface_crn(manifest_filename, group_selection_seed, display_class=
         # Render updates and make the next clock tick.
         if opts.debug:
             print("Updating display.")
-        update_display(opts, simulation, FRAME_DIRECTORY, time_display=time_display, title_display=title_display,
+        update_display(opts, simulation, progress_bar, FRAME_DIRECTORY, time_display=time_display, title_display=title_display,
                        spectra_max_conc=spectra_max_conc)
         fpsClock.tick(opts.fps)
 
@@ -532,7 +535,7 @@ def simulate_surface_crn(manifest_filename, group_selection_seed, display_class=
             time_display.render(display_surface, x_pos=time_display.x_pos, y_pos=time_display.y_pos) #opts_menu.display_height)
             if next_reaction:
                 display_next_event(next_reaction, grid_display)
-            update_display(opts, simulation, FRAME_DIRECTORY, time_display=time_display, title_display=title_display,
+            update_display(opts, simulation, progress_bar, FRAME_DIRECTORY, time_display=time_display, title_display=title_display,
                            spectra_max_conc=spectra_max_conc)
             if opts.debug:
                 print("Simulation state at final time " + \
@@ -654,9 +657,10 @@ def cleanup_and_exit(simulation):
     sys.exit()
 
 
-def update_display(opts, simulation, FRAME_DIRECTORY=None, time_display=None, title_display=None,
+def update_display(opts, simulation, progress_bar, FRAME_DIRECTORY=None, time_display=None, title_display=None,
                    spectra_max_conc=-1):
     ipython_visuals.update_progress(simulation.time / opts.max_duration, "Generating video frames")
+    # progress_bar.bar()
 
     # TODO
     # print(type(simulation))
