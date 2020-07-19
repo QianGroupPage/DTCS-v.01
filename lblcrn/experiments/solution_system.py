@@ -1,9 +1,10 @@
-from typing import List, Dict
+from typing import List, Dict, Optional
 import matplotlib.pyplot as plt
 import sympy as sym
 from lblcrn.crn_sym import reaction
 import lblcrn.experiments.xps_io as xps_io
 import lblcrn.experiments.xps as xps
+from lblcrn.experiments.tp_correlation import XPSTPCorrelator
 import pandas as pd
 
 class SolutionSystem:
@@ -111,13 +112,16 @@ class XPSInitializationData:
         name: The name of this specific experiment.
         constants: A list reaction constants for this experiment, with an order corresponding to
             that of the reaction system to be simulated.
+        temp: The temperature associated with this experiment.
+        pressure: The pressure associated with this experiment.
         experimental_file: The location of the experimental XPS file to be used for comparison
     """
-    def __init__(self, title: str, constants: List[float], experimental_file: str):
+    def __init__(self, title: str, experimental_file: str, temp: float, pressure: float, constants: List[float] = None):
         self.title = title
         self.constants = constants
         self.experimental_file = experimental_file
-
+        self.temp = temp
+        self.pressure = pressure
 
 class XPSSystemRunner:
     """Orchestrate an end-to-end XPS analysis pipeline.
@@ -129,26 +133,54 @@ class XPSSystemRunner:
         rsys_generator: A function that takes in a list of reaction constants and returns a reaction
         system to be used.
         time: The amount of time for which the simulation is run.
-        initialization_data: A list of XPSInitializationData objects that specify the various
+        initializer_data: A list of XPSInitializationData objects that specify the various
         simulations to be run.
         multipliers: A list of reaction constant multipliers to be used.
         solutions: A list of lists of simulated data for an XPS experiment.
         complete: A list of boolean values representing whether all systems have been simulated.
+        tp_correlator: An optional temperature pressure corrl
     """
 
     def __init__(self,
                  rsys_generator,
                  time: float,
                  initializer_data: List[XPSInitializationData],
-                 multipliers: List[float]):
+                 multipliers: List[float],
+                 tp_correlator: Optional[XPSTPCorrelator] = None):
         """Create a new XPS system runner.
         """
         self.rsys_generator = rsys_generator
         self.time = time
-        self.initializer_data = initializer_data
         self.multipliers = multipliers
-        self.solutions = [None for _ in range(len(self.initializer_data))]
-        self.complete = [False for _ in range(len(self.initializer_data))]
+        self.solutions = [None for _ in range(len(initializer_data))]
+        self.complete = [False for _ in range(len(initializer_data))]
+        self.tp_correlator = tp_correlator
+
+
+        # Auto-scale reaction constants if applicable
+        if tp_correlator is None:
+            self.initializer_data = initializer_data
+        else:
+            self.generate_constants_from_correlation(initializer_data)
+
+    def generate_constants_from_correlation(self, initializer_data: List[XPSInitializationData]):
+        """Given a list of initialization data, and a tp_correlator, determine reaction constants.
+        """
+        tpc = self.tp_correlator
+        exp: Optional[XPSInitializationData] = None
+        # Find the reaction with which the initial data in the correlator corresponds
+        for d in initializer_data:
+            if d.pressure == tpc.init_pressure and d.temp == tpc.init_temp:
+                exp = d
+
+        if exp is None:
+            raise ValueError("The TP correlators' initial temperature and pressure do not "
+                             + "correspond with any experiment in the initialization data")
+
+        for d in initializer_data:
+            d.constants = tpc.constants(d.temp, d.pressure)
+            print(d.constants)
+                
 
     def simulate(self, index: int):
         # Test code that will be moved into a module
@@ -178,4 +210,4 @@ class XPSSystemRunner:
             print("All experiments have not yet been simulated.")
             return
         return SolutionSystem(self.solutions, [x.experimental_file for x in self.initializer_data],
-                self.multipliers)
+                              self.multipliers)
