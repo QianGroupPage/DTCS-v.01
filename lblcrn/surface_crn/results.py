@@ -96,7 +96,8 @@ class Results:
         :param output_fig: output fig, axes if set to True
         :return: a list of axes
         """
-        fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+        num_lines = num_axes // 2 + num_axes % 2
+        fig, axes = plt.subplots(num_lines, 2, figsize=(16, 6 * num_lines))
         if output_fig:
             return fig, axes
         else:
@@ -544,6 +545,16 @@ class Results:
         :return: estimated  convergence time.
         """
         return self.df.index.max() - 20
+
+    @property
+    def last_time_stamp(self):
+        return self.df_raw.index[-1]
+
+    @property
+    def max_concentration(self):
+        return max([self.df_raw[s].max() for s in self.species_ordering])
+
+
 
 
 

@@ -7,6 +7,7 @@ from lblcrn.surface_crn.results import Results
 from lblcrn.common import ipython_visuals
 from lblcrn.surface_crn.api_adapter.api_adapt import generate_manifest_stream, generate_surface,\
     HexGridPlusIntersectionDisplay
+from lblcrn.surface_crn.ensemble import Ensemble
 import os
 from shutil import rmtree
 from IPython.display import clear_output
@@ -104,7 +105,7 @@ def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=Fa
                                                species_tracked=species_tracked, manifest_file=manifest_file,
                                                rng_seed=rng_seed + 2 * i, video_path=run_video_path)
             ensemble_results.append(results)
-        return ensemble_results
+        return Ensemble(ensemble_results)
 
 
 
