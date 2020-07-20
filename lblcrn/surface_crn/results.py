@@ -98,10 +98,19 @@ class Results:
         """
         num_lines = num_axes // 2 + num_axes % 2
         fig, axes = plt.subplots(num_lines, 2, figsize=(16, 6 * num_lines))
+
+        def trim_axs(axs, N):
+            """little helper to massage the axs list to have correct length..."""
+            """https://matplotlib.org/3.1.1/gallery/lines_bars_and_markers/markevery_demo.html#sphx-glr-gallery-lines-bars-and-markers-markevery-demo-py"""
+            axs = axs.flat
+            for ax in axs[N:]:
+                ax.remove()
+            return axs[:N]
+
         if output_fig:
-            return fig, axes
+            return fig, trim_axs(axes, num_axes)
         else:
-            return axes
+            return trim_axs(axes, num_axes)
 
     def play_video(self, slowdown_factor=1):
         """

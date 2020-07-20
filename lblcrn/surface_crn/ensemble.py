@@ -19,12 +19,12 @@ class Ensemble:
         y_max = max([r.max_concentration for r in self.results]) * 1.1
 
         for i, r in enumerate(self.results):
-            ax = axes[i // 2, i % 2]
+            ax = axes[i]
             r.plot_evolution(use_raw_data=True, ax=ax)
             ax.set_title(f"Result {i}")
             ax.set_xlim(0, x_max)
             ax.set_ylim(0, y_max)
-z
+
     def plot_mean(self):
         return self.mean_result.plot_evolution(use_raw_data=True)
 
