@@ -89,6 +89,8 @@ def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=Fa
                   spectra_average_duration=2, species_tracked=[], manifest_file="", rng_seed=923123122,
                   video_path="", ensemble_size=1):
     video_path = resolve_video(video, video_path)
+    if video_path == -1:
+        return
     if ensemble_size == 1:
         return scrn_simulate_single_run(rxns, time_max=time_max, lattice=lattice, display_class=display_class,
                                         video=video, spectra_in_video=spectra_in_video,
@@ -143,7 +145,7 @@ def resolve_video(video, video_path):
                 if video_from_argument:
                     print("Please choose a different path for the videos.")
                     print("Program exits")
-                    return
+                    return -1
 
                 new_video_path = input(f"Name a directory to store frames and videos: \n{os.getcwd()}/")
 
