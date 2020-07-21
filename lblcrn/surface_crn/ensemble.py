@@ -25,8 +25,8 @@ class Ensemble:
             ax.set_xlim(0, x_max)
             ax.set_ylim(0, y_max)
 
-    def plot_mean(self):
-        return self.mean_result.plot_evolution(use_raw_data=True)
+    def plot_mean(self, ax=None, title=""):
+        return self.mean_result.plot_evolution(use_raw_data=True, ax=ax, title=title)
 
     def __getitem__(self, arg):
         return self.results[arg]

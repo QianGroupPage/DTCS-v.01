@@ -1,5 +1,4 @@
 from IPython.display import clear_output
-import sys
 import os
 
 def update_progress(progress, header="Progress", beginning=False, terminating=False):
