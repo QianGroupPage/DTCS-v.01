@@ -4,17 +4,19 @@ from lblcrn.surface_crn.surface_crns.simulators.queue_simulator import *
 from lblcrn.surface_crn.surface_crns.readers.manifest_readers import read_manifest
 from lblcrn.surface_crn.surface_crns.options.option_processor import SurfaceCRNOptionParser
 from lblcrn.surface_crn.results import Results
-from lblcrn.common import color_to_HEX
+from lblcrn.common import ipython_visuals
 from lblcrn.surface_crn.api_adapter.api_adapt import generate_manifest_stream, generate_surface,\
     HexGridPlusIntersectionDisplay
+from lblcrn.surface_crn.ensemble import Ensemble
 import os
 from shutil import rmtree
+from IPython.display import clear_output
 
 
-def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=False, spectra_in_video=True,
-             species_tracked=[], manifest_file=""):
+def scrn_simulate_single_run(rxns, time_max=100, lattice=None, display_class=None, video=False, spectra_in_video=True,
+                             spectra_average_duration=2, species_tracked=[], manifest_file="", rng_seed=923123122,
+                             video_path=""):
     """
-
     :param rxns:
     :param time_max:
     :param lattice:
@@ -25,8 +27,11 @@ def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=Fa
     :param manifest_file:
     :return:
     """
+    # Dangerous! rng_seed + 1 is used
+    group_selection_seed = rng_seed + 1
+
     if not manifest_file:
-        manifest = generate_manifest_stream(rxns, time_max)
+        manifest = generate_manifest_stream(rxns, time_max, random_seed_scrn=rng_seed, video_path=video_path)
     else:
         manifest = manifest_file
 
@@ -37,7 +42,8 @@ def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=Fa
     else:
         surface = lattice
     #  TODO: infer spectra's scale from here.
-    times, concs = simulate_without_display(manifest, surface, [str(s) for s in species_tracked], rxns)
+    times, concs = simulate_without_display(manifest, surface, [str(s) for s in species_tracked], rxns,
+                                            group_selection_seed)
     if manifest_file:
         r = Results.from_concs_times(manifest_file, rxns, concs, times)
     else:
@@ -47,18 +53,19 @@ def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=Fa
     if video:
         # Generate the file stream again after it's used.
         if not manifest_file:
-            manifest = generate_manifest_stream(rxns, time_max)
+            manifest = generate_manifest_stream(rxns, time_max, random_seed_scrn=rng_seed, video_path=video_path)
         video_link = get_video_link(manifest)
+
         # Generate the file stream again after it's used.
         if not manifest_file:
-            manifest = generate_manifest_stream(rxns, time_max)
+            manifest = generate_manifest_stream(rxns, time_max, random_seed_scrn=rng_seed, video_path=video_path)
         # TODO: check to not overwrite the video files.
         frames_link = get_frames_link(manifest)
         if os.path.isdir(frames_link):
             rmtree(frames_link)
         # Generate the file stream again after it's used.
         if not manifest_file:
-            manifest = generate_manifest_stream(rxns, time_max)
+            manifest = generate_manifest_stream(rxns, time_max, random_seed_scrn=rng_seed, video_path=video_path)
         if not lattice:
             surface = generate_surface(rsys=rxns)
         else:
@@ -68,12 +75,97 @@ def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=Fa
         # the frames folder.
         # TODO: progress bar for the video
         # TODO: add this as an argument spectra_max_conc=r.df_raw.max()
-        simulate_with_display(manifest, surface, rxns=rxns, spectra_in_video=spectra_in_video,
-                              spectra_max_conc=r.df_raw.to_numpy().max())
+        r.video_trajectory = simulate_with_display(manifest, surface, group_selection_seed, rxns=rxns,
+                                                   spectra_in_video=spectra_in_video,
+                                                   running_average=spectra_average_duration,
+                                                   spectra_max_conc=r.df_raw.to_numpy().max())
     r.video = video_link
 
     # TODO: warn the user if termination is early.
     return r
+
+
+def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=False, spectra_in_video=True,
+                  spectra_average_duration=2, species_tracked=[], manifest_file="", rng_seed=923123122,
+                  video_path="", ensemble_size=1):
+    video_path = resolve_video(video, video_path)
+    if ensemble_size == 1:
+        return scrn_simulate_single_run(rxns, time_max=time_max, lattice=lattice, display_class=display_class,
+                                        video=video, spectra_in_video=spectra_in_video,
+                                        spectra_average_duration=spectra_average_duration,
+                                        species_tracked=species_tracked, manifest_file=manifest_file,
+                                        rng_seed=rng_seed, video_path=video_path)
+    else:
+        ensemble_results = []
+        for i in range(ensemble_size):
+            run_video_path = f"{video_path}/{i}"
+            results = scrn_simulate_single_run(rxns, time_max=time_max, lattice=lattice, display_class=display_class,
+                                               video=video, spectra_in_video=spectra_in_video,
+                                               spectra_average_duration=spectra_average_duration,
+                                               species_tracked=species_tracked, manifest_file=manifest_file,
+                                               rng_seed=rng_seed + 2 * i, video_path=run_video_path)
+            ensemble_results.append(results)
+        return Ensemble(ensemble_results)
+
+
+
+def resolve_video(video, video_path):
+    video_from_argument = True if video_path else False
+    if video and not video_from_argument:
+        video_path = input(f"Name a directory to store frames and videos: \n{os.getcwd()}/")
+
+        if not video_path:
+            video_path = "Surface CRN Videos"
+            print(f"Using the default directory {os.getcwd()}/{video_path}")
+
+        # TODO: ask users to press return or enter
+        clear_output(wait=False)
+
+    if os.path.isdir(video_path):
+        use_path = False
+        wrong_decision_word = False
+
+        while not use_path:
+            if wrong_decision_word:
+
+                use_path = input(f"Type \"Yes\" to overwrite the directory, or \"No\" if otherwise: ")
+                print('\n')
+            else:
+                use_path = input(f"The directory {os.getcwd()}/{video_path} already exists, would you like to "
+                                 f"overwrite the directory? \nType \"Yes\" if you do, or \"No\" if otherwise: ")
+                # if same_answer:
+                print("\n")
+
+            if use_path.lower() == "yes":
+                use_path = True
+                wrong_decision_word = False
+            elif use_path.lower() == "no":
+                if video_from_argument:
+                    print("Please choose a different path for the videos.")
+                    print("Program exits")
+                    return
+
+                new_video_path = input(f"Name a directory to store frames and videos: \n{os.getcwd()}/")
+
+                if not new_video_path:
+                    new_video_path = "Surface CRN Videos"
+                    print(f"Using default directory name {os.getcwd()}/{new_video_path}")
+
+                if os.path.isdir(new_video_path):
+                    use_path = False
+
+                # TODO: don't clear if the directory is same as before.
+                if new_video_path != video_path:
+                    clear_output(wait=False)
+                else:
+                    same_answer = True
+                wrong_decision_word = False
+                video_path = new_video_path
+            else:
+                wrong_decision_word = True
+                print(f"\"{use_path}\" is not a valid input.")
+                use_path = False
+    return video_path if video_path else ""
 
 
 def get_opts(manifest):
@@ -99,46 +191,21 @@ def get_frames_link(manifest):
     return f"{opts.capture_directory}/frames"
 
 
-def simulate_with_display(manifest_file, lattice, rxns=None, spectra_in_video=True, spectra_max_conc=-1):
+def simulate_with_display(manifest_file, lattice, group_selection_seed, rxns=None, spectra_in_video=True, running_average=10,
+                          spectra_max_conc=-1):
     if rxns.surface.structure == "hexagon":
         display_class = HexGridPlusIntersectionDisplay
     else:
         display_class = None
-    SurfaceCRNQueueSimulator.simulate_surface_crn(manifest_file, display_class, init_state=lattice, rxns=rxns,
-                                                  spectra_in_video=spectra_in_video, spectra_max_conc=spectra_max_conc)
+    concs, times = SurfaceCRNQueueSimulator.simulate_surface_crn(manifest_file, group_selection_seed, display_class,
+                                                                 init_state=lattice, rxns=rxns,
+                                                                 spectra_in_video=spectra_in_video,
+                                                                 running_average=running_average,
+                                                                 spectra_max_conc=spectra_max_conc)
+    return Results.concs_times_df(concs, times)
 
 
-def add_groups(surface, rsys):
-    """
-    Update the surface with groups in the species manager.
-
-    :param surface: a surface structure
-    :param rsys: a rxn system
-    """
-    sm = rsys.species_manager
-    size_dict = {s.name: s.size for s in sm.large_species}
-    seen = set()
-    for s in surface:
-        if s not in seen and s.state in size_dict:
-            group_size = size_dict[s.state]
-            # Build the group
-            free_neighbors = []
-            for t in s.neighbors:
-                n = t[0]
-                if n not in seen and n.state in rsys.surface_names:
-                    free_neighbors.append(n)
-                seen.add(n)
-            seen.add(s)
-
-            # Pick from free neighbors as part of the group
-            group = random.sample(free_neighbors, group_size - 1) + [s]
-
-            for n in group:
-                n.group = group
-                n.state = s.state
-
-
-def simulate_without_display(manifest_file, lattice, species_tracked, rxns):
+def simulate_without_display(manifest_file, lattice, species_tracked, rxns, group_selection_seed):
     '''
     Run until completion or max time, storing an array of species counts at
     the times of each reaction, along with an array of times. At the end,
@@ -151,12 +218,13 @@ def simulate_without_display(manifest_file, lattice, species_tracked, rxns):
         # If no grid is made, use the inåitial grid
         lattice = opts.grid
 
-    add_groups(lattice, rxns)
-
+    # add_groups(lattice, rxns)
     simulator = QueueSimulator(surface=lattice,
                                transition_rules=opts.transition_rules,
                                seed=opts.rng_seed,
-                               simulation_duration=opts.max_duration)
+                               group_selection_seed=group_selection_seed,
+                               simulation_duration=opts.max_duration,
+                               rxns=rxns)
 
     times = [0]
     concs = dict()
@@ -165,21 +233,40 @@ def simulate_without_display(manifest_file, lattice, species_tracked, rxns):
     for node in lattice:
         if node.state in concs:
             concs[node.state][0] += 1
+    ipython_visuals.update_progress(0 / opts.max_duration, "Simulation in progress")
+
     while not simulator.done():
+        # Advance the reaction
         next_rxn = simulator.process_next_reaction()
         if next_rxn is None:
             break
         times.append(next_rxn.time)
+
+        counter = simulator.surface.species_count()
         for species in species_tracked:
-            concs[species].append(concs[species][-1])
-        # Very simple mechanism, one reaction at a time.
-        for reactant in next_rxn.rule.inputs:
-            if reactant in concs:
-                concs[reactant][-1] -= 1
-        for product in next_rxn.rule.outputs:
-            if product in concs:
-                concs[product][-1] += 1
+            concs[species].append(counter[species])
+
+        # concs[species].append(concs[species][-1])
+        # # Very simple mechanism, one reaction at a time.
+        # # TODO: these don't account for size 2.
+        # for reactant in next_rxn.rule.inputs:
+        #     if reactant in concs:
+        #         concs[reactant][-1] -= 1
+        # for product in next_rxn.rule.outputs:
+        #     if product in concs:
+        #         concs[product][-1] += 1
+
+        ipython_visuals.update_progress(next_rxn.time/opts.max_duration, "Simulation in progress")
+
+    if times:
+        last_time_stamp = times[-1]
+    else:
+        last_time_stamp = 0
+    #     TODO: add rel_tol
+    if math.isclose(last_time_stamp, opts.max_duration, abs_tol=0.1):
+        ipython_visuals.update_progress(last_time_stamp / opts.max_duration, "Simulation completed", terminating=True)
+    else:
+        ipython_visuals.update_progress(last_time_stamp / opts.max_duration,
+                                        f"Simulation terminated early at {last_time_stamp:.1f} s", terminating=True)
 
     return times, concs
-
-

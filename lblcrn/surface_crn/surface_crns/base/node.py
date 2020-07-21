@@ -38,6 +38,9 @@ class Node:
         else:
             self.group = group
 
+    def is_empty(self):
+        return self.state == ""
+
     def __str__(self):
         str_rep = "<State: " + self.state + " (updated at time " + \
             str(self.timestamp) + ")"
@@ -53,10 +56,10 @@ class Node:
 
         if len(self.group) > 0:
             str_rep += "; neighbor states: "
-            str_rep += self.group[0][0].state if self.group[0] \
+            str_rep += self.group[0].state if self.group[0] \
                        else "<node is NoneType>"
             for i in range(1, len(self.group)):
-                str_rep += ", "+self.group[i][0].state if self.group[i]\
+                str_rep += ", "+self.group[i].state if self.group[i]\
                             else "<node is NoneType>"
         else:
             str_rep += "; No group"

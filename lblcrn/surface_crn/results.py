@@ -2,8 +2,6 @@ import pandas as pd
 import seaborn as sns
 import matplotlib
 import matplotlib.pyplot as plt
-# Set default font
-matplotlib.rcParams["font.family"] = "arial"
 import csv
 import numpy as np
 from scipy.stats import norm
@@ -13,6 +11,9 @@ from IPython.display import HTML
 import ffmpeg
 from lblcrn.common import color_to_HEX
 import matplotlib.backends.backend_agg as agg
+# Set default font
+matplotlib.rcParams["font.family"] = "arial"
+
 
 class Results:
     """
@@ -22,13 +23,21 @@ class Results:
     TIME_COL_NAME = "Time (s) "  # column name used for the time entry
 
     def __init__(self, manifest_file, rxns, df=None):
+        """
+        :param manifest_file:
+        :param rxns:
+        :param df: a df whose index may be unnamed but will be reset into TIME_COL_NAME
+        """
+
         self.manifest_file = manifest_file
         self.rxns = rxns
-        self.df = df
+        self.df = df.copy()
+        self.df.rename_axis(Results.TIME_COL_NAME, inplace=True)
 
         # Correct the count values for larger species
         for s in rxns.species_manager.large_species:
             if s.name in self.df.columns:
+                # print(f"dividing species {s.name} by {s.size}")
                 self.df[s.name] = self.df[s.name] / s.size
 
         self.resample_evolution()
@@ -40,9 +49,9 @@ class Results:
 
         color_index = rxns.get_colors()
         sub_s_list = []
-        [sub_s_list.extend(l) for l in rxns.species_manager.sub_species_dict.values()]
+        [sub_s_list.extend(l) for l in rxns.species_manager.to_sum_dict.values()]
         # print(sub_s_list)
-        primary_s = rxns.species_manager.sub_species_dict.keys()
+        primary_s = rxns.species_manager.to_sum_dict.keys()
         species_tracked = sorted(list(set(list(rxns.get_symbols()) + list(primary_s))), key=lambda s: str(s))
         self.species_ordering = [s for s in species_tracked if s in primary_s or s not in sub_s_list]
         self.species_colors = {s: color_index[s] for s in self.species_ordering}
@@ -51,12 +60,32 @@ class Results:
         import sympy as sym
         self.substances = {s: rxns.species_manager.species_from_symbol(sym.Symbol(s)) for s in self.species_ordering}\
             if rxns else {}
+        # species_tracked = list(rxns.get_symbols() + list(primary_s))
+        # self.species_ordering = [rxns.species_manager.species_from_symbol(s) for s in species_tracked
+        #                          if rxns.species_manager.symbol_in_sm(s) and (s in primary_s or s not in sub_s_list)]
+        # self.species_colors = {s: color_index[s] for s in self.species_ordering}
+        # self.substances = {s.name: s for s in self.species_ordering}
+        # self.species_ordering = [s.name for s in self.species_ordering]
+        # self.species_colors = {s.name: color_to_HEX(c) for s, c in self.species_colors.items()}
 
-        sub_s = rxns.species_manager.sub_species_dict
+
+        sub_s = rxns.species_manager.to_sum_dict
         self.sum_sub_species(sub_s)
+        self.sum_same_be()
+
 
         # Play the videos
         self.video = None
+        self.video_trajectory = None
+
+
+    # def extend(self, df):
+    #     """
+    #     A
+    #     :param df:
+    #     :return:
+    #     """
+
 
     @staticmethod
     def side_by_side_axes(num_axes=2, output_fig=False):
@@ -67,11 +96,21 @@ class Results:
         :param output_fig: output fig, axes if set to True
         :return: a list of axes
         """
-        fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+        num_lines = num_axes // 2 + num_axes % 2
+        fig, axes = plt.subplots(num_lines, 2, figsize=(16, 6 * num_lines))
+
+        def trim_axs(axs, N):
+            """little helper to massage the axs list to have correct length..."""
+            """https://matplotlib.org/3.1.1/gallery/lines_bars_and_markers/markevery_demo.html#sphx-glr-gallery-lines-bars-and-markers-markevery-demo-py"""
+            axs = axs.flat
+            for ax in axs[N:]:
+                ax.remove()
+            return axs[:N]
+
         if output_fig:
-            return fig, axes
+            return fig, trim_axs(axes, num_axes)
         else:
-            return axes
+            return trim_axs(axes, num_axes)
 
     def play_video(self, slowdown_factor=1):
         """
@@ -178,12 +217,23 @@ class Results:
         """
         return self.average_values(convergence_time, self.df.index[-1])
 
-    def average_values(self, start, end):
+    def average_values(self, start, end=-1):
         """
         Average the result df from time start to time end.
         :return: a df with time column dropped
         """
-        df = self.df
+        if end == -1:
+            end = self.df_raw.index[-1]
+        df = self.df_raw
+
+        # print("Entire df", df)
+        # # TODO: use the raw df
+        # print("Begins the df chosen for averaging")
+        #
+        # print(f"\n start {start}, end {end}")
+        #
+        # print(df.loc[(start <= df.index) & (df.index <= end)])
+        # print("Ends the df chosen for averaging")
         return df.loc[(start <= df.index) & (df.index <= end)].mean()
 
     def concentration_bar_plot(self, t=-1, scale=None):
@@ -230,13 +280,36 @@ class Results:
             for s in v:
                 # If parent is in the list of children, but not in the data column,
                 # assume that parent is not a valid species in the underlying system.
+                # TODO: improve the logic here
+                if s not in self.df.columns:
+                    continue
                 if s not in self.df.columns and s == k:
                     continue
-                if s not in self.df.columns:
+                if s != k and s not in self.df.columns:
                     raise Exception(f"Subspecies {s} has not been recorded in the results data frame.")
-                summed_series += self.df[s]
+                if s in self.df.columns:
+                    summed_series += self.df[s]
             self.df[k] = summed_series
         self.resample_evolution()
+
+    def sum_same_be(self):
+        """
+        Sum the number of species with the same binding energy.
+        :return:
+        """
+        bes_to_names = {}
+        to_sum = {}
+        for name in self.species_ordering:
+            for o in self.substances[name].orbitals:
+                be = o.binding_energy
+                if be in to_sum:
+                    to_sum[be].append(name)
+                elif be in bes_to_names:
+                    to_sum[be] = bes_to_names[name] + [name]
+                else:
+                    bes_to_names[be] = [name]
+        # for v in to_sum.values:
+        # TODO: how shall we name the summed species?
 
     # TODO: decrease the figure size in case zoom = False
     def plot_evolution(self, species_in_figure=None, start_time=0, end_time=-1, title="", ax=None, save=False,
@@ -303,10 +376,13 @@ class Results:
     def reference_with_xps(self, path="", scaling_factor=1):
         self.xps_df = xps.read_and_process(path, round=1) / scaling_factor
 
-    def gaussian_df(self, t=-1, scaling_factor=1):
+    def gaussian_df(self, t=-1, avg_duration=1, scaling_factor=1):
         if t == -1:
-            t = self.df.index.max()
-        s = self.average_values(t, t + 1) / scaling_factor
+            t = self.df_raw.index.max()
+        s = self.average_values(t, t + avg_duration) / scaling_factor
+
+        # TODO
+        # print(s)
 
         sigma = 0.75 * np.sqrt(2) / (np.sqrt(2 * np.log(2)) * 2)
         bes = [self.substances[name].orbitals[0].binding_energy for name in self.species_ordering]
@@ -316,7 +392,7 @@ class Results:
         res = {}
 
         for name in self.species_ordering:
-            sol = s[name]
+            sol = s[name] if name in s else 0
             for o in self.substances[name].orbitals:
                 be = o.binding_energy
                 dist = sol * norm.pdf(x_axis, be, sigma)
@@ -341,7 +417,7 @@ class Results:
         max_be = max(gaussian.index.max(), xps_df.index.max())
         return xps.fill_zeros(gaussian, min_be, max_be), xps.fill_zeros(xps_df, min_be, max_be)
 
-    def plot_gaussian(self, t=-1, path="", xps_path="", xps_scaling=1, save=False, return_fig=False, fig_size="Default",
+    def plot_gaussian(self, t=-1, avg_duration=1, path="", xps_path="", xps_scaling=1, save=False, return_fig=False, fig_size="Default",
                       dpi=100, scaling_factor=1, ax=None, envelope_name="CRN"):
         """
         Plot the Gaussian function from time t to time t + 1.
@@ -352,7 +428,7 @@ class Results:
         #     plt.rcParams['figure.figsize'] = [0.6 * 27 / 2.54, 0.6 * 18 / 2.54]
         # else:
         #     plt.rcParams['figure.figsize'] = fig_size
-        gaussian = self.gaussian_df(t, scaling_factor)
+        gaussian = self.gaussian_df(t, avg_duration=avg_duration, scaling_factor=scaling_factor)
         min_be = gaussian.index.min()
         max_be = gaussian.index.max()
         bes = self.bes()
@@ -417,16 +493,17 @@ class Results:
             # Jupter Notebbok. Return only when you need the figure.
             return ax.figure
 
-    def raw_string_gaussian(self, t=-1, y_upper_limit=None,  xps_scaling=1, fig_size="Default", dpi=100,
-                        scaling_factor=1, ax=None):
+    def raw_string_gaussian(self, t=-1, avg_duration=1, y_upper_limit=None,  xps_scaling=1, fig_size="Default", dpi=100,
+                            scaling_factor=1, ax=None):
         """
         A wrapper function for self.plot_gaussian intended for generating frames in Pygame videos.
         :return: raw string representation of the figure
         """
-        import matplotlib
         backend = matplotlib.rcParams['backend']
         matplotlib.use("Agg")
-        fig = self.plot_gaussian(t=t,  xps_scaling=xps_scaling, return_fig=True, fig_size=fig_size, dpi=dpi,
+        # TODO: determine if this solves the issue with inconsistent font.
+        matplotlib.rcParams["font.family"] = "arial"
+        fig = self.plot_gaussian(t=t, avg_duration=avg_duration, xps_scaling=xps_scaling, return_fig=True, fig_size=fig_size, dpi=dpi,
                                  scaling_factor=scaling_factor, ax=ax, envelope_name="total")
         fig.tight_layout()
         matplotlib.pyplot.ylim((0, y_upper_limit))
@@ -434,6 +511,7 @@ class Results:
         canvas.draw()
         renderer = canvas.get_renderer()
         matplotlib.use(backend)
+        # TODO: close plt in case too many plots got opened.
         return renderer.tostring_rgb(),  canvas.get_width_height()
 
     def save(self, directory=None):
@@ -476,6 +554,16 @@ class Results:
         :return: estimated  convergence time.
         """
         return self.df.index.max() - 20
+
+    @property
+    def last_time_stamp(self):
+        return self.df_raw.index[-1]
+
+    @property
+    def max_concentration(self):
+        return max([self.df_raw[s].max() for s in self.species_ordering])
+
+
 
 
 

@@ -17,6 +17,7 @@ except ImportError:
 import lblcrn.surface_crn.surface_crns.readers as readers
 
 import sys
+import math
 
 from lblcrn.surface_crn.surface_crns.options.option_processor import SurfaceCRNOptionParser
 from lblcrn.surface_crn.surface_crns.models.grids import SquareGrid, HexGrid
@@ -32,11 +33,13 @@ from lblcrn.surface_crn.surface_crns.base.transition_rule import TransitionRule
 from lblcrn.surface_crn.surface_crns.pygbutton import *
 from lblcrn.surface_crn.surface_crns.views.grid_display import ParallelEmulatedSquareGridDisplay
 from lblcrn.surface_crn.results import Results
+from lblcrn.common import ipython_visuals, ProgressBar
 
 import cProfile
 import optparse
 import sys
 import os
+import subprocess as sp
 from time import process_time
 
 import pygame
@@ -76,7 +79,7 @@ DEBUG_SUBDIRECTORY = "debug"
 FRAME_SUBDIRECTORY = "frames"
 CUTOFF_TIME     = 600000000 # Cut off simulation at 10 minutes
 CUTOFF_SIZE     = 10000 * 500000000000 # Cut off simulation at roughly 1000 frames for
-                                # a typical image size.
+                                       # a typical image size.
 
 #############
 # VARIABLES #
@@ -99,8 +102,8 @@ def main():
     simulate_surface_crn(manifest_filename)
 
 
-def simulate_surface_crn(manifest_filename, display_class = None,
-                         init_state=None, rxns=None, spectra_in_video=True,
+def simulate_surface_crn(manifest_filename, group_selection_seed, display_class=None,
+                         init_state=None, rxns=None, spectra_in_video=True, running_average=10,
                          spectra_max_conc=-1):
     '''
     Runs a simulation, and displays it in a GUI window OR saves all frames
@@ -132,7 +135,6 @@ def simulate_surface_crn(manifest_filename, display_class = None,
         # SIGPIPE is not used on any Windows system.
         if not sys.platform.startswith('win'):
             from signal import SIGPIPE
-        import subprocess as sp
         base_dir = opts.capture_directory
         MOVIE_DIRECTORY = base_dir
         DEBUG_DIRECTORY = os.path.join(base_dir, DEBUG_SUBDIRECTORY)
@@ -162,23 +164,31 @@ def simulate_surface_crn(manifest_filename, display_class = None,
             for x in range(grid.x_size):
                 for y in range(grid.y_size):
                     print("(" + str(x) + "," + str(y) + "): " + str(grid.grid[x,y]))
-        simulation = QueueSimulator(surface = grid,
-                                    transition_rules = opts.transition_rules,
-                                    seed = opts.rng_seed,
-                                    simulation_duration = opts.max_duration)
+        simulation = QueueSimulator(surface=grid,
+                                    transition_rules=opts.transition_rules,
+                                    seed=opts.rng_seed,
+                                    group_selection_seed=group_selection_seed,
+                                    simulation_duration=opts.max_duration,
+                                    rxns=rxns
+                                    )
         simulation.init_wall_time = process_time()
+    # TODO: support synchronous mode.
     elif opts.simulation_type == "synchronous":
+        # TODO: study when to use it;
+        # TODO: update the synchronous simulator to be the same fashion as the queue simulator
         simulation = SynchronousSimulator(
                                     surface = grid,
                                     update_rule = opts.update_rule,
                                     seed = opts.rng_seed,
-                                    simulation_duration = opts.max_duration)
+                                    simulation_duration = opts.max_duration,
+                                    )
         simulation.init_wall_time = process_time()
     else:
         raise Exception('Unknown simulation type "' + opts.simulation_type+'".')
     time = simulation.time
     event_history = EventHistory()
     simulation.rxns = rxns
+    simulation.running_average = running_average
     simulation.spectra_in_video = spectra_in_video
 
 
@@ -220,10 +230,10 @@ def simulate_surface_crn(manifest_filename, display_class = None,
     legend_display = LegendDisplay(colormap = opts.COLORMAP)
 
     # Width only requires legend and grid sizes to calculate
-    display_width  = grid_display.display_width + legend_display.display_width
+    display_width = grid_display.display_width + legend_display.display_width
 
     # Width used to calculate time label and button placements
-    time_display  = TimeDisplay(display_width)
+    time_display = TimeDisplay(display_width)
 
     # Display for the additional title
     title_display = TextDisplay(display_width, text="Surface CRN Trajectory")
@@ -324,7 +334,10 @@ def simulate_surface_crn(manifest_filename, display_class = None,
         clip_button.draw(display_surface)
 
     pygame.display.flip()
-    update_display(opts, simulation, FRAME_DIRECTORY, time_display=time_display, title_display=title_display,
+    # TODO
+    # progress_bar = ProgressBar(total_tasks=round(opts.max_duration/opts.fps))
+    progress_bar = None
+    update_display(opts, simulation, progress_bar, FRAME_DIRECTORY, time_display=time_display, title_display=title_display,
                    spectra_max_conc=spectra_max_conc)
 
     # State variables for simulation
@@ -479,13 +492,16 @@ def simulate_surface_crn(manifest_filename, display_class = None,
             while (not event_history.at_end() or not simulation.done()) \
                and next_reaction_time < time:
                 if event_history.at_end():
+                    # Advance the reaction
                     next_reaction = simulation.process_next_reaction()
                     if next_reaction:
                         event_history.add_event(next_reaction)
                         event_history.increment_event(1)
                 else:
+                    print("reading from event history")
                     next_reaction = event_history.next_event()
                     event_history.increment_event(1)
+                    # TODO: does this update the visuals?
                     for i in range(len(next_reaction.participants)):
                         cell = next_reaction.participants[i]
                         state = next_reaction.rule.outputs[i]
@@ -501,7 +517,7 @@ def simulate_surface_crn(manifest_filename, display_class = None,
         # Render updates and make the next clock tick.
         if opts.debug:
             print("Updating display.")
-        update_display(opts, simulation, FRAME_DIRECTORY, time_display=time_display, title_display=title_display,
+        update_display(opts, simulation, progress_bar, FRAME_DIRECTORY, time_display=time_display, title_display=title_display,
                        spectra_max_conc=spectra_max_conc)
         fpsClock.tick(opts.fps)
 
@@ -520,8 +536,8 @@ def simulate_surface_crn(manifest_filename, display_class = None,
             time_display.render(display_surface, x_pos=time_display.x_pos, y_pos=time_display.y_pos) #opts_menu.display_height)
             if next_reaction:
                 display_next_event(next_reaction, grid_display)
-            update_display(opts, simulation, FRAME_DIRECTORY, time_display=time_display, title_display=title_display,
-                           spectra_max_conc=spectra_max_conc)
+            update_display(opts, simulation, progress_bar, FRAME_DIRECTORY, time_display=time_display, title_display=title_display,
+                           spectra_max_conc=spectra_max_conc, check_terminate=True)
             if opts.debug:
                 print("Simulation state at final time " + \
                       str(opts.max_duration) + ":")
@@ -572,20 +588,21 @@ def simulate_surface_crn(manifest_filename, display_class = None,
                     print("Calling ffmpeg with: " + str(command))
                     print("And right now the current dir is " + os.getcwd())
                     print("opts.capture_directory = " + opts.capture_directory)
+                    # if opts.debug:
 
                     print("Writing movie with command:\n")
                     print("\t" + str(command) + "\n")
-                    debug_output_stream = open(os.path.join(opts.capture_directory,
+                debug_output_stream = open(os.path.join(opts.capture_directory,
                                                         "debug",
                                                         "ffmpeg_debug.dbg"),'w')
-                    proc = sp.Popen(command,
-                                stdout = debug_output_stream,
-                                stderr = sp.STDOUT)
-                    proc.communicate()
+                proc = sp.Popen(command,
+                                stdout=debug_output_stream,
+                                stderr=sp.STDOUT)
+                proc.communicate()
                 if opts.debug:
                     print("Finished ffmpeg call.")
 
-                return
+                return simulation.concs, simulation.times
         if event_history.at_beginning() or time == 0:
             first_frame = True
 
@@ -616,7 +633,10 @@ def display_next_event(next_reaction, grid_display):
     outputs      = next_reaction.rule.outputs
     # Update reactants (if changed)
     for i in range(len(participants)):
-        if inputs[i] != outputs[i]:
+        # TODO: accomodations for 2-sized species
+        if i > len(inputs) - 1:
+            grid_display.update_node(participants[i])
+        elif inputs[i] != outputs[i]:
             grid_display.update_node(participants[i])
         elif DEBUG:
             print("Input " + str(i+1) + " and output " + str(i+1) + " match " +
@@ -630,16 +650,41 @@ def display_next_event(next_reaction, grid_display):
 
     return next_reaction_time
 
+
 def cleanup_and_exit(simulation):
     pygame.quit()
-    print("Program terminated before simulation comlete.")
     print("Simulation state at termination (T = " + str(simulation.time) + "):")
     print(str(simulation.surface))
     sys.exit()
 
 
-def update_display(opts, simulation, FRAME_DIRECTORY=None, time_display=None, title_display=None,
-                   spectra_max_conc=-1):
+def update_display(opts, simulation, progress_bar, FRAME_DIRECTORY=None, time_display=None, title_display=None,
+                   spectra_max_conc=-1, check_terminate=False):
+    if simulation.times:
+        time = simulation.times[-1]
+    else:
+        time = 0
+    if check_terminate:
+        if math.isclose(time, opts.max_duration, abs_tol=0.1):
+            text = "Generating video frames completed"
+        else:
+            # TODO: don't let this take 2 lines.
+            text = f"Generating video frames completed; simulation terminated early at {time:.1f} s"
+
+        ipython_visuals.update_progress(time / opts.max_duration, text,
+                                        beginning=time == 0,
+                                        terminating=True)
+    else:
+
+        ipython_visuals.update_progress(time / opts.max_duration, "Generating video frames",
+                                        beginning=time == 0,
+                                        terminating=check_terminate)
+    # TODO: display a message on termination
+    # and
+    # progress_bar.bar()
+
+    # TODO
+    # print(type(simulation))
     if opts.capture_directory == None:
         pygame.display.update()
         pygame.display.flip()
@@ -674,50 +719,91 @@ def update_display(opts, simulation, FRAME_DIRECTORY=None, time_display=None, ti
             # Currently this block adds the Gaussian figures
             screen = simulation.display_surface
             if simulation.spectra_in_video:
-
-
-                half_size = simulation.display_surface.get_size()
+                trajectory_size = simulation.display_surface.get_size()
+                trajectory_width = trajectory_size[0]
+                trajectory_height = trajectory_size[1]
                 h_gap = 40
                 up_gap = 50
-                xps_width = half_size[0] * 2 / 3
-                temp_screen = pygame.Surface([half_size[0] + xps_width + h_gap, half_size[1]])
-                temp_screen.fill((255,255,255))
+
+                spectrum_width = trajectory_width * 1 / 2
+                temp_screen = pygame.Surface([trajectory_width + spectrum_width + h_gap, trajectory_height])
+                temp_screen.fill((255, 255, 255))
                 temp_screen.blit(simulation.display_surface, (0, 0))
+
                 r = Results.from_counts(simulation.rxns, simulation.surface.species_count())
                 dpi = 100
 
                 if time_display is not None:
                     title_x, title_y = title_display.x_pos, title_display.y_pos
-                    display = TextDisplay(xps_width, text="Dynamical XPS Spectrum")
-                    display.render(temp_screen, title_x + half_size[0] + h_gap, title_y)
+                    display = TextDisplay(spectrum_width, text="Dynamical XPS Spectrum")
+                    display.render(temp_screen, title_x + trajectory_width + h_gap, title_y)
+
+                    # TODO: add a text display
+
+                    if time_display.get_time() > simulation.running_average:
+                        start_time = time_display.get_time() - simulation.running_average
+                    else:
+                        start_time = 0
+                    if time_display.get_time() == 0:
+                        time_period_string = f"T = {time_display.get_time():.2f}"
+                    else:
+                        time_period_string = f"T = {start_time:.2f} to T = {time_display.get_time():.2f}"
+                    running_avg_display = TextDisplay(spectrum_width, font_size=18,
+                                                      text=time_period_string)
 
                     # Don't save time display's x, y locations.
                     time_x, time_y = time_display.x_pos, time_display.y_pos
                     time = time_display.get_time()
-                    new_time_display = TimeDisplay(xps_width)
+                    new_time_display = TimeDisplay(spectrum_width)
                     new_time_display.set_time(time)
-                    new_time_display.render(temp_screen, x_pos=time_x + half_size[0] + h_gap, y_pos=time_y)
+                    new_time_display.render(temp_screen, x_pos=time_x + trajectory_width + h_gap, y_pos=time_y)
                     gap = 0
-                    fig_height = min(xps_width, (half_size[1] -
-                                                 title_display.display_height - new_time_display.display_height - gap))
+                    fig_gap = 0   # the gap between two figures
+                    fig_height = trajectory_height - title_display.display_height - \
+                                    new_time_display.display_height - running_avg_display.display_height - gap - fig_gap
+
+                    # Fit two pictures
+                    fig_height = fig_height / 2
                     y_lim = round(1.1 * spectra_max_conc) if spectra_max_conc != -1 else simulation.surface.num_nodes
+                    # TODO: also set an X axis limit
                     raw_data, size = r.raw_string_gaussian(y_upper_limit=y_lim,
-                                                           fig_size=(xps_width / dpi,  fig_height / dpi),
+                                                           fig_size=(spectrum_width / dpi,  fig_height / dpi),
                                                            dpi=dpi)
                     gaussian = pygame.image.fromstring(raw_data, size, "RGB")
 
-                    total_height = half_size[1]
                     start = new_time_display.y_pos + new_time_display.display_height + gap
-                    if start + fig_height < total_height:
-                        start += (total_height - start - fig_height) / 2
                     temp_screen.blit(gaussian, (new_time_display.x_pos, start))
-                    # time_display.x_pos, time_display.y_pos = time_x, time_y
-                else:
-                    raw_data, size = r.raw_string_gaussian(y_upper_limit=simulation.surface.num_nodes,
-                                                           fig_size=(half_size[0] / dpi, (half_size[1] - up_gap) / dpi),
+
+                    start += fig_height
+                    running_avg_display.render(temp_screen, x_pos=new_time_display.x_pos, y_pos=start)
+
+                    if simulation.concs:
+                        r = Results.from_concs_times(None, simulation.rxns, simulation.concs, simulation.times)
+                    else:
+                        r = r
+
+                    # print(r.df_raw)
+                    starting_time = max(0, simulation.time - simulation.running_average)
+                    # print("calculating running average")
+                    # print("starting time", starting_time)
+                    # print("duration", simulation.running_average)
+
+                    raw_data, size = r.raw_string_gaussian(y_upper_limit=y_lim,
+                                                           t=starting_time,
+                                                           avg_duration=simulation.running_average,
+                                                           fig_size=(spectrum_width / dpi, fig_height / dpi),
                                                            dpi=dpi)
                     gaussian = pygame.image.fromstring(raw_data, size, "RGB")
-                    temp_screen.blit(gaussian, (half_size[0] + h_gap, up_gap - 10))
+                    start += running_avg_display.display_height + fig_gap
+                    temp_screen.blit(gaussian, (new_time_display.x_pos, start))
+
+                else:
+                    raw_data, size = r.raw_string_gaussian(y_upper_limit=simulation.surface.num_nodes,
+                                                           fig_size=(trajectory_width / dpi,
+                                                                     (trajectory_height - up_gap) / dpi),
+                                                           dpi=dpi)
+                    gaussian = pygame.image.fromstring(raw_data, size, "RGB")
+                    temp_screen.blit(gaussian, (trajectory_width + h_gap, up_gap - 10))
 
                 screen = temp_screen
             pygame.image.save(screen, frame_filename)
@@ -735,28 +821,32 @@ def update_display(opts, simulation, FRAME_DIRECTORY=None, time_display=None, ti
 
             terminate = False
             if simulation.pixels_saved > CUTOFF_SIZE:
-                termination_string = "Simulation terminated after " + \
+                termination_string = "Simulation terminated at maximum amount of video frame pixels saved " + \
                                      str(simulation.pixels_saved) + \
-                                     " pixels saved (~" + \
+                                     " pixels (~" + \
                                      str(CUTOFF_SIZE/10000000) +" Mb)."
                 teriminate = True
 
             # Check the timer. If it's been more than an hour, terminate.
             if process_time() - simulation.init_wall_time > CUTOFF_TIME:
-                termination_string = "Simulation cut off at max " \
-                                     "processing time"
+                termination_string = "Simulation terminated at maximum allowed " \
+                                     f"processing time t = {CUTOFF_TIME}s"
                 terminate = True
 
             if terminate:
+                # TODO: clean up this section
+                print(termination_string)
+
+                display_width = simulation.display_surface.get_size()[1]
                 text_display = TextDisplay(display_width)
                 text_display.text = termination_string
-                text_display.render(display_surface, x_pos = 0, y_pos = 0)
+                text_display.render(simulation.display_surface, x_pos = 0, y_pos = 0)
                 frame_filename = os.path.join(FRAME_DIRECTORY,
                                               opts.movie_title + "_" +
                                               str(frame_number) + ".jpeg")
                 if opts.debug:
                     print("Saving final frame at: " + frame_filename)
-                pygame.image.save(display_surface, frame_filename)
+                pygame.image.save(simulation.display_surface, frame_filename)
 
                 cleanup_and_exit(simulation)
 

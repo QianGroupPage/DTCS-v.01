@@ -52,6 +52,7 @@ class SurfaceRxn(Rxn):
         self.products = tuple(self.products)
         self.rate_constant = k
 
+    # TODO: reactants are input as symbols and need sm to get the species object.
     def get_symbols(self) -> Set[sym.Symbol]:
         symbol = set()
         symbol.update(self.reactants)
@@ -61,13 +62,16 @@ class SurfaceRxn(Rxn):
     def to_terms(self) -> None:
         raise Exception("SurfaceRxn doesn't support to_terms method.")
 
+    # TODO: produce a version that takes in the species manager, replace default sites with top sites on appropriate
+    # occasions
+
     @property
     def reactants_str(self):
-        return " + ".join([str(s) for s in self.reactants])
+        return " + ".join([s.name for s in self.reactants])
 
     @property
     def products_str(self):
-        return " + ".join([str(s) for s in self.products])
+        return " + ".join([s.name for s in self.products])
 
     def __str__(self):
         return self.reactants_str + ' → ' + self.products_str + ' @ k=' + str(self.rate_constant)

@@ -67,6 +67,8 @@ class Species(monty.json.MSONable):
     def __init__(self, name: str, orbitals: List[Orbital], color: Union[Tuple[int], List[int], str] = None,
                  parent=None, site: Site = None, include_sub_species: bool=True, size: int = 1):
         self.name = name
+        self.name_without_suffix = name
+
         self.orbitals = orbitals
         if color:
             self.color = color_to_RGB(color)
@@ -87,7 +89,11 @@ class Species(monty.json.MSONable):
                 suffix = site.name
             elif not suffix:
                 suffix = f"sub_{len(self.sub_species)}"
-            entire_name = f"{self.name}_{suffix}"
+            entire_name = f"{self.name_without_suffix}_{suffix}"
+
+            # If a non-default site is added, add a new species
+            self.name = f"{self.name_without_suffix}_{Site.default}"
+
         elif suffix:
             raise Exception(f"Both suffix={suffix} and entire_name {entire_name} provided to " +
                             f"create_sub_species_function")
@@ -97,6 +103,7 @@ class Species(monty.json.MSONable):
             orbitals = self.orbitals
 
         sub_species = Species(entire_name, orbitals, color=color, parent=self, site=site, include_sub_species=False)
+        sub_species.name_without_suffix = self.name_without_suffix
 
         if entire_name in self.sub_species:
             raise Exception(f"species {self.name} already has sub species {repr(self.sub_species[entire_name])} " +
@@ -127,7 +134,7 @@ class Species(monty.json.MSONable):
         :param suffix: suffix of the sub_species
         :return: the sub_species's name
         """
-        return f"{self.name}_{suffix}"
+        return f"{self.name_without_suffix}_{suffix}"
 
     def __str__(self):
         orbitals = [str(orbital) for orbital in self.orbitals]
@@ -161,6 +168,9 @@ class SpeciesManager(monty.json.MSONable):
         else:
             self._species = {}
 
+        self.be_name_dict = {}
+        self.default_surface_name = None
+
     def make_species(self, name: Union[str, sym.Symbol], orbitals: Union[Orbital, List[Orbital]] = None,
                      site: Site = None, sub_species_name: str = "", size=1) -> sym.Symbol:
         """
@@ -168,6 +178,8 @@ class SpeciesManager(monty.json.MSONable):
 
         Keeps track of their correspondence.
         Orbitals can be either a list of orbitals or just one orbital
+
+        TODO: use in the backend to consult for which products shall take two spots.
 
         Args:
             name: The name of the new species and of the symbol.
@@ -189,6 +201,12 @@ class SpeciesManager(monty.json.MSONable):
             else:
                 s = parent.create_sub_species(site=site)
                 symbol = sym.Symbol(parent.sub_species_name(site.name))
+
+                default_site_sym = sym.Symbol(parent.sub_species_name(Site.default))
+                if default_site_sym not in self._species:
+                    # TODO: change site.default to default name, as appropriate
+                    self._species[default_site_sym] = parent.create_sub_species(site=Site(Site.default,
+                                                                                      parent.site))
         else:
             symbol = sym.Symbol(name)
             if not isinstance(orbitals, list):
@@ -206,8 +224,40 @@ class SpeciesManager(monty.json.MSONable):
         self._species[symbol] = s
         return symbol
 
+    def name_be(self, name: str, value: float, orbital_name: str = "1S") -> None:
+        """
+        name: the name for the binding energy
+        value: numerical value of the binding energy
+        """
+        self.be_name_dict[value] = name
+        # add a placeholder species
+        self.make_species(name, [Orbital(orbital_name, value)])
+
     def species_from_symbol(self, key: sym.Symbol) -> Species:
         return self._species[key]
+
+    def symbol_in_sm(self, key: sym.Symbol) -> bool:
+        return key in self._species
+
+    @property
+    def symbols_ordering(self):
+        return sorted(self._species, key=lambda s: str(s))
+
+    def get_site_name(self, species_name: str) -> str:
+        """
+        Return the site name of the site where the species is supposed to be.
+        """
+        if sym.Symbol(species_name) in self._species:
+            site = self.species_from_symbol(sym.Symbol(species_name)).site
+            if site is None:
+                return self.default_surface_name
+            elif site.name == Site.default:
+                return site.surface.name
+            else:
+                return site.name
+        # the species_name refers to a site
+        else:
+            return species_name
 
     @property
     def all_species(self):
@@ -222,25 +272,87 @@ class SpeciesManager(monty.json.MSONable):
         return res
 
     @property
+    def large_species_dict(self):
+        """
+        Return a dictionary. This is primarily for use inside the surface crn back-end.
+        """
+        return {species.name: species.size for species in self.large_species}
+
+    @property
     def all_symbols(self):
         return sorted(list(self._species.keys()), key=lambda s: str(s))
 
     @property
+    def aggregated_symbols(self):
+        """
+        1. For species with various sites, only the symbol containing the default name would be included.
+
+        2. AFTER RULE 1 IS EXECUTED, symbols with the same binding energy shall be grouped together.
+        """
+        pass
+
+    @property
+    def backend_symbols(self):
+        """
+        Symbols corresponding to species used in the simulation backend.
+        """
+        pass
+
+
+    @property
     def sub_species_dict(self):
         """
-        :return: a dictionary from all parent species to a list of its subspecies
+        :return: a dictionary from all parent species symbol to a list of its subspecies symbols
         """
         d = {}
         for k, v in self._species.items():
+            all_default = False
             for n, sub_s in v.sub_species.items():
                 if sym.Symbol(n) in self._species:
                     if k in d:
                         d[k].append(sym.Symbol(n))
                     else:
                         d[k] = [sym.Symbol(n)]
+
+                # if sub_s.site.name == Site.default:
+                #     all_defauly
+                #
+
             if k in d and d[k]:
                 d[k].append(k)
         return d
+
+    @property
+    def to_sum_dict(self):
+        """
+        Provide users with dictionary to represent the summation relationships between species.
+
+        :return: a list of names from species to sub-species and from binding energy to a list of species
+        with the same binding energy.
+        """
+        d = {}
+        included_species_symbols = set()
+        for species_symbol, l in self.sub_species_dict.items():
+            d[species_symbol] = l
+            for sub_s_symbol in l:
+                included_species_symbols.add(sub_s_symbol)
+
+        for sy in self.all_symbols:
+            if sy in included_species_symbols:
+                continue
+            species = self.species_from_symbol(sy)
+            if len(species.orbitals) != 1:
+                # TODO
+                raise Exception("Our system currently doesn't support multiple orbitals")
+            be = species.orbitals[0].binding_energy
+            if be in self.be_name_dict:
+                be_name_symbol = sym.Symbol(self.be_name_dict[be])
+                if be_name_symbol not in d:
+                    d[be_name_symbol] = []
+                d[be_name_symbol].append(sy)
+                included_species_symbols.add(sy)
+        return d
+
 
     def symbol_from_name(self, name: str) -> sym.Symbol:
         """Gets the symbol for the given name, if it is a species.

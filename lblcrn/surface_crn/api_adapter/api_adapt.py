@@ -46,11 +46,16 @@ def generate_initial_surface(rsys, random_seed=30):
     :return: a string representing the initial surface.
     """
     species = []
+    locs = {}
     for c in rsys.schedules:
         # TODO
         if isinstance(c, Schedule) and not isinstance(c, Conc):
             raise Exception(f"{c} is a schedule, not an initial concentration." +
                             f" This is not currently supported in the Surface CRN.")
+
+        if c.locs:
+            locs[str(c.symbol)] = c.locs
+        num_random = int(str(c.concentration)) - len(c.locs)
 
         # if not re.match('[1-9][0-9]*', str(c.expression)):
         #     raise Exception(f"{c.symbol} must have a positive integer number of initial counts. Currently, " +
@@ -124,7 +129,7 @@ def generate_surface(rsys, random_seed=30):
         return None
 
 
-def generate_settings(rsys, max_duration, random_seed=923123122):
+def generate_settings(rsys, max_duration, random_seed=923123122, video_path="Surface CRN Videos"):
     """
     :rsys: a rxn_system object
     :return: a string representing the initial surface.
@@ -138,7 +143,7 @@ def generate_settings(rsys, max_duration, random_seed=923123122):
            "fps                 = 1\n" + \
            "node_display        = text\n" + \
            "wrap                = false\n" + \
-           f"capture_directory  = Surface CRN Videos\n" + \
+           f"capture_directory  = {video_path}\n" + \
            "movie_title = SCRN Simulation\n\n"
 
 
@@ -149,17 +154,19 @@ def generate_colors(rsys):
         color = colors[s]
         if isinstance(color, str):
             color = (c for c in color_to_RGB(color))
-        color_strs += str(s) + ": " + str(color) + "\n"
+
+        color_strs += s.name + ": " + str(color) + "\n"
     return f"""!START_COLORMAP\n{color_strs}!END_COLORMAP\n"""
 
 
 # TODO
-def generate_manifest_stream(rsys, max_duration, random_seed_scrn=923123122, random_seed_surface=30):
+def generate_manifest_stream(rsys, max_duration, random_seed_scrn=923123122, random_seed_surface=30,
+                             video_path=""):
     """
     :param rsys: the rxn_system object
     :return: a stream of lines for the corresponding reaction rules.
     """
-    rule = generate_settings(rsys, max_duration, random_seed_scrn)
+    rule = generate_settings(rsys, max_duration, random_seed_scrn, video_path=video_path)
 
     rule += "!START_TRANSITION_RULES\n"
     rule += "\n".join(generate_rules(rsys)) + "\n"
@@ -199,9 +206,10 @@ class HexGridPlusIntersections(HexGrid):
     '''
     def __init__(self, x_size, y_size, wrap = False):
         if not isinstance(x_size, int) or not isinstance(y_size, int):
-            raise TypeException("SimGrid dimensions must be integers")
+            # TODO: use TypeException here
+            raise Exception("SimGrid dimensions must be integers")
         if wrap and y_size%2 == 1:
-            raise reduc("Can't make a wrapping hex grid with an odd " + \
+            raise Exception("Can't make a wrapping hex grid with an odd " + \
                             "number of rows. It just doesn't work out.")
 
         self.x_size     = x_size
