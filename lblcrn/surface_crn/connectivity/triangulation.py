@@ -7,7 +7,6 @@ from ase.io.vasp import read_vasp
 
 def show_triangulation(file_path="", points=None, project_down="z", title="Triangulation", display_zoom=2):
     """
-
     :param file_path: a string for the path to a POSCAR file;
     :param points: a numpy array containing x, y, z locations for points;
     :param project_down: the direction from which you are looking into the surface
@@ -34,11 +33,9 @@ def show_triangulation(file_path="", points=None, project_down="z", title="Trian
     R_inv = np.linalg.inv(R)
 
     if len(points) == 0:
-        points = de_dup(pd.read_csv(file_path).to_numpy())[:, 1:]
-        points = points[:, [i - 1 for i in indices]]
-    else:
-        points = de_dup(points)
-        points = points[:, [i - 1 for i in indices]]
+        points = pd.read_csv(file_path).to_numpy()[:, 1:]
+    points = points[:, [i - 1 for i in indices]]
+    points = de_dup(points)
 
     points = points.dot(R)
     tri = Delaunay(points)
@@ -53,6 +50,7 @@ def show_triangulation(file_path="", points=None, project_down="z", title="Trian
 
     plt.title(title)
     plt.show()
+    return tri, points
 
 
 def de_dup(arr):
