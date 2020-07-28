@@ -50,7 +50,6 @@ for new_root, search_root, patterns in INCLUDE:
                 mapping[new_path].append(clean_path + '/' + file)
 
 data_files = [(dir_name, files) for dir_name, files in mapping.items()]
-#import pprint; pprint.pprint(data_files); input('>')
 
 # --- Setup ------------------------------------------------------------------
 if __name__ == '__main__':

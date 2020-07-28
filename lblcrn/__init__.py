@@ -32,6 +32,7 @@ from lblcrn.crn_sym import *
 from lblcrn.experiments import *
 from lblcrn.surface_crn import *
 from lblcrn._echo import lblcrn_echo_on, lblcrn_echo_off
+import lblcrn._resources as lblcrn_resources
 import lblcrn._examples as lblcrn_examples
 from lblcrn._help import *
 
@@ -52,6 +53,8 @@ def __getattr__(name: str):
         return lblcrn_examples
     elif name == 'help':
         return lblcrn_help
+    elif name == 'resources':
+        return lblcrn_resources
     else:
         raise AttributeError(f'module \'{__name__}\' '
                              f'has no attribute \'{name}\'')
