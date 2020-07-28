@@ -84,6 +84,8 @@ def solve_rsys_ode(rsys, time_max: float, end_when_settled: bool, **options):
 
 
 SETTLE_EVENT_THRESHOLD = 5e-7
+
+
 def settle_event_creator():
     last_y = None
     
@@ -99,3 +101,8 @@ def settle_event_creator():
         return diff
     settle.terminal = True
     return settle
+
+
+def solve_rsys_ode_till_eq(rsys, **options):
+    # TODO: stub, please remove me once this is implemented
+    return solve_rsys_ode(rsys, time_max=100, **options)

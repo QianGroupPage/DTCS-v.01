@@ -25,7 +25,7 @@ Example:
 """
 
 import bisect
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 
 from matplotlib import pyplot as plt
 import monty.json
@@ -93,14 +93,18 @@ class CRNTimeSeries(experiment.Experiment):
             self.xps_with()
         return self._xps
 
-    def xps_with(self, t: float = -1, species: List[sym.Symbol] = None,
+    def xps_with(self, t: float = -1,
+                 title: str = '',
+                 species: List[sym.Symbol] = None,
                  ignore: List[sym.Symbol] = None,
-                 autoresample: bool = True,
-                 autoscale: bool = True,
+                 x_range: np.ndarray = None,
+                 scale_factor: float = None,
                  experimental: pd.Series = None,
                  gas_interval: Tuple[float, float] = None,
-                 scale_factor: float = 0.0,
-                 title: str = ''):
+                 contam_spectra: Dict[sym.Symbol, pd.Series] = None,
+                 deconv_species: List[sym.Symbol] = None,
+                 autoresample: bool = True,
+                 autoscale: bool = True,):
         """Calculates a simulated XPS observable at time t.
 
         In addition to returning, saves the information into self.xps.
@@ -122,7 +126,8 @@ class CRNTimeSeries(experiment.Experiment):
         Returns:
             An XPSExperiment object with the parameters you specified.
         """
-        species = self._get_species_not_ignored(species, ignore)
+        species = experiment._get_species_not_ignored(species, ignore,
+                                                      self.species)
         snapshot = self.at(t)
         species_concs = {}
         for specie, conc in snapshot.items():
@@ -130,18 +135,22 @@ class CRNTimeSeries(experiment.Experiment):
                 species_concs[specie] = conc
         if not title:
             title = f'time={snapshot.name}'
-        self._xps = xps.XPSExperiment(species_concs, self.species_manager,
-                                      autoresample=autoresample,
-                                      autoscale=autoscale,
+        self._xps = xps.XPSExperiment(species_manager=self.species_manager,
+                                      title=title,
+                                      x_range=x_range,
+                                      scale_factor=scale_factor,
+                                      sim_concs=species_concs,
                                       experimental=experimental,
                                       gas_interval=gas_interval,
-                                      scale_factor=scale_factor,
-                                      title=title)
+                                      contam_spectra=contam_spectra,
+                                      deconv_species=deconv_species,
+                                      autoresample=autoresample,
+                                      autoscale=autoscale,)
         return self._xps
 
     # --- Plotting -----------------------------------------------------------
 
-    def _plot(self, species: List[sym.Symbol], ax: plt.Axes, **kwargs):
+    def _plot(self, ax: plt.Axes, species: List[sym.Symbol], **kwargs):
         """Plot the reaction network time series.
 
         Args:
