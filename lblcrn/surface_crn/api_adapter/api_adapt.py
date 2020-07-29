@@ -153,9 +153,10 @@ def generate_colors(rsys):
     for s in rsys.get_symbols() + [rsys.surface.symbol()] + [s.symbol for s in rsys.surface.sites]:
         color = colors[s]
         if isinstance(color, str):
-            color = (c for c in color_to_RGB(color))
+            color = tuple(c for c in color_to_RGB(color))
 
         color_strs += s.name + ": " + str(color) + "\n"
+    print(color_strs)
     return f"""!START_COLORMAP\n{color_strs}!END_COLORMAP\n"""
 
 
