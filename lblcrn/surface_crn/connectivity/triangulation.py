@@ -5,7 +5,8 @@ from scipy.spatial import Delaunay
 from ase.io.vasp import read_vasp
 
 
-def show_triangulation(file_path="", points=None, project_down="z", title="Triangulation", display_zoom=2):
+def show_triangulation(file_path="", points=None, project_down="z", title="Triangulation", display_zoom=2,
+                       distort_factor=1.1, ignore_threhold=1):
     """
     :param file_path: a string for the path to a POSCAR file;
     :param points: a numpy array containing x, y, z locations for points;
@@ -29,28 +30,47 @@ def show_triangulation(file_path="", points=None, project_down="z", title="Trian
     elif project_down == "x":
         indices = [2, 3]
 
-    R = np.array(((1, 0), (0, 1.1)))
+    R = np.array(((1, 0), (0, distort_factor)))
     R_inv = np.linalg.inv(R)
 
     if len(points) == 0:
         points = pd.read_csv(file_path).to_numpy()[:, 1:]
+    points = de_dup_threshold(points, threshold=ignore_threhold)
     points = points[:, [i - 1 for i in indices]]
     points = de_dup(points)
 
     points = points.dot(R)
     tri = Delaunay(points)
     points = points.dot(R_inv)
-    plt.triplot(points[:, 0], points[:, 1], tri.simplices)
-    fig = plt.gcf()
-    w, h = fig.get_size_inches()
-    fig.set_size_inches(w * display_zoom, h * display_zoom)
-    plt.gca().set_aspect('equal', adjustable='box')
-
-    plt.plot(points[:, 0], points[:, 1], 'o')
-
-    plt.title(title)
-    plt.show()
+    # plt.triplot(points[:, 0], points[:, 1], tri.simplices)
+    # fig = plt.gcf()
+    # w, h = fig.get_size_inches()
+    # fig.set_size_inches(w * display_zoom, h * display_zoom)
+    # plt.gca().set_aspect('equal', adjustable='box')
+    #
+    # plt.plot(points[:, 0], points[:, 1], 'o')
+    #
+    # plt.title(title)
+    # plt.show()
     return tri, points
+
+
+def de_dup_threshold(points, threshold=1, project_down="z"):
+    """
+    Drop the thrpof
+    :param points:
+    :param threshold: in Angstroms; if an atom is further away from the top layer than this number,
+    drop the atom.
+    :return:
+    """
+    if project_down == "z":
+        index = 2
+    elif project_down == "y":
+        index = 1
+    elif project_down == "x":
+        index = 0
+    heights = set(h for h in points[:, index])
+    return points[points[:, index] > max(heights) - 1]
 
 
 def de_dup(arr):
