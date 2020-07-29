@@ -23,18 +23,12 @@ class Experiment(monty.json.MSONable, abc.ABC):
         """Initialize required instance variables."""
         self.df = None
 
-    @property
-    @abc.abstractmethod
-    def species(self) -> List[sym.Symbol]:
-        """All the species in the experiment."""
-        return []
-
     # --- Plotting -----------------------------------------------------------
 
     def plot(self, ax: Optional[plt.Axes] = None,
              species: Union[sym.Symbol, List[sym.Symbol], None] = None,
              ignore: Union[sym.Symbol, List[sym.Symbol], None] = None,
-             **kwargs):
+             **kwargs) -> plt.Axes:
         """Plot the experiment.
 
         Args:
@@ -43,15 +37,19 @@ class Experiment(monty.json.MSONable, abc.ABC):
             ignore: Optional, the species you don't want to plot. Defaults to
                 none.
             **kwargs: Extra arguments, forwarded many places.
+
+        Returns:
+            #TODO
         """
-        species = self._get_species_not_ignored(species, ignore)
+        species = _get_species_not_ignored(species, ignore, self.species)
         if ax is None:
             ax = plt.gca()
 
-        self._plot(species=species, ax=ax, **kwargs)
+        return self._plot(species=species, ax=ax, **kwargs)
 
     @abc.abstractmethod
-    def _plot(self, ax: plt.Axes, species: List[sym.Symbol], **kwargs):
+    def _plot(self, ax: plt.Axes, species: List[sym.Symbol],
+              **kwargs) -> plt.Axes:
         """Do the actual plotting legwork.
 
         In general, this shouldn't call plt.show(), as that screws up axes.
@@ -60,41 +58,19 @@ class Experiment(monty.json.MSONable, abc.ABC):
             ax: The plt.Axes on which to plot.
             species: A list of sym.Symbols, the species to plot.
             **kwargs: Forwarded.
+
+        Returns:
+            #TODO
         """
         pass
 
     # --- Utility ------------------------------------------------------------
 
-    def _get_species_not_ignored(self,
-                                 species: Union[sym.Symbol,
-                                                List[sym.Symbol], None] = None,
-                                 ignore: Union[sym.Symbol,
-                                               List[sym.Symbol], None] = None):
-        """Get the specified subset of species.
-
-        Gets [species...] less [ignored...]. If speices is None, defaults to
-        all species.
-
-        Args:
-            species: A list of (or single) symbol representing a species.
-            ignore: A list of (or single) symbol representing a species.
-
-        Returns:
-            Species - ignored, with species defaulting to self.species.
-        """
-        # Wrap everything to be a list
-        if isinstance(species, sym.Symbol):
-            species = [species]
-        if isinstance(ignore, sym.Symbol):
-            ignore = [ignore]
-
-        # Default values
-        if not species:
-            species = self.species
-        if not ignore:
-            ignore = []
-
-        return [specie for specie in species if specie not in ignore]
+    @property
+    @abc.abstractmethod
+    def species(self) -> List[sym.Symbol]:
+        """All the species in the experiment."""
+        pass
 
     def as_dict(self) -> dict:
         """Return a MSON-serializable dict representation."""
@@ -129,3 +105,35 @@ class Experiment(monty.json.MSONable, abc.ABC):
         s = f'{self.__class__.__name__} with head:\n{df_str}'
 
         return s
+
+def _get_species_not_ignored(species: Union[sym.Symbol,
+                                            List[sym.Symbol], None] = None,
+                             ignore: Union[sym.Symbol,
+                                           List[sym.Symbol], None] = None,
+                             all_species: Union[sym.Symbol,
+                                            List[sym.Symbol], None] = None):
+    """Get the specified subset of species.
+
+    Gets [species...] less [ignored...]. If speices is None, defaults to
+    all species.
+
+    Args:
+        species: A list of (or single) symbol representing a species.
+        ignore: A list of (or single) symbol representing a species.
+
+    Returns:
+        Species - ignored, with species defaulting to self.species.
+    """
+    # Wrap everything to be a list
+    if isinstance(species, sym.Symbol):
+        species = [species]
+    if isinstance(ignore, sym.Symbol):
+        ignore = [ignore]
+
+    # Default values
+    if not species:
+        species = all_species
+    if not ignore:
+        ignore = []
+
+    return [specie for specie in species if specie not in ignore]

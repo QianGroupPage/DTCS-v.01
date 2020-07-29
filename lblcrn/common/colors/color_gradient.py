@@ -1,5 +1,7 @@
 # based on https://bsou.io/posts/color-gradients-with-python
 
+from matplotlib import colors
+
 def hex_to_RGB(hex):
   ''' "#FFFFFF" -> [255,255,255] '''
   # Pass 16 to the integer function for change of base
@@ -15,16 +17,13 @@ def RGB_to_hex(RGB):
 
 
 def color_to_RGB(color):
-    if isinstance(color, str):
-        color = hex_to_RGB(color)
-    return tuple([round(d) for d in color])
+    color = colors.to_rgb(color)
+    color = tuple(round(val * 255) for val in color)
+    return color
 
 
 def color_to_HEX(color):
-    if isinstance(color, list) or isinstance(color, tuple):
-        return RGB_to_hex(color)
-    else:
-        return color
+    return tuple(colors.to_hex(color))
 
 
 def color_dict(gradient):

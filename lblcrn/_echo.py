@@ -25,7 +25,7 @@ def prompt(msg, *args, **kwargs):
     if lblcrn.do_echo:
         return input(msg, *args, **kwargs)
 
-def prompt_yn(msg):
+def prompt_yn(msg, default=False):
     """Call input() and interpret a yes/no answer.
 
     This will add ' (y/n): ' to your message, so just ask it a question like
@@ -35,9 +35,16 @@ def prompt_yn(msg):
         ans = input(msg + ' (y/n): ')
         if ans.lower() in ['y', 'ye', 'yes']:
             return True
-    return False
+        elif ans.lower() in ['n', 'no']:
+            return False
+    return default
 
 def echo(*args, **kwargs):
     """Call print() if echo is on."""
     if lblcrn.do_echo:
         print(*args, **kwargs)
+
+@property
+def do_echo():
+    """Return lblcrn.do_echo"""
+    return lblcrn.do_echo

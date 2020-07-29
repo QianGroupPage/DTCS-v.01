@@ -15,11 +15,18 @@ Usage:
     print(sm[x])
 """
 
+import itertools
+from typing import List, Optional, Union
+
+import lblcrn
 import monty.json
 import sympy as sym
 from lblcrn.common import color_to_RGB
 from lblcrn.crn_sym.surface import Site
 from typing import List, Tuple, Union
+
+_COLORS = itertools.cycle(['red', 'green', 'orange', 'blue', 'purple', 'pink',
+                           'yellow', 'gray', 'cyan'])
 
 class Orbital(monty.json.MSONable):
     """An orbital in a species.
@@ -70,10 +77,7 @@ class Species(monty.json.MSONable):
         self.name_without_suffix = name
 
         self.orbitals = orbitals
-        if color:
-            self.color = color_to_RGB(color)
-        else:
-            self.color = color
+        self.color = color or next(_COLORS)
         self.parent = parent   # The parent of the species
         self.sub_species = {}   # The dictionary of sub species from name to the object
 
@@ -162,7 +166,7 @@ class SpeciesManager(monty.json.MSONable):
     for example you loaded the SpeciesManager from a file.
     """
 
-    def __init__(self, species: dict = None):
+    def __init__(self, species: dict = None, colors: dict = None):
         if species:
             self._species = species
         else:
@@ -171,21 +175,26 @@ class SpeciesManager(monty.json.MSONable):
         self.be_name_dict = {}
         self.default_surface_name = None
 
-    def make_species(self, name: Union[str, sym.Symbol], orbitals: Union[Orbital, List[Orbital]] = None,
-                     site: Site = None, sub_species_name: str = "", size=1) -> sym.Symbol:
+    @property
+    def species(self) -> List[sym.Symbol]:
+        """All of the species."""
+        return list(self._species.keys())
+
+    def make_species(self, name: Union[str, sym.Symbol],
+                     orbitals: Union[Orbital, List[Orbital]] = None,
+                     site: Site = None,
+                     sub_species_name: str = "",
+                     size=1,
+                     color='', ) -> sym.Symbol:
         """
         Makes a sym.Symbol and a corresponding Species and keeps track of their correspondence.
-
         Keeps track of their correspondence.
         Orbitals can be either a list of orbitals or just one orbital
-
         TODO: use in the backend to consult for which products shall take two spots.
-
         Args:
             name: The name of the new species and of the symbol.
             orbitals: The Orbitals of the species. Can be an Orbital or a list
                 of Orbitals, just to be nice
-
         Returns:
              The sym.Symbol corresponding to the new Species.
         """
@@ -206,7 +215,7 @@ class SpeciesManager(monty.json.MSONable):
                 if default_site_sym not in self._species:
                     # TODO: change site.default to default name, as appropriate
                     self._species[default_site_sym] = parent.create_sub_species(site=Site(Site.default,
-                                                                                      parent.site))
+                                                                                          parent.site))
         else:
             symbol = sym.Symbol(name)
             if not isinstance(orbitals, list):
@@ -217,7 +226,7 @@ class SpeciesManager(monty.json.MSONable):
             #     symbol = sym.Symbol(s.name)
             # else:
             # TODO: size for other occasions
-            s = Species(name, orbitals, site=site, size=size)
+            s = Species(name, orbitals, site=site, size=size, color=color)
             # for name, new_species in s.sub_species.items():
             #     self._species[sym.Symbol(name)] = new_species
 
