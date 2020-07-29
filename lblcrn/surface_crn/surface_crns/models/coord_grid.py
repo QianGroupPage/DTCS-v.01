@@ -149,6 +149,13 @@ class CoordGrid(object):
         """
         return Counter([str(n.state) for n in self])
 
+    def _number_grid(self):
+        """
+        Give each node in the grid a unique identifying number based on its location.
+        :return:
+        """
+
+
     @property
     def num_nodes(self):
         return sum([1 for _ in self])
