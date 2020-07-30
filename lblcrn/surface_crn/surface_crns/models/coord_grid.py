@@ -6,6 +6,7 @@ from collections import Counter
 from ase import Atoms, Atom
 from scipy.spatial import Voronoi
 import numpy as np
+import json
 
 
 class CoordGrid(object):
@@ -61,6 +62,8 @@ class CoordGrid(object):
         neighbors_dict = voronoi_neighbors_dict(vor)
 
         nodes = {}
+        #  TODO: currently self.nodes_by_site["Top"][i] corresponds to points[i] and vor.points[i]
+        #  TODO: the above is too implicit.
         self.nodes_by_site["Top"] = []
         for loc in points:
             loc = tuple(c for c in loc)
@@ -74,27 +77,32 @@ class CoordGrid(object):
         # TODO: bridge sites.
         # vor.ridge_points  # There should be a 2-site between each of these.
         self.nodes_by_site["Bridge"] = []
-        for v1_index, v2_index in self.vor.ridge_vertices:
+        for i, vertex_indices in enumerate(self.vor.ridge_vertices):
+            v1_index, v2_index = vertex_indices
             if v1_index == -1 or v2_index == -1:
-                self.nodes_by_site["Bridge"].append(None)
-                # self.nodes.append(None)
-                continue
-            loc = tuple(np.mean(self.vor.vertices[[v1_index, v2_index]], axis=0))
+                p1_index, p2_index = self.vor.ridge_points[i]
+                # TODO: make sure this confusing use of "None" doesn't show up elsewhere.
+                # self.nodes_by_site["Bridge"].append(None)
+                # # self.nodes.append(None)
+                loc = tuple(np.mean(self.vor.points[[p1_index, p2_index]], axis=0))
+            else:
+                loc = tuple(np.mean(self.vor.vertices[[v1_index, v2_index]], axis=0))
             new_node = Node(position=loc, state="Bridge")
             nodes[loc] = new_node
             self.nodes_by_site["Bridge"].append(new_node)
             self.nodes.append(new_node)
 
-        #  TODO: fix connectivity
+        #  TODO: completely fix connectivity
         #  Add the bridge site on a boundary line going to infinity
-        for i, point_indices in enumerate(self.vor.ridge_points):
-            p1_index, p2_index = point_indices
-            if any([vertex_index == -1 for vertex_index in self.vor.ridge_vertices[i]]):
-                loc = tuple(np.mean(self.vor.points[[p1_index, p2_index]], axis=0))
-                new_node = Node(position=loc, state="Bridge")
-                nodes[loc] = new_node
-                self.nodes_by_site["Bridge"].append(new_node)
-                self.nodes.append(new_node)
+        # for i, point_indices in enumerate(self.vor.ridge_points):
+        #     p1_index, p2_index = point_indices
+        #     if any([vertex_index == -1 for vertex_index in self.vor.ridge_vertices[i]]):
+        #         loc = tuple(np.mean(self.vor.points[[p1_index, p2_index]], axis=0))
+        #         new_node = Node(position=loc, state="Bridge")
+        #         nodes[loc] = new_node
+        #         self.nodes_by_site["Bridge"].append(new_node)
+        #         self.nodes.append(new_node)
+
 
         self.nodes_by_site["Intersection"] = []
         for loc in vor.vertices:
@@ -170,6 +178,28 @@ class CoordGrid(object):
     @property
     def top_nodes(self):
         return self.nodes_by_site["Top"].copy()
+
+    @property
+    def connectivity_dictionary(self):
+        """
+        Compute a dictionary representing the connectivity graph.
+        :return:
+        """
+        d = {}
+        for site_name, nodes in self.nodes_by_site.items():
+            d[site_name] = {}
+            for node in nodes:
+                if node is not None:
+                    # TODO: weight should come second
+                    d[site_name][node.node_id] = sorted([neighbor_node.node_id for neighbor_node, _ in node.neighbors
+                                                         if neighbor_node is not None])
+        return d
+
+    def print_connectivity_dictionary(self):
+        """
+        Pretty print the
+        """
+        print(json.dumps(self.connectivity_dictionary, sort_keys=True, indent=4))
 
     def voronoi_pic(self, return_fig=False, show_node_number=False):
         import matplotlib.pyplot as plt
