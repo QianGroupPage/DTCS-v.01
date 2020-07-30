@@ -104,13 +104,6 @@ def voronoi_plot_2d(vor, ax=None, **kw):
     if vor.points.shape[1] != 2:
         raise ValueError("Voronoi diagram is not 2-D")
 
-    if kw.get('show_points', True):
-        point_size = kw.get('point_size', None)
-        ax.plot(vor.points[:,0], vor.points[:, 1], 'o', markersize=point_size)
-    if kw.get('show_vertices', True):
-        point_size = kw.get('point_size', None)
-        ax.plot(vor.vertices[:,0], vor.vertices[:, 1], 'o', markersize=8*point_size, color="Green")
-
     line_colors = kw.get('line_colors', 'k')
     line_width = kw.get('line_width', 1.0)
     line_alpha = kw.get('line_alpha', 1.0)

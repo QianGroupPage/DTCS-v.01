@@ -10,7 +10,7 @@ class Node:
     given).
     '''
     def __init__(self, state = None, neighbors = None, timestamp = 0,\
-                 position = None, group=None):
+                 position = None, group=None, node_id=None):
         if state == None:
             self.state = ""
         else:
@@ -37,6 +37,9 @@ class Node:
             self.group = []
         else:
             self.group = group
+
+        self.node_id = node_id
+
 
     def is_empty(self):
         return self.state == ""

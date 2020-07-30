@@ -26,6 +26,7 @@ class CoordGrid(object):
         #  TODO: currently this does not use distort factor
         self.vor = None
         self.populate_grid_voronoi(points)
+        self._number_grid()
 
     @staticmethod
     def from_poscar(poscar_path, distort_factor=1.1, ignore_threhold=1):
@@ -95,8 +96,6 @@ class CoordGrid(object):
                 self.nodes_by_site["Bridge"].append(new_node)
                 self.nodes.append(new_node)
 
-
-
         self.nodes_by_site["Intersection"] = []
         for loc in vor.vertices:
             loc = tuple(c for c in loc)
@@ -154,7 +153,15 @@ class CoordGrid(object):
         Give each node in the grid a unique identifying number based on its location.
         :return:
         """
+        site_names = ["Top", "Bridge", "Intersection"]
+        site_abbreviations = {s: s[0] for s in site_names}
+        for site_name in site_names:
+            # TODO: this is not clean
+            nodes = [n for n in self.nodes_by_site[site_name] if n is not None]
+            nodes = sorted(nodes, key=lambda n: (n.position[1], n.position[0]))
 
+            for i, n in enumerate(nodes):
+                n.node_id = site_abbreviations[site_name] + str(i)
 
     @property
     def num_nodes(self):
@@ -164,18 +171,20 @@ class CoordGrid(object):
     def top_nodes(self):
         return self.nodes_by_site["Top"].copy()
 
-    def voronoi_pic(self, return_fig=False):
+    def voronoi_pic(self, return_fig=False, show_node_number=False):
         import matplotlib.pyplot as plt
+        vor = self.vor
 
-        import numpy as np
         ax = plt.gca()
         ax.set_aspect('equal', adjustable='box')
-        fig = voronoi_plot_2d(self.vor, ax=ax, point_size=2, show_points=False)
+        fig = voronoi_plot_2d(vor, ax=ax, point_size=2, show_points=False)
+
+        ax.plot(vor.vertices[:, 0], vor.vertices[:, 1], 'o', markersize=8 * 2, color="Green")
 
         #  TODO: fill the infinite regions
         regions, vertices = voronoi_finite_polygons_2d(self.vor)
-        for point_index in range(len(self.vor.point_region)):
-            region = regions[self.vor.point_region[point_index]]
+        for point_index in range(len(vor.point_region)):
+            region = regions[vor.point_region[point_index]]
             if -1 not in region:
                 polygon = [vertices[i] for i in region]
                 ax.fill(*zip(*polygon), color="#CCCCCC", alpha=0.8)
@@ -191,6 +200,10 @@ class CoordGrid(object):
                 ax.plot(node.position[0], node.position[1], 'o', markersize=2 * 4, color="red")
                 # ax.text(node.position[0], node.position[1], 39)
 
+        if show_node_number:
+            for node in self.nodes:
+                ax.text(node.position[0], node.position[1], node.node_id, ha='center', va='center')
+
         fig.set_figheight(8)
         fig.set_figwidth(12)
 
@@ -199,6 +212,8 @@ class CoordGrid(object):
         # ax.plot(vertices[:, 0], vertices[:, 1], 'o', markersize=3 * 2, color="Red")
         # ax.set_xlim(-10, 20)
         # ax.set_ylim(-15, 30)
+        if return_fig:
+            return fig
 
     def __iter__(self):
         return iter(self.nodes)
