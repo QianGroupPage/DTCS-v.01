@@ -30,7 +30,7 @@ class CoordGrid(object):
         self._populate_grid_voronoi(points)
         self._number_grid()
 
-    @classmethod
+    @staticmethod
     def from_poscar(poscar_path, distort_factor=1.1, ignore_threhold=1):
         """
         Transform a POSCAR file into a Coordinate Grid.
@@ -158,9 +158,8 @@ class CoordGrid(object):
 
     def to_atoms(self):
         """
-        Output an ASE atoms object representing the states, and node locations of the current grid.
+        Output an ASE atoms object representing the states, and the node locations of the current grid.
         """
-
         # map sites to "default" atoms for the purposes of using ASE's built-in information on specific atom types.
         site_to_atom = {"Top": "Ag", "Intersection": "Cl", "Bridge": "O"}
         # TODO: test and handle the case when n.state is a molecule.

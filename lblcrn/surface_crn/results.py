@@ -56,7 +56,7 @@ class Results:
         self.species_ordering = [s for s in species_tracked if s in primary_s or s not in sub_s_list]
         self.species_colors = {s: color_index[s] for s in self.species_ordering}
         self.species_ordering = [str(s) for s in self.species_ordering]
-        self.species_colors = {str(s): color_to_HEX(c) for s, c in self.species_colors.items()}
+        self.species_colors = {str(s): ''.join(color_to_HEX(c)) for s, c in self.species_colors.items()}
         import sympy as sym
         self.substances = {s: rxns.species_manager.species_from_symbol(sym.Symbol(s)) for s in self.species_ordering}\
             if rxns else {}
