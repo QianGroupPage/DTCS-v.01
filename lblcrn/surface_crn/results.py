@@ -50,7 +50,6 @@ class Results:
         color_index = rxns.get_colors()
         sub_s_list = []
         [sub_s_list.extend(l) for l in rxns.species_manager.to_sum_dict.values()]
-        # print(sub_s_list)
         primary_s = rxns.species_manager.to_sum_dict.keys()
         species_tracked = sorted(list(set(list(rxns.get_symbols()) + list(primary_s))), key=lambda s: str(s))
         self.species_ordering = [s for s in species_tracked if s in primary_s or s not in sub_s_list]
@@ -383,7 +382,6 @@ class Results:
 
         # TODO
         # print(s)
-
         sigma = 0.75 * np.sqrt(2) / (np.sqrt(2 * np.log(2)) * 2)
         bes = [self.substances[name].orbitals[0].binding_energy for name in self.species_ordering]
         x_axis = np.arange(min(bes) - 5, max(bes) + 5, .1)
