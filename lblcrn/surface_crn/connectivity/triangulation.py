@@ -15,8 +15,9 @@ def show_triangulation(file_path="", points=None, project_down="z", title="Trian
     :param display_zoom: zoom level for the figure, default to 2. Increase to enlarge the figure.
     :return:
     """
+    # TODO: refactor the code below.
     if file_path:
-        points = poscar_to_positions(file_path)
+        points = read_vasp(file_path).get_positions()
         if points == []:
             raise Exception(f"No valid points in file {file_path}")
     elif points is None:
@@ -29,6 +30,9 @@ def show_triangulation(file_path="", points=None, project_down="z", title="Trian
         indices = [1, 3]
     elif project_down == "x":
         indices = [2, 3]
+    else:
+        raise Exception(f"{project_down} is not a possible value for parameter project_down. project down must be" +
+                        " one of \'x\', \'y\', \'z\'.")
 
     R = np.array(((1, 0), (0, distort_factor)))
     R_inv = np.linalg.inv(R)

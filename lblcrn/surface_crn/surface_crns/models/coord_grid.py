@@ -21,28 +21,34 @@ class CoordGrid(object):
         """
         self.nodes = []
         self.nodes_by_site = {}
+        #  TODO: currently this does not use distort factor; so factor it out.
         tri, points = show_triangulation(points=points, distort_factor=distort_factor,
                                          ignore_threhold=ignore_threhold)
-        # self.populate_grid_delauunay(neighbors_dict(tri, points))
-        #  TODO: currently this does not use distort factor
+        # Below is the old coding
+        # self._populate_grid_delaunay(neighbors_dict(tri, points))
         self.vor = None
-        self.populate_grid_voronoi(points)
+        self._populate_grid_voronoi(points)
         self._number_grid()
 
-    @staticmethod
+    @classmethod
     def from_poscar(poscar_path, distort_factor=1.1, ignore_threhold=1):
+        """
+        Transform a POSCAR file into a Coordinate Grid.
+        :param distort_factor:
+        :param ignore_threhold:
+        :return:
+        """
         return CoordGrid(poscar_to_positions(poscar_path), distort_factor=distort_factor,
                          ignore_threhold=ignore_threhold)
 
-    def populate_grid_delaunay(self, neighbors_dict):
+    def _populate_grid_delaunay(self, neighbors_dict):
         """
-        Populate the nodes list of the grid.
+        Populate the nodes list of the grid using Delaunay Triangulation.
 
         :param neighbors_dict: a dictionary where each key is a default name, for instance, "Top";
         The value would be a dictionary where each key, a tuple of cartesian coordinates,
         corresponds to a list of of the key's neighbors, also a tuple or cartesian coordinates.
         For example: {"Top": {(1, 1): [(0,1), (1,0)]}, "3F": {(0.5, 0.5): [(1,1), (0, 1)]}
-        :return:
         """
         nodes = {}
         for default_name in neighbors_dict.keys():
@@ -56,7 +62,12 @@ class CoordGrid(object):
             for loc, neighbors in d.items():
                 nodes[loc].neighbors = [(1, nodes[n_loc]) for n_loc in neighbors]
 
-    def populate_grid_voronoi(self, points):
+    def _populate_grid_voronoi(self, points):
+        """
+        Populate the grid based on a set of coordinates in points.
+
+        :param points:
+        """
         vor = Voronoi(points)
         self.vor = vor
         neighbors_dict = voronoi_neighbors_dict(vor)
@@ -103,7 +114,6 @@ class CoordGrid(object):
         #         self.nodes_by_site["Bridge"].append(new_node)
         #         self.nodes.append(new_node)
 
-
         self.nodes_by_site["Intersection"] = []
         for loc in vor.vertices:
             loc = tuple(c for c in loc)
@@ -147,8 +157,15 @@ class CoordGrid(object):
                 current_node.neighbors.append((self.nodes_by_site["Top"][top_index], 1))
 
     def to_atoms(self):
+        """
+        Output an ASE atoms object representing the states, and node locations of the current grid.
+        """
+
+        # map sites to "default" atoms for the purposes of using ASE's built-in information on specific atom types.
         site_to_atom = {"Top": "Ag", "Intersection": "Cl", "Bridge": "O"}
-        return Atoms([Atom(site_to_atom[n.state], [c for c in n.position] + [0]) for n in self])
+        # TODO: test and handle the case when n.state is a molecule.
+        return Atoms([Atom(site_to_atom[n.state] if n.state in site_to_atom else n.state,
+                     [c for c in n.position] + [0]) for n in self])
 
     def species_count(self):
         """
@@ -171,37 +188,16 @@ class CoordGrid(object):
             for i, n in enumerate(nodes):
                 n.node_id = site_abbreviations[site_name] + str(i)
 
-    @property
-    def num_nodes(self):
-        return sum([1 for _ in self])
-
-    @property
-    def top_nodes(self):
-        return self.nodes_by_site["Top"].copy()
-
-    @property
-    def connectivity_dictionary(self):
-        """
-        Compute a dictionary representing the connectivity graph.
-        :return:
-        """
-        d = {}
-        for site_name, nodes in self.nodes_by_site.items():
-            d[site_name] = {}
-            for node in nodes:
-                if node is not None:
-                    # TODO: weight should come second
-                    d[site_name][node.node_id] = sorted([neighbor_node.node_id for neighbor_node, _ in node.neighbors
-                                                         if neighbor_node is not None])
-        return d
-
     def print_connectivity_dictionary(self):
         """
-        Pretty print the
+        Produce and then pretty print the connectivity dictionary
         """
         print(json.dumps(self.connectivity_dictionary, sort_keys=True, indent=4))
 
     def voronoi_pic(self, return_fig=False, show_node_number=False):
+        """
+        Produce a Voronoi figure for the current graph.
+        """
         import matplotlib.pyplot as plt
         vor = self.vor
 
@@ -244,6 +240,29 @@ class CoordGrid(object):
         # ax.set_ylim(-15, 30)
         if return_fig:
             return fig
+
+    @property
+    def num_nodes(self):
+        return sum([1 for _ in self])
+
+    @property
+    def top_nodes(self):
+        return self.nodes_by_site["Top"].copy()
+
+    @property
+    def connectivity_dictionary(self):
+        """
+        Compute a dictionary representing the connectivity graph.
+        """
+        d = {}
+        for site_name, nodes in self.nodes_by_site.items():
+            d[site_name] = {}
+            for node in nodes:
+                if node is not None:
+                    # TODO: weight should come second
+                    d[site_name][node.node_id] = sorted([neighbor_node.node_id for neighbor_node, _ in node.neighbors
+                                                         if neighbor_node is not None])
+        return d
 
     def __iter__(self):
         return iter(self.nodes)
