@@ -22,6 +22,7 @@ Example:
 from __future__ import annotations
 
 import copy
+import json
 from typing import Any, Dict, List, Optional, Tuple, Union
 import warnings
 
@@ -34,6 +35,7 @@ from scipy import optimize
 from scipy import stats
 from sklearn import metrics
 import sympy as sym
+import lblcrn
 from lblcrn import bulk_crn
 from lblcrn.experiments import experiment
 from lblcrn.experiments import time_series
@@ -50,7 +52,7 @@ _REQUIRED = 'required'
 _OPTIONAL = 'optional'
 
 
-class XPSObservable:
+class XPSObservable(monty.json.MSONable):
     """TODO"""
 
     # Settings for the column names
@@ -64,13 +66,18 @@ class XPSObservable:
     _GAS_PHASE = (_EXPERIMENTAL, 'gas_phase')
     _DECONV_ENV = (_DECONVOLUTED, 'envelope')
 
+    _RESERVED = [_SIMULATED, _EXPERIMENTAL, _CONTAMINANTS, _DECONV_ENV,
+                 _SIM_ENV[1], _EXP_CLEAN[1], _EXP_RAW[1], _GAS_PHASE[1],
+                 _DECONV_ENV[1]]
+
     def __init__(self, df: pd.DataFrame,
                  species_manager: species.SpeciesManager,
                  title: str = ''):
-        self.df = df
-        self.species_manager = species_manager
-        self.title = title
+        self.df: pd.DataFrame = df
+        self.species_manager: species.SpeciesManager = species_manager
+        self.title: str = title
 
+    # --- Accessors ----------------------------------------------------------
     @property
     def x_range(self) -> Optional[np.ndarray]:
         """The x-values, energies, on which there is data."""
@@ -184,6 +191,60 @@ class XPSObservable:
             return self.deconvoluted[gauss_cols]
         else:
             return None
+
+    # --- Serialization ------------------------------------------------------
+    def as_dict(self) -> dict:
+        d = {
+            '@module': self.__class__.__module__,
+            '@class': self.__class__.__name__,
+            '@version': lblcrn.__version__,  # TODO: Better way to do this?
+            'df': None,
+            'species_manager': self.species_manager.as_dict(),
+            'title': self.title,
+        }
+
+        def sanitize_column(column):
+            category = column[0]
+            name = util.symbol_to_name(column[1])
+
+            return f'{category}\\{name}'
+
+        df_copy = self.df.copy(deep=False)
+        df_copy.columns = [sanitize_column(col) for col in df_copy.columns]
+        # Pandas.to_dict() is couldn't do orient=table, so I'm using this
+        #  roundabout method, sorry!
+        d['df'] = json.loads(df_copy.to_json(
+            orient='table',
+        ))
+
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict):
+        decode = monty.json.MontyDecoder().process_decoded
+
+        d['species_manager'] = decode(d['species_manager'])
+        sm = d['species_manager']
+
+        def desanitize_column(column):
+            category, name = column.split('\\')
+            symbol = sym.Symbol(name)
+            if not (name in XPSObservable._RESERVED) and symbol in sm:
+                name = symbol
+            return category, name
+
+        df = pd.read_json(
+            json.dumps(d['df']),  # Frivolous string conversion
+            orient='table',
+            convert_axes=False,
+        )
+        columns = [desanitize_column(col) for col in df.columns]
+        df.columns = pd.MultiIndex.from_tuples(columns)
+        d['df'] = df
+
+        return cls(**d)
+
+    # --- Plotting -----------------------------------------------------------
 
     def plot(self, ax: plt.Axes = None,
              only: bool = False,

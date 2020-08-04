@@ -2,6 +2,7 @@ import re
 
 import numpy as np
 from matplotlib import colors
+import sympy as sym
 
 
 def weave(*threads):
@@ -49,3 +50,11 @@ def set_color_alpha(color: str, alpha: float = 1.0):
     if not 0 < alpha < 1:
         raise ValueError('Alpha must be in range [0, 1]')
     return colors.to_hex((red, blue, green, alpha), keep_alpha=True)
+
+
+def symbol_to_name(sym_or_str):
+    """Convert a sym.Symbol or a string to a string through sym.Symbol.name."""
+    if type(sym_or_str) == sym.Symbol:
+        return sym_or_str.name
+    else:
+        return sym_or_str
