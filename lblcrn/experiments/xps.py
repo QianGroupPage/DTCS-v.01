@@ -622,7 +622,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
         # Require either sim_concs or experimental
         if not (sim_concs or experimental is not None):
             raise ValueError(f'{self.__class__.__name__} needs at least'
-                             f'species_concs or experimental defined.')
+                             f'sim_concs or experimental defined.')
 
         # Make everything match its intended type.
         if x_range is not None:
@@ -733,7 +733,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
     def include(self, *species: sym.Symbol):
         """Add the species to the experiment, if they aren't there already.
 
-        It won't simulate data for them (unless you also edit species_concs),
+        It won't simulate data for them (unless you also edit sim_concs),
         but it will involve the species in deconvolution and the like.
 
         Prompts an autoresample.
@@ -890,7 +890,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
             warnings.warn(UserWarning('Both contaminate and decontaminate are '
                                       'True, this will yield nonsensical '
                                       'data.'))
-        else:
+        elif contam_species:
             # decontaminate defaults to experimental, contaminate to simulated,
             # and they should not both be True. Decontaminate gets first pick
             # because it's a more common operation.
@@ -898,6 +898,9 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
                 decontaminate = experimental and not contaminate
             if contaminate is None:
                 contaminate = simulate and not decontaminate
+        else:
+            contaminate = False
+            decontaminate = False
 
         # Handle: deconv_species
         if deconv_species is None:
@@ -1033,7 +1036,10 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
                 species_to_plot.extend(sim_species)
             # Don't bother with deconv_/contam_species, because if they're
             # defined, then the x_range will be exp_data.index anyway.
-            x_range = XPSExperiment._get_x_range(species=species_to_plot)
+            x_range = XPSExperiment._get_x_range(
+                species_manager=self.species_manager,
+                species=species_to_plot,
+            )
             _echo.echo(f'Using automatically-generated x-range '
                        f'[{x_range[0]}, ..., {x_range[-1]}]...')
 
@@ -1329,7 +1335,9 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
 
         return gas_gaussian
 
-    def _get_x_range(self, species: List[sym.Symbol]) -> np.ndarray:
+    @staticmethod
+    def _get_x_range(species_manager: species.SpeciesManager,
+                     species: List[sym.Symbol]) -> np.ndarray:
         """Picks an x-range on which to calculate gaussians.
 
         Args:
@@ -1341,7 +1349,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
         """
         binding_energies = []
         for specie in species:
-            for orbital in self.species_manager[specie].orbitals:
+            for orbital in species_manager[specie].orbitals:
                 binding_energies.append(orbital.binding_energy)
 
         x_lower = min(binding_energies) - _PLOT_MARGIN
@@ -1452,7 +1460,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
     def as_dict(self) -> dict:
         """Return a MSON-serializable dict representation."""
         d = super().as_dict()
-        d['species_concs'] = {str(symbol): conc for symbol, conc in
+        d['sim_concs'] = {str(symbol): conc for symbol, conc in
                               self._sim_concs.items()}
         d['species_manager'] = self.species_manager.as_dict()
         d['autoresample'] = self.autoresample
@@ -1468,8 +1476,8 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
     def from_dict(cls, d: dict):
         """Load from a dict representation."""
         decode = monty.json.MontyDecoder().process_decoded
-        d['species_concs'] = {sym.Symbol(name): conc for name, conc in
-                              d['species_concs'].items()}
+        d['sim_concs'] = {sym.Symbol(name): conc for name, conc in
+                              d['sim_concs'].items()}
         d['species_manager'] = decode(d['species_manager'])
         if d['experimental'] is not None:
             d['experimental'] = pd.read_json(d['experimental'],
