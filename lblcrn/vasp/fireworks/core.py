@@ -14,8 +14,7 @@ from fireworks import Firework
 from pymatgen.io.vasp.sets import MPRelaxSet
 
 from lblcrn.crn_sym.rxn_system import RxnSystem
-from lblcrn.vasp.firetasks.parse_outputs import CRNSimulationToDb
-from lblcrn.vasp.firetasks.parse_outputs import XPSSimulationToDb
+from lblcrn.vasp.firetasks.parse_outputs import MsonToDb
 from lblcrn.vasp.firetasks.crn import BulkCRNSim
 from lblcrn.vasp.firetasks.xps import SimulateXPS
 
@@ -37,7 +36,7 @@ class CRNSimulateFW(Firework):  # TODO: Move this out of the vasp subpackage.
             name: Optional[str] = None,
             db_file=None,
             wf_meta=None,
-            **kwargs
+            **kwargs,
     ):
         """
         TODO
@@ -55,8 +54,10 @@ class CRNSimulateFW(Firework):  # TODO: Move this out of the vasp subpackage.
 
         tasks = [
             crn_sim_task,
-            PassCalcLocs(name=name),  # TODO: Params?
-            CRNSimulationToDb(
+            PassCalcLocs(name=name),
+            MsonToDb(
+                in_fname='crn_time_series.json',
+                db_name='crn_sims',
                 db_file=db_file,
                 wf_meta=wf_meta,
             ),
@@ -77,7 +78,9 @@ class XPSSimulateFW(Firework):  # TODO: Move this out of the vasp subpackage.
     def __init__(
             self,
             name: str = None,
-            **kwargs
+            db_file=None,
+            wf_meta=None,
+            **kwargs,
     ):
         """
         TODO
@@ -85,13 +88,18 @@ class XPSSimulateFW(Firework):  # TODO: Move this out of the vasp subpackage.
         name = name or 'XPS simulation'
 
         xps_sim_task = SimulateXPS(
-
+            # TODO
         )
 
         tasks = [
             xps_sim_task,
-            PassCalcLocs(name=name),  # TODO: Params?
-            XPSSimulationToDb(),
+            #PassCalcLocs(name=name),
+            #MsonToDb(
+            #    in_fname='xps.json',
+            #    db_name='xps',
+            #    db_file=db_file,
+            #    wf_meta=wf_meta,
+            #),
         ]
 
         super().__init__(

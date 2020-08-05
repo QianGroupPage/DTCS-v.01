@@ -85,7 +85,7 @@ def get_wf_simulate_xps(  # TODO(Andrew) Typehints
         )
         relax_fw = OptimizeFW(
             structure=structure,
-            name=f'{name} relaxation',
+            name=f'relaxation',
             vasp_input_set=relax_vinput,
             vasp_cmd=vasp_cmd,
             # override_default_vasp_params=None,
@@ -103,7 +103,7 @@ def get_wf_simulate_xps(  # TODO(Andrew) Typehints
         )
         calc_eigen_fw = StaticFW(
             structure=structure,  # Only used for labeling
-            name=f'{name} core eigenenergy calculation',
+            name=f'core eigenenergy calculation',
             vasp_input_set=calc_eigen_vinput,
             vasp_cmd=vasp_cmd,
             db_file=db_file,
@@ -153,11 +153,11 @@ def get_wf_simulate_xps(  # TODO(Andrew) Typehints
 
     # Make the firework(s) which simulate XPS experiments using the simulated
     #  core eigenenergies and the simulated surface species' concentrations.
-    #fw_xps_simulate = XPSSimulateFW(
-    #    name=None,  # TODO
-    #    parents=[fw_aggregate_core_eigens, fw_crn_simulate],
-    #)
-    #fws.append(fw_xps_simulate)
+    fw_xps_simulate = XPSSimulateFW(
+        # TODO: How should this know what to do?
+        parents=[fw_aggregate_core_eigens, fw_crn_simulate],
+    )
+    fws.append(fw_xps_simulate)
 
     # TODO(Andrew): Experiment dummy and comparison fireworks.
 
