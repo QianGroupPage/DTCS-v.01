@@ -8,10 +8,12 @@ import datetime
 import json
 import os
 
+from atomate.common.firetasks.glue_tasks import get_calc_loc
 from atomate.utils.utils import env_chk, get_logger
 from atomate.vasp.database import VaspCalcDb
 from fireworks.utilities.fw_serializers import DATETIME_HANDLER
 from fireworks import FiretaskBase, FWAction, explicit_serialize
+from monty.json import MontyDecoder, jsanitize
 import pymongo
 
 __author__ = 'Andrew Bogdan'
@@ -51,8 +53,6 @@ class CoreEigenToDb(FiretaskBase):
 
     def run_task(self, fw_spec):
 
-        _logger.info('Retrieving core eigenenergies from VASP output.')
-
         # Retrieve parameters
         calc_count = self.get('calc_count')
         db_file = env_chk(self.get('db_file'), fw_spec)
@@ -78,6 +78,7 @@ class CoreEigenToDb(FiretaskBase):
             outcar = task['calcs_reversed'][0]['output']['outcar']
 
             task_profile = {
+                # TODO: Add CONTCAR & output energy from relax run
                 'chemsys': task['chemsys'],
                 'core_energies': outcar['core_state_eigen'],
                 'formula_pretty': task['formula_pretty'],
@@ -98,17 +99,91 @@ class CoreEigenToDb(FiretaskBase):
         }
 
         # Store the results in the database or a JSON file
+        # TODO: Make this optional, in this setting the db_file is required.
         if not db_file:
-            _logger.info(f'Firetask {self.__name__}: '
-                         f'No database file found, attempting to dump to '
+            _logger.info(f'No database file found, attempting to dump to '
                          f'{os.path.join(os.getcwd(), self.JSON_DUMP_FILE)}.')
             with open(self.JSON_DUMP_FILE, 'w') as file:
-                json.dumps(obj=out_dict,
-                           fp=file,
-                           default=DATETIME_HANDLER, )
+                json.dump(obj=out_dict,
+                          fp=file,
+                          default=DATETIME_HANDLER, )
         else:
             mmdb.db['core_eigen'].insert_one(out_dict)
 
         _logger.info('Core eigenenergies successfully retrieved.')
 
         return FWAction()
+
+
+@explicit_serialize
+class CRNSimulationToDb(FiretaskBase):  # TODO: Move this out of the vasp module.
+    """
+    TODO
+    """
+
+    JSON_DUMP_FILE = 'crn_time_series.json'
+
+    required_params = []
+    optional_params = ['calc_dir', 'calc_loc', 'db_file', 'wf_meta', 'wf_uuid']
+
+    def run_task(self, fw_spec):
+
+        # Get input parameters
+        calc_dir = self.get('calc_dir', os.getcwd())
+        if self.get("calc_loc"):
+            calc_dir = get_calc_loc(self.get("calc_loc"),
+                                    fw_spec['calc_locs'])['path']
+        db_file = env_chk(self.get('db_file'), fw_spec)
+        wf_uuid = self.get('wf_uuid')
+        wf_meta = {'wf_uuid': wf_uuid} if wf_uuid else None
+        wf_meta = self.get('wf_meta', wf_meta)
+
+        # Log calc directory
+        _logger.info(f'Getting CRN simulation data from {calc_dir}')  # TODO
+
+        # Retrieve CRN time series information from directory
+        cts_path = os.path.join(calc_dir, 'crn_time_series.json')
+        with open(cts_path, 'r') as file:
+            crn_time_series = json.load(file, cls=MontyDecoder)
+
+        # Create output data
+        out_dict = jsanitize(crn_time_series.as_dict())
+        out_dict.update({
+            'last_updated': datetime.datetime.utcnow(),
+        })
+        if wf_meta:
+            out_dict['wf_meta'] = wf_meta
+
+        import pprint
+        pprint.pprint(out_dict)
+
+        # Store the results in the database or a JSON file
+        if not db_file:
+            _logger.info(f'No database file found, attempting to dump to '
+                         f'{os.path.join(os.getcwd(), self.JSON_DUMP_FILE)}.')
+            with open(self.JSON_DUMP_FILE, 'w') as file:
+                json.dump(obj=out_dict,
+                          fp=file,
+                          default=DATETIME_HANDLER, )
+        else:
+            _logger.info(f'Uploading CRN simulation data to database.')
+            # TODO: Should I use VaspCalcDb even though it isn't Vasp?
+            mmdb = VaspCalcDb.from_db_file(db_file, admin=True)
+            mmdb.db['crn_sims'].insert_one(out_dict)
+
+        _logger.info('CRN simulation successfully retrieved.')
+
+        return FWAction()
+
+
+@explicit_serialize
+class XPSSimulationToDb(FiretaskBase):  # TODO: Move this out of the vasp module.
+    """
+    TODO
+    """
+
+    required_params = []
+    optional_params = ['calc_dir', 'calc_loc', 'db_file']
+
+    def run_task(self, fw_spec):
+        _logger.info('Uploading XPS simulation output to database.')  # TODO

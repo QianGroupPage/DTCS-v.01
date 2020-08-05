@@ -15,6 +15,7 @@ from pymatgen.io.vasp.sets import MPRelaxSet, MPStaticSet
 
 from lblcrn import _echo
 from lblcrn.vasp.firetasks.parse_outputs import CoreEigenToDb
+from lblcrn.vasp.fireworks.core import CRNSimulateFW, XPSSimulateFW
 
 __author__ = 'Andrew Bogdan'
 __email__ = 'andrewbogdan@lbl.gov'
@@ -65,7 +66,7 @@ def get_wf_simulate_xps(  # TODO(Andrew) Typehints
         'wf_name': wf_name,
     }
 
-    _echo.echo(f'Creating Workflow "{wf_name}" with uuid {wf_name}...')
+    _echo.echo(f'Creating Workflow "{wf_name}" with uuid {wf_uuid}...')
 
     # Make the fireworks
     fws = []
@@ -110,9 +111,12 @@ def get_wf_simulate_xps(  # TODO(Andrew) Typehints
             parents=relax_fw,
             # TODO: If we can get atomate to add it, vasptodb_kwargs is
             #  where we'd put a '{parse_core_eigenenergies: True}' option.
-            vasptodb_kwargs={'additional_fields': {
-                'core_eigen_calc_index': specie_index,
-            }},
+            vasptodb_kwargs={
+                'additional_fields': {
+                    'core_eigen_calc_index': specie_index,
+                },
+                'extra_outcar_read': ['core_state_eigen'],
+            },
         )
 
         # Add all the fireworks to the master list. We keep track of
@@ -131,18 +135,29 @@ def get_wf_simulate_xps(  # TODO(Andrew) Typehints
             wf_meta=wf_meta,
             # TODO: Perhaps add a to_db parameter?
         ),
-        name=f'CoreEigenToDb for Workflow {wf_name}',
+        name=f'CoreEigenToDb for workflow {wf_name}',
         parents=fws_calc_eigen,
     )
     fws.append(fw_aggregate_core_eigens)
 
     # Make the firework(s) which run the simulations of the concentrations of
     #  the species. This can be a bulk (homogeneous) or surface simulation.
-    pass
+    fw_crn_simulate = CRNSimulateFW(
+        reaction_system=reaction_system,
+        sim_type='bulk',
+        sim_options={'time': 10, 'max_step': 0.01},
+        db_file=db_file,
+        wf_meta=wf_meta,
+    )
+    fws.append(fw_crn_simulate)
 
     # Make the firework(s) which simulate XPS experiments using the simulated
     #  core eigenenergies and the simulated surface species' concentrations.
-    pass
+    #fw_xps_simulate = XPSSimulateFW(
+    #    name=None,  # TODO
+    #    parents=[fw_aggregate_core_eigens, fw_crn_simulate],
+    #)
+    #fws.append(fw_xps_simulate)
 
     # TODO(Andrew): Experiment dummy and comparison fireworks.
 

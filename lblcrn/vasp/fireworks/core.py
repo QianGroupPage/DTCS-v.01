@@ -3,6 +3,8 @@
 TODO(Andrew)
 """
 
+from typing import Optional
+
 from atomate.common.firetasks.glue_tasks import PassCalcLocs
 from atomate.vasp.config import VASP_CMD, DB_FILE
 from atomate.vasp.firetasks.write_inputs import WriteVaspFromIOSet
@@ -11,29 +13,86 @@ from atomate.vasp.firetasks.run_calc import RunVaspCustodian
 from fireworks import Firework
 from pymatgen.io.vasp.sets import MPRelaxSet
 
-from lblcrn.vasp.firetasks.parse_outputs import CoreEigenToDb
+from lblcrn.crn_sym.rxn_system import RxnSystem
+from lblcrn.vasp.firetasks.parse_outputs import CRNSimulationToDb
+from lblcrn.vasp.firetasks.parse_outputs import XPSSimulationToDb
+from lblcrn.vasp.firetasks.crn import BulkCRNSim
+from lblcrn.vasp.firetasks.xps import SimulateXPS
 
 
 __author__ = 'Andrew Bogdan'
 __email__ = 'andrewbogdan@lbl.gov'
 
 
-class CRNSimulateFW(Firework):
+class CRNSimulateFW(Firework):  # TODO: Move this out of the vasp subpackage.
     """
     TODO
     """
 
     def __init__(
             self,
-            name=None,
-            sim_kind: str = 'bulk',
-            **kwargs,
+            reaction_system: RxnSystem,
+            sim_type: str = 'bulk',
+            sim_options: Optional[dict] = None,
+            name: Optional[str] = None,
+            db_file=None,
+            wf_meta=None,
+            **kwargs
     ):
         """
         TODO
         """
+        name = name or f'{sim_type} CRN simulation'
+        sim_options = sim_options or {}
 
-        tasks = []
+        if sim_type == 'bulk':
+            crn_sim_task = BulkCRNSim(
+                reaction_system=reaction_system.as_dict(),
+                sim_options=sim_options,
+            )
+        else:
+            raise ValueError(f'Invalid simulation type {sim_type}.')
+
+        tasks = [
+            crn_sim_task,
+            PassCalcLocs(name=name),  # TODO: Params?
+            CRNSimulationToDb(
+                db_file=db_file,
+                wf_meta=wf_meta,
+            ),
+        ]
+
+        super().__init__(
+            tasks=tasks,
+            name=name,
+            **kwargs
+        )
+
+
+class XPSSimulateFW(Firework):  # TODO: Move this out of the vasp subpackage.
+    """
+    TODO
+    """
+
+    def __init__(
+            self,
+            name: str = None,
+            **kwargs
+    ):
+        """
+        TODO
+        """
+        name = name or 'XPS simulation'
+
+        xps_sim_task = SimulateXPS(
+
+        )
+
+        tasks = [
+            xps_sim_task,
+            PassCalcLocs(name=name),  # TODO: Params?
+            XPSSimulationToDb(),
+        ]
 
         super().__init__(
             tasks=tasks,
