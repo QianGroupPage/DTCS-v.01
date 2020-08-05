@@ -1,10 +1,6 @@
 from lblcrn.crn_sym import Rxn, RevRxn, Surface, SurfaceRxn, SurfaceRevRxn, Schedule, Conc
 from lblcrn.common import color_to_RGB
-import re
-import io
 import random
-import pygame
-import math
 
 
 def to_str(rule):
@@ -83,7 +79,37 @@ def generate_surface(rsys, random_seed=30):
     if rsys.surface is None:
         return None
 
-    if rsys.surface.structure == "hexagon":
+    if rsys.surface.use_coord_grid:
+        species = {site_name: [] for site_name in rsys.surface.allowed_sites}
+
+        for node in rsys.surface.coord_grid.nodes_by_fold_name["top"]:
+            node.state = rsys.surface.name
+
+        for c in rsys.schedules:
+            # TODO
+            if isinstance(c, Schedule) and not isinstance(c, Conc):
+                raise Exception(f"{c} is a schedule, not an initial concentration." +
+                                f" This is not currently supported in the Surface CRN.")
+
+            if not rsys.species_manager.species_from_symbol(c.symbol).site or \
+                   rsys.species_manager.species_from_symbol(c.symbol).site.name == "top":
+                species["top"].extend([str(c.symbol) for _ in range(int(str(c.concentration)))])
+            else:
+                # rsys.species_manager.species_from_symbol(c.symbol).site.name == "3F":
+                species[rsys.species_manager.species_from_symbol(c.symbol).site.name].extend([str(c.symbol)
+                        for _ in range(int(str(c.concentration)))])
+
+            # TODO: rename the sites in coord_grid
+            random.seed(random_seed)
+            for k, v in species.items():
+                nodes = rsys.surface.coord_grid.nodes_by_fold_name[k]
+                indices = random.sample(range(len(nodes)), len(v))
+                chosen = [nodes[i] for i in indices]
+                for i, n in enumerate(chosen):
+                    n.state = species[k][i]
+
+        return rsys.surface.coord_grid
+    elif rsys.surface.structure == "hexagon":
         species = {"3F": [], "top": []}
         for c in rsys.schedules:
             # TODO
@@ -97,11 +123,10 @@ def generate_surface(rsys, random_seed=30):
             elif rsys.species_manager.species_from_symbol(c.symbol).site.name == "3F":
                 species["3F"].extend([str(c.symbol) for _ in range(int(str(c.concentration)))])
 
+        # Initiate the hexagonal grid
         rows = rsys.surface.size[0]
         cols = rsys.surface.size[1]
-
         surface = HexGridPlusIntersections(rows, cols)
-
         for n in surface:
             if n.is_intersection:
                 n.state = "3F"

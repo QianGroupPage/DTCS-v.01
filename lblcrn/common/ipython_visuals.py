@@ -4,6 +4,7 @@ import sys
 
 def update_progress(progress, header="Progress", beginning=False, terminating=False):
     # https://www.mikulskibartosz.name/how-to-display-a-progress-bar-in-jupyter-notebook/
+    return
     bar_length = 80
     if isinstance(progress, int):
         progress = float(progress)

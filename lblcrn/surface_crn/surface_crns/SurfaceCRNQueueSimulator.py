@@ -35,6 +35,7 @@ from lblcrn.surface_crn.surface_crns.views.grid_display import ParallelEmulatedS
 from lblcrn.surface_crn.results import Results
 from lblcrn.common import ipython_visuals, ProgressBar
 
+
 import cProfile
 import optparse
 import sys
@@ -177,7 +178,7 @@ def simulate_surface_crn(manifest_filename, group_selection_seed, display_class=
         # TODO: study when to use it;
         # TODO: update the synchronous simulator to be the same fashion as the queue simulator
         simulation = SynchronousSimulator(
-                                    surface = grid,
+                                    surface=grid,
                                     update_rule = opts.update_rule,
                                     seed = opts.rng_seed,
                                     simulation_duration = opts.max_duration,
@@ -337,7 +338,7 @@ def simulate_surface_crn(manifest_filename, group_selection_seed, display_class=
     # TODO
     # progress_bar = ProgressBar(total_tasks=round(opts.max_duration/opts.fps))
     progress_bar = None
-    update_display(opts, simulation, progress_bar, FRAME_DIRECTORY, time_display=time_display, title_display=title_display,
+    update_display(opts, simulation, progress_bar, grid_display, FRAME_DIRECTORY, time_display=time_display, title_display=title_display,
                    spectra_max_conc=spectra_max_conc)
 
     # State variables for simulation
@@ -517,7 +518,7 @@ def simulate_surface_crn(manifest_filename, group_selection_seed, display_class=
         # Render updates and make the next clock tick.
         if opts.debug:
             print("Updating display.")
-        update_display(opts, simulation, progress_bar, FRAME_DIRECTORY, time_display=time_display, title_display=title_display,
+        update_display(opts, simulation, progress_bar, grid_display, FRAME_DIRECTORY, time_display=time_display, title_display=title_display,
                        spectra_max_conc=spectra_max_conc)
         fpsClock.tick(opts.fps)
 
@@ -536,7 +537,7 @@ def simulate_surface_crn(manifest_filename, group_selection_seed, display_class=
             time_display.render(display_surface, x_pos=time_display.x_pos, y_pos=time_display.y_pos) #opts_menu.display_height)
             if next_reaction:
                 display_next_event(next_reaction, grid_display)
-            update_display(opts, simulation, progress_bar, FRAME_DIRECTORY, time_display=time_display, title_display=title_display,
+            update_display(opts, simulation, progress_bar, grid_display, FRAME_DIRECTORY, time_display=time_display, title_display=title_display,
                            spectra_max_conc=spectra_max_conc, check_terminate=True)
             if opts.debug:
                 print("Simulation state at final time " + \
@@ -633,6 +634,7 @@ def display_next_event(next_reaction, grid_display):
     outputs      = next_reaction.rule.outputs
     # Update reactants (if changed)
     for i in range(len(participants)):
+        # TODO: this is currently very expensive for coord_grid's Voronoi pictures.
         # TODO: accomodations for 2-sized species
         if i > len(inputs) - 1:
             grid_display.update_node(participants[i])
@@ -658,7 +660,7 @@ def cleanup_and_exit(simulation):
     sys.exit()
 
 
-def update_display(opts, simulation, progress_bar, FRAME_DIRECTORY=None, time_display=None, title_display=None,
+def update_display(opts, simulation, progress_bar, grid_display, FRAME_DIRECTORY=None, time_display=None, title_display=None,
                    spectra_max_conc=-1, check_terminate=False):
     if simulation.times:
         time = simulation.times[-1]
@@ -683,6 +685,7 @@ def update_display(opts, simulation, progress_bar, FRAME_DIRECTORY=None, time_di
     # and
     # progress_bar.bar()
 
+    grid_display.re_render()
     # TODO
     # print(type(simulation))
     if opts.capture_directory == None:

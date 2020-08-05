@@ -7,6 +7,7 @@ from lblcrn.surface_crn.results import Results
 from lblcrn.common import ipython_visuals
 from lblcrn.surface_crn.api_adapter.api_adapt import generate_manifest_stream, generate_surface,\
     HexGridPlusIntersectionDisplay
+from lblcrn.surface_crn.surface_crns.views.coord_grid_display import CoordGridDisplay
 from lblcrn.surface_crn.ensemble import Ensemble
 import os
 from shutil import rmtree
@@ -37,6 +38,8 @@ def scrn_simulate_single_run(rxns, time_max=100, lattice=None, display_class=Non
 
     if not species_tracked:
         species_tracked = list(rxns.get_symbols())
+
+    # Provide a grid structure for use in place of the grid structure in the rules manifest.
     if not lattice:
         surface = generate_surface(rsys=rxns)
     else:
@@ -193,9 +196,11 @@ def get_frames_link(manifest):
     return f"{opts.capture_directory}/frames"
 
 
-def simulate_with_display(manifest_file, lattice, group_selection_seed, rxns=None, spectra_in_video=True, running_average=10,
-                          spectra_max_conc=-1):
-    if rxns.surface.structure == "hexagon":
+def simulate_with_display(manifest_file, lattice, group_selection_seed, rxns=None, spectra_in_video=True,
+                          running_average=10, spectra_max_conc=-1):
+    if rxns.surface.use_coord_grid:
+        display_class = CoordGridDisplay
+    elif rxns.surface.structure == "hexagon":
         display_class = HexGridPlusIntersectionDisplay
     else:
         display_class = None

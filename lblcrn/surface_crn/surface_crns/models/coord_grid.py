@@ -1,12 +1,14 @@
 from lblcrn.surface_crn.surface_crns.base.node import Node
 from lblcrn.surface_crn.connectivity.triangulation import show_triangulation, poscar_to_positions
-from lblcrn.surface_crn.connectivity.neighbors import neighbors_dict, voronoi_neighbors_dict
+from lblcrn.surface_crn.connectivity.neighbors import voronoi_neighbors_dict
 from lblcrn.surface_crn.connectivity.voronoi import voronoi_plot_2d, voronoi_finite_polygons_2d
+from lblcrn.common.num_to_word import num2word
 from collections import Counter
 from ase import Atoms, Atom
 from scipy.spatial import Voronoi
 import numpy as np
 import json
+import math
 
 
 class CoordGrid(object):
@@ -15,12 +17,14 @@ class CoordGrid(object):
 
     Only allows reactions between directly-adjacent locations, and every edge has equal weight.
     """
-    def __init__(self, points, distort_factor=1.1, ignore_threhold=1):
+    def __init__(self, points, distort_factor=1.1, ignore_threhold=1, supercell_dimensions=1):
         """
         :param points: a numpy array where each row is a coordinate for a top site.
         """
+        # Provide three consistently equivalent ways to refer to the nodes.
         self.nodes = []
         self.nodes_by_site = {}
+        self.id_to_node = {}
         #  TODO: currently this does not use distort factor; so factor it out.
         tri, points = show_triangulation(points=points, distort_factor=distort_factor,
                                          ignore_threhold=ignore_threhold)
@@ -30,16 +34,28 @@ class CoordGrid(object):
         self._populate_grid_voronoi(points)
         self._number_grid()
 
+        min_x, max_x = math.inf, -math.inf
+        min_y, max_y = math.inf, -math.inf
+        for node in self.nodes:
+            node_x, node_y = node.position
+            min_x = min(min_x, node_x)
+            min_y = min(min_y, node_y)
+
+            max_x = max(max_x, node_x)
+            max_y = max(max_y, node_y)
+        self.xrange = (min_x, max_x)
+        self.yrange = (min_y, max_y)
+
     @staticmethod
-    def from_poscar(poscar_path, distort_factor=1.1, ignore_threhold=1):
+    def from_poscar(poscar_path, distort_factor=1.1, ignore_threhold=1, supercell_dimensions=1):
         """
         Transform a POSCAR file into a Coordinate Grid.
         :param distort_factor:
         :param ignore_threhold:
         :return:
         """
-        return CoordGrid(poscar_to_positions(poscar_path), distort_factor=distort_factor,
-                         ignore_threhold=ignore_threhold)
+        return CoordGrid(poscar_to_positions(poscar_path, supercell_dimensions), distort_factor=distort_factor,
+                         ignore_threhold=ignore_threhold, supercell_dimensions=supercell_dimensions)
 
     def _populate_grid_delaunay(self, neighbors_dict):
         """
@@ -179,6 +195,7 @@ class CoordGrid(object):
         """
         site_names = ["Top", "Bridge", "Intersection"]
         site_abbreviations = {s: s[0] for s in site_names}
+        self.id_to_node = {}
         for site_name in site_names:
             # TODO: this is not clean
             nodes = [n for n in self.nodes_by_site[site_name] if n is not None]
@@ -186,6 +203,38 @@ class CoordGrid(object):
 
             for i, n in enumerate(nodes):
                 n.node_id = site_abbreviations[site_name] + str(i)
+                self.id_to_node[n.node_id] = n
+
+    def _get_node(self, node_id):
+        if not self.id_to_node:
+            self._number_grid()
+        return self.id_to_node[node_id]
+
+    def clear_timestamps(self):
+        """
+        Set the timestamps of all nodes in the grid to 0.
+        """
+        for node in self:
+            node.timestamp = 0
+        return
+
+    def get_global_state(self):
+        """
+        Get the global state of nodes as a dictionary from node_id to strings.
+        """
+        state_dict = {}
+        for node in self:
+            state_dict[node.node_id] = node.state
+        return state_dict
+
+    def set_global_state(self, state_dict):
+        """
+        Set the states of nodes using a dictionary from node ID to node object.
+        Also resets timestamps.
+        """
+        for node_id, node_state in state_dict.items():
+            self._get_node(node_id).state = node_state
+        self.clear_timestamps()
 
     def print_connectivity_dictionary(self):
         """
@@ -193,18 +242,32 @@ class CoordGrid(object):
         """
         print(json.dumps(self.connectivity_dictionary, sort_keys=True, indent=4))
 
-    def voronoi_pic(self, return_fig=False, show_node_number=False):
+    def voronoi_pic(self, ax=None, return_fig=False, show_node_number=False, color_index=None, set_fig_size=True):
         """
         Produce a Voronoi figure for the current graph.
         """
-        import matplotlib.pyplot as plt
+        # TODO: save the polygons, the ridge lines, and the atoms, for fast drawing on a PyGame screen.
         vor = self.vor
 
-        ax = plt.gca()
+        if not ax:
+            import matplotlib.pyplot as plt
+            ax = plt.gca()
         ax.set_aspect('equal', adjustable='box')
         fig = voronoi_plot_2d(vor, ax=ax, point_size=2, show_points=False)
 
-        ax.plot(vor.vertices[:, 0], vor.vertices[:, 1], 'o', markersize=8 * 2, color="Green")
+        for node in self.nodes_by_site["Intersection"]:
+            if node:
+                # TODO: add node color
+                if color_index:
+                    state = node.state
+                    if state in self.fold_names_dict:
+                        state = self.fold_names_dict[state]
+                    species_color = color_index[state]
+                else:
+                    species_color = "green"
+                ax.plot(node.position[0], node.position[1], 'o', markersize=8 * 2, color=species_color)
+
+        # ax.plot(vor.vertices[:, 0], vor.vertices[:, 1], 'o', markersize=8 * 2, color="Green")
 
         #  TODO: fill the infinite regions
         regions, vertices = voronoi_finite_polygons_2d(self.vor)
@@ -212,7 +275,17 @@ class CoordGrid(object):
             region = regions[vor.point_region[point_index]]
             if -1 not in region:
                 polygon = [vertices[i] for i in region]
-                ax.fill(*zip(*polygon), color="#CCCCCC", alpha=0.8)
+                if color_index:
+                    state = self.nodes_by_site["Top"][point_index].state
+                    if state in self.fold_names_dict:
+                        state = self.fold_names_dict[state]
+                    species_color = color_index[state]
+                else:
+                    species_color = "#CCCCCC"
+                if isinstance(species_color, list):
+                    species_color = tuple(species_color)
+                # print(species_color)
+                ax.fill(*zip(*polygon), color=species_color, alpha=0.8)
 
                 # polygon = np.array(polygon)
                 # ax.plot(polygon[:, 0], polygon[:, 1], 'o', markersize=2)
@@ -222,23 +295,34 @@ class CoordGrid(object):
 
         for node in self.nodes_by_site["Bridge"]:
             if node:
-                ax.plot(node.position[0], node.position[1], 'o', markersize=2 * 4, color="red")
+                # TODO: add node color
+                if color_index:
+                    state = node.state
+                    if state in self.fold_names_dict:
+                        state = self.fold_names_dict[state]
+                    species_color = color_index[state]
+                else:
+                    species_color = "red"
+                ax.plot(node.position[0], node.position[1], 'o', markersize=2 * 4, color=species_color)
                 # ax.text(node.position[0], node.position[1], 39)
 
         if show_node_number:
             for node in self.nodes:
                 ax.text(node.position[0], node.position[1], node.node_id, ha='center', va='center')
 
-        fig.set_figheight(8)
-        fig.set_figwidth(12)
+        if set_fig_size:
+            fig.set_figheight(8)
+            fig.set_figwidth(12)
 
         # plt.axis('off')  # TODO: include this in the standard mode.
         # return fig
         # ax.plot(vertices[:, 0], vertices[:, 1], 'o', markersize=3 * 2, color="Red")
-        # ax.set_xlim(-10, 20)
+        ax.set_xlim(self.xrange[0] - 1, self.xrange[1] + 1)
+        ax.set_ylim(self.yrange[0] - 1, self.yrange[1] + 1)
         # ax.set_ylim(-15, 30)
         if return_fig:
             return fig
+
 
     @property
     def num_nodes(self):
@@ -247,6 +331,49 @@ class CoordGrid(object):
     @property
     def top_nodes(self):
         return self.nodes_by_site["Top"].copy()
+
+    @property
+    def fold_names(self):
+        """
+        Build a list consisting of all site names named after the site intersection numbers.
+
+        For instance, ["top", "twofold", "threefold", "fourfold"]
+        :return:
+        """
+        res = []
+        for key, nodes in self.nodes_by_site.items():
+            if key == "Top":
+                continue
+            elif nodes:
+                res.append(max([len(node.neighbors) for node in nodes]))
+        return ["top"] + [f"{num2word(num)}fold" for num in res if num > 1]
+
+    @property
+    def fold_names_dict(self):
+        d = {}
+        for k, v in self.nodes_by_site.items():
+            if k == "Top":
+                d["Top"] = "top"
+            elif k == "Bridge":
+                d["Bridge"] = "twofold"
+            else:
+                intersection_name = [n for n in self.fold_names if n not in ("top", "twofold")][0]
+                d["Intersection"] = intersection_name
+        return d
+
+    @property
+    def nodes_by_fold_name(self):
+        fold_names = self.fold_names
+        d = {}
+        for k, v in self.nodes_by_site.items():
+            if k == "Top":
+                d["top"] = v
+            elif k == "Bridge":
+                d["twofold"] = v
+            else:
+                intersection_name = [n for n in fold_names if n not in ("top", "twofold")][0]
+                d[intersection_name] = v
+        return d
 
     @property
     def connectivity_dictionary(self):
@@ -262,6 +389,22 @@ class CoordGrid(object):
                     d[site_name][node.node_id] = sorted([neighbor_node.node_id for neighbor_node, _ in node.neighbors
                                                          if neighbor_node is not None])
         return d
+
+    @property
+    def size_2d(self):
+        """
+        The best approximate width and height of this grid, as if it were a rectangle.
+        """
+        return (self.x_size, self.y_size)
+
+    # TODO: following is used to compute size, verify it is correct
+    @property
+    def x_size(self):
+        return len(set(node.position[0] for node in self.nodes))
+
+    @property
+    def y_size(self):
+        return len(set(node.position[1] for node in self.nodes))
 
     def __iter__(self):
         return iter(self.nodes)

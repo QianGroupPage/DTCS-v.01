@@ -415,8 +415,8 @@ class Results:
         max_be = max(gaussian.index.max(), xps_df.index.max())
         return xps.fill_zeros(gaussian, min_be, max_be), xps.fill_zeros(xps_df, min_be, max_be)
 
-    def plot_gaussian(self, t=-1, avg_duration=1, path="", xps_path="", xps_scaling=1, save=False, return_fig=False, fig_size="Default",
-                      dpi=100, scaling_factor=1, ax=None, envelope_name="CRN"):
+    def plot_gaussian(self, t=-1, avg_duration=1, path="", xps_path="", xps_scaling=1, save=False, return_fig=False,
+                      fig_size="Default", dpi=100, scaling_factor=1, ax=None, envelope_name="CRN"):
         """
         Plot the Gaussian function from time t to time t + 1.
         """
@@ -488,21 +488,24 @@ class Results:
             ax.figure.savefig("{}/spectrum.png".format(path))
         if return_fig:
             # Usually, you don't need to return because plot would draw the graph in the current
-            # Jupter Notebbok. Return only when you need the figure.
+            # Jupyter Notebook. Return only when you need the figure.
             return ax.figure
 
     def raw_string_gaussian(self, t=-1, avg_duration=1, y_upper_limit=None,  xps_scaling=1, fig_size="Default", dpi=100,
                             scaling_factor=1, ax=None):
         """
         A wrapper function for self.plot_gaussian intended for generating frames in Pygame videos.
+
+        # TODO: explain the use of fig_size
         :return: raw string representation of the figure
         """
         backend = matplotlib.rcParams['backend']
         matplotlib.use("Agg")
         # TODO: determine if this solves the issue with inconsistent font.
         matplotlib.rcParams["font.family"] = "arial"
-        fig = self.plot_gaussian(t=t, avg_duration=avg_duration, xps_scaling=xps_scaling, return_fig=True, fig_size=fig_size, dpi=dpi,
-                                 scaling_factor=scaling_factor, ax=ax, envelope_name="total")
+        fig = self.plot_gaussian(t=t, avg_duration=avg_duration, xps_scaling=xps_scaling, return_fig=True,
+                                 fig_size=fig_size, dpi=dpi, scaling_factor=scaling_factor, ax=ax,
+                                 envelope_name="total")
         fig.tight_layout()
         matplotlib.pyplot.ylim((0, y_upper_limit))
         canvas = agg.FigureCanvasAgg(fig)

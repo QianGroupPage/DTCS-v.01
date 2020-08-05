@@ -83,6 +83,15 @@ def de_dup(arr):
     return np.array([[e for e in r] for r in set(new_array)])
 
 
-def poscar_to_positions(file_path):
-    cell = read_vasp(file_path)
+def poscar_to_positions(file_path, supercell_dimensions=1):
+    if isinstance(supercell_dimensions, tuple) or isinstance(supercell_dimensions, list):
+        if len(supercell_dimensions) > 3:
+            raise Exception()
+        elif len(supercell_dimensions) == 2:
+            supercell_dimensions = tuple(supercell_dimensions + supercell_dimensions[-1])
+        elif len(supercell_dimensions) == 1:
+            supercell_dimensions = tuple(supercell_dimensions * 3)
+    else:
+        supercell_dimensions = tuple(supercell_dimensions for _ in range(3))
+    cell = read_vasp(file_path) * supercell_dimensions
     return cell.get_positions()

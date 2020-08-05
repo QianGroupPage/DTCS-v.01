@@ -17,6 +17,10 @@ def RGB_to_hex(RGB):
 
 
 def color_to_RGB(color):
+    # TODO: round first 3 values if list or tuple
+    if isinstance(color, (tuple, list)):
+        color = tuple(round(color) for color in color[:3])
+        return color
     color = colors.to_rgb(color)
     color = tuple(round(val * 255) for val in color)
     return color

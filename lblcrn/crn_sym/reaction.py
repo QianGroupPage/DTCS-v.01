@@ -32,7 +32,6 @@ import sympy as sym
 from sympy.parsing import sympy_parser
 
 import lblcrn
-from lblcrn.crn_sym import species
 from lblcrn.crn_sym import conditions
 
 

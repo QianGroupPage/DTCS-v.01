@@ -11,7 +11,7 @@ Dr. Jin Qian, Domas Buracas, Andrew Bogdan, Rithvik Panchapakesan, Ye Wang
 from typing import List, Tuple, Union
 import sympy as sym
 from lblcrn.common import color_to_RGB
-
+from lblcrn.surface_crn.surface_crns.models.coord_grid import CoordGrid
 
 # *** Classes ***
 class Surface:
@@ -19,7 +19,20 @@ class Surface:
     A surface structure, by default, it is square with only top sites.
     """
 
-    def __init__(self, name: str, size: Tuple[int], structure: str = "rectangle", color: Union[Tuple[int], List[int], str] = None):
+    def __init__(self, name: str, size: Tuple[int] = (0, 0), structure: str = "rectangle",
+                 color: Union[Tuple[int], List[int], str] = None, poscar_file: str = "", supercell_dimensions=1):
+        # This surface is based on a POSCAR file.
+        if poscar_file:
+            self.use_coord_grid = True
+            self.poscar_file = poscar_file
+            self.supercell_dimensions = supercell_dimensions
+            self.coord_grid = CoordGrid.from_poscar(poscar_file, supercell_dimensions=supercell_dimensions)
+
+            # a dummy variable for coord_grid's 2-d size
+            size = self.coord_grid.size_2d
+        else:
+            self.use_coord_grid = False
+
         self.name = name
         self.size = size
         self.structure = structure
@@ -42,7 +55,10 @@ class Surface:
 
     @property
     def allowed_sites(self):
-        if self.structure == "rectangle":
+        if self.use_coord_grid:
+            # TODO: build "fold names"
+            return self.coord_grid.fold_names
+        elif self.structure == "rectangle":
             return ["top"]
         elif self.structure == "hexagon":
             return ["top", "threefold"]
@@ -65,10 +81,14 @@ class Surface:
 
     def populate_sites(self):
         for site_name in self.allowed_sites:
-            if site_name == "threefold":
-                setattr(self, site_name, Site("3F", self))
-            elif site_name != "top":
+            if site_name != "top":
                 setattr(self, site_name, Site(site_name, self))
+
+            # TODO: verify the correct modifications for 3F sites.
+            # if site_name == "threefold":
+            #     setattr(self, site_name, Site("3F", self))
+            # elif site_name != "top":
+            #     setattr(self, site_name, Site(site_name, self))
 
     # @property
     def symbol(self):
