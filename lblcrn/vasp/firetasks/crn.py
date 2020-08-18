@@ -15,6 +15,7 @@ from fireworks import FiretaskBase, FWAction, explicit_serialize
 from monty.json import MontyDecoder, MontyEncoder
 import pymongo
 
+from lblcrn import lblcrn_echo_on
 from lblcrn.experiments.time_series import simulate_crn
 
 __author__ = 'Andrew Bogdan'
@@ -41,10 +42,11 @@ class BulkCRNSim(FiretaskBase):
         rsys = decode(self.get('reaction_system'))
         sim_options = self.get('sim_options', {})
 
-        crn_time_series = simulate_crn(
-            rsys=rsys,
-            **sim_options,
-        )
+        with lblcrn_echo_on():  # TODO: Does this even work?
+            crn_time_series = simulate_crn(
+                rsys=rsys,
+                **sim_options,
+            )
 
         out_path = os.path.join(os.getcwd(), 'crn_time_series.json')
         with open(out_path, 'w') as file:

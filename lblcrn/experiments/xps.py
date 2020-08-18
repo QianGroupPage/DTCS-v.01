@@ -120,6 +120,8 @@ class XPSObservable(monty.json.MSONable):
     @property
     def sim_gaussians(self) -> Optional[pd.DataFrame]:
         """The simulated gaussians of the XPS observable."""
+        if self.simulated is None:
+            return None
         # Gaussians have a species as their column name
         gauss_cols = []
         for col in self.simulated:
@@ -182,6 +184,8 @@ class XPSObservable(monty.json.MSONable):
     @property
     def deconv_gaussians(self) -> Optional[pd.DataFrame]:
         """The deconvoluted gaussians of the XPS observable."""
+        if self.deconvoluted is None:
+            return None
         # Gaussians have a species as their column name
         gauss_cols = []
         for col in self.deconvoluted:

@@ -1,3 +1,4 @@
+atomate
 git+ssh://github.com/rithvikp/lbl-crn.git#egg=lblcrn
 
 appnope
