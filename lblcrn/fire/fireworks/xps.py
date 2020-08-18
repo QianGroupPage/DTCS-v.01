@@ -7,8 +7,8 @@ from atomate.common.firetasks.glue_tasks import PassCalcLocs
 from atomate.utils.utils import env_chk, get_logger
 from fireworks import Firework
 
-from lblcrn.vasp.firetasks.xps import SimulateXPS
-from lblcrn.vasp.firetasks.parse_outputs import MsonToDb
+from lblcrn.fire.firetasks.xps import SimulateXPS
+from lblcrn.fire.firetasks.parse_outputs import MsonToDb
 
 __author__ = 'Andrew Bogdan'
 __email__ = 'andrewbogdan@lbl.gov'

@@ -5,18 +5,18 @@ to work with one another.
 # TODO(Andrew)
 """
 
-from atomate.utils.utils import env_chk, get_logger
+from atomate.utils.utils import get_logger
 from atomate.utils.utils import env_chk
 from atomate.vasp.database import VaspCalcDb
 from fireworks import explicit_serialize, FiretaskBase, FWAction
 from monty.json import MontyDecoder
 import pymongo
 
-
 __author__ = 'Andrew Bogdan'
 __email__ = 'andrewbogdan@lbl.gov'
 
 _logger = get_logger(__name__)
+
 
 @explicit_serialize
 class ForwardCoreEigen(FiretaskBase):  # TODO: Rename to PushCoreEigen?

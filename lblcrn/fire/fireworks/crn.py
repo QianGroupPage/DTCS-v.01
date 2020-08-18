@@ -3,7 +3,6 @@
 TODO(Andrew)
 """
 
-
 from typing import Optional
 
 from atomate.common.firetasks.glue_tasks import PassCalcLocs
@@ -11,8 +10,8 @@ from atomate.utils.utils import get_logger
 from fireworks import Firework
 
 from lblcrn import RxnSystem
-from lblcrn.vasp.firetasks.crn import BulkCRNSim
-from lblcrn.vasp.firetasks.parse_outputs import MsonToDb
+from lblcrn.fire.firetasks.crn import BulkCRNSim
+from lblcrn.fire.firetasks.parse_outputs import MsonToDb
 
 __author__ = 'Andrew Bogdan'
 __email__ = 'andrewbogdan@lbl.gov'

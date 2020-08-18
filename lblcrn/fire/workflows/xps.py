@@ -9,15 +9,13 @@ from uuid import uuid4
 from atomate.vasp.config import DB_FILE, VASP_CMD
 from atomate.vasp.fireworks.core import OptimizeFW, StaticFW
 from atomate.vasp.powerups import add_additional_fields_to_taskdocs
-from atomate.utils.utils import get_fws_and_tasks
 from fireworks import Firework, Workflow
-from monty.json import jsanitize
 from pymatgen.io.vasp.sets import MPRelaxSet, MPStaticSet
 
 from lblcrn import _echo
-from lblcrn.vasp.firetasks.glue_tasks import ForwardCoreEigen, ForwardSimConcs
-from lblcrn.vasp.fireworks.xps import XPSSimulateFW
-from lblcrn.vasp.fireworks.crn import CRNSimulateFW
+from lblcrn.fire.firetasks.glue_tasks import ForwardCoreEigen, ForwardSimConcs
+from lblcrn.fire.fireworks.xps import XPSSimulateFW
+from lblcrn.fire.fireworks.crn import CRNSimulateFW
 
 __author__ = 'Andrew Bogdan'
 __email__ = 'andrewbogdan@lbl.gov'
@@ -220,16 +218,16 @@ def get_wf_simulate_xps(  # TODO(Andrew) Typehints
 
     # TODO(Andrew): Experiment dummy and comparison fireworks.
 
-    # TODO: Apply common/necessary powerups, both user-supplied and built-in.
-    #  Use atomate.add_common_powerups and add_additional_fields_to_taskdocs
-    #  to add the metadata.
-
     # Make the workflow
     wf = Workflow(
         fireworks=fws,
         name=wf_name,
         metadata=wf_meta,
     )
+
+    # TODO: Apply common/necessary powerups, both user-supplied and built-in.
+    #  Use atomate.add_common_powerups.
+
     # Add the wf metadata to all VaspToDb's outputs so that ForwardCoreEigen
     #  knows what to look for.
     wf = add_additional_fields_to_taskdocs(wf, {

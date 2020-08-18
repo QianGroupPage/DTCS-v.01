@@ -13,7 +13,6 @@ from atomate.utils.utils import env_chk, get_logger
 from atomate.vasp.database import VaspCalcDb
 from fireworks.utilities.fw_serializers import DATETIME_HANDLER
 from fireworks import FiretaskBase, FWAction, explicit_serialize
-from monty.json import MontyDecoder, jsanitize
 
 __author__ = 'Andrew Bogdan'
 __email__ = 'andrewbogdan@lbl.gov'
