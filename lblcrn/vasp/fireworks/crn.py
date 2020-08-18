@@ -12,7 +12,7 @@ from fireworks import Firework
 
 from lblcrn import RxnSystem
 from lblcrn.vasp.firetasks.crn import BulkCRNSim
-from lblcrn.vasp.firetasks.parse_outputs import CRNSimToDb
+from lblcrn.vasp.firetasks.parse_outputs import MsonToDb
 
 __author__ = 'Andrew Bogdan'
 __email__ = 'andrewbogdan@lbl.gov'
@@ -52,7 +52,9 @@ class CRNSimulateFW(Firework):  # TODO: Move this out of the vasp subpackage.
         tasks = [
             crn_sim_task,
             PassCalcLocs(name=name),
-            CRNSimToDb(
+            MsonToDb(
+                in_fname='crn_time_series.json',
+                db_name='crn_sims',
                 db_file=db_file,
                 wf_meta=wf_meta,
             ),

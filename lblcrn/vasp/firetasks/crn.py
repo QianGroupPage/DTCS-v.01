@@ -43,14 +43,20 @@ class BulkCRNSim(FiretaskBase):
         sim_options = self.get('sim_options', {})
 
         with lblcrn_echo_on():  # TODO: Does this even work?
-            crn_time_series = simulate_crn(
+            cts = simulate_crn(
                 rsys=rsys,
                 **sim_options,
             )
 
+        # Make the output dict
+        out_dict = {
+            'cts': cts.as_dict(),
+        }
+
+        # Output MSON to cwd.
         out_path = os.path.join(os.getcwd(), 'crn_time_series.json')
         with open(out_path, 'w') as file:
-            json.dump(obj=crn_time_series.as_dict(),
+            json.dump(obj=out_dict,
                       fp=file,
                       cls=MontyEncoder, )
 

@@ -81,7 +81,7 @@ class SimulateXPS(FiretaskBase):
             )
             xps_observable = xps.resample(
                 x_range=np.arange(502.5, 512.5, 0.01),  # TODO: DEBUG
-                overwrite=True
+                overwrite=False,
             )
 
         out_dict = {
