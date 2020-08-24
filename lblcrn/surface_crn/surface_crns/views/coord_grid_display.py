@@ -10,7 +10,7 @@ class CoordGridDisplay(object):
     Displays a HexGrid object as a colored honeycomb.
     '''
 
-    def __init__(self, grid, colormap, min_x=0, min_y=0, pixels_per_node=5,
+    def __init__(self, grid, colormap, min_x=0, min_y=0, width=-1, height=-1, pixels_per_node=5,
                  display_text=False):
         """
          Parameters:
@@ -38,8 +38,8 @@ class CoordGridDisplay(object):
             self.colormap[k] = tuple([c / 255 for c in v])
         self.min_x = min_x
         self.min_y = min_y
-        self.max_x = 1800
-        self.max_y = 1200
+        self.max_x = 1800  # 1800
+        self.max_y = 1200  # 1200
         self.pixels_per_node = pixels_per_node
 
         self.display_text = display_text
@@ -50,8 +50,10 @@ class CoordGridDisplay(object):
         print(self.display_width, self.display_height)
 
     def recalculate_display_sizes(self):
+
+        # TODO: Try use the following for the aspect ratio of the pics
         # Calculate some internal variables
-        self.total_grid_width  = min(int(2 * self.grid_buffer + \
+        self.total_grid_width = min(int(2 * self.grid_buffer + \
                           (self.grid.x_size+0.5) * self.node_width), self.max_x)
         # Height = top buffer + bottom buffer + (height of one whole hex) +
         #           (row-height for each except the first row)
@@ -90,17 +92,19 @@ class CoordGridDisplay(object):
     pixels_per_node = property(**pixels_per_node())
 
     # TODO: render coord_grid.voronoi_pic
-    def render(self, parent_surface, x_pos = 0, y_pos = 0):
+    def render(self, parent_surface, x_pos=0, y_pos=0, width=-1, height=-1):
         debug = False
         '''
         Set up the display and make the first render. This must be called before
         any other updates.
             parent_surface: The surface onto which this grid will be displayed.
-            x_p os, y_pos: X and Y coordinates of the upper-left corner of this
+            x_pos, y_pos: X and Y coordinates of the upper-left corner of this
                             grid relative to parent_surface.
         '''
-        self.x_pos = x_pos
+        self.x_pos = x_pos - 200
         self.y_pos = y_pos
+
+        print(f"Desired width {width}; desired height {height}")
 
         print("Game grid starting position", x_pos, y_pos, f"width={self.display_width}, height={self.display_height}")
         # Create display surface
@@ -109,6 +113,22 @@ class CoordGridDisplay(object):
                   str(y_pos) + ") with width " + str(self.display_width) +
                   " and height " + str(self.display_height) + ".")
         self.parent_surface = parent_surface
+
+        display_width = self.display_width
+        max_height_to_width = display_width / width * height
+
+        display_height = self.display_height
+        max_width_to_height = display_height / height * width
+
+
+        print(f"Grid picture width={max_width_to_height}, height={display_height}")
+
+        actual_width = display_width
+        actual_height = max_height_to_width
+        self.total_grid_height = actual_height
+        self.total_grid_width = actual_width
+
+        # self.display_surface = parent_surface.subsurface((x_pos, y_pos, actual_width, actual_height))
         self.display_surface = parent_surface.subsurface((x_pos, y_pos, self.display_width, self.display_height))
 
         # Initial render
@@ -128,6 +148,16 @@ class CoordGridDisplay(object):
         plt.gcf().set_dpi(self.fig_dpi)
         plt.gcf().set_figheight((self.total_grid_height - 2*self.grid_buffer) / self.fig_dpi)
         plt.gcf().set_figwidth((self.total_grid_width - 2*self.grid_buffer) / self.fig_dpi)
+
+        # Block to prevent white spaces from showing
+        plt.gca().set_axis_off()
+        plt.subplots_adjust(top=1, bottom=0, right=1, left=0,
+                            hspace=0, wspace=0)
+        plt.margins(0, 0)
+        plt.gca().xaxis.set_major_locator(plt.NullLocator())
+        plt.gca().yaxis.set_major_locator(plt.NullLocator())
+    # NullLocator    plt.savefig("filename.pdf", bbox_inches='tight',
+    #                 pad_inches=0)
         print("intended", self.total_grid_width, self.total_grid_height)
         # TODO: fix the sizing
         fig = self.grid.voronoi_pic(ax=plt.gca(), return_fig=True, color_index=self.colormap, set_fig_size=False)

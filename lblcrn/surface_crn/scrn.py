@@ -1,17 +1,17 @@
-from lblcrn.surface_crn.surface_crns import SurfaceCRNQueueSimulator
-
-from lblcrn.surface_crn.surface_crns.simulators.queue_simulator import *
-from lblcrn.surface_crn.surface_crns.readers.manifest_readers import read_manifest
-from lblcrn.surface_crn.surface_crns.options.option_processor import SurfaceCRNOptionParser
-from lblcrn.surface_crn.results import Results
-from lblcrn.common import ipython_visuals
-from lblcrn.surface_crn.api_adapter.api_adapt import generate_manifest_stream, generate_surface,\
-    HexGridPlusIntersectionDisplay
-from lblcrn.surface_crn.surface_crns.views.coord_grid_display import CoordGridDisplay
-from lblcrn.surface_crn.ensemble import Ensemble
 import os
 from shutil import rmtree
 from IPython.display import clear_output
+from lblcrn.common import ipython_visuals
+from lblcrn.surface_crn.api_adapter.api_adapt import generate_manifest_stream, \
+    generate_surface, HexGridPlusIntersectionDisplay
+from lblcrn.surface_crn.ensemble import Ensemble
+from lblcrn.surface_crn.results import Results
+from lblcrn.surface_crn.surface_crns import SurfaceCRNQueueSimulator
+from lblcrn.surface_crn.surface_crns.simulators.queue_simulator import *
+from lblcrn.surface_crn.surface_crns.readers.manifest_readers import read_manifest
+from lblcrn.surface_crn.surface_crns.options.option_processor import SurfaceCRNOptionParser
+from lblcrn.surface_crn.surface_crns.models.coord_grid import CoordGrid
+from lblcrn.surface_crn.surface_crns.views.coord_grid_display import CoordGridDisplay
 
 
 def scrn_simulate_single_run(rxns, time_max=100, lattice=None, display_class=None, video=False, spectra_in_video=True,
@@ -40,7 +40,15 @@ def scrn_simulate_single_run(rxns, time_max=100, lattice=None, display_class=Non
         species_tracked = list(rxns.get_symbols())
 
     # Provide a grid structure for use in place of the grid structure in the rules manifest.
-    if not lattice:
+    if not lattice and rxns.surface.use_coord_grid:
+        # For CoordGrid, generate_surface function updates the surface object in accordance with
+        # initial concentration and default species on the sites specified by the rules file.
+        generate_surface(rsys=rxns)
+        surface = CoordGrid.from_poscar(rxns.surface.poscar_file,
+                                        supercell_dimensions=rxns.surface.supercell_dimensions)
+        surface.set_initial_concentrations(rxns.surface.initial_species)
+        surface.set_default_species(rxns.surface.default_names)
+    elif not lattice:
         surface = generate_surface(rsys=rxns)
     else:
         surface = lattice
@@ -69,7 +77,16 @@ def scrn_simulate_single_run(rxns, time_max=100, lattice=None, display_class=Non
         # Generate the file stream again after it's used.
         if not manifest_file:
             manifest = generate_manifest_stream(rxns, time_max, random_seed_scrn=rng_seed, video_path=video_path)
-        if not lattice:
+        # Provide a grid structure for use in place of the grid structure in the rules manifest.
+        if not lattice and rxns.surface.use_coord_grid:
+            # For CoordGrid, generate_surface function updates the surface object in accordance with
+            # initial concentration and default species on the sites specified by the rules file.
+            generate_surface(rsys=rxns)
+            surface = CoordGrid.from_poscar(rxns.surface.poscar_file,
+                                            supercell_dimensions=rxns.surface.supercell_dimensions)
+            surface.set_initial_concentrations(rxns.surface.initial_species)
+            surface.set_default_species(rxns.surface.default_names)
+        elif not lattice:
             surface = generate_surface(rsys=rxns)
         else:
             surface = lattice
@@ -83,7 +100,6 @@ def scrn_simulate_single_run(rxns, time_max=100, lattice=None, display_class=Non
                                                    running_average=spectra_average_duration,
                                                    spectra_max_conc=r.df_raw.to_numpy().max())
     r.video = video_link
-
     # TODO: warn the user if termination is early.
     return r
 
@@ -275,5 +291,4 @@ def simulate_without_display(manifest_file, lattice, species_tracked, rxns, grou
     else:
         ipython_visuals.update_progress(last_time_stamp / opts.max_duration,
                                         f"Simulation terminated early at {last_time_stamp:.1f} s", terminating=True)
-
     return times, concs

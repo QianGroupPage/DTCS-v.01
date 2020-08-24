@@ -228,7 +228,7 @@ def simulate_surface_crn(manifest_filename, group_selection_seed, display_class=
     else:
         raise Exception("Unrecognized grid type '" + opts.grid_type + "'")
 
-    legend_display = LegendDisplay(colormap = opts.COLORMAP)
+    legend_display = LegendDisplay(colormap=opts.COLORMAP)
 
     # Width only requires legend and grid sizes to calculate
     display_width = grid_display.display_width + legend_display.display_width
@@ -320,9 +320,17 @@ def simulate_surface_crn(manifest_filename, group_selection_seed, display_class=
     legend_display.render(display_surface, x_pos = 0,
                                           y_pos = time_display.y_pos +
                                                   time_display.display_height)
-    grid_display.render(display_surface, x_pos = legend_display.display_width,
-                                         y_pos = time_display.y_pos +
-                                                 time_display.display_height)
+    #  TODO: - 200 is a trial for x_pos
+
+    # legend_display.display_height is intended to be a very small number.
+    grid_display.render(display_surface, x_pos=legend_display.display_width,
+                        y_pos=time_display.y_pos + time_display.display_height,
+                        width=time_display.display_width - legend_display.display_width,
+                        height=legend_display.display_height * 4)
+    # grid_display.render(display_surface, x_pos=time_display.x_pos,
+    #                                      y_pos=time_display.y_pos +
+    #                                              time_display.display_height
+    #                                      )
 
     if opts.saving_movie:
         simulation.display_surface_size = display_height * display_width

@@ -1,4 +1,3 @@
-from lblcrn.surface_crn.surface_crns.base import *
 import pygame
 import math
 '''
@@ -151,7 +150,7 @@ class SquareGridDisplay(object):
         return locals()
     pixels_per_node = property(**pixels_per_node())
 
-    def render(self, parent_surface, x_pos=0, y_pos=0):
+    def render(self, parent_surface, x_pos=0, y_pos=0, width=0, height=0):
         debug = False
         '''
         Set up the display and make the first render. This must be called before
@@ -303,7 +302,7 @@ class HexGridDisplay(object):
         return locals()
     pixels_per_node = property(**pixels_per_node())
 
-    def render(self, parent_surface, x_pos = 0, y_pos = 0):
+    def render(self, parent_surface, x_pos = 0, y_pos = 0, width=0, height=0):
         debug = False
         '''
         Set up the display and make the first render. This must be called before
@@ -505,7 +504,7 @@ class ParallelEmulatedSquareGridDisplay(object):
         return locals()
     pixels_per_node = property(**pixels_per_node())
 
-    def render(self, parent_surface, x_pos = 0, y_pos = 0):
+    def render(self, parent_surface, x_pos=0, y_pos=0, width=0, height=0):
         debug = False
         '''
         Set up the display and make the first render. This must be called before

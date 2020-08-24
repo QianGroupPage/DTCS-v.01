@@ -1,7 +1,8 @@
 from lblcrn.surface_crn.surface_crns.base.node import Node
 from lblcrn.surface_crn.connectivity.triangulation import show_triangulation, poscar_to_positions
 from lblcrn.surface_crn.connectivity.neighbors import voronoi_neighbors_dict
-from lblcrn.surface_crn.connectivity.voronoi import voronoi_plot_2d, voronoi_finite_polygons_2d
+from lblcrn.surface_crn.connectivity.voronoi import voronoi_plot_2d, voronoi_finite_polygons_2d, \
+    VoronoiGraph, create_supercell
 from lblcrn.common.num_to_word import num2word
 from collections import Counter
 from ase import Atoms, Atom
@@ -9,6 +10,7 @@ from scipy.spatial import Voronoi
 import numpy as np
 import json
 import math
+import random
 
 
 class CoordGrid(object):
@@ -17,7 +19,7 @@ class CoordGrid(object):
 
     Only allows reactions between directly-adjacent locations, and every edge has equal weight.
     """
-    def __init__(self, points, distort_factor=1.1, ignore_threhold=1, supercell_dimensions=1):
+    def __init__(self, points=[], vor=None, distort_factor=1.1, ignore_threhold=1, supercell_dimensions=1):
         """
         :param points: a numpy array where each row is a coordinate for a top site.
         """
@@ -25,12 +27,18 @@ class CoordGrid(object):
         self.nodes = []
         self.nodes_by_site = {}
         self.id_to_node = {}
-        #  TODO: currently this does not use distort factor; so factor it out.
-        tri, points = show_triangulation(points=points, distort_factor=distort_factor,
-                                         ignore_threhold=ignore_threhold)
-        # Below is the old coding
-        # self._populate_grid_delaunay(neighbors_dict(tri, points))
-        self.vor = None
+        if vor is None:
+            #  TODO: currently this does not use distort factor; so factor it out.
+            tri, points = show_triangulation(points=points, distort_factor=distort_factor,
+                                            ignore_threhold=ignore_threhold)
+
+            #  TODO: convert points into ASE cell, apply supercell, and then cut off redundant atoms, vertices, and ridges.
+            # Below is the old coding
+            # self._populate_grid_delaunay(neighbors_dict(tri, points))
+            self.vor = Voronoi(points)
+        else:
+            self.vor = vor
+            points = vor.points
         self._populate_grid_voronoi(points)
         self._number_grid()
 
@@ -54,8 +62,23 @@ class CoordGrid(object):
         :param ignore_threhold:
         :return:
         """
-        return CoordGrid(poscar_to_positions(poscar_path, supercell_dimensions), distort_factor=distort_factor,
+        # super_positions = poscar_to_positions(poscar_path, supercell_dimensions * 3)
+        allowed_positions, atoms = poscar_to_positions(poscar_path, supercell_dimensions * 1)
+
+        tri, allowed_positions = show_triangulation(points=allowed_positions, distort_factor=distort_factor,
+                                         ignore_threhold=ignore_threhold)
+        # points_to_delete = [point for point in super_positions if point not in allowed_positions]
+
+        vor = VoronoiGraph(create_supercell(allowed_positions, cell=atoms.cell))
+        vor.filter_points(allowed_positions)
+        # print("final points", vor.points)
+        new_grid = CoordGrid(vor=vor, distort_factor=distort_factor,
                          ignore_threhold=ignore_threhold, supercell_dimensions=supercell_dimensions)
+
+
+
+        new_grid.vor = vor
+        return new_grid
 
     def _populate_grid_delaunay(self, neighbors_dict):
         """
@@ -84,9 +107,7 @@ class CoordGrid(object):
 
         :param points:
         """
-        vor = Voronoi(points)
-        self.vor = vor
-        neighbors_dict = voronoi_neighbors_dict(vor)
+        neighbors_dict = voronoi_neighbors_dict(self.vor)
 
         nodes = {}
         #  TODO: currently self.nodes_by_site["Top"][i] corresponds to points[i] and vor.points[i]
@@ -131,7 +152,7 @@ class CoordGrid(object):
         #         self.nodes.append(new_node)
 
         self.nodes_by_site["Intersection"] = []
-        for loc in vor.vertices:
+        for loc in self.vor.vertices:
             loc = tuple(c for c in loc)
             new_node = Node(position=loc, state="Intersection")
             nodes[loc] = new_node
@@ -148,7 +169,7 @@ class CoordGrid(object):
                 current_node.neighbors.append((nodes[loc], 1))
 
             for intersection_index in individual_neighbors_dict["Intersection"]:
-                loc = tuple(c for c in vor.vertices[intersection_index])
+                loc = tuple(c for c in self.vor.vertices[intersection_index])
                 current_node.neighbors.append((nodes[loc], 1))
 
             for bridge_index in individual_neighbors_dict["Bridge"]:
@@ -156,7 +177,7 @@ class CoordGrid(object):
                 current_node.neighbors.append((bridge_neighbor_node, 1))
 
         for i, individual_neighbors_dict in enumerate(neighbors_dict["Intersection"]):
-            loc = tuple(c for c in vor.vertices[i])
+            loc = tuple(c for c in self.vor.vertices[i])
             current_node = nodes[loc]
 
             for top_index in individual_neighbors_dict["Top"]:
@@ -236,6 +257,35 @@ class CoordGrid(object):
             self._get_node(node_id).state = node_state
         self.clear_timestamps()
 
+    def set_initial_concentrations(self, initial_concentrations, random_seed=30):
+        """
+        Set the initial concentrations of all species following the dictionary
+        of initial_concentrations.
+        """
+        print(initial_concentrations)
+
+        random.seed(random_seed)
+        for fold_name, d in initial_concentrations.items():
+            nodes = self.nodes_by_fold_name[fold_name]
+            species = []
+            for species_name, species_concentration in d.items():
+                species.extend([species_name] * species_concentration)
+            indices = random.sample(range(len(nodes)), len(species))
+            chosen = [nodes[i] for i in indices]
+            for i, n in enumerate(chosen):
+                n.state = species[i]
+
+        for node in self:
+            print(node.node_id, node.state)
+
+    def set_default_species(self, default_species_dict):
+        """
+        Set the default states of the grid according to default_species_dict.
+        """
+        for site_name, species_name in default_species_dict.items():
+            for node in self.nodes_by_fold_name[site_name]:
+                node.state = species_name
+
     def print_connectivity_dictionary(self):
         """
         Produce and then pretty print the connectivity dictionary
@@ -252,7 +302,8 @@ class CoordGrid(object):
         if not ax:
             import matplotlib.pyplot as plt
             ax = plt.gca()
-        ax.set_aspect('equal', adjustable='box')
+        #     TODO: this may be screwing up the storage
+        # ax.set_aspect('equal', adjustable='box')
         fig = voronoi_plot_2d(vor, ax=ax, point_size=2, show_points=False)
 
         for node in self.nodes_by_site["Intersection"]:

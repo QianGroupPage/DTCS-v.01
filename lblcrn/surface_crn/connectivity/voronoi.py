@@ -1,5 +1,10 @@
 import numpy as np
+from scipy.spatial import Voronoi
 import copy
+from ase import Atoms
+
+def produce_voronoi(points):
+    return Voronoi(points)
 
 
 def voronoi_infinite_regions(vor):
@@ -270,3 +275,281 @@ def voronoi_finite_polygons_2d(vor, radius=None):
         new_regions.append(new_region_vertices)
 
     return new_regions, np.asarray(new_vertices)
+
+
+def fold_numbers(vor):
+    """
+    Return the fold numbers of the intersection nodes.
+    """
+
+    counts = [0 for _ in vor.vertices]
+
+    for v1_index, v2_index in vor.ridge_vertices:
+        if v1_index >= 0:
+            counts[v1_index] += 1
+        if v2_index >= 0:
+            counts[v2_index] += 1
+    return np.unique(counts).tolist()
+
+def voronoi_include_edge(points):
+    """
+    Produce a Voronoi object, where the regions at the edge are presumed to be same as the regions in the center.
+    :param points:
+    :return:
+    """
+    super_cell_positions = (Atoms("top", points) * (3, 3, 3)).get_positions()
+    vor = Voronoi(super_cell_positions)
+    included_points = [i for i in len(vor.points) if vor.points[i] in points]
+
+    new_ridges = []
+    new_ridge_points = []
+    for i, vertices in enumerate(vor.ridge_vertices):
+        vertex_1, vertex_2 = vertices
+        if vertex_1 in included_points or vertex_2 in included_points:
+            new_ridges.append(vertices)
+            new_ridge_points.append(vor.ridge_points[i])
+
+    # if a vertex is not adjacent to any point, don't include it.
+    new_regions = []
+    for i, region_index in enumerate(vor.point_region):
+        if i in included_points:
+            new_regions.append(vor.regions[region_index])
+
+
+def create_supercell(points, cell=None, supercell_factor=(2, 2, 1)):
+    points = points.tolist()
+    points = [tuple(row + [0]) for row in points]
+
+    atoms_positive = Atoms("O" * len(points), positions=points, cell=cell)
+    pos_positions = (atoms_positive * (2, 2, 1)).get_positions()
+    atoms_neg = Atoms("O" * len(pos_positions), positions=pos_positions, cell=cell*(-1))
+
+    positive_points = [tuple(row[:-1]) for row in (atoms_positive * supercell_factor).get_positions()]
+    negative_points = [tuple(row[:-1]) for row in (atoms_neg * supercell_factor).get_positions()]
+    new_points = np.unique(np.array(list(set(tuple(row) for row in list(set(negative_points + positive_points))))),
+                           axis=0)
+    new_points = np.array(list(set(tuple(round(r, 3) for r in row) for row in new_points)))
+    return new_points
+
+
+class VoronoiGraph:
+    def __init__(self, points):
+        """
+        A 2-d array of points.
+        :param points:
+        """
+        vor = Voronoi(points)
+
+        # Each dictionary attribute shall have immutable keys.
+        self.points_dict = {i: p for i, p in enumerate(vor.points)}
+
+        self.points = VoronoiGraph.index_dict_to_arrays(self.points_dict)
+
+        self.vertices_dict = {i: v for i, v in enumerate(vor.vertices)}
+        self.vertices = VoronoiGraph.index_dict_to_arrays(self.vertices_dict)
+
+        self.regions_dict = {i: r for i, r in enumerate(vor.regions)}
+        self.regions = VoronoiGraph.index_dict_to_arrays(self.regions_dict)
+        self.point_region_dict = {i: region_index for i, region_index in enumerate(vor.point_region)}
+        self.point_region = VoronoiGraph.index_dict_to_arrays(self.point_region_dict)
+
+        # A dictionary of the points connected to each vertex.
+        self.vertex_points_dict = self.compute_vertex_points()
+
+        self.ridge_points = vor.ridge_points
+        self.ridge_vertices = vor.ridge_vertices
+        self.furthest_site = vor.furthest_site
+
+    @staticmethod
+    def index_dict_to_arrays(index_dict):
+        """
+        Update self.points according to points_dict.
+        """
+        arr = []
+        for k in sorted(index_dict):
+            arr.append(index_dict[k])
+        return np.array(arr)
+
+    def compute_vertex_points(self):
+        """
+        Compute the list of points adjacent to each vertex.
+        """
+        new_vertex_points_dict = {}
+        for point_index, region_index in self.point_region_dict.items():
+            for vertex_index in self.regions_dict[region_index]:
+                if vertex_index not in new_vertex_points_dict:
+                    new_vertex_points_dict[vertex_index] = []
+                new_vertex_points_dict[vertex_index].append(point_index)
+        return new_vertex_points_dict
+
+    def delete_vertex_point(self, vertex_index, point_index):
+        """
+        Delete a pair of vertex_index and its adjacent point_index from vertex_point_dict.
+        If the last point_index of any vertex_index is deleted, delete the vertex_index from the dictionary.
+        """
+        # -1 won't count as a valid vertex index
+        if vertex_index == -1:
+            return
+        point_indices = self.vertex_points_dict[vertex_index]
+        self.vertex_points_dict[vertex_index] = [i for i in point_indices if i != point_index]
+        if self.vertex_points_dict[vertex_index] == []:
+            #  TODO: this should be popping out everything?
+            self.vertex_points_dict.pop(vertex_index)
+
+            self.vertices_dict.pop(vertex_index)
+
+    def filter_points(self, points):
+        """
+        Delete points whose coordinates match any row in 2-d array points.
+        """
+        points = [tuple(round(r, 3) for r in row) for row in points]
+        new_ridge_vertices = []
+        new_ridge_points = []
+        for i, vertices in enumerate(self.ridge_vertices):
+            ridge_point_1, ridge_point_2 = self.ridge_points[i]
+            if tuple(self.points_dict[ridge_point_1]) in points or tuple(self.points[ridge_point_2]) in points:
+                new_ridge_vertices.append(vertices)
+
+                # TODO: one of the points could be outside of any valid region.
+                new_ridge_points.append(self.ridge_points[i])
+
+        new_points_dict = {}
+        for point_index, point in self.points_dict.items():
+            if tuple(point) in points:
+                new_points_dict[point_index] = point
+            else:
+                region_index = self.point_region_dict.pop(point_index)
+
+                # Get rid of the vertex-point relationships based on this point
+                if region_index in self.regions_dict:
+                    popped_region = self.regions_dict.pop(region_index)
+                    for vertex_index in popped_region:
+                        self.delete_vertex_point(vertex_index, point_index)
+
+        self.ridge_vertices = new_ridge_vertices
+        self.ridge_points = new_ridge_points
+        self.points_dict = new_points_dict
+        self.reindex()
+
+    def delete_points(self, points):
+        """
+        Delete points whose coordinates match any row in 2-d array points.
+        """
+        print("start deleting the points")
+        points = [tuple(row) for row in points]
+        new_ridge_vertices = []
+        new_ridge_points = []
+        for i, vertices in enumerate(self.ridge_vertices):
+            ridge_point_1, ridge_point_2 = self.ridge_points[i]
+            print(f'deleting vertex number {i}')
+            if tuple(self.points_dict[ridge_point_1]) in points or tuple(self.points[ridge_point_2]) in points:
+                new_ridge_vertices.append(vertices)
+                new_ridge_points.append(self.ridge_points[i])
+
+        print("finish calculating the ridge points")
+        new_points_dict = {}
+        for point_index, point in self.points_dict.items():
+            if tuple(point) in points:
+                region_index = self.point_region_dict.pop(point_index)
+
+                popped_region = self.regions_dict.pop(region_index)
+                for vertex_index in popped_region:
+                    self.delete_vertex_point(vertex_index, point_index)
+            else:
+                new_points_dict[point_index] = point
+        # self.reindex()
+        print("points deletion finished")
+
+    def reindex(self):
+        """
+        Give sequential indices to all points and vertices, intended for use after removals within the VoronoiGraph.
+        """
+        point_indexing_dict = {original_index: new_index for new_index,
+                               original_index in enumerate(sorted(self.points_dict))}
+
+        vertex_indexing_dict = {original_index: new_index for new_index,
+                                original_index in enumerate(sorted(self.vertices_dict))}
+
+        region_indexing_dict = {original_index: new_index for new_index,
+                                original_index in enumerate(sorted(self.regions_dict))}
+
+        for region in self.regions_dict.values():
+            for i in range(len(region)):
+                region[i] = vertex_indexing_dict[region[i]] if region[i] != -1 else -1
+
+        for point_index in self.point_region_dict:
+            if self.point_region_dict[point_index] in region_indexing_dict:
+                self.point_region_dict[point_index] = region_indexing_dict[self.point_region_dict[point_index]]
+            else:
+                print(f"{self.point_region_dict[point_index]} not in region_indexing_dict")
+
+        for i in range(len(self.ridge_points)):
+            new_points = []
+            for point_index in self.ridge_points[i]:
+                if point_index in point_indexing_dict:
+                    new_points.append(point_indexing_dict[point_index])
+                else:
+                    new_points.append(-1)
+            self.ridge_points[i] = new_points
+
+        for i in range(len(self.ridge_vertices)):
+            new_vertices = []
+            for vertex_index in self.ridge_vertices[i]:
+                if vertex_index == -1:
+                    new_vertices.append(-1)
+                else:
+                    new_vertices.append(vertex_indexing_dict[vertex_index])
+
+            # TODO: fix ridge indexing error.
+            self.ridge_vertices[i] = new_vertices
+
+        new_vertex_points_dict = {}
+        for vertex_index, points in self.vertex_points_dict.items():
+            if vertex_index != -1:
+                new_points = []
+                for point_index in points:
+                    if point_index in point_indexing_dict:
+                        new_points.append(point_index)
+
+                new_vertex_points_dict[vertex_indexing_dict[vertex_index]] = new_points
+        self.vertex_points_dict = new_vertex_points_dict
+
+        new_points_dict = {}
+        for new_point_index, old_point_index in enumerate(sorted(self.points_dict)):
+            new_points_dict[new_point_index] = self.points_dict[old_point_index]
+        self.points_dict = new_points_dict
+
+        new_vertices_dict = {}
+        for new_vertex_index, old_vertex_index in enumerate(sorted(self.vertices_dict)):
+            new_vertices_dict[new_vertex_index] = self.vertices_dict[old_vertex_index]
+        self.vertices_dict = new_vertices_dict
+
+        new_regions_dict = {}
+        for new_region_index, old_region_index in enumerate(sorted(self.regions_dict)):
+            new_regions_dict[new_region_index] = self.regions_dict[old_region_index]
+        self.regions_dict = new_regions_dict
+
+        self.points = VoronoiGraph.index_dict_to_arrays(self.points_dict)
+        self.vertices = VoronoiGraph.index_dict_to_arrays(self.vertices_dict)
+        self.regions = VoronoiGraph.index_dict_to_arrays(self.regions_dict)
+        self.point_region = VoronoiGraph.index_dict_to_arrays(self.point_region_dict)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

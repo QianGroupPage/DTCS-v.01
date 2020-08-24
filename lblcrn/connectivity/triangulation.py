@@ -92,9 +92,8 @@ def poscar_to_positions(file_path, supercell_dimensions=1):
             supercell_dimensions = tuple(supercell_dimensions * 3)
     else:
         supercell_dimensions = tuple(supercell_dimensions for _ in range(3))
-    atoms = read_vasp(file_path) * supercell_dimensions
-    # TODO: plus atoms.cell into the atoms obbject used in voronoi/create_supercell
-    return atoms.get_positions(), atoms
+    cell = read_vasp(file_path) * supercell_dimensions
+    return cell.get_positions()
 
 
 def grid_size(points):

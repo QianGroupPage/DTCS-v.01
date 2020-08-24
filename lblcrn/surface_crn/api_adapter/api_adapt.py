@@ -80,10 +80,9 @@ def generate_surface(rsys, random_seed=30):
         return None
 
     if rsys.surface.use_coord_grid:
-        species = {site_name: [] for site_name in rsys.surface.allowed_sites}
-
-        for node in rsys.surface.coord_grid.nodes_by_fold_name["top"]:
-            node.state = rsys.surface.name
+        #  TODO: this is very horrible design!
+        rsys.surface.set_default_name("top", rsys.surface.name)
+        initial_concentrations = {site_name: {} for site_name in rsys.surface.allowed_sites}
 
         for c in rsys.schedules:
             # TODO
@@ -93,24 +92,16 @@ def generate_surface(rsys, random_seed=30):
 
             if not rsys.species_manager.species_from_symbol(c.symbol).site or \
                    rsys.species_manager.species_from_symbol(c.symbol).site.name == "top":
-                species["top"].extend([str(c.symbol) for _ in range(int(str(c.concentration)))])
+                initial_concentrations["top"][str(c.symbol)] = int(str(c.concentration))
             else:
-                # rsys.species_manager.species_from_symbol(c.symbol).site.name == "3F":
-                species[rsys.species_manager.species_from_symbol(c.symbol).site.name].extend([str(c.symbol)
-                        for _ in range(int(str(c.concentration)))])
+                initial_concentrations[rsys.species_manager.species_from_symbol(c.symbol).site.name][str(c.symbol)] = \
+                        int(str(c.concentration))
+            rsys.surface.set_initial_concentrations(initial_concentrations)
 
             # TODO: rename the sites in coord_grid
-            random.seed(random_seed)
-            for k, v in species.items():
-                nodes = rsys.surface.coord_grid.nodes_by_fold_name[k]
-                indices = random.sample(range(len(nodes)), len(v))
-                chosen = [nodes[i] for i in indices]
-                for i, n in enumerate(chosen):
-                    n.state = species[k][i]
-
-        return rsys.surface.coord_grid
+        return None
     elif rsys.surface.structure == "hexagon":
-        species = {"3F": [], "top": []}
+        species = {"threefold": [], "top": []}
         for c in rsys.schedules:
             # TODO
             if isinstance(c, Schedule) and not isinstance(c, Conc):
@@ -120,8 +111,8 @@ def generate_surface(rsys, random_seed=30):
             if not rsys.species_manager.species_from_symbol(c.symbol).site or \
                    rsys.species_manager.species_from_symbol(c.symbol).site.name == "top":
                 species["top"].extend([str(c.symbol) for _ in range(int(str(c.concentration)))])
-            elif rsys.species_manager.species_from_symbol(c.symbol).site.name == "3F":
-                species["3F"].extend([str(c.symbol) for _ in range(int(str(c.concentration)))])
+            elif rsys.species_manager.species_from_symbol(c.symbol).site.name == "threefold":
+                species["threefold"].extend([str(c.symbol) for _ in range(int(str(c.concentration)))])
 
         # Initiate the hexagonal grid
         rows = rsys.surface.size[0]
@@ -129,15 +120,15 @@ def generate_surface(rsys, random_seed=30):
         surface = HexGridPlusIntersections(rows, cols)
         for n in surface:
             if n.is_intersection:
-                n.state = "3F"
+                n.state = "threefold"
             else:
                 n.state = rsys.surface.name
 
         # Popultate the structure with initial atoms.
-        initial_nodes = {"3F": [], "top": []}
+        initial_nodes = {"threefold": [], "top": []}
         for n in surface:
             if n.is_intersection:
-                initial_nodes["3F"].append(n)
+                initial_nodes["threefold"].append(n)
             else:
                 initial_nodes["top"].append(n)
 
