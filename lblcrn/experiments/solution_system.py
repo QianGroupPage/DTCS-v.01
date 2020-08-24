@@ -180,6 +180,8 @@ class XPSSystemRunner:
         for d in initializer_data:
             d.constants = tpc.constants(d.temp, d.pressure)
             print(d.constants)
+
+        self.initializer_data = initializer_data
                 
 
     def simulate(self, index: int):

@@ -52,7 +52,7 @@ class XPSTPCorrelator:
 
     def _corr_g(self, temp: float, pressure: float, h: float, s: float) -> float:
         corr_g_t = (self.zpe + h - (s * temp) / 1000) / kcal_mol_ev_conversion_factor
-        corr_g_p = boltzmann_constant*temp * np.log(pressure / standard_pressure)
+        corr_g_p = boltzmann_constant * temp * np.log(pressure / standard_pressure)
         return corr_g_t + corr_g_p
         
 
@@ -60,9 +60,6 @@ class XPSTPCorrelator:
         """Parse the temperature and pressure specification jaguar file. Calculating corrG.
         """
         zpe: float = 0.0 # kcal/mol
-
-        # self.h = {298.15: 2.371, 573.15: 4.624}
-        # self.s = {298.15: 45.448, 573.15:50.785}
 
         f = open(self.tp_file)
 
