@@ -5,6 +5,7 @@ from lblcrn.crn_sym import reaction
 import lblcrn.experiments.xps_io as xps_io
 import lblcrn.experiments.xps as xps
 from lblcrn.experiments.tp_correlation import XPSTPCorrelator
+from lblcrn.experiments.time_series import CRNTimeSeries
 import pandas as pd
 
 class SolutionSystem:
@@ -17,7 +18,7 @@ class SolutionSystem:
         systems: A list of lists of XPS experiments.
         multipliers: A list of multipliers used in simulation.
     """
-    def __init__(self, experiments: List, experimental_files: List[str], multipliers: List[float]):
+    def __init__(self, experiments: List, time_series: List, experimental_files: List[str], multipliers: List[float]):
         """Create a new solution system
 
         Given a list of lists of XPSExperiments (for all variations that are simulated) and a
@@ -25,6 +26,7 @@ class SolutionSystem:
         objects and the data is then auto-scaled.
         """
         self.systems = experiments
+        self.time_series = time_series
 
         # Iterate through XPS classes, adding experimental data.
         for i, f in enumerate(experimental_files):
@@ -61,10 +63,14 @@ class SolutionSystem:
     def max_scaling_factor(self) -> int:
         """Find the maximum peak and return the scaling factor for that data
         and the system index."""
+        # If there is no experimental data, do not rescale
+        if self.systems[0][0].exp_input is None:
+            return 1, 0
+
         self.systems[0][0].scale_factor = 1
         max_env = max(self.systems[0][0].sim_envelope)
         max_index = -1
-        max_exp = max(self.systems[0][0].experimental)
+        max_exp = max(self.systems[0][0].exp_input)
 
         # TODO: I changed this as little as possible but it seems to put
         # TODO: envelope to be larger than peak.
@@ -89,6 +95,9 @@ class SolutionSystem:
     
     def __getitem__(self, index):
         return self.systems[index]
+
+    def time_series_at(self, sys: int, exp: int) -> CRNTimeSeries:
+        return self.time_series[sys][exp]
     
     def plot(self, index):
         cols = len(self.multipliers)
@@ -98,7 +107,7 @@ class SolutionSystem:
 
         for j, ax in enumerate(fig.axes):
             plt.sca(ax)
-            self.systems[index][j].plot(show=False)
+            self.systems[index][j].plot()
             # TODO(Rithvik) I might have broken this line, sorry.
             plt.title(f'Eq: {str(int(j / rows))} Const: {str(j % cols)}')
         plt.show()
@@ -116,7 +125,7 @@ class XPSInitializationData:
         pressure: The pressure associated with this experiment.
         experimental_file: The location of the experimental XPS file to be used for comparison
     """
-    def __init__(self, title: str, experimental_file: str, temp: float, pressure: float, constants: List[float] = None):
+    def __init__(self, title: str, temp: float, pressure: float, experimental_file: str = None, constants: List[float] = None):
         self.title = title
         self.constants = constants
         self.experimental_file = experimental_file
@@ -153,6 +162,7 @@ class XPSSystemRunner:
         self.time = time
         self.multipliers = multipliers
         self.solutions = [None for _ in range(len(initializer_data))]
+        self.time_series = [None for _ in range(len(initializer_data))]
         self.complete = [False for _ in range(len(initializer_data))]
         self.tp_correlator = tp_correlator
 
@@ -188,6 +198,7 @@ class XPSSystemRunner:
         # Test code that will be moved into a module
         data = self.initializer_data[index]
         sols = []
+        cts = []
 
         for i in range(len(data.constants)):
             for j in range(len(self.multipliers)):
@@ -195,14 +206,16 @@ class XPSSystemRunner:
                 scaled[i] *= self.multipliers[j]
 
                 rsys = self.rsys_generator(scaled)
-                s = xps.simulate_xps(rsys, time=self.time, title=data.title + " Eq: "
+                s, ts = xps.simulate_xps_with_cts(rsys, time=self.time, title=data.title + " Eq: "
                     + str(i) + "Constant: " + str(j))
 
+                cts.append(ts)
                 sols.append(s)
                 print('Solved for ('+str(i)+', '+str(j)+')')
                 print(scaled)
                 print('\n')
         self.solutions[index] = sols
+        self.time_series[index] = cts
         self.complete[index] = True
                 
     def system(self) -> SolutionSystem:
@@ -211,5 +224,5 @@ class XPSSystemRunner:
         if not all(self.complete):
             print("All experiments have not yet been simulated.")
             return
-        return SolutionSystem(self.solutions, [x.experimental_file for x in self.initializer_data],
+        return SolutionSystem(self.solutions, self.time_series, [x.experimental_file for x in self.initializer_data if x.experimental_file],
                               self.multipliers)
