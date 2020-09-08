@@ -2,11 +2,10 @@ import numpy as np
 import pandas as pd
 from scipy.spatial import Delaunay
 from ase.io.vasp import read_vasp
-from ase.visualize import view
 
 
 def show_triangulation(file_path="", points=None, project_down="z", title="Triangulation", display_zoom=2,
-                       distort_factor=1.1, ignore_threhold=2):
+                       distort_factor=1.1, ignore_threhold=1):
     """
     :param file_path: a string for the path to a POSCAR file;
     :param points: a numpy array containing x, y, z locations for points;
@@ -61,11 +60,11 @@ def show_triangulation(file_path="", points=None, project_down="z", title="Trian
 
 def de_dup_threshold(points, threshold=1, project_down="z"):
     """
-    Drop all points except for all the points within a certain threshold from the top layer.
+    Drop the thrpof
     :param points:
     :param threshold: in Angstroms; if an atom is further away from the top layer than this number,
     drop the atom.
-    :return: all the points that remain.
+    :return:
     """
     if project_down == "z":
         index = 2
@@ -73,9 +72,8 @@ def de_dup_threshold(points, threshold=1, project_down="z"):
         index = 1
     elif project_down == "x":
         index = 0
-
     heights = set(h for h in points[:, index])
-    return points[points[:, index] > max(heights) - threshold]
+    return points[points[:, index] > max(heights) - 1]
 
 
 def de_dup(arr):
@@ -94,11 +92,8 @@ def poscar_to_positions(file_path, supercell_dimensions=1):
             supercell_dimensions = tuple(supercell_dimensions * 3)
     else:
         supercell_dimensions = tuple(supercell_dimensions for _ in range(3))
-    atoms = read_vasp(file_path) * supercell_dimensions
-
-    # view(atoms)
-    # TODO: plus atoms.cell into the atoms obbject used in voronoi/create_supercell
-    return atoms.get_positions(), atoms
+    cell = read_vasp(file_path) * supercell_dimensions
+    return cell.get_positions()
 
 
 def grid_size(points):

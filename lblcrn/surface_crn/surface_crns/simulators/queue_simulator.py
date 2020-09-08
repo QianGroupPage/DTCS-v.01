@@ -259,6 +259,7 @@ class QueueSimulator:
         # TODO
         # print("updating node")
         # print(f'{self.time}, from {node.state} at {node.position} to {new_state}')
+        # print(node.neighbors)
         output_state = new_state
         default_state = self.sm.get_site_name(output_state)
         if self.sm and output_state in self.sm.large_species_dict:
@@ -274,7 +275,10 @@ class QueueSimulator:
 
         original_state = node.state
         default_state = self.sm.get_site_name(original_state)
+
         if len(node.group) > 1:
+            print(f"The default state for {original_state} should be {default_state}.")
+
             for neighbor_node in node.group:
                 if neighbor_node is not node:
                     # print("resetting neighbor node", neighbor_node.state)
@@ -303,6 +307,9 @@ class QueueSimulator:
                 member_node.state = output_state
                 member_node.timestamp = self.time
                 member_node.group = new_group
+
+            print(f"starting new group with size {len(new_group)}, {new_group[0].state} with id {new_group[0].node_id},"
+                  + f"{new_group[1].state} with id {new_group[1].node_id}.")
         else:
             node.state = output_state
             node.timestamp = self.time

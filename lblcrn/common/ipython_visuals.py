@@ -1,8 +1,10 @@
 from IPython.display import clear_output
 import os
+import sys
 
 def update_progress(progress, header="Progress", beginning=False, terminating=False):
     # https://www.mikulskibartosz.name/how-to-display-a-progress-bar-in-jupyter-notebook/
+    return
     bar_length = 80
     if isinstance(progress, int):
         progress = float(progress)
@@ -18,9 +20,14 @@ def update_progress(progress, header="Progress", beginning=False, terminating=Fa
 
     pound_dashes = "#" * block + "-" * (bar_length - block)
     text = f"{header}: [{pound_dashes}] {progress * 100:.1f}%"
-    print(text)
 
-    terminal_output = open('/dev/stdout', 'w')
+    # Print only to sys.stdout, which outputs only to Jupyter notebook rather than Scipy.
+    if os.name != 'nt':
+        print(text)
+
+        terminal_output = open('/dev/stdout', 'w')
+    else:
+        terminal_output = sys.stdout
     terminal_columns = os.get_terminal_size().columns
     if len(text) > terminal_columns:
         bar_length = bar_length - (len(text) - terminal_columns)
