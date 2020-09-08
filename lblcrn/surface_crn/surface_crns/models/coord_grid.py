@@ -248,7 +248,6 @@ class CoordGrid(object):
 
                     # disabled_node should not be in node.neighbors.
 
-
         # 1-degree recursive disabling of neighboring nodes, this needs to be recursive
         for neighbor_node, affected_times in affected_neighbors.items():
             if len(neighbor_node.neighbors) == affected_times:
@@ -340,9 +339,6 @@ class CoordGrid(object):
             chosen = [nodes[i] for i in indices]
             for i, n in enumerate(chosen):
                 n.state = species[i]
-
-        for node in self:
-            print(node.node_id, node.state)
 
     def set_default_species(self, default_species_dict):
         """

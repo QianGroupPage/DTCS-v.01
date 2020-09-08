@@ -289,5 +289,6 @@ def fold_numbers(vor):
             counts[v1_index] += 1
         if v2_index >= 0:
             counts[v2_index] += 1
-    return np.unique(counts).tolist()
+    # TODO: eliminate the slicing in the following line.
+    return np.unique(counts).tolist()[:1]
 
