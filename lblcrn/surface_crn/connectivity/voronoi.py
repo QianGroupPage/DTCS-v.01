@@ -3,6 +3,7 @@ from scipy.spatial import Voronoi
 import copy
 from ase import Atoms
 
+
 def produce_voronoi(points):
     return Voronoi(points)
 
@@ -273,7 +274,6 @@ def voronoi_finite_polygons_2d(vor, radius=None):
                 new_region_vertices.append(len(new_vertices))
                 new_vertices.append(far_point)
         new_regions.append(new_region_vertices)
-
     return new_regions, np.asarray(new_vertices)
 
 
@@ -395,7 +395,6 @@ class VoronoiGraph:
         if self.vertex_points_dict[vertex_index] == []:
             #  TODO: this should be popping out everything?
             self.vertex_points_dict.pop(vertex_index)
-
             self.vertices_dict.pop(vertex_index)
 
     def filter_points(self, points):
