@@ -23,12 +23,14 @@ class Surface:
     """
 
     def __init__(self, name: str, size: Tuple[int] = (0, 0), structure: str = "rectangle",
-                 color: Union[Tuple[int], List[int], str] = None, poscar_file: str = "", supercell_dimensions=1):
+                 color: Union[Tuple[int], List[int], str] = None, poscar_file: str = "", supercell_dimensions=1,
+                 surface_depth=1):
         # This surface is based on a POSCAR file.
         if poscar_file:
             self.use_coord_grid = True
             self.poscar_file = poscar_file
             self.supercell_dimensions = supercell_dimensions
+            self.surface_depth = surface_depth
             self.default_names = {}
 
             _, points = show_triangulation(poscar_file)

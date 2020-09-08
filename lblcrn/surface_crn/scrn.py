@@ -45,7 +45,8 @@ def scrn_simulate_single_run(rxns, time_max=100, lattice=None, display_class=Non
         # initial concentration and default species on the sites specified by the rules file.
         generate_surface(rsys=rxns)
         surface = CoordGrid.from_poscar(rxns.surface.poscar_file,
-                                        supercell_dimensions=rxns.surface.supercell_dimensions)
+                                        supercell_dimensions=rxns.surface.supercell_dimensions,
+                                        ignore_threhold=rxns.surface.surface_depth)
         surface.set_initial_concentrations(rxns.surface.initial_species)
         surface.set_default_species(rxns.surface.default_names)
     elif not lattice:
@@ -83,7 +84,8 @@ def scrn_simulate_single_run(rxns, time_max=100, lattice=None, display_class=Non
             # initial concentration and default species on the sites specified by the rules file.
             generate_surface(rsys=rxns)
             surface = CoordGrid.from_poscar(rxns.surface.poscar_file,
-                                            supercell_dimensions=rxns.surface.supercell_dimensions)
+                                            supercell_dimensions=rxns.surface.supercell_dimensions,
+                                            ignore_threhold=rxns.surface.surface_depth)
             surface.set_initial_concentrations(rxns.surface.initial_species)
             surface.set_default_species(rxns.surface.default_names)
         elif not lattice:
