@@ -188,6 +188,8 @@ def resolve_video(video, video_path):
                 wrong_decision_word = True
                 print(f"\"{use_path}\" is not a valid input.")
                 use_path = False
+    else:
+        os.mkdir(video_path)
     return video_path if video_path else ""
 
 
