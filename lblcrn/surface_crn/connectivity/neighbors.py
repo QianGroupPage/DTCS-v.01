@@ -66,8 +66,8 @@ def triangle_centroid(loc_array):
 def voronoi_neighbors_dict(vor):
     top_neighbors_list = [{"Top": [], "Intersection": [], "Bridge": []} for _ in vor.points]
 
-    intersection_neighbors_list = [{"Top": []} for _ in vor.vertices]
-    bridge_neighbors_list = [{"Top": []} for _ in vor.ridge_points]
+    intersection_neighbors_list = [{"Top": [], "Bridge": []} for _ in vor.vertices]
+    bridge_neighbors_list = [{"Top": [], "Intersection": []} for _ in vor.ridge_points]
 
     regions = vor.regions
     for point_index, region_index in enumerate(vor.point_region):
@@ -89,5 +89,10 @@ def voronoi_neighbors_dict(vor):
         top_neighbors_list[n1_index]["Bridge"].append(i)
         top_neighbors_list[n2_index]["Bridge"].append(i)
         bridge_neighbors_list[i]["Top"].extend(indices)
+
+        v1_index, v2_index = vor.ridge_vertices[i]
+        bridge_neighbors_list[i]["Intersection"].extend([v1_index, v2_index])
+        intersection_neighbors_list[v1_index]["Bridge"].append(i)
+        intersection_neighbors_list[v2_index]["Bridge"].append(i)
     return {"Top": top_neighbors_list, "Intersection": intersection_neighbors_list, "Bridge": bridge_neighbors_list}
 

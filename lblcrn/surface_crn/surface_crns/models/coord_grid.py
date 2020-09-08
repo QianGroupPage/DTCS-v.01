@@ -2,7 +2,7 @@ from lblcrn.surface_crn.surface_crns.base.node import Node
 from lblcrn.surface_crn.connectivity.triangulation import show_triangulation, poscar_to_positions
 from lblcrn.surface_crn.connectivity.neighbors import voronoi_neighbors_dict
 from lblcrn.surface_crn.connectivity.voronoi import voronoi_plot_2d, voronoi_finite_polygons_2d, \
-    VoronoiGraph, create_supercell
+    VoronoiGraph, create_supercell, fold_numbers
 from lblcrn.common.num_to_word import num2word
 from collections import Counter
 from ase import Atoms, Atom
@@ -177,6 +177,10 @@ class CoordGrid(object):
                 loc = tuple(c for c in points[top_index])
                 current_node.neighbors.append((nodes[loc], 1))
 
+            for bridge_index in individual_neighbors_dict["Bridge"]:
+                bridge_neighbor_node = self.nodes_by_site["Bridge"][bridge_index]
+                current_node.neighbors.append((bridge_neighbor_node, 1))
+
         for bridge_index, individual_neighbors_dict in enumerate(neighbors_dict["Bridge"]):
             current_node = self.nodes_by_site["Bridge"][bridge_index]
             # Handle the case where a node with an infinite neighbor is None.
@@ -185,6 +189,10 @@ class CoordGrid(object):
 
             for top_index in individual_neighbors_dict["Top"]:
                 current_node.neighbors.append((self.nodes_by_site["Top"][top_index], 1))
+
+            for intersection_index in individual_neighbors_dict["Intersection"]:
+                loc = tuple(c for c in self.vor.vertices[intersection_index])
+                current_node.neighbors.append((nodes[loc], 1))
 
     def to_atoms(self):
         """
@@ -330,6 +338,7 @@ class CoordGrid(object):
         of initial_concentrations.
         """
         random.seed(random_seed)
+
         for fold_name, d in initial_concentrations.items():
             nodes = self.nodes_by_fold_name[fold_name]
             species = []
@@ -477,12 +486,16 @@ class CoordGrid(object):
         For instance, ["top", "twofold", "threefold", "fourfold"]
         :return:
         """
-        res = []
-        for key, nodes in self.nodes_by_site.items():
-            if key == "Top":
-                continue
-            elif nodes:
-                res.append(max([len(node.neighbors) for node in nodes]))
+        # res = []
+        # for key, nodes in self.nodes_by_site.items():
+        #     if key == "Top":
+        #         continue
+        #     elif nodes:
+        #         # TODO: length of neighbors considering new bridge-intersection connections.
+        #         res.append(max([len(node.neighbors) for node in nodes]))
+
+        # Use the fold_numbers defined for voronoi objects to compute the possible fold numbers.
+        res = fold_numbers(self.vor)
         return ["top"] + [f"{num2word(num)}fold" for num in res if num > 1]
 
     @property
