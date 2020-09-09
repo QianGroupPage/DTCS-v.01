@@ -172,7 +172,7 @@ def generate_colors(rsys):
             color = tuple(c for c in color_to_RGB(color))
 
         color_strs += s.name + ": " + str(color) + "\n"
-    print(color_strs)
+    # print(color_strs)
     return f"""!START_COLORMAP\n{color_strs}!END_COLORMAP\n"""
 
 

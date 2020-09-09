@@ -104,9 +104,9 @@ class CoordGridDisplay(object):
         self.x_pos = x_pos - 200
         self.y_pos = y_pos
 
-        print(f"Desired width {width}; desired height {height}")
+        # print(f"Desired width {width}; desired height {height}")
 
-        print("Game grid starting position", x_pos, y_pos, f"width={self.display_width}, height={self.display_height}")
+        # print("Game grid starting position", x_pos, y_pos, f"width={self.display_width}, height={self.display_height}")
         # Create display surface
         if debug:
             print("Displaying grid display at position (" + str(x_pos) + "," +
@@ -121,7 +121,7 @@ class CoordGridDisplay(object):
         max_width_to_height = display_height / height * width
 
 
-        print(f"Grid picture width={max_width_to_height}, height={display_height}")
+        # print(f"Grid picture width={max_width_to_height}, height={display_height}")
 
         actual_width = display_width
         actual_height = max_height_to_width
@@ -158,12 +158,12 @@ class CoordGridDisplay(object):
         plt.gca().yaxis.set_major_locator(plt.NullLocator())
     # NullLocator    plt.savefig("filename.pdf", bbox_inches='tight',
     #                 pad_inches=0)
-        print("intended", self.total_grid_width, self.total_grid_height)
+    #     print("intended", self.total_grid_width, self.total_grid_height)
         # TODO: fix the sizing
         fig = self.grid.voronoi_pic(ax=plt.gca(), return_fig=True, color_index=self.colormap, set_fig_size=False)
         # fig.tight_layout()
         # TODO: currently it seems looping to create this.
-        print("fig size", fig.get_size_inches()*fig.dpi)
+        # print("fig size", fig.get_size_inches()*fig.dpi)
         # matplotlib.pyplot.ylim((0, y_upper_limit))
         canvas = agg.FigureCanvasAgg(fig)
         canvas.draw()

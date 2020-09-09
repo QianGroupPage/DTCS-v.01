@@ -15,8 +15,6 @@ except ImportError:
     import sys
     sys.path.append("./")
 import lblcrn.surface_crn.surface_crns.readers as readers
-
-import sys
 import math
 
 from lblcrn.surface_crn.surface_crns.options.option_processor import SurfaceCRNOptionParser

@@ -131,8 +131,9 @@ def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=Fa
         return Ensemble(ensemble_results)
 
 
-
 def resolve_video(video, video_path):
+    if not video:
+        return ""
     video_from_argument = True if video_path else False
     if video and not video_from_argument:
         video_path = input(f"Name a directory to store frames and videos: \n{os.getcwd()}/")
