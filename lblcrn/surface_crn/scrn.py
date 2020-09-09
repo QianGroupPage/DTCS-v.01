@@ -56,6 +56,9 @@ def scrn_simulate_single_run(rxns, time_max=100, lattice=None, display_class=Non
     #  TODO: infer spectra's scale from here.
     times, concs = simulate_without_display(manifest, surface, [str(s) for s in species_tracked], rxns,
                                             group_selection_seed)
+
+    # print(concs)
+
     if manifest_file:
         r = Results.from_concs_times(manifest_file, rxns, concs, times)
     else:

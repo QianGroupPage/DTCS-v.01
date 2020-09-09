@@ -296,6 +296,7 @@ class Results:
         Sum the number of species with the same binding energy.
         :return:
         """
+        return
         bes_to_names = {}
         to_sum = {}
         for name in self.species_ordering:

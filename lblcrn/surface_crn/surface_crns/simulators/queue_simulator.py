@@ -177,6 +177,10 @@ class QueueSimulator:
                       " at time " + str(self.time) + ", position " +
                       str(participants[0].position) + " ")
 
+            print("Processing event " + str(next_reaction.rule) +
+                  " at time " + str(self.time) + ", position " +
+                  str(participants[0].position) + " ")
+
             # If the first input was modified since the event was issued,
             # don't run it
             if participants[0].timestamp > next_reaction.time_issued:
