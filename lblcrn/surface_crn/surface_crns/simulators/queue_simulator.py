@@ -177,6 +177,8 @@ class QueueSimulator:
                       " at time " + str(self.time) + ", position " +
                       str(participants[0].position) + " ")
 
+
+            # TODO: print out the surface
             print("Processing event " + str(next_reaction.rule) +
                   " at time " + str(self.time) + ", position " +
                   str(participants[0].position) + " ")
@@ -263,7 +265,6 @@ class QueueSimulator:
         # TODO
         # print("updating node")
         # print(f'{self.time}, from {node.state} at {node.position} to {new_state}')
-        # print(node.neighbors)
         output_state = new_state
         default_state = self.sm.get_site_name(output_state)
         if self.sm and output_state in self.sm.large_species_dict:

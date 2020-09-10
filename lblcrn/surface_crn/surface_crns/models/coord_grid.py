@@ -139,7 +139,11 @@ class CoordGrid(object):
                 loc = tuple(np.mean(self.vor.points[[p1_index, p2_index]], axis=0))
             else:
                 loc = tuple(np.mean(self.vor.vertices[[v1_index, v2_index]], axis=0))
-            new_node = Node(position=loc, state="Bridge")
+            # new_node = Node(position=loc, state="Bridge")
+
+            new_node = Node(position=loc, state=self.fold_names_dict["Bridge"])
+
+            # self.de
             nodes[loc] = new_node
             self.nodes_by_site["Bridge"].append(new_node)
             self.nodes.append(new_node)
@@ -147,7 +151,8 @@ class CoordGrid(object):
         self.nodes_by_site["Intersection"] = []
         for loc in self.vor.vertices:
             loc = tuple(c for c in loc)
-            new_node = Node(position=loc, state="Intersection")
+            # new_node = Node(position=loc, state="Intersection")
+            new_node = Node(position=loc, state=self.fold_names_dict["Intersection"])
             nodes[loc] = new_node
             self.nodes_by_site["Intersection"].append(new_node)
             self.nodes.append(new_node)
