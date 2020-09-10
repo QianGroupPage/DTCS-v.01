@@ -178,10 +178,10 @@ class QueueSimulator:
                       str(participants[0].position) + " ")
 
 
-            # TODO: print out the surface
-            print("Processing event " + str(next_reaction.rule) +
-                  " at time " + str(self.time) + ", position " +
-                  str(participants[0].position) + " ")
+            # # TODO: print out the surface
+            # print("Processing event " + str(next_reaction.rule) +
+            #       " at time " + str(self.time) + ", position " +
+            #       str(participants[0].position) + " ")
 
             # If the first input was modified since the event was issued,
             # don't run it

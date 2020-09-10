@@ -67,7 +67,6 @@ class Results:
         # self.species_ordering = [s.name for s in self.species_ordering]
         # self.species_colors = {s.name: color_to_HEX(c) for s, c in self.species_colors.items()}
 
-
         sub_s = rxns.species_manager.to_sum_dict
         self.sum_sub_species(sub_s)
         self.sum_same_be()
@@ -321,7 +320,9 @@ class Results:
         """
         plt.style.use('seaborn-white')
         if end_time == -1:
-            end_time = self.df.index.max()
+            end_time = self.df_raw.index.max()
+
+        # print("end time", '{:.15f}'.format(end_time))
 
         if use_raw_data:
             df = self.df_raw
@@ -354,6 +355,8 @@ class Results:
 
         for i in irange:
             ax = axes[i]
+            ax.set_xlim(left=0, right=end_time)
+            # print(f"left {0}, right {end_time*1.1}")
             for j in range(i, len(species_in_figure)):
                 species = species_in_figure[j]
                 ax.tick_params(axis='both', which='both', labelsize=12)

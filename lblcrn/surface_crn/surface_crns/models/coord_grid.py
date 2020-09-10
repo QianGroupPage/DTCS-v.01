@@ -353,6 +353,7 @@ class CoordGrid(object):
             chosen = [nodes[i] for i in indices]
             for i, n in enumerate(chosen):
                 n.state = species[i]
+        # print("initial grid", [(n.node_id, n.state) for n in self])
 
     def set_default_species(self, default_species_dict):
         """
