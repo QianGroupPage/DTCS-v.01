@@ -31,6 +31,7 @@ class Results:
 
         self.manifest_file = manifest_file
         self.rxns = rxns
+
         self.df = df.copy()
         self.df.rename_axis(Results.TIME_COL_NAME, inplace=True)
 
@@ -312,7 +313,7 @@ class Results:
 
     # TODO: decrease the figure size in case zoom = False
     def plot_evolution(self, species_in_figure=None, start_time=0, end_time=-1, title="", ax=None, save=False,
-                       return_fig=False, path="", use_raw_data=False, zoom=False):
+                       return_fig=False, path="", use_raw_data=False, zoom=False, show_fig=True, x_axis_xlim=0):
         """
         Plot the concentrations from start_time until time step end_time. -1 means till the end.
 
@@ -355,7 +356,7 @@ class Results:
 
         for i in irange:
             ax = axes[i]
-            ax.set_xlim(left=0, right=end_time)
+            ax.set_xlim(left=x_axis_xlim, right=end_time)
             # print(f"left {0}, right {end_time*1.1}")
             for j in range(i, len(species_in_figure)):
                 species = species_in_figure[j]
@@ -366,6 +367,12 @@ class Results:
             ax.set_title(title)
             ax.set_xlabel("Time (s)", fontsize=12)
             ax.set_ylabel("Molecule Count (#)", fontsize=12)
+
+        if not show_fig:
+            if ax_given:
+                raise Exception("Ax is given as a parameter. This function has no control over whether the figure "
+                                + "will show.")
+            plt.close(fig=fig)
         if save:
             if ax_given:
                 raise Exception("Ax is given as a parameter. Please save outside of this function. \n" +

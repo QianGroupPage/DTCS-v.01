@@ -64,6 +64,10 @@ def triangle_centroid(loc_array):
 
 
 def voronoi_neighbors_dict(vor):
+
+
+    # TODO: the issue could be that the ridges surrounding #32 weren't completely gotten rid of.
+
     top_neighbors_list = [{"Top": [], "Intersection": [], "Bridge": []} for _ in vor.points]
 
     intersection_neighbors_list = [{"Top": [], "Bridge": []} for _ in vor.vertices]

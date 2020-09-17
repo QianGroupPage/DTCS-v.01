@@ -166,6 +166,8 @@ class CoordGrid(object):
                 loc = tuple(c for c in points[top_index])
                 current_node.neighbors.append((nodes[loc], 1))
 
+                # print(top_index)
+
             for intersection_index in individual_neighbors_dict["Intersection"]:
                 loc = tuple(c for c in self.vor.vertices[intersection_index])
                 current_node.neighbors.append((nodes[loc], 1))

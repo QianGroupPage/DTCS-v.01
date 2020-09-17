@@ -538,7 +538,8 @@ def simulate_surface_crn(manifest_filename, group_selection_seed, display_class=
             last_frame = True
             running = False
             # Set the time to final time when done.
-            time = opts.max_duration
+            time = time
+            # time = opts.max_duration
             time_display.time = time
             time_display.render(display_surface, x_pos=time_display.x_pos, y_pos=time_display.y_pos) #opts_menu.display_height)
             if next_reaction:
@@ -792,10 +793,19 @@ def update_display(opts, simulation, progress_bar, grid_display, FRAME_DIRECTORY
                         r = r
 
                     # print(r.df_raw)
-                    starting_time = max(0, simulation.time - simulation.running_average)
+                    if simulation.time > r.df_raw.index.max():
+                        simulation_time = r.df_raw.index.max()
+                    else:
+                        simulation_time = simulation.time
+
+
+                    starting_time = max(0, simulation_time - simulation.running_average)
                     # print("calculating running average")
                     # print("starting time", starting_time)
                     # print("duration", simulation.running_average)
+
+                    # TODO: neatly deal with early termination.
+                    # print("sim time", simulation_time)
 
                     raw_data, size = r.raw_string_gaussian(y_upper_limit=y_lim,
                                                            t=starting_time,

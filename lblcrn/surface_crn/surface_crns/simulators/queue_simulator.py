@@ -39,6 +39,9 @@ class QueueSimulator:
         # undergo.
         self.rules_by_state = dict()
         for rule in self.rule_set:
+
+            # print(f"type of rule object is {type(rule)}", "str or repr of the object", rule)
+
             for input_state in rule.inputs:
                 if not input_state in self.rules_by_state:
                     self.rules_by_state[input_state] = []
@@ -164,6 +167,7 @@ class QueueSimulator:
                 self.time = self.simulation_duration
                 return None
 
+            # TODO: what's in "next_reaction"?
             next_reaction = self.event_queue.get()
             if next_reaction.time > self.simulation_duration:
                 self.time = self.simulation_duration
@@ -176,7 +180,6 @@ class QueueSimulator:
                 print("Processing event " + str(next_reaction.rule) +
                       " at time " + str(self.time) + ", position " +
                       str(participants[0].position) + " ")
-
 
             # # TODO: print out the surface
             # print("Processing event " + str(next_reaction.rule) +
@@ -234,6 +237,7 @@ class QueueSimulator:
                 if local_debugging:
                     print("Checking for new reactions with node:" + \
                           str(participants[1]))
+                # TODO: build up to the next reaction from here.
                 self.add_next_reactions_with_node(
                                             participants[1],
                                             first_reactant_only = False,
@@ -353,6 +357,8 @@ class QueueSimulator:
             # If it's a unimolecular reaction, we can now add the reaction to
             # the event queue.
             if len(rule.inputs) == 1:
+                # TODO: marker addition
+                # TODO: this determines the time step till next reaction.
                 time_to_reaction = np.log(1.0 / self.main_random_generator.random()) / rule.rate
                 if math.isinf(time_to_reaction):
                     continue
