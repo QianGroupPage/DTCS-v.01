@@ -17,7 +17,7 @@ from lblcrn.surface_crn.surface_crns.views.coord_grid_display import CoordGridDi
 
 def scrn_simulate_single_run(rxns, time_max=100, lattice=None, display_class=None, video=False, spectra_in_video=True,
                              spectra_average_duration=2, species_tracked=[], manifest_file="", rng_seed=923123122,
-                             video_path="", save_period=-1, trajectory_path="", save_trajectory=False,
+                             video_path="", section_length=-1, trajectory_path="", save_trajectory=False,
                              compress_trajectory=True):
     """
     :param rxns:
@@ -60,10 +60,13 @@ def scrn_simulate_single_run(rxns, time_max=100, lattice=None, display_class=Non
 
     r = simulate_without_display(manifest, surface, [str(s) for s in species_tracked], rxns, group_selection_seed,
                                  trajectory_path=trajectory_path, compress_trajectory=compress_trajectory,
-                                 save_period=save_period)
+                                 section_length=section_length)
     if save_trajectory:
-        r.df_raw.to_csv(f"{os.getcwd()}/{trajectory_path}/trajectory",
-                        compression="gzip" if compress_trajectory else None)
+        if compress_trajectory:
+            r.df_raw.to_csv(f"{os.getcwd()}/{trajectory_path}/trajectory.gzip",
+                            compression="gzip")
+        else:
+            r.df_raw.to_csv(f"{os.getcwd()}/{trajectory_path}/trajectory.csv", None)
 
     #
     # if manifest_file:
@@ -118,8 +121,8 @@ def scrn_simulate_single_run(rxns, time_max=100, lattice=None, display_class=Non
 
 def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=False, spectra_in_video=True,
                   spectra_average_duration=2, species_tracked=[], manifest_file="", rng_seed=923123122,
-                  video_path="", ensemble_size=1, save_trajectory=True, compress_trajectory=True,
-                  trajectory_path="", save_period=-1):
+                  video_path="", ensemble_size=1, save_trajectory=True, compress_trajectory=False,
+                  trajectory_path="", section_length=-1):
     # If both video and trajectory are saved but only trajectory_path is provided, use trajectory_path to store the
     # video.
     if video and save_trajectory and trajectory_path and not video_path:
@@ -148,7 +151,7 @@ def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=Fa
                                         video=video, spectra_in_video=spectra_in_video,
                                         spectra_average_duration=spectra_average_duration,
                                         species_tracked=species_tracked, manifest_file=manifest_file,
-                                        rng_seed=rng_seed, video_path=video_path, save_period=save_period,
+                                        rng_seed=rng_seed, video_path=video_path, section_length=section_length,
                                         trajectory_path=trajectory_path,
                                         save_trajectory=save_trajectory,
                                         compress_trajectory=compress_trajectory)
@@ -161,7 +164,7 @@ def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=Fa
                                                spectra_average_duration=spectra_average_duration,
                                                species_tracked=species_tracked, manifest_file=manifest_file,
                                                rng_seed=rng_seed + 2 * i, video_path=run_video_path,
-                                               save_period=save_period, trajectory_path=trajectory_path,
+                                               section_length=section_length, trajectory_path=trajectory_path,
                                                save_trajectory=save_trajectory,
                                                compress_trajectory=compress_trajectory)
             ensemble_results.append(results)
@@ -271,7 +274,7 @@ def simulate_with_display(manifest_file, lattice, group_selection_seed, rxns=Non
 
 
 def simulate_without_display(manifest_file, lattice, species_tracked, rxns, group_selection_seed,
-                             trajectory_path="", compress_trajectory=True, save_period=-1):
+                             trajectory_path="", compress_trajectory=True, section_length=-1):
     '''
     Run until completion or max time, storing an array of species counts at
     the times of each reaction, along with an array of times. At the end,
@@ -329,34 +332,34 @@ def simulate_without_display(manifest_file, lattice, species_tracked, rxns, grou
 
         # Save every 10 time steps:
         # print(f"times has length {len(times)}; there are {section_number} sections")
-        if save_period != -1 and len(times) >= save_period:
+        if section_length != -1 and len(times) >= section_length:
             section_number += 1
             r = Results.from_concs_times(manifest_file, rxns, concs, times)
             start_time = times[0]
             times = []
             concs = {species: [] for species in species_tracked}
             if compress_trajectory:
-                r.df_raw.to_csv(f"{os.getcwd()}/{trajectory_path}/trajectory_section_{section_number}",
+                r.df_raw.to_csv(f"{os.getcwd()}/{trajectory_path}/trajectory_section_{section_number}.gzip",
                                 compression="gzip")
             else:
-                r.df_raw.to_csv(f"{os.getcwd()}/{trajectory_path}/trajectory_section_{section_number}")
+                r.df_raw.to_csv(f"{os.getcwd()}/{trajectory_path}/trajectory_section_{section_number}.csv")
             r.plot_evolution(start_time=start_time, use_raw_data=True, save=True,
                              path=f"{os.getcwd()}/{trajectory_path}",
                              title=f"trajectory_section_{section_number}_plot", show_fig=False,
                              x_axis_xlim=start_time)
 
     # Save the last section, if saving is necessary.
-    if save_period != -1 and times:
+    if section_length != -1 and times:
         section_number += 1
         r = Results.from_concs_times(manifest_file, rxns, concs, times)
         start_time = times[0]
         times = []
         concs = {species: [] for species in species_tracked}
         if compress_trajectory:
-            r.df_raw.to_csv(f"{os.getcwd()}/{trajectory_path}/trajectory_section_{section_number}",
+            r.df_raw.to_csv(f"{os.getcwd()}/{trajectory_path}/trajectory_section_{section_number}.gzip",
                             compression="gzip")
         else:
-            r.df_raw.to_csv(f"{os.getcwd()}/{trajectory_path}/trajectory_section_{section_number}")
+            r.df_raw.to_csv(f"{os.getcwd()}/{trajectory_path}/trajectory_section_{section_number}.csv")
         r.plot_evolution(start_time=start_time, use_raw_data=True, save=True,
                          path=f"{os.getcwd()}/{trajectory_path}",
                          title=f"trajectory_section_{section_number}_plot", show_fig=False,
@@ -368,23 +371,23 @@ def simulate_without_display(manifest_file, lattice, species_tracked, rxns, grou
         last_time_stamp = 0
 
     # Recover from saved trajectory:
-    if save_period != -1:
+    if section_length != -1:
         section_number_i = 1
         if compress_trajectory:
-            df_raw = pd.read_csv(f"{os.getcwd()}/{trajectory_path}/trajectory_section_{section_number_i}",
+            df_raw = pd.read_csv(f"{os.getcwd()}/{trajectory_path}/trajectory_section_{section_number_i}.gzip",
                                  index_col="Time (s) ", compression="gzip")
         else:
-            df_raw = pd.read_csv(f"{os.getcwd()}/{trajectory_path}/trajectory_section_{section_number_i}",
+            df_raw = pd.read_csv(f"{os.getcwd()}/{trajectory_path}/trajectory_section_{section_number_i}.csv",
                                  index_col="Time (s) ", )
 
         # print(section_number_i, df_raw)
         section_number_i += 1
         while section_number_i <= section_number:
             if compress_trajectory:
-                df_raw_i = pd.read_csv(f"{os.getcwd()}/{trajectory_path}/trajectory_section_{section_number_i}",
+                df_raw_i = pd.read_csv(f"{os.getcwd()}/{trajectory_path}/trajectory_section_{section_number_i}.gzip",
                                        index_col="Time (s) ", compression="gzip")
             else:
-                df_raw_i = pd.read_csv(f"{os.getcwd()}/{trajectory_path}/trajectory_section_{section_number_i}",
+                df_raw_i = pd.read_csv(f"{os.getcwd()}/{trajectory_path}/trajectory_section_{section_number_i}.csv",
                                        index_col="Time (s) ", )
             # print("ignoring index")
             df_raw = df_raw.append(df_raw_i)

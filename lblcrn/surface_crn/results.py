@@ -524,6 +524,7 @@ class Results:
         renderer = canvas.get_renderer()
         matplotlib.use(backend)
         # TODO: close plt in case too many plots got opened.
+        plt.close(fig)
         return renderer.tostring_rgb(),  canvas.get_width_height()
 
     def save(self, directory=None):
