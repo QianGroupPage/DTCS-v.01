@@ -35,14 +35,10 @@ class QueueSimulator:
         self.add_groups()
 
         self.init_state = surface.get_global_state()
-
         # Build a mapping of states to the possible transitions they could
         # undergo.
         self.rules_by_state = dict()
         for rule in self.rule_set:
-
-            # print(f"type of rule object is {type(rule)}", "str or repr of the object", rule)
-
             for input_state in rule.inputs:
                 if not input_state in self.rules_by_state:
                     self.rules_by_state[input_state] = []
@@ -65,13 +61,11 @@ class QueueSimulator:
         if self.debugging:
             print(self.surface)
 
-        # TODO: make this a dictionary from species to concentration.
-        self.concs = {}
-        self.times = []
-        self.add_concs()
+        self.initiate_concs()
+        if self.surface:
+            self.add_concs()
         if rxns:
-            # From a Marker object to its trajectory list.
-            self.marker_concs = {marker: [0] for marker in rxns.species_manager.get_all_markers()}
+            self.initiate_marker_concs()
 
     def reset(self):
         '''
@@ -297,61 +291,6 @@ class QueueSimulator:
             node.timestamp = self.time
     # end def update_node
 
-    def update_markers(self, reaction):
-        """
-        This should run after add_concs is run.
-        :param reaction:
-        :return:
-        """
-        # In case only text-based manifest files are provided.
-        if not self.rxns:
-            return
-
-        for conc in self.marker_concs.values():
-            if len(conc) == 0:
-                conc.append(0)
-            else:
-                conc.append(conc[-1])
-
-        rxn = self.rxns_by_rule_str[reaction.rule.identifiable_string()]
-        # Decrementing or incrementing marker count by 1 works for size-2 objects, because one rxn still matches with
-        # the decrementing or the incrementing of 1 object.
-        # TODO: the best way to increase counts.
-        # for marker_conc in self.marker_concs.values():
-        #     marker_conc.append(marker_conc[-1])
-
-        for marker in rxn.markers.reactants:
-            # if marker not in self.marker_concs:
-            #     self.marker_concs[marker] = [0 for _ in self.times]
-            # if len(self.marker_concs[marker]) < len(self.times):
-            #     if self.marker_concs[marker]:
-            #         last_value = self.marker_concs[marker][-1]
-            #     else:
-            #         last_value = 0
-            #
-            #     print(f"extended marker {marker} values", [last_value for _ in
-            #                                       range(len(self.times) - len(self.marker_concs[marker]))])
-            #
-            #     print(f"existing marker {self.marker_concs[marker]}")
-            #     self.marker_concs[marker].extend([last_value for _ in
-            #                                       range(len(self.times) - len(self.marker_concs[marker]))])
-            self.marker_concs[marker][-1] -= 1
-
-        for marker in rxn.markers.products:
-            # if marker not in self.marker_concs:
-            #     self.marker_concs[marker] = [0 for _ in self.times]
-            # if len(self.marker_concs[marker]) < len(self.times):
-            #     if self.marker_concs[marker]:
-            #         last_value = self.marker_concs[marker][-1]
-            #     else:
-            #         last_value = 0
-            #     self.marker_concs[marker].extend([last_value for _ in
-            #                                     range(len(self.times) - len(self.marker_concs[marker]))])
-            self.marker_concs[marker][-1] += 1
-
-        # TODO: get rid of markers debugging helps
-        # print("marker concs", self.marker_concs)
-
     # TODO:
     def add_concs(self):
         """
@@ -385,6 +324,10 @@ class QueueSimulator:
         #     # TODO: this will cause serious speed issues. Fix them.
         #     self.concentration_trajectory = self.concentration_trajectory.append(current_row)
         # self.concentration_trajectory.fillna(0, inplace=True)
+
+    def initiate_concs(self):
+        self.concs = {}
+        self.times = []
 
     def add_next_reactions_with_node(self, node, first_reactant_only = False,
                                         exclusion_list = None):
@@ -494,4 +437,37 @@ class QueueSimulator:
                 raise Exception("Error in transition rule " + str(rule) + \
                                 "\nOnly rules with one or two inputs allowed!")
     #end def add_next_reactions_with_node
+
+    # Used only when RXN System is provided to the simulator.
+    def update_markers(self, reaction):
+        """
+        This should run after add_concs is run.
+
+        Update an existing marker_concs, already with initial values for all markers.
+        """
+        # In case only text-based manifest files are provided.
+        if not self.rxns:
+            return
+        rxn = self.rxns_by_rule_str[reaction.rule.identifiable_string()]
+
+        for conc in self.marker_concs.values():
+            conc.append(conc[-1])
+        for marker in rxn.markers.reactants:
+            self.marker_concs[marker][-1] -= 1
+        for marker in rxn.markers.products:
+            self.marker_concs[marker][-1] += 1
+
+    def initiate_marker_concs(self):
+        # From a Marker object to its trajectory list.
+        self.marker_concs = {marker: [marker.initial_count] for marker in self.rxns.species_manager.get_all_markers()}
+
+    def drop_data(self):
+        """
+        Drop all trajectory data stored in this simulator
+        :return:
+        """
+        for m, conc in self.marker_concs.items():
+            m.initial_count = conc[-1] if conc else 0
+        self.initiate_marker_concs()
+        self.initiate_concs()
 # end class QueueSimulator

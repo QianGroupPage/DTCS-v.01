@@ -159,6 +159,7 @@ class Marker(monty.json.MSONable):
         self.species = species
         self.species_symbol = species_symbol if species_symbol else sym.Symbol(species.name)
         self.name = name
+        self.initial_count = 0
 
     def __str__(self):
         return f'Marker with name {self.name} for species {repr(self.species)}'

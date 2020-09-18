@@ -343,6 +343,7 @@ def simulate_without_display(manifest_file, lattice, species_tracked, rxns, grou
             for marker, conc_list in simulator.marker_concs.items():
                 concs[marker.name] = conc_list[len(conc_list) - len(times):]
             r = Results.from_concs_times(manifest_file, rxns, concs, times)
+            simulator.drop_data()
             start_time = times[0]
             times = []
             concs = {species: [] for species in species_tracked}
@@ -363,6 +364,7 @@ def simulate_without_display(manifest_file, lattice, species_tracked, rxns, grou
         for marker, conc_list in simulator.marker_concs.items():
             concs[marker.name] = conc_list[len(conc_list) - len(times):]
         r = Results.from_concs_times(manifest_file, rxns, concs, times)
+        simulator.drop_data()
         start_time = times[0]
         times = []
         concs = {species: [] for species in species_tracked}
