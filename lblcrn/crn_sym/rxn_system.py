@@ -259,8 +259,17 @@ class RxnSystem(monty.json.MSONable):
 
             for marker_name in self.species_manager.get_marker_names():
                 color = color_to_RGB(generate_new_color(colors))
+                marker_colors = set()
                 for marker in self.species_manager.get_markers(marker_name):
-                    marker.color = color
+                    if not marker.color:
+                        marker.color = color
+                    else:
+                        color = marker.color
+                        marker_colors.add(color)
+                if len(marker_colors) > 1:
+                    raise ValueError(f"Marker with name {marker_name} was assigned multiple colors: " +
+                                     ", ".join(marker_colors))
+
                 colors.append(color)
                 # TODO: using a string as key here, whereas all other keys are symbol.symbols
                 self.color_index[marker_name] = color

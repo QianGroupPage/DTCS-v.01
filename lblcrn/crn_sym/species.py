@@ -155,11 +155,13 @@ class Marker(monty.json.MSONable):
     """
     A marker object to mark occurances of a given species with a different name.
     """
-    def __init__(self, species: str, name: str, species_symbol: sym.Symbol = None):
+    def __init__(self, species: str, name: str, species_symbol: sym.Symbol = None, color: str = ""):
         self.species = species
+
         self.species_symbol = species_symbol if species_symbol else sym.Symbol(species.name)
         self.name = name
         self.initial_count = 0
+        self.color = color
 
     def __str__(self):
         return f'Marker with name {self.name} for species {repr(self.species)}'
@@ -251,7 +253,7 @@ class SpeciesManager(monty.json.MSONable):
         self._species[symbol] = s
         return symbol
 
-    def drop_marker(self, species_symbol: Union[sym.Symbol, Site], marker_name: str):
+    def drop_marker(self, species_symbol: Union[sym.Symbol, Site], marker_name: str, color: str=""):
         """
 
         It's possible to mark two different species under the same name.
@@ -263,7 +265,8 @@ class SpeciesManager(monty.json.MSONable):
             for marker in self._markers[marker_name]:
                 if marker.species.name == str(species_symbol):
                     return marker
-        new_marker = Marker(species_symbol.name, marker_name, species_symbol=sym.Symbol(species_symbol.name))
+        new_marker = Marker(species_symbol.name, marker_name, species_symbol=sym.Symbol(species_symbol.name),
+                            color=color)
         if marker_name in self._markers:
             self._markers[marker_name].append(new_marker)
         else:
