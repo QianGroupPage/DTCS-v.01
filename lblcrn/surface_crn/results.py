@@ -323,7 +323,7 @@ class Results:
     # TODO: decrease the figure size in case zoom = False
     def plot_evolution(self, names_in_figure=None, start_time=0, end_time=-1, title="", ax=None, save=False,
                        return_fig=False, path="", use_raw_data=False, zoom=False, show_fig=True, x_axis_xlim=0,
-                       include_markers=True):
+                       include_markers=True, legend_loc="upper right"):
         """
         Plot the concentrations from start_time until time step end_time. -1 means till the end.
 
@@ -334,6 +334,9 @@ class Results:
             end_time = self.df_raw.index.max()
 
         # print("end time", '{:.15f}'.format(end_time))
+
+        if not legend_loc:
+            legend_loc = "best"
 
         if use_raw_data:
             df = self.df_raw
@@ -382,13 +385,13 @@ class Results:
                 species = species_in_figure[j]
                 ax.tick_params(axis='both', which='both', labelsize=12)
                 ax.plot(df[species], color=self.species_colors[species], label=species, linewidth=2)
-                ax.legend(fontsize=12, numpoints=30)
+                ax.legend(fontsize=12, numpoints=30, loc=legend_loc)
 
             if include_markers:
                 for marker_name in markers_in_figure:
                     ax.tick_params(axis='both', which='both', labelsize=12)
                     ax.plot(df[marker_name], color=self.marker_colors[marker_name], label=marker_name, linewidth=2)
-                    ax.legend(fontsize=12, numpoints=30)
+                    ax.legend(fontsize=12, numpoints=30, loc=legend_loc)
 
             ax.set_title(title)
             ax.set_xlabel("Time (s)", fontsize=12)
@@ -403,7 +406,7 @@ class Results:
             if ax_given:
                 raise Exception("Ax is given as a parameter. Please save outside of this function. \n" +
                                 "Alternatively, try not giving ax as a parameter to this function")
-            fig.savefig(f"{path}/{title}")
+            fig.savefig(f"{path}/{title}", dpi=300)
         if return_fig:
             # if ax_given:
             #     raise Exception("Ax is given as a parameter, and therefore fig

@@ -71,6 +71,7 @@ class SurfaceRxn(Rxn):
         self.reactants = tuple(self.reactants)
         self.products = tuple(self.products)
         self.rate_constant = k
+        self.is_reversible = False
 
     # TODO: reactants are input as symbols and need sm to get the species object.
     def get_symbols(self) -> Set[sym.Symbol]:
@@ -132,9 +133,20 @@ class SurfaceRevRxn(SurfaceRxn):
         else:
             self.rate_constant_reverse = k2
 
+        self.forward_surface_rxn = SurfaceRxn(self.reactants, self.products, self.rate_constant)
+        self.backward_surface_rxn = SurfaceRxn(self.products, self.reactants, k=self.rate_constant_reverse)
+        self.is_reversible = True
+
     def to_rxns(self) -> Tuple[Rxn, Rxn]:
-        return SurfaceRxn(self.reactants, self.products, self.rate_constant), \
-               SurfaceRxn(self.products, self.reactants, k=self.rate_constant_reverse)
+        return self.forward_surface_rxn.surface_engine_str, self.backward_surface_rxn.surface_engine_str
+
+    @property
+    def surface_engine_str(self):
+        """
+        Mainly used to match between this class, and Surface CRN engine's internal rule class.
+        :return: a str representation in exact same style output by the Surface CRN engine.
+        """
+        return self.reactants_str + " --> " + self.products_str
 
     def __str__(self):
         return self.reactants_str + ' ↔ ' + self.products_str + ' @ k1=' + str(self.rate_constant) + ', ' \
