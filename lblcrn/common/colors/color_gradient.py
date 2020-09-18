@@ -26,7 +26,13 @@ def color_to_RGB(color):
     return color
 
 
-def color_to_HEX(color):
+def color_to_HEX(color, zero_to_one_range=True):
+    # Send to matplotlib.color early if termination is early.
+    for c in color:
+        if isinstance(c, str):
+            return tuple(colors.to_hex(color))
+    if not zero_to_one_range:
+        color = tuple(c / 256 for c in color)
     return tuple(colors.to_hex(color))
 
 

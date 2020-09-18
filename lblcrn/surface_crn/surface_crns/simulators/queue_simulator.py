@@ -4,6 +4,7 @@ import math
 from queue import *
 from lblcrn.surface_crn.surface_crns.simulators.event import Event
 
+
 class QueueSimulator:
     '''
     Surface CRN simulator based on Gillespie-like next-reaction determination
@@ -48,6 +49,10 @@ class QueueSimulator:
                 if not rule in self.rules_by_state[input_state]:
                     self.rules_by_state[input_state].append(rule)
 
+        if rxns:
+            self.rxns_by_rule_str = {rxn.surface_engine_str: rxn for rxn in self.rxns.surface_rxns}
+            # self.surface_rxns_objects_by_rule = {rule: self.rxns_by_rule_str[str(rule)] for rule in self.rule_set}
+
         # TODO
         self.concentration_trajectory = None
 
@@ -63,41 +68,10 @@ class QueueSimulator:
         # TODO: make this a dictionary from species to concentration.
         self.concs = {}
         self.times = []
-
-    # TODO:
-    def add_concs(self):
-        """
-        Add the concentrations from the current timestamps to concentration_trajectory dataframe.
-        """
-        # TODO: sum things up here.
-        # TODO: easy ways to average out the last 2s, including cutting out the "unqualified" seconds each
-        # time before you do averaging.
-        species_count = self.surface.species_count()
-
-        for k, l in self.concs.items():
-            if k not in species_count:
-                l.append(0)
-            else:
-                l.append(species_count[k])
-
-        for k, v in self.surface.species_count().items():
-            if k not in self.concs:
-                self.concs[k] = [0 for _ in self.times]
-                self.concs[k].append(v)
-
-        # self.concs.append(species_count)
-        #
-        self.times.append(self.time)
-        #
-        # current_row = pd.DataFrame(species_count, index=[self.time])
-        #
-        # if self.concentration_trajectory is None:
-        #     self.concentration_trajectory = current_row
-        # else:
-        #     # TODO: this will cause serious speed issues. Fix them.
-        #     self.concentration_trajectory = self.concentration_trajectory.append(current_row)
-        # self.concentration_trajectory.fillna(0, inplace=True)
-
+        self.add_concs()
+        if rxns:
+            # From a Marker object to its trajectory list.
+            self.marker_concs = {marker: [0] for marker in rxns.species_manager.get_all_markers()}
 
     def reset(self):
         '''
@@ -115,6 +89,7 @@ class QueueSimulator:
             self.add_next_reactions_with_node(node=node,
                                               first_reactant_only=True,
                                               exclusion_list = [])
+
     def done(self):
         '''
         True iff there are no more reactions or the simulation has reached
@@ -250,6 +225,7 @@ class QueueSimulator:
                   str(next_reaction))
 
         self.add_concs()
+        self.update_markers(next_reaction)
         return next_reaction
     #end def process_next_reaction
 
@@ -320,6 +296,95 @@ class QueueSimulator:
             node.state = output_state
             node.timestamp = self.time
     # end def update_node
+
+    def update_markers(self, reaction):
+        """
+        This should run after add_concs is run.
+        :param reaction:
+        :return:
+        """
+        # In case only text-based manifest files are provided.
+        if not self.rxns:
+            return
+
+        for conc in self.marker_concs.values():
+            if len(conc) == 0:
+                conc.append(0)
+            else:
+                conc.append(conc[-1])
+
+        rxn = self.rxns_by_rule_str[reaction.rule.identifiable_string()]
+        # Decrementing or incrementing marker count by 1 works for size-2 objects, because one rxn still matches with
+        # the decrementing or the incrementing of 1 object.
+        # TODO: the best way to increase counts.
+        # for marker_conc in self.marker_concs.values():
+        #     marker_conc.append(marker_conc[-1])
+
+        for marker in rxn.markers.reactants:
+            # if marker not in self.marker_concs:
+            #     self.marker_concs[marker] = [0 for _ in self.times]
+            # if len(self.marker_concs[marker]) < len(self.times):
+            #     if self.marker_concs[marker]:
+            #         last_value = self.marker_concs[marker][-1]
+            #     else:
+            #         last_value = 0
+            #
+            #     print(f"extended marker {marker} values", [last_value for _ in
+            #                                       range(len(self.times) - len(self.marker_concs[marker]))])
+            #
+            #     print(f"existing marker {self.marker_concs[marker]}")
+            #     self.marker_concs[marker].extend([last_value for _ in
+            #                                       range(len(self.times) - len(self.marker_concs[marker]))])
+            self.marker_concs[marker][-1] -= 1
+
+        for marker in rxn.markers.products:
+            # if marker not in self.marker_concs:
+            #     self.marker_concs[marker] = [0 for _ in self.times]
+            # if len(self.marker_concs[marker]) < len(self.times):
+            #     if self.marker_concs[marker]:
+            #         last_value = self.marker_concs[marker][-1]
+            #     else:
+            #         last_value = 0
+            #     self.marker_concs[marker].extend([last_value for _ in
+            #                                     range(len(self.times) - len(self.marker_concs[marker]))])
+            self.marker_concs[marker][-1] += 1
+
+        # TODO: get rid of markers debugging helps
+        # print("marker concs", self.marker_concs)
+
+    # TODO:
+    def add_concs(self):
+        """
+        Add the concentrations from the current timestamps to concentration_trajectory dataframe.
+        """
+        # TODO: sum things up here.
+        # TODO: easy ways to average out the last 2s, including cutting out the "unqualified" seconds each
+        # time before you do averaging.
+        species_count = self.surface.species_count()
+
+        for k, l in self.concs.items():
+            if k not in species_count:
+                l.append(0)
+            else:
+                l.append(species_count[k])
+
+        for k, v in self.surface.species_count().items():
+            if k not in self.concs:
+                self.concs[k] = [0 for _ in self.times]
+                self.concs[k].append(v)
+
+        # self.concs.append(species_count)
+        #
+        self.times.append(self.time)
+        #
+        # current_row = pd.DataFrame(species_count, index=[self.time])
+        #
+        # if self.concentration_trajectory is None:
+        #     self.concentration_trajectory = current_row
+        # else:
+        #     # TODO: this will cause serious speed issues. Fix them.
+        #     self.concentration_trajectory = self.concentration_trajectory.append(current_row)
+        # self.concentration_trajectory.fillna(0, inplace=True)
 
     def add_next_reactions_with_node(self, node, first_reactant_only = False,
                                         exclusion_list = None):

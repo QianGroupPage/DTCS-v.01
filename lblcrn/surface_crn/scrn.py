@@ -295,13 +295,18 @@ def simulate_without_display(manifest_file, lattice, species_tracked, rxns, grou
                                simulation_duration=opts.max_duration,
                                rxns=rxns)
 
+    # TODO: the following reflects older but more efficient way to keep track of concentrations.
+    # TODO: figure out whether to switch back to the older version.
+    # times = [0]
+    # concs = dict()
+    # for species in species_tracked:
+    #     concs[species] = [0]
+    # for node in lattice:
+    #     if node.state in concs:
+    #         concs[node.state][0] += 1
     times = [0]
-    concs = dict()
-    for species in species_tracked:
-        concs[species] = [0]
-    for node in lattice:
-        if node.state in concs:
-            concs[node.state][0] += 1
+    counter = simulator.surface.species_count()
+    concs = {species_name: [counter[species_name]] for species_name in species_tracked}
     ipython_visuals.update_progress(0 / opts.max_duration, "Simulation in progress")
 
     section_number = 0
@@ -334,6 +339,9 @@ def simulate_without_display(manifest_file, lattice, species_tracked, rxns, grou
         # print(f"times has length {len(times)}; there are {section_number} sections")
         if section_length != -1 and len(times) >= section_length:
             section_number += 1
+            # Add marker concentrations from the simulation engine
+            for marker, conc_list in simulator.marker_concs.items():
+                concs[marker.name] = conc_list[len(conc_list) - len(times):]
             r = Results.from_concs_times(manifest_file, rxns, concs, times)
             start_time = times[0]
             times = []
@@ -351,6 +359,9 @@ def simulate_without_display(manifest_file, lattice, species_tracked, rxns, grou
     # Save the last section, if saving is necessary.
     if section_length != -1 and times:
         section_number += 1
+        # Add marker concentrations from the simulation engine
+        for marker, conc_list in simulator.marker_concs.items():
+            concs[marker.name] = conc_list[len(conc_list) - len(times):]
         r = Results.from_concs_times(manifest_file, rxns, concs, times)
         start_time = times[0]
         times = []
@@ -397,6 +408,9 @@ def simulate_without_display(manifest_file, lattice, species_tracked, rxns, grou
         r = Results(manifest_file, rxns, df=df_raw)
     # Construct a dataframe
     else:
+        # Add marker concentrations from the simulation engine
+        for marker, conc_list in simulator.marker_concs.items():
+            concs[marker.name] = conc_list[:]
         r = Results.from_concs_times(manifest_file, rxns, concs, times)
 
     #     TODO: add rel_tol

@@ -55,9 +55,17 @@ class Results:
         species_tracked = sorted(list(set(list(rxns.get_symbols()) + list(primary_s))), key=lambda s: str(s))
         self.species_ordering = [s for s in species_tracked if s in primary_s or s not in sub_s_list]
         self.species_colors = {s: color_index[s] for s in self.species_ordering}
+
+
+        marker_names = rxns.species_manager.get_marker_names()
+        self.marker_names_ordering = sorted(marker_names)
+        self.marker_colors = {marker_name: ''.join(color_to_HEX(color_index[marker_name], zero_to_one_range=False)) for marker_name in
+                              marker_names}
+
         self.species_ordering = [str(s) for s in self.species_ordering]
-        self.species_colors = {str(s): ''.join(color_to_HEX(c)) for s, c in self.species_colors.items()}
+        self.species_colors = {str(s): ''.join(color_to_HEX(c, zero_to_one_range=False)) for s, c in self.species_colors.items()}
         import sympy as sym
+
         self.substances = {s: rxns.species_manager.species_from_symbol(sym.Symbol(s)) for s in self.species_ordering}\
             if rxns else {}
         # species_tracked = list(rxns.get_symbols() + list(primary_s))
@@ -100,7 +108,8 @@ class Results:
 
         def trim_axs(axs, N):
             """little helper to massage the axs list to have correct length..."""
-            """https://matplotlib.org/3.1.1/gallery/lines_bars_and_markers/markevery_demo.html#sphx-glr-gallery-lines-bars-and-markers-markevery-demo-py"""
+            """https://matplotlib.org/3.1.1/gallery/lines_bars_and_markers/
+            markevery_demo.html#sphx-glr-gallery-lines-bars-and-markers-markevery-demo-py"""
             axs = axs.flat
             for ax in axs[N:]:
                 ax.remove()
@@ -312,8 +321,9 @@ class Results:
         # TODO: how shall we name the summed species?
 
     # TODO: decrease the figure size in case zoom = False
-    def plot_evolution(self, species_in_figure=None, start_time=0, end_time=-1, title="", ax=None, save=False,
-                       return_fig=False, path="", use_raw_data=False, zoom=False, show_fig=True, x_axis_xlim=0):
+    def plot_evolution(self, names_in_figure=None, start_time=0, end_time=-1, title="", ax=None, save=False,
+                       return_fig=False, path="", use_raw_data=False, zoom=False, show_fig=True, x_axis_xlim=0,
+                       include_markers=True):
         """
         Plot the concentrations from start_time until time step end_time. -1 means till the end.
 
@@ -331,11 +341,22 @@ class Results:
             df = self.df
         df = df[(df.index <= end_time) & (df.index >= start_time)]
 
-        if species_in_figure is None:
+        if names_in_figure is None:
+            names_in_figure = self.species_ordering
             species_in_figure = self.species_ordering
+            markers_in_figure = self.marker_names_ordering
+        # Sort user provided names into species and/or markers.
+        else:
+            species_in_figure = []
+            markers_in_figure = []
+            for name in names_in_figure:
+                if name in self.species_ordering:
+                    species_in_figure.append(name)
+                if name in self.marker_names_ordering:
+                    markers_in_figure.append(name)
 
         if zoom:
-            irange = range(len(species_in_figure) - 1)
+            irange = range(len(names_in_figure) - 1)
         else:
             irange = [0]
 
@@ -357,12 +378,17 @@ class Results:
         for i in irange:
             ax = axes[i]
             ax.set_xlim(left=x_axis_xlim, right=end_time)
-            # print(f"left {0}, right {end_time*1.1}")
             for j in range(i, len(species_in_figure)):
                 species = species_in_figure[j]
                 ax.tick_params(axis='both', which='both', labelsize=12)
                 ax.plot(df[species], color=self.species_colors[species], label=species, linewidth=2)
                 ax.legend(fontsize=12, numpoints=30)
+
+            if include_markers:
+                for marker_name in markers_in_figure:
+                    ax.tick_params(axis='both', which='both', labelsize=12)
+                    ax.plot(df[marker_name], color=self.marker_colors[marker_name], label=marker_name, linewidth=2)
+                    ax.legend(fontsize=12, numpoints=30)
 
             ax.set_title(title)
             ax.set_xlabel("Time (s)", fontsize=12)
