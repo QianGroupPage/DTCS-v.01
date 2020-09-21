@@ -224,7 +224,11 @@ class RxnSystem(monty.json.MSONable):
             return self.color_index
 
         random.seed(3)
-        colors = [] if not self.surface.color else [self.surface.color]
+        colors = []
+        if self.surface and self.surface.color:
+            color = color_to_RGB(self.surface.color)
+            colors.append(color)
+
         if self.color_index is None:
             self.color_index = {}
         for index, symbol in enumerate(self.species_manager.symbols_ordering):
@@ -237,23 +241,24 @@ class RxnSystem(monty.json.MSONable):
                 color = color_to_RGB(generate_new_color(colors))
                 colors.append(color)
                 self.species_manager[symbol].color = color
+            else:
+                color = color_to_RGB(color)
 
-            self.color_index[symbol] = self.species_manager[symbol].color
+            self.color_index[symbol] = color
 
         if self.surface:
-            color = self.surface.color
-            if color is None:
+            if self.surface.color is None:
                 color = color_to_RGB(generate_new_color(colors))
                 colors.append(color)
                 self.surface.color = color
-            self.color_index[self.surface.symbol()] = color
+            self.color_index[self.surface.symbol()] = self.surface.color
 
             for s in self.surface.sites:
                 if not s.color:
                     color = color_to_RGB(generate_new_color(colors))
                     s.color = color
                 else:
-                    color = s.color
+                    color = color_to_RGB(s.color)
                 colors.append(color)
                 self.color_index[s.symbol] = color
 
@@ -264,7 +269,7 @@ class RxnSystem(monty.json.MSONable):
                     if not marker.color:
                         marker.color = color
                     else:
-                        color = marker.color
+                        color = color_to_RGB(marker.color)
                         marker_colors.add(color)
                 if len(marker_colors) > 1:
                     raise ValueError(f"Marker with name {marker_name} was assigned multiple colors: " +
@@ -273,7 +278,6 @@ class RxnSystem(monty.json.MSONable):
                 colors.append(color)
                 # TODO: using a string as key here, whereas all other keys are symbol.symbols
                 self.color_index[marker_name] = color
-
         return self.color_index
 
     def show_colors(self):

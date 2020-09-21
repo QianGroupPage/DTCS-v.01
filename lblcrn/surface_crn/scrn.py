@@ -66,7 +66,8 @@ def scrn_simulate_single_run(rxns, time_max=100, lattice=None, display_class=Non
             r.df_raw.to_csv(f"{os.getcwd()}/{trajectory_path}/trajectory.gzip",
                             compression="gzip")
         else:
-            r.df_raw.to_csv(f"{os.getcwd()}/{trajectory_path}/trajectory.csv", None)
+            print(f"trajectory is at " + f"{os.getcwd()}/{trajectory_path}/trajectory.csv")
+            r.df_raw.to_csv(f"{os.getcwd()}/{trajectory_path}/trajectory.csv")
 
     #
     # if manifest_file:
