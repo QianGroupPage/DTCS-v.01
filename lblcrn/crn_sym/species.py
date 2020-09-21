@@ -151,6 +151,23 @@ class Species(monty.json.MSONable):
                f'orbitals={repr(self.orbitals)}' + f'color={repr(self.color)}, size={self.size})'
 
 
+class Marker(monty.json.MSONable):
+    """
+    A marker object to mark occurances of a given species with a different name.
+    """
+    def __init__(self, species: str, name: str, species_symbol: sym.Symbol = None):
+        self.species = species
+        self.species_symbol = species_symbol if species_symbol else sym.Symbol(species.name)
+        self.name = name
+        self.initial_count = 0
+
+    def __str__(self):
+        return f'Marker with name {self.name} for species {repr(self.species)}'
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}(name={repr(self.name)}, species={repr(self.species)}'
+
+
 class SpeciesManager(monty.json.MSONable):
     """A smart wrapper of a dictionary {sym.Symbol: Species}.
 
@@ -174,6 +191,8 @@ class SpeciesManager(monty.json.MSONable):
 
         self.be_name_dict = {}
         self.default_surface_name = None
+
+        self._markers = {}
 
     @property
     def species(self) -> List[sym.Symbol]:
@@ -214,8 +233,7 @@ class SpeciesManager(monty.json.MSONable):
                 default_site_sym = sym.Symbol(parent.sub_species_name(Site.default))
                 if default_site_sym not in self._species:
                     # TODO: change site.default to default name, as appropriate
-                    self._species[default_site_sym] = parent.create_sub_species(site=Site(Site.default,
-                                                                                          parent.site))
+                    self._species[default_site_sym] = parent.create_sub_species(site=Site(Site.default, parent.site))
         else:
             symbol = sym.Symbol(name)
             if not isinstance(orbitals, list):
@@ -233,14 +251,45 @@ class SpeciesManager(monty.json.MSONable):
         self._species[symbol] = s
         return symbol
 
-    def name_be(self, name: str, value: float, orbital_name: str = "1S") -> None:
+    def drop_marker(self, species_symbol: Union[sym.Symbol, Site], marker_name: str):
+        """
+
+        It's possible to mark two different species under the same name.
+        :param species_symbol: symbol of the species being marked;
+        :param name: name of the marker
+        :return:
+        """
+        if marker_name in self._markers:
+            for marker in self._markers[marker_name]:
+                if marker.species.name == str(species_symbol):
+                    return marker
+        new_marker = Marker(species_symbol.name, marker_name, species_symbol=sym.Symbol(species_symbol.name))
+        if marker_name in self._markers:
+            self._markers[marker_name].append(new_marker)
+        else:
+            self._markers[marker_name] = [new_marker]
+        return new_marker
+
+    def get_markers(self, name):
+        return self._markers[name]
+
+    def get_marker_names(self):
+        return self._markers.keys()
+
+    def get_all_markers(self):
+        all_markers = []
+        for markers in self._markers.values():
+            all_markers.extend(markers)
+        return all_markers
+
+    def name_be(self, name: str, value: float, orbital_name: str = "1S", color="") -> None:
         """
         name: the name for the binding energy
         value: numerical value of the binding energy
         """
         self.be_name_dict[value] = name
         # add a placeholder species
-        self.make_species(name, [Orbital(orbital_name, value)])
+        self.make_species(name, [Orbital(orbital_name, value)], color=color)
 
     def species_from_symbol(self, key: sym.Symbol) -> Species:
         return self._species[key]

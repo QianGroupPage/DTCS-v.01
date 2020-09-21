@@ -1,4 +1,3 @@
-from lblcrn.surface_crn.surface_crns.base import *
 import pygame
 import math
 '''
@@ -66,6 +65,9 @@ class SurfaceDisplay(object):
         '''
         raise NotImplementedError("You need to override the 'render' " + \
                                   "method of Surface.")
+
+    def re_render(self):
+        return
 
     def update_node(self, node):
         '''
@@ -148,7 +150,7 @@ class SquareGridDisplay(object):
         return locals()
     pixels_per_node = property(**pixels_per_node())
 
-    def render(self, parent_surface, x_pos = 0, y_pos = 0):
+    def render(self, parent_surface, x_pos=0, y_pos=0, width=0, height=0):
         debug = False
         '''
         Set up the display and make the first render. This must be called before
@@ -170,6 +172,9 @@ class SquareGridDisplay(object):
         # Initial render
         for node in self.grid:
             self.update_node(node)
+
+    def re_render(self):
+        return
 
     def update_node(self, node):
         '''
@@ -207,8 +212,8 @@ class SquareGridDisplay(object):
         return pygame.Rect(x_pos, y_pos, self.node_width, self.node_height)
 
     def make_node_text(self, node):
-        BLACK = (0,0,0)
-        WHITE = (255,255,255)
+        BLACK = (0, 0, 0)
+        WHITE = (255, 255, 255)
         node_color = self.colormap[node.state]
         if sum(node_color) < 150:
             text_color = WHITE
@@ -297,7 +302,7 @@ class HexGridDisplay(object):
         return locals()
     pixels_per_node = property(**pixels_per_node())
 
-    def render(self, parent_surface, x_pos = 0, y_pos = 0):
+    def render(self, parent_surface, x_pos = 0, y_pos = 0, width=0, height=0):
         debug = False
         '''
         Set up the display and make the first render. This must be called before
@@ -334,6 +339,9 @@ class HexGridDisplay(object):
             text_rect.center = self.get_center(node)
             self.display_surface.blit(node_text_surface,
                                       text_rect)
+
+    def re_render(self):
+        return
 
     def make_node_hex(self, node):
         '''
@@ -496,7 +504,7 @@ class ParallelEmulatedSquareGridDisplay(object):
         return locals()
     pixels_per_node = property(**pixels_per_node())
 
-    def render(self, parent_surface, x_pos = 0, y_pos = 0):
+    def render(self, parent_surface, x_pos=0, y_pos=0, width=0, height=0):
         debug = False
         '''
         Set up the display and make the first render. This must be called before
@@ -519,6 +527,9 @@ class ParallelEmulatedSquareGridDisplay(object):
         for x in range(self.grid.x_size):
             for y in range(self.grid.y_size):
                 self.update_node_at_position(x, y)
+
+    def re_render(self):
+        return
 
     def update_node_at_position(self, x, y):
         self.update_node(self.grid.getnode(x,y))

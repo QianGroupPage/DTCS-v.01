@@ -257,6 +257,14 @@ class RxnSystem(monty.json.MSONable):
                 colors.append(color)
                 self.color_index[s.symbol] = color
 
+            for marker_name in self.species_manager.get_marker_names():
+                color = color_to_RGB(generate_new_color(colors))
+                for marker in self.species_manager.get_markers(marker_name):
+                    marker.color = color
+                colors.append(color)
+                # TODO: using a string as key here, whereas all other keys are symbol.symbols
+                self.color_index[marker_name] = color
+
         return self.color_index
 
     def show_colors(self):

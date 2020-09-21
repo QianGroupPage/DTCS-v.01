@@ -1,10 +1,6 @@
 from lblcrn.crn_sym import Rxn, RevRxn, Surface, SurfaceRxn, SurfaceRevRxn, Schedule, Conc
 from lblcrn.common import color_to_RGB
-import re
-import io
 import random
-import pygame
-import math
 
 
 def to_str(rule):
@@ -83,8 +79,29 @@ def generate_surface(rsys, random_seed=30):
     if rsys.surface is None:
         return None
 
-    if rsys.surface.structure == "hexagon":
-        species = {"3F": [], "top": []}
+    if rsys.surface.use_coord_grid:
+        #  TODO: this is very horrible design!
+        rsys.surface.set_default_name("top", rsys.surface.name)
+        initial_concentrations = {site_name: {} for site_name in rsys.surface.allowed_sites}
+
+        for c in rsys.schedules:
+            # TODO
+            if isinstance(c, Schedule) and not isinstance(c, Conc):
+                raise Exception(f"{c} is a schedule, not an initial concentration." +
+                                f" This is not currently supported in the Surface CRN.")
+
+            if not rsys.species_manager.species_from_symbol(c.symbol).site or \
+                   rsys.species_manager.species_from_symbol(c.symbol).site.name == "top":
+                initial_concentrations["top"][str(c.symbol)] = int(str(c.concentration))
+            else:
+                initial_concentrations[rsys.species_manager.species_from_symbol(c.symbol).site.name][str(c.symbol)] = \
+                        int(str(c.concentration))
+            rsys.surface.set_initial_concentrations(initial_concentrations)
+
+            # TODO: rename the sites in coord_grid
+        return None
+    elif rsys.surface.structure == "hexagon":
+        species = {"threefold": [], "top": []}
         for c in rsys.schedules:
             # TODO
             if isinstance(c, Schedule) and not isinstance(c, Conc):
@@ -94,25 +111,24 @@ def generate_surface(rsys, random_seed=30):
             if not rsys.species_manager.species_from_symbol(c.symbol).site or \
                    rsys.species_manager.species_from_symbol(c.symbol).site.name == "top":
                 species["top"].extend([str(c.symbol) for _ in range(int(str(c.concentration)))])
-            elif rsys.species_manager.species_from_symbol(c.symbol).site.name == "3F":
-                species["3F"].extend([str(c.symbol) for _ in range(int(str(c.concentration)))])
+            elif rsys.species_manager.species_from_symbol(c.symbol).site.name == "threefold":
+                species["threefold"].extend([str(c.symbol) for _ in range(int(str(c.concentration)))])
 
+        # Initiate the hexagonal grid
         rows = rsys.surface.size[0]
         cols = rsys.surface.size[1]
-
         surface = HexGridPlusIntersections(rows, cols)
-
         for n in surface:
             if n.is_intersection:
-                n.state = "3F"
+                n.state = "threefold"
             else:
                 n.state = rsys.surface.name
 
         # Popultate the structure with initial atoms.
-        initial_nodes = {"3F": [], "top": []}
+        initial_nodes = {"threefold": [], "top": []}
         for n in surface:
             if n.is_intersection:
-                initial_nodes["3F"].append(n)
+                initial_nodes["threefold"].append(n)
             else:
                 initial_nodes["top"].append(n)
 
@@ -156,7 +172,7 @@ def generate_colors(rsys):
             color = tuple(c for c in color_to_RGB(color))
 
         color_strs += s.name + ": " + str(color) + "\n"
-    print(color_strs)
+    # print(color_strs)
     return f"""!START_COLORMAP\n{color_strs}!END_COLORMAP\n"""
 
 
