@@ -54,6 +54,7 @@ class Results:
         primary_s = rxns.species_manager.to_sum_dict.keys()
         species_tracked = sorted(list(set(list(rxns.get_symbols()) + list(primary_s))), key=lambda s: str(s))
         self.species_ordering = [s for s in species_tracked if s in primary_s or s not in sub_s_list]
+        self.sub_s_list = sub_s_list
         self.species_colors = {s: color_index[s] for s in self.species_ordering}
 
 
@@ -64,6 +65,9 @@ class Results:
 
         self.species_ordering = [str(s) for s in self.species_ordering]
         self.species_colors = {str(s): ''.join(color_to_HEX(c, zero_to_one_range=False)) for s, c in self.species_colors.items()}
+        self.sub_species_colors = {str(s): ''.join(color_to_HEX(color_index[s], zero_to_one_range=False)) for s in self.sub_s_list}
+
+
         import sympy as sym
 
         self.substances = {s: rxns.species_manager.species_from_symbol(sym.Symbol(s)) for s in self.species_ordering}\
@@ -300,6 +304,8 @@ class Results:
             self.df[k] = summed_series
         self.resample_evolution()
 
+
+
     def sum_same_be(self):
         """
         Sum the number of species with the same binding energy.
@@ -348,15 +354,24 @@ class Results:
             names_in_figure = self.species_ordering
             species_in_figure = self.species_ordering
             markers_in_figure = self.marker_names_ordering
+            sub_species_in_figure = self.sub_s_list
         # Sort user provided names into species and/or markers.
         else:
             species_in_figure = []
             markers_in_figure = []
+            sub_species_in_figure = []
             for name in names_in_figure:
                 if name in self.species_ordering:
                     species_in_figure.append(name)
-                if name in self.marker_names_ordering:
+                    if name in self.marker_names_ordering:
+                        raise ValueError(f"Marker {name} cannot share a name with a species, a site, or the surface")
+                elif name in self.marker_names_ordering:
                     markers_in_figure.append(name)
+                elif name in self.sub_s_list:
+                    sub_species_in_figure.append(name)
+                # TODO: verify the following sentence is absolutely accurate.
+                else:
+                    raise ValueError(f"Name {name} is not in the reaction system.")
 
         if zoom:
             irange = range(len(names_in_figure) - 1)
@@ -387,11 +402,19 @@ class Results:
                 ax.plot(df[species], color=self.species_colors[species], label=species, linewidth=2)
                 ax.legend(fontsize=12, numpoints=30, loc=legend_loc)
 
+            # for sub_species_name in sub_species_in_figure:
+            #     ax.tick_params(axis='both', which='both', labelsize=12)
+            #     ax.plot(df[sub_species_name], color=self.sub_species_colors[sub_species_name], label=sub_species_name, linewidth=2)
+            #     ax.legend(fontsize=12, numpoints=30, loc=legend_loc)
+
             if include_markers:
                 for marker_name in markers_in_figure:
                     ax.tick_params(axis='both', which='both', labelsize=12)
                     ax.plot(df[marker_name], color=self.marker_colors[marker_name], label=marker_name, linewidth=2)
                     ax.legend(fontsize=12, numpoints=30, loc=legend_loc)
+
+
+
 
             ax.set_title(title)
             ax.set_xlabel("Time (s)", fontsize=12)

@@ -232,7 +232,7 @@ class RxnSystem(monty.json.MSONable):
         if self.color_index is None:
             self.color_index = {}
         for index, symbol in enumerate(self.species_manager.symbols_ordering):
-            if symbol in self.surface.symbols:
+            if self.surface and symbol in self.surface.symbols:
                 continue
             if self.color_index and symbol in self.color_index:
                 continue
