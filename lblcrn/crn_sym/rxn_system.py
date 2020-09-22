@@ -2,12 +2,13 @@ import copy
 from typing import List
 import sympy as sym
 import monty.json
+import networkx as nx
 import random
 
 import lblcrn
 from lblcrn.crn_sym import species
 from lblcrn.crn_sym import conditions
-from lblcrn.crn_sym.reaction import Rxn
+from lblcrn.crn_sym.reaction import Rxn, RevRxn
 
 from lblcrn.crn_sym import surface
 from lblcrn.crn_sym.surface_reaction import SurfaceRxn
@@ -23,6 +24,7 @@ class RxnSystem(monty.json.MSONable):
     Attributes:
         components: Everything the RxnSystem contains
         terms: Terms in the ODE of the system.
+        reactions: Bulk CRN reactions in the system.
         schedules: The Schedules and Concs passed during initialization.
         conc_eqs: The ConcEqs in the system.
         conc_diffeqs: The ConcDiffEqs in the system.
@@ -67,6 +69,7 @@ class RxnSystem(monty.json.MSONable):
         self.conc_diffeqs = []
         self.species_manager = None
         self.surface = None
+        self.reactions = []
 
         for component in self.components:
             if isinstance(component, conditions.Schedule):
@@ -76,6 +79,7 @@ class RxnSystem(monty.json.MSONable):
                 # pass
                 self.surface_rxns.append(component)
             elif isinstance(component, Rxn):
+                self.reactions.append(component)
                 self.terms.extend(component.to_terms())
             elif isinstance(component, conditions.Term):
                 self.terms.append(component)
@@ -292,6 +296,37 @@ class RxnSystem(monty.json.MSONable):
         :return: a list for names for appearance on the surface
         """
         return [self.surface.name] + [s.name for s in self.surface.sites]
+    
+    def network_graph(self) -> nx.DiGraph:
+        """Create a reaction network graph (data structure) and return it.
+        """
+        G = nx.DiGraph()
+
+        def add(r, p):
+            for reactant in r:
+                for product in p:
+                    G.add_edge(reactant, product)
+
+        for rxn in self.reactions:
+            r = rxn.reactants.free_symbols
+            p = rxn.products.free_symbols
+            
+            add(r, p)
+            if isinstance(rxn, RevRxn):
+                add(p, r)
+        return G
+    
+    def network_graph_plot(self):
+        """Plot the reaction network graph for this system.
+        """
+        G = self.network_graph()
+
+        nx.draw_shell(G, with_labels=True, **{
+            'node_color': 'lightblue',
+            'node_size': 500,
+            'edge_color': 'gray',
+            'width': 1,
+        })
 
     def __str__(self):
         s = self.__class__.__name__ + ' with components:\n'

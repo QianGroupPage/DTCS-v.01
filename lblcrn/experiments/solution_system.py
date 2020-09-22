@@ -199,18 +199,29 @@ class XPSSystemRunner:
         data = self.initializer_data[index]
         sols = []
         cts = []
+        sol_mult_1 = None
+        cts_mult_1 = None
 
         for i in range(len(data.constants)):
             for j in range(len(self.multipliers)):
-                scaled = list(data.constants)
-                scaled[i] *= self.multipliers[j]
+                if self.multipliers[j] == 1 and sol_mult_1:
+                    sols.append(sol_mult_1)
+                    cts.append(cts_mult_1)
 
-                rsys = self.rsys_generator(scaled)
-                s, ts = xps.simulate_xps_with_cts(rsys, time=self.time, title=data.title + " Eq: "
-                    + str(i) + "Constant: " + str(j))
+                else:
+                    scaled = list(data.constants)
+                    scaled[i] *= self.multipliers[j]
 
-                cts.append(ts)
-                sols.append(s)
+                    rsys = self.rsys_generator(scaled)
+                    s, ts = xps.simulate_xps_with_cts(rsys, time=self.time, title=data.title + " Eq: "
+                        + str(i) + "Constant: " + str(j))
+
+                    cts.append(ts)
+                    sols.append(s)
+                    if self.multipliers[j] == 1:
+                        sol_mult_1 = s
+                        cts_mult_1 = ts
+
                 print('Solved for ('+str(i)+', '+str(j)+')')
                 print(scaled)
                 print('\n')
