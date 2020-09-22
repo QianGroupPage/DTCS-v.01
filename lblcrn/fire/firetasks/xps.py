@@ -15,7 +15,8 @@ import numpy as np
 from sympy import Symbol
 
 from lblcrn import lblcrn_echo_on
-from lblcrn import SpeciesManager, Orbital, XPSExperiment
+from lblcrn.crn_sym.species import SpeciesManager, Orbital
+from lblcrn.experiments.xps import XPSExperiment
 
 __author__ = 'Andrew Bogdan'
 __email__ = 'andrewbogdan@lbl.gov'
