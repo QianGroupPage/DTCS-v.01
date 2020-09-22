@@ -1,4 +1,6 @@
-"""Classes for describing the conditions of an reaction system experiment.
+"""TODO: Old
+
+Classes for describing the conditions of an reaction system experiment.
 
 Exports:
     T: Time, accessible anywhere through sym.Symbol('t').
@@ -23,58 +25,9 @@ Usage:
     two initial concentrations, that's a contradiction).
 """
 
-from typing import Set
-
-import monty.json
 import sympy as sym
-from sympy.parsing import sympy_parser
 
-import lblcrn
-
-
-T = sym.Symbol('t')  # Time
-
-
-class ChemExpression(monty.json.MSONable):
-    """Abstract base class for classes in this module.
-
-    It is essentially a pair of a symbol/species and an expression which
-    conveys information about that species.
-    """
-
-    def __init__(self, symbol: sym.Symbol, expression: sym.Expr):
-        self.symbol = symbol
-        self.expression = sym.sympify(expression)
-
-    def as_dict(self) -> dict:
-        """Return a MSON-serializable dict representation."""
-        d = {
-            '@module': self.__class__.__module__,
-            '@class': self.__class__.__name__,
-            '@version': lblcrn.__version__,  # TODO: Better way to do this?
-            'expression': str(self.expression),
-            'symbol': str(self.symbol)
-        }
-        return d
-
-    @classmethod
-    def from_dict(cls, d: dict):
-        """Load from a dict representation."""
-        d['expression'] = sympy_parser.parse_expr(d['expression'])
-        d['symbol'] = sympy_parser.parse_expr(d['symbol'])
-        return cls(**d)
-
-    def get_symbols(self) -> Set[sym.Symbol]:
-        """Get all of the symbols in the ChemExpression (except for time)."""
-
-        symbols = self.symbol.free_symbols
-        symbols.update(self.expression.free_symbols)
-        symbols.discard(T)  # Time is not a species
-        return symbols
-
-    def __repr__(self):
-        return f'{self.__class__.__name__}(symbol={repr(self.symbol)}, ' \
-               f'expression={repr(self.expression)})'
+from lblcrn.spec.crn.crn_abc import ChemInfo, ChemExpression
 
 
 class Term(ChemExpression):  # TODO(Andrew) Document here & beyond.
@@ -117,14 +70,18 @@ class ConcDiffEq(ChemExpression):
         return f'[{self.symbol}]\' = {self.expression}'
 
 
-class Schedule(monty.json.MSONable):
+class Schedule(ChemInfo):
     """A schedule describing when amounts of a species are added/removed.
 
     Attributes:
         symbol: The species the Schedule corresponds to.
     """
 
-    def __init__(self, symbol: sym.Symbol, schedule={}):  # TODO: Remove dict
+    _default = {
+        'schedule': dict,
+    }
+
+    def __init__(self, symbol: sym.Symbol, schedule=None, **kwargs):
         """Create a new schedule given a symbol and a schedule.
 
         The schedule can be either a dictionary or a list. Internally, it will
@@ -140,51 +97,39 @@ class Schedule(monty.json.MSONable):
         If you do not specify anything to do at time 0, it will assume that at
         time 0 you want concentration 0.
         """
-        self.symbol = symbol
+        super().__init__(symbol=symbol, **kwargs)
 
         # Handle schedule if it's a dict
         if isinstance(schedule, dict):
-            self._schedule = schedule  # TODO: Get a better name for this
-
+            self.schedule = schedule
         # Handle schedule if it's a list or tuple
         elif isinstance(schedule, list):
-            self._schedule = {}
+            self.schedule = {}
 
             # Sum the times
             time = 0
             for time_diff, amount in schedule:
                 time += time_diff
-                self._schedule[time] = amount
+                self.schedule[time] = amount
 
         # Add the initial if it's not specified.
-        if not 0 in self._schedule:
-            self._schedule[0] = 0
+        if 0 not in self.schedule:
+            self.schedule[0] = 0
 
-    def as_dict(self) -> dict:
-        """Return a MSON-serializable dict representation."""
-        d = {
-            '@module': self.__class__.__module__,
-            '@class': self.__class__.__name__,
-            '@version': lblcrn.__version__,  # TODO: Better way to do this?
-            'symbol': str(self.symbol),
-            'schedule': self._schedule
-        }
-        return d
+    def unpack(self):
+        return self.schedule.items()
 
     @classmethod
     def from_dict(cls, d: dict):
-        """Load from a dict representation."""
-        d['symbol'] = sympy_parser.parse_expr(d['symbol'])
-        return cls(**d)
-
-    def items(self):
-        """So that you can do schedule.items() as if it's a dict."""
-        return self._schedule.items()
+        if 'schedule' in d:
+            d['schedule'] = {float(time): amount for time, amount
+                             in d['schedule'].items()}
+        return super(Schedule, cls).from_dict(d)
 
     def __str__(self):
         s = f'{self.__class__.__name__} for {self.symbol}:\n'
 
-        kvp = [pair for pair in self._schedule.items()]
+        kvp = [pair for pair in self.schedule.items()]
         kvp.sort(key=lambda pair: pair[0])
 
         for time, amount in kvp:
@@ -193,9 +138,7 @@ class Schedule(monty.json.MSONable):
 
     def __repr__(self):
         return f'{self.__class__.__name__}(symbol={repr(self.symbol)}, ' \
-               f'schedule={repr(self._schedule)})'
-
-    unpack = items
+               f'schedule={repr(self.schedule)})'
 
 
 class Conc(Schedule):
@@ -205,27 +148,27 @@ class Conc(Schedule):
     concentration added at t=0.
     """
 
-    def __init__(self, symbol, concentration, locs=[]):
-        """
-        Make a new Conc: it's a Schedule where it all gets added at t=0.
-        """
+    def __init__(self, symbol: sym.Symbol, concentration: float, **kwargs):
+        """Make a new Conc: it's a Schedule where it all gets added at t=0."""
+        super().__init__(symbol=symbol, schedule={0: concentration}, **kwargs)
 
-        Schedule.__init__(self, symbol, {0: concentration})
-        self.concentration = concentration
-        self.locs = locs
+    @property
+    def concentration(self) -> float:
+        return self.schedule[0]
 
-    def as_dict(self) -> dict:
-        """Return a MSON-serializable dict representation."""
-        d = super().as_dict()
-        del d['schedule']
-        d['concentration'] = self.concentration
-        return d
+    @concentration.setter
+    def concentration(self, value: float):
+        self.schedule[0] = value
+
+    @concentration.deleter
+    def concentration(self):
+        del self.schedule
 
     @classmethod
     def from_dict(cls, d: dict):
         """Load from a dict representation."""
-        d['symbol'] = sympy_parser.parse_expr(d['symbol'])
-        return cls(**d)
+        d['concentration'] = d.pop('schedule')['0']
+        return super(Conc, cls).from_dict(d)
 
     def __str__(self):
         return f'[{self.symbol}] = {self.concentration} @ t=0'

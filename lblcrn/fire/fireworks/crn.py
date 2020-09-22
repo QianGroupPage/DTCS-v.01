@@ -8,6 +8,7 @@ from typing import Optional
 from atomate.common.firetasks.glue_tasks import PassCalcLocs
 from atomate.utils.utils import get_logger
 from fireworks import Firework
+from monty.json import jsanitize
 
 from lblcrn import RxnSystem
 from lblcrn.fire.firetasks.crn import BulkCRNSim

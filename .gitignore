@@ -5,6 +5,7 @@ __pycache__/
 data/
 !examples/data/
 venv/
+venv
 dist/
 *.egg-info
 .DS_Store

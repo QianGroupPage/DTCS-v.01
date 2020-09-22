@@ -10,6 +10,7 @@ from atomate.vasp.config import DB_FILE, VASP_CMD
 from atomate.vasp.fireworks.core import OptimizeFW, StaticFW
 from atomate.vasp.powerups import add_additional_fields_to_taskdocs
 from fireworks import Firework, Workflow
+from monty.json import jsanitize
 from pymatgen.io.vasp.sets import MPRelaxSet, MPStaticSet
 
 from lblcrn import _echo
@@ -155,7 +156,7 @@ def get_wf_simulate_xps(  # TODO(Andrew) Typehints
                     #  a workflow, as it needs to be unique for RxnSystem
                     #  to work anyway.
                 },
-                'extra_outcar_read': ['core_state_eigen'],
+                'extra_outcar_read': ['core_state_eigen'],  # TODO: This is a bodge
             },
         )
 

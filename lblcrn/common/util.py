@@ -1,4 +1,7 @@
+import itertools
 import re
+import string
+from typing import Union
 
 import numpy as np
 from matplotlib import colors
@@ -58,3 +61,24 @@ def symbol_to_name(sym_or_str):
         return sym_or_str.name
     else:
         return sym_or_str
+
+
+def alphabet():
+    """Generate A, B, C, ... Z, AA, AB, ... ZZ, AAA, AAB, and so on."""
+    for size in itertools.count(1):
+        for s in itertools.product(string.ascii_uppercase, repeat=size):
+            yield ''.join(s)
+
+
+def anon_names(num):
+    """Return num anonymous names (from alphabet())."""
+    return list(itertools.islice(alphabet(), num))
+
+
+def flat(lst: Union[list, tuple]):
+    """An interator which flattens a list/tuple of list/tuples."""
+    for item in lst:
+        if isinstance(item, (list, tuple)):
+            yield from flat(item)
+        else:
+            yield item

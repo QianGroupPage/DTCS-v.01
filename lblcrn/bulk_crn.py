@@ -29,12 +29,12 @@ def solve_rsys_ode(rsys, time_max: float, end_when_settled: bool, **options):
     """
 
     ode_func = rsys.get_ode_functions()
-    num_species = len(rsys._symbols)
+    num_species = len(rsys.get_symbols())
 
     # schedule, a dictionary {time : [amount to add for species no. index]}
     schedule = collections.defaultdict(lambda: [0] * num_species)
     for index in range(num_species):
-        for time, amount in rsys.scheduler[index].items():
+        for time, amount in rsys.scheduler[index].unpack():
             schedule[time][index] += amount
 
     # This is an ordered list of all the times at which we add/remove stuff.
