@@ -22,7 +22,7 @@ class Results:
     """
     TIME_COL_NAME = "Time (s) "  # column name used for the time entry
 
-    def __init__(self, manifest_file, rxns, df=None):
+    def __init__(self, manifest_file, rxns, df=None, sum_be=True, sum_sub_species=True):
         """
         :param manifest_file:
         :param rxns:
@@ -81,8 +81,10 @@ class Results:
         # self.species_colors = {s.name: color_to_HEX(c) for s, c in self.species_colors.items()}
 
         sub_s = rxns.species_manager.to_sum_dict
-        self.sum_sub_species(sub_s)
-        self.sum_same_be()
+        if sum_sub_species:
+            self.sum_sub_species(sub_s)
+        if sum_be:
+            self.sum_same_be()
 
 
         # Play the videos

@@ -408,7 +408,7 @@ def simulate_without_display(manifest_file, lattice, species_tracked, rxns, grou
             # print(section_number_i, df_raw_i)
             section_number_i += 1
 
-        r = Results(manifest_file, rxns, df=df_raw)
+        r = Results(manifest_file, rxns, df=df_raw, sum_sub_species=False)
     # Construct a dataframe
     else:
         # Add marker concentrations from the simulation engine
