@@ -293,7 +293,7 @@ class RxnSystem(monty.json.MSONable):
     @property
     def surface_names(self) -> List[str]:
         """
-        :return: a list for names for appearance on the surface
+        :return: a list for names that appear on the surface
         """
         return [self.surface.name] + [s.name for s in self.surface.sites]
     

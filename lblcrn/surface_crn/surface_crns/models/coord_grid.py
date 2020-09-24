@@ -483,6 +483,13 @@ class CoordGrid(object):
         return sum([1 for _ in self])
 
     @property
+    def num_nodes_by_sites(self):
+        """
+        :return: the total number of available nodes for each type of site.
+        """
+        return {site_name: len(nodes) for site_name, nodes in self.nodes_by_site.items()}
+
+    @property
     def top_nodes(self):
         return self.nodes_by_site["Top"].copy()
 

@@ -306,8 +306,6 @@ class Results:
             self.df[k] = summed_series
         self.resample_evolution()
 
-
-
     def sum_same_be(self):
         """
         Sum the number of species with the same binding energy.
@@ -328,9 +326,30 @@ class Results:
         # for v in to_sum.values:
         # TODO: how shall we name the summed species?
 
+    # TODO: test
+    def compute_coverage_df(self, names_by_site=None, num_nodes_by_sites={}, df=None):
+        """
+        :return: a dataframe for the trajectory of coverage instead of absolute species
+        count.
+        """
+        if df is None:
+            df = self.df_raw
+
+        if names_by_site is None:
+            names_by_site = self.rxns.species_manager.names_by_site_name
+
+        # TODO: make num_nodes_by_site in surface class
+
+        coverage_dfs = {site: pd.DataFrame() for site in num_nodes_by_sites}
+        for site, num_nodes in num_nodes_by_sites.items():
+            for name in names_by_site[site]:
+                coverage_dfs[site][name] = df[name] / num_nodes
+        return coverage_dfs
+
+
     # TODO: decrease the figure size in case zoom = False
     def plot_evolution(self, names_in_figure=None, start_time=0, end_time=-1, title="", ax=None, save=False,
-                       return_fig=False, path="", use_raw_data=False, zoom=False, show_fig=True, x_axis_xlim=0,
+                       return_fig=False, path="", use_raw_data=False, df=None, zoom=False, show_fig=True, x_axis_xlim=0,
                        include_markers=True, legend_loc="upper right"):
         """
         Plot the concentrations from start_time until time step end_time. -1 means till the end.
@@ -346,7 +365,9 @@ class Results:
         if not legend_loc:
             legend_loc = "best"
 
-        if use_raw_data:
+        if df:
+            df = df
+        elif use_raw_data:
             df = self.df_raw
         else:
             df = self.df

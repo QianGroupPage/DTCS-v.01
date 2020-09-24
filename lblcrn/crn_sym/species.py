@@ -320,6 +320,17 @@ class SpeciesManager(monty.json.MSONable):
         else:
             return species_name
 
+    # TODO: test this new function
+    @property
+    def names_by_site_name(self):
+        result = {}
+        for species in self.all_species:
+            site_name = self.get_site_name(species.name)
+            if site_name not in result:
+                result[site_name] = []
+            result[site_name].append(species.name)
+        return result
+
     @property
     def all_species(self):
         return set(self._species.values())
