@@ -148,6 +148,8 @@ class RxnSystem(monty.json.MSONable):
         for equation in self.conc_diffeqs:
             odes[self.symbol_index[equation.symbol]] = equation.expression
 
+        print(odes)
+
         return odes
 
     def get_ode_functions(self):

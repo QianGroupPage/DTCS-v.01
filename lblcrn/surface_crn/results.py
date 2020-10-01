@@ -350,7 +350,9 @@ class Results:
     # TODO: decrease the figure size in case zoom = False
     def plot_evolution(self, names_in_figure=None, start_time=0, end_time=-1, title="", ax=None, save=False,
                        return_fig=False, path="", use_raw_data=False, df=None, zoom=False, show_fig=True, x_axis_xlim=0,
-                       include_markers=True, legend_loc="upper right"):
+                       include_markers=True,
+                       legend_loc="upper right",
+                       y_label="Molecule Count (#)"):
         """
         Plot the concentrations from start_time until time step end_time. -1 means till the end.
 
@@ -441,7 +443,7 @@ class Results:
 
             ax.set_title(title)
             ax.set_xlabel("Time (s)", fontsize=12)
-            ax.set_ylabel("Molecule Count (#)", fontsize=12)
+            ax.set_ylabel(y_label, fontsize=12)
 
         if not show_fig:
             if ax_given:

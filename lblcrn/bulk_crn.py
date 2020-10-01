@@ -29,6 +29,7 @@ def solve_rsys_ode(rsys, time_max: float, end_when_settled: bool, **options):
     """
 
     ode_func = rsys.get_ode_functions()
+
     num_species = len(rsys._symbols)
 
     # schedule, a dictionary {time : [amount to add for species no. index]}

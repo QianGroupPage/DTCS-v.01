@@ -31,6 +31,7 @@ from lblcrn.crn_sym import *
 from lblcrn.experiments import *
 from lblcrn.surface_crn import *
 from lblcrn.surface_crn.connectivity import *
+from lblcrn.raw_data import *
 from lblcrn._echo import lblcrn_echo_on, lblcrn_echo_off
 import lblcrn._resources as lblcrn_resources
 import lblcrn._examples as lblcrn_examples
