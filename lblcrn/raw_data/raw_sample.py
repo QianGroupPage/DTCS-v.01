@@ -44,6 +44,38 @@ class RawSample:
     def list_region_names(self):
         return [region.name for region in self]
 
+    def calibrate(self, internal_region="VB"):
+        """
+        :param internal_region: region name or the beginning part of the region to use for alignment.
+        :return:
+        """
+        region_name_in_use = None
+        for region_name in self.list_region_names():
+            if region_name.startswith(internal_region):
+                if region_name_in_use:
+                    raise ValueError(f"Both {region_name_in_use} and {region_name_in_use} start with {internal_region}")
+                region_name_in_use = region_name
+        self.calibrate_by_numerical_value(self.regions[region_name_in_use].produce_smoothed_version().
+                                          find_steepest_section())
+
+    def has_internal_region(self, internal_region="VB"):
+        """
+        Return True if the sample has an internal region that matches with name internal_region.
+        """
+        for region_name in self.list_region_names():
+            if region_name.startswith(internal_region):
+                return True
+        return False
+
+
+    def calibrate_by_numerical_value(self, value):
+        """
+        Add the index (usually binding energy) of each region with value.
+        """
+        for region in self:
+            region.data.index = region.data.index - value
+
+
     @property
     def num_regions(self):
         return len(self.regions)

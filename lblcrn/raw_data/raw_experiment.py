@@ -23,7 +23,7 @@ class RawExperiment:
         column_names_list = []
         for sample in self.samples:
             for name in sample.list_region_names():
-                if name not in  column_names_list:
+                if name not in column_names_list:
                     column_names_list.append(name)
 
         df = pd.DataFrame(columns=["Sample Identifier"] + column_names_list)
@@ -38,9 +38,21 @@ class RawExperiment:
     def get_sample(self, sample_id=None):
         pass
 
+    def calibrate(self, internal_region="VB"):
+        for sample in self.samples:
+            # TODO: handle the case when internal region is not there.
+            # TODO: quality check.
+            if sample.has_internal_region(internal_region):
+                sample.calibrate(internal_region=internal_region)
+            else:
+                print(f"Region {internal_region} is not present in sample {sample.sequence_number}")
+
     @staticmethod
     def is_sample_file(filename):
         """
         A sample file must end with "_" following 4 digits.
         """
         return re.match(r'\w*_\d\d\d\d.txt$', filename)
+
+    def __getitem__(self, name):
+        return self.samples[name]

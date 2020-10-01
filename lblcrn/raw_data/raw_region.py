@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 from scipy.signal import savgol_filter, argrelextrema
-import math
 
 class RawRegion:
     def __init__(self, header_block=None, info_block=None, run_mode_block=None, data_block=None):
@@ -24,6 +23,7 @@ class RawRegion:
 
             self.name = region_header_df[1]["Region Name"]
             self.data = region_data_df
+            self.parent = None
 
     def plot(self, **kwargs):
         """
@@ -68,8 +68,6 @@ class RawRegion:
             extremas = argrelextrema(self.data[column].to_numpy(),
                                      lambda x1, x2: np.less(np.abs(x1), np.abs(x2)))[0].tolist()
         sections = [(self.data.index[a], self.data.index[b]) for a, b in zip(extremas[:-1], extremas[1:])]
-        print(sections)
-
         best_a, best_b = sections[0]
         max_deriv = np.abs((self.data["data"][best_a] - self.data["data"][best_b]) / (best_a - best_b))
         for a, b in sections:
@@ -77,4 +75,8 @@ class RawRegion:
             if deriv > max_deriv:
                 best_a, best_b = a, b
         return (best_a + best_b) / 2
+
+
+
+
 
