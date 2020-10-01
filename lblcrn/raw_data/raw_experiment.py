@@ -1,7 +1,7 @@
 import os
 import re
 import pandas as pd
-from raw_sample import RawSample
+from lblcrn.raw_data.raw_sample import RawSample
 from IPython.display import display
 
 

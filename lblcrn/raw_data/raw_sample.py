@@ -1,6 +1,6 @@
 import pandas as pd
 import io
-from raw_region import RawRegion
+from lblcrn.raw_data.raw_region import RawRegion
 
 
 class RawSample:
@@ -74,7 +74,6 @@ class RawSample:
         """
         for region in self:
             region.data.index = region.data.index - value
-
 
     @property
     def num_regions(self):
