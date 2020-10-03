@@ -3,4 +3,4 @@
 
 from lblcrn.raw_data.raw_experiment import RawExperiment
 from lblcrn.raw_data.raw_region import RawRegion
-from lblcrn.raw_data.raw_sample import RawSample
+from lblcrn.raw_data.raw_measurement import RawMeasurement

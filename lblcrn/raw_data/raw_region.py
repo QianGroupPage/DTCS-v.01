@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from scipy.signal import savgol_filter, argrelextrema
 
+
 class RawRegion:
     def __init__(self, header_block=None, info_block=None, run_mode_block=None, data_block=None):
         if header_block and info_block and run_mode_block and data_block:
@@ -9,6 +10,9 @@ class RawRegion:
             region_info_df = pd.read_csv(info_block, sep="=", header=None, index_col=0)
             # region_run_mode_df = pd.read_csv(run_mode_block, sep="=")
             region_data_df = pd.read_csv(data_block, delim_whitespace=True, header=None)
+
+            self.info_df = region_info_df
+            self.header_df = region_header_df
 
             # TODO: figure out whether to use the scale column in header. It apparently is supposed to completely match
             # first column in data_df.
@@ -54,8 +58,6 @@ class RawRegion:
         new_version_data["1st derivative"] = savgol_filter(self.data["data"].to_numpy(), 61, 3, deriv=1, mode="nearest")
         new_version_data["2nd derivative"] = savgol_filter(self.data["data"].to_numpy(), 61, 3, deriv=2, mode="nearest")
 
-
-
         new_version.data = new_version_data
         return new_version
 
@@ -76,7 +78,10 @@ class RawRegion:
                 best_a, best_b = a, b
         return (best_a + best_b) / 2
 
-
-
-
-
+    @property
+    def energy_level(self):
+        """
+        Find the excitation energy in this region.
+        :return:
+        """
+        return int(self.info_df[1]["Excitation Energy"])
