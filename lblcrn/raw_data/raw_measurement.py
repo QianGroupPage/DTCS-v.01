@@ -64,6 +64,13 @@ class RawMeasurement:
         for region in self:
             region.data.index = region.data.index - value
 
+    def remove_baseline(self, max_iters=50):
+        """
+        Calculate and subtract Shirley background from each region.
+        """
+        for region in self:
+            region.apply_shirley_background(max_iters=max_iters)
+
     @property
     def num_regions(self):
         return len(self.regions)
