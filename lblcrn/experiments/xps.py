@@ -1494,6 +1494,7 @@ def simulate_xps_with_cts(rsys: RxnSystem,
                  deconv_species: Optional[List[sym.Symbol]] = None,
                  autoresample: bool = True,
                  autoscale: bool = True,
+                 method: str='LSODA',
                  **options) -> Tuple[XPSExperiment, time_series.CRNTimeSeries]:
     """Simulate the given reaction system over time.
 
@@ -1512,6 +1513,10 @@ def simulate_xps_with_cts(rsys: RxnSystem,
         scale_factor: The scale factor by which to scale the simulated
             gaussians in the XPS.
         title: The name to give the XPS, used in plotting.
+        method: numerical algorithm passed to scipy.integrate.solve_ivp.
+            Default to 'LSODA' the Livermore solver in Fortran, which
+            automcatically detects and adjust the solving algorithm
+            for stiff systems.
         **options: Forwarded to scipy.integrate.solve_ivp
 
     Returns:
@@ -1519,7 +1524,7 @@ def simulate_xps_with_cts(rsys: RxnSystem,
     """
     end_when_settled = end_when_settled or (time is None)
 
-    sol_t, sol_y = bulk_crn.solve_rsys_ode(rsys, time, end_when_settled, **options)
+    sol_t, sol_y = bulk_crn.solve_rsys_ode(rsys, time, end_when_settled, method=method, **options)
     cts = time_series.CRNTimeSeries(sol_t, sol_y, rsys)
 
     return cts.xps_with(title=title,

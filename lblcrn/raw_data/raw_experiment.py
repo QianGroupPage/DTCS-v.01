@@ -53,7 +53,6 @@ class RawExperiment:
 
     def calibrate(self, internal_region="VB"):
         for i, measurement in enumerate(self.measurements):
-            # TODO: handle the case when internal region is not there.
             # TODO: quality check.
             if measurement.has_internal_region(internal_region):
                 measurement.calibrate(internal_region=internal_region)
@@ -63,6 +62,13 @@ class RawExperiment:
                       f" Using measurement {reference_measurement.sequence_number} for calibration.")
                 measurement.calibrate_by_numerical_value(
                     reference_measurement.calibration_offset(internal_region=internal_region))
+
+    def remove_baseline(self, max_iters=50):
+        """
+        Calculate and subtract Shirley background from each measurement.
+        """
+        for measurement in self.measurements:
+            measurement.remove_baseline(max_iters=max_iters)
 
     def find_previous_measurement(self, measurement_number, region_name=""):
         """

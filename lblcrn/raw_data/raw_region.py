@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from lblcrn.raw_data.baseline import shirley_background
 from scipy.signal import savgol_filter, argrelextrema
 
 
@@ -29,19 +30,24 @@ class RawRegion:
             self.data = region_data_df
             self.parent = None
 
-    def plot(self, **kwargs):
+            # Placeholders for signal processing results
+            self.shirley_background = None
+
+    def plot(self, data=None, **kwargs):
         """
         A wrapper around Pandas' plotting function, except the following functionalities:
             1. The axis is always inversed;
             2. The title is assigned as current region's name.
         """
+        if data is None:
+            data = self.data
         if "xlim" in kwargs:
             kwargs["xlim"] = kwargs["xlim"].sorted()
         else:
-            kwargs["xlim"] = self.data.index.max(), self.data.index.min()
+            kwargs["xlim"] = data.index.max(), data.index.min()
         if "title" not in kwargs:
             kwargs["title"] = self.name
-        self.data.plot(**kwargs)
+        data.plot(**kwargs)
 
     def produce_smoothed_version(self):
         """
@@ -77,6 +83,28 @@ class RawRegion:
             if deriv > max_deriv:
                 best_a, best_b = a, b
         return (best_a + best_b) / 2
+
+    def apply_shirley_background(self, max_iters=50):
+        """
+        Calculate Shirley Background and subtract it from self.data.
+        """
+        if self.shirley_background is not None:
+            raise Exception("Shirley background has been calculated.")
+        self.shirley_background = shirley_background(self.data.copy(), max_iters=max_iters)
+        self.data = self.data - self.shirley_background
+
+    def show_shirley_background_calculations(self):
+        """
+        Show the original data and the shirley background calculated based on it.
+        """
+        calculations_df = self.data.copy()
+        if self.shirley_background is None:
+            raise Exception("Shirley Background has not been calculated. "
+                            + "Use apply_shirley_background method first.")
+        calculations_df += self.shirley_background
+        calculations_df["Shirley Background"] = self.shirley_background
+        calculations_df.rename(columns={'data': 'Original Signal'}, inplace=True)
+        self.plot(data=calculations_df)
 
     @property
     def energy_level(self):
