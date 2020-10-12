@@ -38,6 +38,8 @@ def generate_rules(rsys):
 
 def generate_initial_surface(rsys, random_seed=30):
     """
+    Generate an initial text-based surface.
+
     :rsys: a rxn_system object
     :return: a string representing the initial surface.
     """
@@ -65,14 +67,20 @@ def generate_initial_surface(rsys, random_seed=30):
     rows = rsys.surface.size[0]
     cols = rsys.surface.size[1]
 
-    random.seed(random_seed)
-    random_indices = random.sample(range(rows * cols), len(species))
-
     surface_strs = [[rsys.surface.name for _ in range(cols)] for _ in range(rows)]
-    for i, choice in enumerate(random_indices):
-        surface_strs[choice // cols][choice % cols] = species[i]
+    if rsys.surface.use_coord_grid:
+        surface_comments = "# The following surface is an unused dummy; a CoordGrid has been used."
+    elif rsys.surface.structure == "hexagon":
+        surface_comments = "# The following surface is an unused dummy; a hexagonal grid has been used."
+    else:
+        surface_comments = ""
 
-    return "\n".join([" ".join(strs) for strs in surface_strs]) + "\n"
+        random.seed(random_seed)
+        random_indices = random.sample(range(rows * cols), len(species))
+
+        for i, choice in enumerate(random_indices):
+            surface_strs[choice // cols][choice % cols] = species[i]
+    return surface_comments + "\n".join([" ".join(strs) for strs in surface_strs]) + "\n"
 
 
 def generate_surface(rsys, random_seed=30):
