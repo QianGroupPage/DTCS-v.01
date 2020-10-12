@@ -1,82 +1,97 @@
 """
-This test case uses the exact same set of species, and rules, as originally created for the Surface CRN.
-"Fe", "2F", and "3F" are taken as a species representing the proportion of empty sites on the surface.
+Test Habor Bosch system using all stiff-oriented methods.
 
-Save the resulting trajectory with month/date/year in the title into test/figures directory.
+Credits: Habor Bosch originally designed by Rithvik. Testing script by Ye.
 """
 
-import datetime
 from lblcrn.crn_sym import *
+from lblcrn.experiments.solution_system import *
 from lblcrn.surface_crn import Results
-from lblcrn.experiments.solution_system import xps
+import datetime
 
 TEST_FIGURES_DIRECTORY = "test/figures/"
 date = datetime.datetime.now()
 date_str = f"{date.strftime('%b').lower()}_{date.day}_{date.year}"
 
 sm = SpeciesManager()
-s = sm.sp("Fe", Orbital('1s', 1), color="#e1e1e1")
-s_twofold = sm.sp("2F", Orbital('1s', 1), color="#e2e2e2")
-s_threefold = sm.sp("3F", Orbital('1s', 1), color="#e3e3e3")
-n = sm.sp("N", Orbital('1s', 530), color="lime")
-n_twofold = sm.sp("N_2F", Orbital('1s', 530))
-n_threefold = sm.sp("N_3F", Orbital('1s', 530))
-sm.name_be("N", 530, color="lime")
-n2 = sm.sp("N2", Orbital('1s', 531), color="green")
-n2_threefold = sm.sp("N2_3F", Orbital('1s', 531))
-sm.name_be("N2", 531, color="green")
-nh = sm.sp("NH", Orbital('1s', 532), color="orange")
-nh_twofold = sm.sp("NH_2F", Orbital('1s', 532))
-sm.name_be("NH", 532, color="orange")
-nh2 = sm.sp("NH2", Orbital('1s', 533), color="blue")
-nh2_threefold = sm.sp("NH2_2F", Orbital('1s', 533))
-sm.name_be("NH2", 533, color="blue")
-nh3 = sm.sp("NH3", Orbital('1s', 534), color="purple")
-h = sm.sp("H", Orbital('1s', 535), color="pink")
-h_threefold = sm.sp("H_3F", Orbital('1s', 535))
-sm.name_be("NH2", 535, color="pink")
 
-rsys = RxnSystem(
-    sm,
+v_3n_nh2 = sm.sp('v_3n_nh2', Orbital('1s', 535.1))
+v_h2 = sm.sp('v_h2', Orbital('1s', 532.2))
+v_3n_nh2_2h = sm.sp('v_3n_nh2_2h', Orbital('1s', 530.9))
+v_3n_nh3_h = sm.sp('v_3n_nh3_h', Orbital('1s', 530.2))
+v_3n_h = sm.sp('v_3n_h', Orbital('1s', 530.3))
+v_nh3 = sm.sp('v_nh3', Orbital('1s', 530.4), color="black")
+v_2n_nh = sm.sp('v_2n_nh', Orbital('1s', 530.5))
+v_2n_nh_2h = sm.sp('v_2n_nh_2h', Orbital('1s', 530.6))
+v_2n_nh2_h = sm.sp('v_2n_nh2_h', Orbital('1s', 530.7))
+v_2n_nh3 = sm.sp('v_2n_nh3', Orbital('1s', 534.8))
+v_2n = sm.sp('v_2n', Orbital('1s', 530.9))
+v_n2 = sm.sp('v_n2', Orbital('1s', 531), color="green")
+v_2n_n2 = sm.sp('v_2n_n2', Orbital('1s', 531.1))
+v_4n = sm.sp('v_4n', Orbital('1s', 531.2))
+v_3n_nh_h = sm.sp('v_3nh_h', Orbital('1s', 531.3))
+v_3n_nh2 = sm.sp('v_3nh2', Orbital('1s', 531.5))
+v_2n_2h = sm.sp('v_2n_2h', Orbital('1s', 531.6))
 
-    # 1, 2
-    RevRxn(nh2_threefold + h, s_threefold + nh3, 4.72E+02, 5.88E+04),
-    # 3, 4
-    RevRxn(n_twofold + h_threefold, nh_twofold + s_threefold, 1.84E+06, 7.20E+09),
-    # 5, 6
-    RevRxn(nh_twofold + h_threefold, s_twofold + nh2_threefold, 1.60E+11, 1.10E+06),
-    # 7, 8
-    RevRxn(s, n2, 7.32E+06, 4.10E+07),
-    # 9, 10
-    RevRxn(n2 + s_threefold, s + n2_threefold, 5.69E+10, 1.81E+09),
-    # 11, 12
-    RevRxn(n2_threefold + s_twofold, n_threefold + n_twofold, 2.56E+09, 2.52E+01),
-    Rxn(n_threefold + s_twofold, s_threefold + n_twofold, 1E+20),
-    # 13, 14
-    RevRxn(s_threefold + s, h_threefold + h, 7.67E+08, 7.67E+08),
-    # 15
-    # Rxn(s, nh3, 6.26E+03)
-    Rxn(nh3, s, 3.29E+05),
-    # 16, 17
-    RevRxn(nh2_threefold + s, s_threefold + nh2, 1.43E+10, 1.41E+13),
-    # 18, 19
-    RevRxn(nh_twofold + s, s_twofold + nh, 1.46E+07, 1.41E+13),
-    # 20, 21
-    RevRxn(n_twofold + s, s_twofold + n, 1.46E+07, 1.41E+13),
-    # 22, 23
-    RevRxn(h_threefold + s, s_threefold + h, 1.43E+10, 1.41E+13),
 
-    Conc(n2, 5 / 48),
-    Conc(nh2, 2 / 48),
-    Conc(s, 1),
-    Conc(s_twofold, 174/48),
-    Conc(s_threefold, 127/48)
-)
+constants = [7.67e8, 1.41e13, 2.6e6, 2.48e4, 1.03e7, 6.66e2, 1.84e6, 7.2e9, 7.67e8, 3.04e9, 1.6e11, 1.1e6, 1.14e0, 7.79e5,
+            3.91e5, 3.14e3, 8.69e6, 4.1e7, 7.2e9, 1.35, 2.77e5, 6.45e8, 1.41e13, 7.67e8, 7.67e8, 1.48e4]
+# constants = [10e-9 * c for c in constants]
+multipliers = [1]
 
-s, ts = xps.simulate_xps_with_cts(rsys, time=1E-8)
-r = Results(None, rsys, df=ts.df.rename(columns=lambda c: str(c)))
-r.plot_evolution(path=TEST_FIGURES_DIRECTORY,
-                 title=f"trajectory_habor_bosch_{date_str}_unlimited_gas_bulk",
-                 y_label="Coverage",
-                 save=True,
-                 use_raw_data=True)
+main = XPSInitializationData(
+                'High P, High T',
+                0,
+                0,
+                constants=constants
+            )
+
+init_data = [main]
+
+def rsys_generator(scaled):
+    rsys = RxnSystem(
+        RevRxn(v_3n_nh2 + v_h2, v_3n_nh2_2h, scaled[0], scaled[1]),
+        RevRxn(v_3n_nh2_2h, v_3n_nh3_h, scaled[2], scaled[3]),
+        RevRxn(v_3n_nh3_h, v_3n_h + v_nh3, scaled[4], scaled[5]),
+        RevRxn(v_3n_h, v_2n_nh, scaled[6], scaled[7]),
+        RevRxn(v_2n_nh + v_h2, v_2n_nh_2h, scaled[8], scaled[9]),
+        RevRxn(v_2n_nh_2h, v_2n_nh2_h, scaled[10], scaled[11]),
+        RevRxn(v_2n_nh2_h, v_2n_nh3, scaled[12], scaled[13]),
+        RevRxn(v_2n_nh3, v_2n + v_nh3, scaled[14], scaled[15]),
+        RevRxn(v_2n + v_n2, v_2n_n2, scaled[16], scaled[17]),
+        RevRxn(v_2n_n2, v_4n, scaled[18], scaled[19]),
+        RevRxn(v_4n + v_h2, v_3n_nh_h, scaled[20], scaled[21]),
+        RevRxn(v_3n_nh_h, v_3n_nh2, scaled[22], scaled[23]),
+        RevRxn(v_2n + v_h2, v_2n_2h, scaled[24], scaled[25]),
+
+        Conc(v_n2, 5),
+        Conc(v_h2, 15),
+        Conc(v_3n_nh2, 1), # 2-20 range
+        sm
+    )
+    return rsys
+
+
+methods = ['Radau', 'BDF', 'LSODA']
+
+for method in methods:
+    title = f"habor_bosch_bulk_crn_trajectory_{method.lower()}_method"
+    rsys = rsys_generator(constants)
+    s, ts = xps.simulate_xps_with_cts(rsys, method=method, time=200, title="Habor Bosch")
+
+    r = Results(None, rsys, df=ts.df.rename(columns=lambda c: str(c)))
+
+    start = ts.at(0)
+    names_in_figure = []
+    for i in range(len(start)):
+        if str(start.keys()[i]) not in ["v_h2", "v_n2", "v_3nh2"]:
+            names_in_figure.append(str(start.keys()[i]))
+
+    r.plot_evolution(names_in_figure=names_in_figure,
+                     end_time=200,
+                     title=title,
+                     save=True,
+                     use_raw_data=True,
+                     y_label="Coverage")
+
+
