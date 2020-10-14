@@ -181,6 +181,13 @@ class Results:
             return Results(f"{path}/reaction_rules.txt", rxns, pd.read_csv(f"{path}/Data.csv"))
 
     @staticmethod
+    def from_trajectory(path, rxns):
+        """
+        Construct a results object based on a directory in which there is a trajectory file named "trajectory.gzip".
+        """
+        return Results(None, rxns, pd.read_csv(f"{path}/trajectory.gzip", compression="gzip"))
+
+    @staticmethod
     def from_concs_times(manifest_file, rxns, concs, times):
         """
         :param manifest_file: The manifest file corresponding to the concs dictionary;
@@ -346,10 +353,21 @@ class Results:
                 coverage_dfs[site][name] = df[name] / num_nodes
         return coverage_dfs
 
-
     # TODO: decrease the figure size in case zoom = False
-    def plot_evolution(self, names_in_figure=None, start_time=0, end_time=-1, title="", ax=None, save=False,
-                       return_fig=False, path="", use_raw_data=False, df=None, zoom=False, show_fig=True, x_axis_xlim=0,
+    def plot_evolution(self,
+                       names_in_figure=None,
+                       start_time=0,
+                       end_time=-1,
+                       title="",
+                       ax=None,
+                       save=False,
+                       return_fig=False,
+                       path="",
+                       use_raw_data=False,
+                       df=None,
+                       zoom=False,
+                       show_fig=True,
+                       x_axis_xlim=0,
                        include_markers=True,
                        legend_loc="upper right",
                        y_label="Molecule Count (#)"):
