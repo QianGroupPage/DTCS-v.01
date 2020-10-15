@@ -22,7 +22,10 @@ class Results:
     """
     TIME_COL_NAME = "Time (s) "  # column name used for the time entry
 
-    def __init__(self, manifest_file, rxns, df=None, sum_be=True, sum_sub_species=True):
+    def __init__(self, manifest_file, rxns, df=None,
+                 sum_be=True,
+                 sum_sub_species=True,
+                 resample=True):
         """
         :param manifest_file:
         :param rxns:
@@ -41,7 +44,11 @@ class Results:
                 # print(f"dividing species {s.name} by {s.size}")
                 self.df[s.name] = self.df[s.name] / s.size
 
-        self.resample_evolution()
+        if resample:
+            self.resample_evolution()
+        else:
+            # Avoid potential problems for not having a df_raw
+            self.df_raw = self.df
 
         self.xps_df = None  # The xps dataframe we have for reference
 
@@ -57,7 +64,6 @@ class Results:
         self.sub_s_list = sub_s_list
         self.species_colors = {s: color_index[s] for s in self.species_ordering}
 
-
         marker_names = rxns.species_manager.get_marker_names()
         self.marker_names_ordering = sorted(marker_names)
         self.marker_colors = {marker_name: ''.join(color_to_HEX(color_index[marker_name], zero_to_one_range=False)) for marker_name in
@@ -66,7 +72,6 @@ class Results:
         self.species_ordering = [str(s) for s in self.species_ordering]
         self.species_colors = {str(s): ''.join(color_to_HEX(c, zero_to_one_range=False)) for s, c in self.species_colors.items()}
         self.sub_species_colors = {str(s): ''.join(color_to_HEX(color_index[s], zero_to_one_range=False)) for s in self.sub_s_list}
-
 
         import sympy as sym
 
@@ -86,19 +91,57 @@ class Results:
         if sum_be:
             self.sum_same_be()
 
-
         # Play the videos
         self.video = None
         self.video_trajectory = None
 
+    @staticmethod
+    def from_directory(path, rxns):
+        """
+        Construct a results object from based on a directory.
+        :param path:
+        :param rxns:
+        :return:
+        """
+        if os.path.isfile(f"{path}/Data.gz"):
+            return Results(f"{path}/reaction_rules.txt", rxns, pd.read_csv(f"{path}/Data.gz"))
+        else:
+            return Results(f"{path}/reaction_rules.txt", rxns, pd.read_csv(f"{path}/Data.csv"))
 
-    # def extend(self, df):
-    #     """
-    #     A
-    #     :param df:
-    #     :return:
-    #     """
+    @staticmethod
+    def from_trajectory(path, rxns):
+        """
+        Construct a results object based on a directory in which there is a trajectory file named "trajectory.gzip".
+        """
+        df = pd.read_csv(f"{path}/trajectory.gzip", compression="gzip")
+        print(f"Dataframe already created, with a length of {len(df.index)}")
+        return Results(None, rxns, df,
+                       sum_sub_species=False,
+                       resample=False)
 
+    @staticmethod
+    def from_concs_times(manifest_file, rxns, concs, times):
+        """
+        :param manifest_file: The manifest file corresponding to the concs dictionary;
+        :param concs: a dictionary from species name (string) to a list of concentration values;
+        :param times: a list of time steps corresponding to the time steps for each list in concs
+        :return: a new Solution object
+        """
+        r = Results(manifest_file, rxns, Results.concs_times_df(concs, times))
+        return r
+
+    @staticmethod
+    def from_counts(rxns, counter):
+        """
+        :param rxns: a rxn_system object
+        :param counter: a dictionary from species name to counts
+        :return: a results object representing only 1 timestep.
+        """
+        concs = {s: [c] for s, c in counter.items()}
+        for s in rxns.get_symbols():
+            if str(s) not in concs:
+                concs[str(s)] = [0]
+        return Results.from_concs_times(None, rxns, concs, [0])
 
     @staticmethod
     def side_by_side_axes(num_axes=2, output_fig=False):
@@ -166,50 +209,6 @@ class Results:
         df = df.groupby("Time (s)").mean()
         self.df_raw = self.df
         self.df = df.reset_index().set_index("Time (s)")
-
-    @staticmethod
-    def from_directory(path, rxns):
-        """
-        Construct a results object from based on a directory.
-        :param path:
-        :param rxns:
-        :return:
-        """
-        if os.path.isfile(f"{path}/Data.gz"):
-            return Results(f"{path}/reaction_rules.txt", rxns, pd.read_csv(f"{path}/Data.gz"))
-        else:
-            return Results(f"{path}/reaction_rules.txt", rxns, pd.read_csv(f"{path}/Data.csv"))
-
-    @staticmethod
-    def from_trajectory(path, rxns):
-        """
-        Construct a results object based on a directory in which there is a trajectory file named "trajectory.gzip".
-        """
-        return Results(None, rxns, pd.read_csv(f"{path}/trajectory.gzip", compression="gzip"))
-
-    @staticmethod
-    def from_concs_times(manifest_file, rxns, concs, times):
-        """
-        :param manifest_file: The manifest file corresponding to the concs dictionary;
-        :param concs: a dictionary from species name (string) to a list of concentration values;
-        :param times: a list of time steps corresponding to the time steps for each list in concs
-        :return: a new Solution object
-        """
-        r = Results(manifest_file, rxns, Results.concs_times_df(concs, times))
-        return r
-
-    @staticmethod
-    def from_counts(rxns, counter):
-        """
-        :param rxns: a rxn_system object
-        :param counter: a dictionary from species name to counts
-        :return: a results object representing only 1 timestep.
-        """
-        concs = {s: [c] for s, c in counter.items()}
-        for s in rxns.get_symbols():
-            if str(s) not in concs:
-                concs[str(s)] = [0]
-        return Results.from_concs_times(None, rxns, concs, [0])
 
     @staticmethod
     def concs_times_df(concentrations, times):
