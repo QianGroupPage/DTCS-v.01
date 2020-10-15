@@ -6,6 +6,7 @@ import csv
 import numpy as np
 from scipy.stats import norm
 import lblcrn.surface_crn.xps as xps
+from lblcrn.common.util import resample_by_skipping
 import os
 from IPython.display import HTML
 import ffmpeg
@@ -25,7 +26,8 @@ class Results:
     def __init__(self, manifest_file, rxns, df=None,
                  sum_be=True,
                  sum_sub_species=True,
-                 resample=True):
+                 resample=True,
+                 resample_method="average"):
         """
         :param manifest_file:
         :param rxns:
@@ -45,7 +47,11 @@ class Results:
                 self.df[s.name] = self.df[s.name] / s.size
 
         if resample:
-            self.resample_evolution()
+            if resample_method == "average":
+                self.resample_evolution()
+            elif resample_method == "skip":
+                self.df_raw = self.df
+                self.df = resample_by_skipping(self.df)
         else:
             # Avoid potential problems for not having a df_raw
             self.df_raw = self.df

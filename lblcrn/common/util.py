@@ -1,6 +1,7 @@
 import re
 
 import numpy as np
+import pandas as pd
 from matplotlib import colors
 
 
@@ -49,3 +50,16 @@ def set_color_alpha(color: str, alpha: float = 1.0):
     if not 0 < alpha < 1:
         raise ValueError('Alpha must be in range [0, 1]')
     return colors.to_hex((red, blue, green, alpha), keep_alpha=True)
+
+
+# Dataframe Manipulation
+def resample_by_skipping(df, step=1000):
+    """
+    Resample a dataframe by skipping every thousand or "step" number of rows.
+    """
+    new_df = pd.DataFrame()
+    for i in range(0, len(df.index), step):
+        new_df.append(df.iloc[i, :])
+    return new_df
+
+
