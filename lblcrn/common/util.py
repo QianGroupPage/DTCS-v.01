@@ -59,7 +59,9 @@ def resample_by_skipping(df, step=1000):
     """
     new_df = pd.DataFrame()
     for i in range(0, len(df.index), step):
-        new_df.append(df.iloc[i, :])
+        row = df.iloc[i, :]
+        row.name = df.index[i]
+        new_df.append(row)
     return new_df
 
 
