@@ -5,11 +5,11 @@
 import abc
 from typing import List, Optional, Union
 
-from matplotlib import pyplot as plt
-import monty.json
 import sympy as sym
+from matplotlib import pyplot as plt
 
 import lblcrn
+import monty.json
 
 
 class Experiment(monty.json.MSONable, abc.ABC):

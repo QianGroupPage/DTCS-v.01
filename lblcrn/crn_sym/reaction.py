@@ -27,11 +27,11 @@ Usage:
 import copy
 from typing import List, Optional, Set, Tuple
 
-import monty.json
 import sympy as sym
 from sympy.parsing import sympy_parser
 
 import lblcrn
+import monty.json
 from lblcrn.crn_sym import conditions
 
 

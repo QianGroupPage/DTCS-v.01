@@ -1,8 +1,10 @@
-from lblcrn.crn_sym.reaction import Rxn
-from lblcrn.crn_sym.surface import Surface, Site
-from lblcrn.crn_sym.species import Marker
 from typing import Set, Tuple
+
 import sympy as sym
+
+from lblcrn.crn_sym.reaction import Rxn
+from lblcrn.crn_sym.species import Marker
+from lblcrn.crn_sym.surface import Site, Surface
 
 
 class Markers():

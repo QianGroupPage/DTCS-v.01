@@ -1,18 +1,17 @@
 import copy
-from typing import List
-import sympy as sym
-import monty.json
-import networkx as nx
 import random
+from typing import List
+
+import networkx as nx
+import sympy as sym
 
 import lblcrn
-from lblcrn.crn_sym import species
-from lblcrn.crn_sym import conditions
-from lblcrn.crn_sym.reaction import Rxn, RevRxn
-
-from lblcrn.crn_sym import surface
+import monty.json
+from lblcrn.common import color_to_RGB, generate_new_color
+from lblcrn.crn_sym import conditions, species, surface
+from lblcrn.crn_sym.reaction import RevRxn, Rxn
 from lblcrn.crn_sym.surface_reaction import SurfaceRxn
-from lblcrn.common import generate_new_color, color_to_RGB
+
 
 class RxnSystem(monty.json.MSONable):
     """A chemical reaction system, for simulation.

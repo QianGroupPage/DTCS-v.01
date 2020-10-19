@@ -16,14 +16,14 @@ Usage:
 """
 
 import itertools
-from typing import List, Optional, Union
+from typing import List, Optional, Tuple, Union
+
+import sympy as sym
 
 import lblcrn
 import monty.json
-import sympy as sym
 from lblcrn.common import color_to_RGB
 from lblcrn.crn_sym.surface import Site
-from typing import List, Tuple, Union
 
 _COLORS = itertools.cycle(['red', 'green', 'orange', 'blue', 'purple', 'pink',
                            'yellow', 'gray', 'cyan'])

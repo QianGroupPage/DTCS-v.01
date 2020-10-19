@@ -27,16 +27,15 @@ Example:
 import bisect
 from typing import Dict, List, Tuple
 
-from matplotlib import pyplot as plt
-import monty.json
 import numpy as np
 import pandas as pd
 import sympy as sym
+from matplotlib import pyplot as plt
 
+import monty.json
 from lblcrn import bulk_crn
-from lblcrn.experiments import experiment
-from lblcrn.experiments import xps
 from lblcrn.crn_sym.rxn_system import RxnSystem
+from lblcrn.experiments import experiment, xps
 
 
 class CRNTimeSeries(experiment.Experiment):

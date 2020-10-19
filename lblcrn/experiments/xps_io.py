@@ -3,6 +3,7 @@ import re
 import numpy as np
 import pandas as pd
 
+
 def read(filename):
     """
     Read an XPS file into a pandas dataframe

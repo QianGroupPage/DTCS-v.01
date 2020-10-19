@@ -22,24 +22,22 @@ Example:
 from __future__ import annotations
 
 import copy
-from typing import Any, Dict, List, Optional, Tuple, Union
 import warnings
+from typing import Any, Dict, List, Optional, Tuple, Union
 
-from matplotlib import pyplot as plt
-import monty.json
 import numpy as np
 import pandas as pd
-from scipy import integrate
-from scipy import optimize
-from scipy import stats
-from sklearn import metrics
 import sympy as sym
-from lblcrn import bulk_crn
-from lblcrn.experiments import experiment
-from lblcrn.crn_sym.rxn_system import RxnSystem
-from lblcrn.crn_sym import species
+from matplotlib import pyplot as plt
+from scipy import integrate, optimize, stats
+from sklearn import metrics
+
+import monty.json
+from lblcrn import _echo, bulk_crn
 from lblcrn.common import util
-from lblcrn import _echo
+from lblcrn.crn_sym import species
+from lblcrn.crn_sym.rxn_system import RxnSystem
+from lblcrn.experiments import experiment
 
 _PLOT_MARGIN = 5
 _PLOT_RESOLUTION = 0.001

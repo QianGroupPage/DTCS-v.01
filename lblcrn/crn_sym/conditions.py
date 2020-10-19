@@ -25,12 +25,11 @@ Usage:
 
 from typing import Set
 
-import monty.json
 import sympy as sym
 from sympy.parsing import sympy_parser
 
 import lblcrn
-
+import monty.json
 
 T = sym.Symbol('t')  # Time
 

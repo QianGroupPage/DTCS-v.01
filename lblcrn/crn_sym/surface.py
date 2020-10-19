@@ -9,11 +9,13 @@ Dr. Jin Qian, Domas Buracas, Andrew Bogdan, Rithvik Panchapakesan, Ye Wang
 
 # *** Libraries ***
 from typing import List, Tuple, Union
+
 import sympy as sym
+
 from lblcrn.common import color_to_RGB
-from lblcrn.connectivity.triangulation import grid_size, show_triangulation
-from lblcrn.connectivity.voronoi import produce_voronoi, fold_numbers
 from lblcrn.common.num_to_word import num2word
+from lblcrn.connectivity.triangulation import grid_size, show_triangulation
+from lblcrn.connectivity.voronoi import fold_numbers, produce_voronoi
 
 
 # *** Classes ***
@@ -150,4 +152,3 @@ class Site:
 
     def set_color(self, color):
         self.color = color_to_RGB(color)
-
