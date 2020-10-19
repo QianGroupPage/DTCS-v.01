@@ -42,11 +42,11 @@ def simulate_xps(rsys: RxnSystem,
         **options: Forwarded to scipy.integrate.solve_ivp
 
     Returns:
-        A Solution object describing the solution.
+        An XPSExperiment with the simulation results.
     """
     end_when_settled = end_when_settled or (time is None)
 
-    sol_t, sol_y = bulk_crn.solve_rsys_ode(rsys, time, end_when_settled, **options)
+    sol_t, sol_y = bulk_crn.solve_rsys_ode(rsys, time or 0, end_when_settled, **options)
     cts = time_series.CRNTimeSeries(sol_t, sol_y, rsys)
 
     return cts.xps_with(title=title,
@@ -96,7 +96,8 @@ def simulate_xps_with_cts(rsys: RxnSystem,
         **options: Forwarded to scipy.integrate.solve_ivp
 
     Returns:
-        A Solution object describing the solution.
+        An XPSExperiment with the simulation results as well as a CRNTimeSeries object with the
+        time series data.
     """
     end_when_settled = end_when_settled or (time is None)
 
