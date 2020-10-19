@@ -104,6 +104,5 @@ def settle_event_creator():
     return settle
 
 
-def solve_rsys_ode_till_eq(rsys, method: str='LSODA', **options):
-    # TODO: stub, please remove me once this is implemented
-    return solve_rsys_ode(rsys, time_max=100, method=method, **options)
+def solve_rsys_ode_till_eq(rsys, **options):
+    return solve_rsys_ode(rsys, time_max=100, **options)

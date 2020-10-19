@@ -4,6 +4,7 @@ import sympy as sym
 from lblcrn.crn_sym import reaction
 import lblcrn.experiments.xps_io as xps_io
 import lblcrn.experiments.xps as xps
+import lblcrn.experiments.simulate as simulate
 from lblcrn.experiments.tp_correlation import XPSTPCorrelator
 from lblcrn.experiments.time_series import CRNTimeSeries
 import pandas as pd
@@ -213,7 +214,7 @@ class XPSSystemRunner:
                     scaled[i] *= self.multipliers[j]
 
                     rsys = self.rsys_generator(scaled)
-                    s, ts = xps.simulate_xps_with_cts(rsys, time=self.time, title=data.title + " Eq: "
+                    s, ts = simulate.simulate_xps_with_cts(rsys, time=self.time, title=data.title + " Eq: "
                         + str(i) + "Constant: " + str(j))
 
                     cts.append(ts)
