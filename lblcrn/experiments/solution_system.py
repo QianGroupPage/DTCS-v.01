@@ -1,13 +1,16 @@
-from typing import List, Dict, Optional
+from typing import Dict, List, Optional
+
 import matplotlib.pyplot as plt
-import sympy as sym
-from lblcrn.crn_sym import reaction
-import lblcrn.experiments.xps_io as xps_io
-import lblcrn.experiments.xps as xps
-import lblcrn.experiments.simulate as simulate
-from lblcrn.experiments.tp_correlation import XPSTPCorrelator
-from lblcrn.experiments.time_series import CRNTimeSeries
 import pandas as pd
+import sympy as sym
+
+import lblcrn.experiments.simulate as simulate
+import lblcrn.experiments.xps as xps
+import lblcrn.experiments.xps_io as xps_io
+from lblcrn.crn_sym import reaction
+from lblcrn.experiments.time_series import CRNTimeSeries
+from lblcrn.experiments.tp_correlation import XPSTPCorrelator
+
 
 class SolutionSystem:
     """Process and visualize a system of experiment
@@ -19,15 +22,24 @@ class SolutionSystem:
         systems: A list of lists of XPS experiments.
         multipliers: A list of multipliers used in simulation.
     """
-    def __init__(self, experiments: List, time_series: List, experimental_files: List[str], multipliers: List[float]):
+
+    def __init__(
+        self,
+        experiments: List,
+        time_series: List,
+        experimental_files: List[str],
+        multipliers: List[float],
+    ):
         """Create a new solution system
 
         Given a list of lists of XPSExperiments (for all variations that are simulated) and a
         corresponding list of experimental files, experimental data is added to the XPSExperiment
         objects and the data is then auto-scaled.
         """
-        assert len(experiments) > 0, 'Must pass at least one experiment to a Solution System.'
-        assert len(time_series) == len(experiments), 'Must pass the same number of simulations and time series.'
+        assert len(experiments) > 0, "Must pass at least one experiment to a Solution System."
+        assert len(time_series) == len(
+            experiments
+        ), "Must pass the same number of simulations and time series."
 
         self.systems = experiments
         self.time_series = time_series
@@ -44,7 +56,7 @@ class SolutionSystem:
         self._ignore = []
         self.multipliers = multipliers
 
-        print('scaling factor:', scaling_factor, '\tmax index:', max_index)
+        print("scaling factor:", scaling_factor, "\tmax index:", max_index)
 
     def _process(self):
         """Rescale solution data.
@@ -55,7 +67,7 @@ class SolutionSystem:
     @property
     def ignore(self) -> List[sym.Symbol]:
         return self._ignore
-    
+
     @ignore.setter
     def ignore(self, ignore: List[sym.Symbol]) -> None:
         self._ignore = ignore
@@ -96,13 +108,13 @@ class SolutionSystem:
         for sys in self.systems:
             for s in sys:
                 s.scale_factor = scaling_factor
-    
+
     def __getitem__(self, index):
         return self.systems[index]
 
     def time_series_at(self, sys: int, exp: int) -> CRNTimeSeries:
         return self.time_series[sys][exp]
-    
+
     def plot(self, index):
         cols = len(self.multipliers)
         rows = len(self.systems[index]) // cols
@@ -112,8 +124,9 @@ class SolutionSystem:
         for j, ax in enumerate(fig.axes):
             plt.sca(ax)
             self.systems[index][j].plot()
-            plt.title(f'Eq: {str(j // cols)} Const: {str(j % cols)}')
+            plt.title(f"Eq: {str(j // cols)} Const: {str(j % cols)}")
         plt.show()
+
 
 class XPSInitializationData:
     """Stores the reaction constants and raw experimental file location.
@@ -128,12 +141,21 @@ class XPSInitializationData:
         pressure: The pressure associated with this experiment.
         experimental_file: The location of the experimental XPS file to be used for comparison
     """
-    def __init__(self, title: str, temp: float, pressure: float, experimental_file: str = None, constants: List[float] = None):
+
+    def __init__(
+        self,
+        title: str,
+        temp: float,
+        pressure: float,
+        experimental_file: str = None,
+        constants: List[float] = None,
+    ):
         self.title = title
         self.constants = constants
         self.experimental_file = experimental_file
         self.temp = temp
         self.pressure = pressure
+
 
 class XPSSystemRunner:
     """Orchestrate an end-to-end XPS analysis pipeline.
@@ -153,12 +175,14 @@ class XPSSystemRunner:
         tp_correlator: An optional temperature pressure corrl
     """
 
-    def __init__(self,
-                 rsys_generator,
-                 time: float,
-                 initializer_data: List[XPSInitializationData],
-                 multipliers: List[float],
-                 tp_correlator: Optional[XPSTPCorrelator] = None):
+    def __init__(
+        self,
+        rsys_generator,
+        time: float,
+        initializer_data: List[XPSInitializationData],
+        multipliers: List[float],
+        tp_correlator: Optional[XPSTPCorrelator] = None,
+    ):
         """Create a new XPS system runner.
         """
         if len(multipliers) == 0:
@@ -171,7 +195,6 @@ class XPSSystemRunner:
         self.time_series = [None for _ in range(len(initializer_data))]
         self.complete = [False for _ in range(len(initializer_data))]
         self.tp_correlator = tp_correlator
-
 
         # Auto-scale reaction constants if applicable
         if tp_correlator is None:
@@ -190,15 +213,16 @@ class XPSSystemRunner:
                 exp = d
 
         if exp is None:
-            raise ValueError("The TP correlators' initial temperature and pressure do not "
-                             + "correspond with any experiment in the initialization data")
+            raise ValueError(
+                "The TP correlators' initial temperature and pressure do not "
+                + "correspond with any experiment in the initialization data"
+            )
 
         for d in initializer_data:
             d.constants = tpc.constants(d.temp, d.pressure)
             print(d.constants)
 
         self.initializer_data = initializer_data
-                
 
     def simulate(self, index: int):
         data = self.initializer_data[index]
@@ -218,8 +242,11 @@ class XPSSystemRunner:
                     scaled[i] *= self.multipliers[j]
 
                     rsys = self.rsys_generator(scaled)
-                    s, ts = simulate.simulate_xps_with_cts(rsys, time=self.time, title=data.title + " Eq: "
-                        + str(i) + "Constant: " + str(j))
+                    s, ts = simulate.simulate_xps_with_cts(
+                        rsys,
+                        time=self.time,
+                        title=data.title + " Eq: " + str(i) + "Constant: " + str(j),
+                    )
 
                     cts.append(ts)
                     sols.append(s)
@@ -227,17 +254,21 @@ class XPSSystemRunner:
                         sol_mult_1 = s
                         cts_mult_1 = ts
 
-                print('Solved for ('+str(i)+', '+str(j)+')')
+                print("Solved for (" + str(i) + ", " + str(j) + ")")
                 print(scaled)
-                print('\n')
+                print("\n")
         self.solutions[index] = sols
         self.time_series[index] = cts
         self.complete[index] = True
-                
+
     def system(self) -> SolutionSystem:
         """Returns a solution system if all experiments have been simulated.
         """
         if not all(self.complete):
             raise AssertionError("All experiments have not yet been simulated.")
-        return SolutionSystem(self.solutions, self.time_series, [x.experimental_file for x in self.initializer_data if x.experimental_file],
-                              self.multipliers)
+        return SolutionSystem(
+            self.solutions,
+            self.time_series,
+            [x.experimental_file for x in self.initializer_data if x.experimental_file],
+            self.multipliers,
+        )

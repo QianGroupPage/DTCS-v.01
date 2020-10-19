@@ -1,27 +1,31 @@
-from typing import List, Dict, Optional, Tuple
-import pandas as pd
+from typing import Dict, List, Optional, Tuple
+
 import numpy as np
+import pandas as pd
 import sympy as sym
+
 from lblcrn import bulk_crn
-from lblcrn.experiments import time_series
 from lblcrn.crn_sym.rxn_system import RxnSystem
+from lblcrn.experiments import time_series
 
 
-def simulate_xps(rsys: RxnSystem,
-                 time: Optional[float] = None,
-                 end_when_settled: bool = False,
-                 title: str = '',
-                 species: List[sym.Symbol] = None,
-                 ignore: List[sym.Symbol] = None,
-                 x_range: Optional[np.ndarray] = None,
-                 scale_factor: float = None,
-                 experimental: pd.Series = None,
-                 gas_interval: Tuple[float, float] = None,
-                 contam_spectra: Optional[Dict[sym.Symbol, pd.Series]] = None,
-                 deconv_species: Optional[List[sym.Symbol]] = None,
-                 autoresample: bool = True,
-                 autoscale: bool = True,
-                 **options):
+def simulate_xps(
+    rsys: RxnSystem,
+    time: Optional[float] = None,
+    end_when_settled: bool = False,
+    title: str = "",
+    species: List[sym.Symbol] = None,
+    ignore: List[sym.Symbol] = None,
+    x_range: Optional[np.ndarray] = None,
+    scale_factor: float = None,
+    experimental: pd.Series = None,
+    gas_interval: Tuple[float, float] = None,
+    contam_spectra: Optional[Dict[sym.Symbol, pd.Series]] = None,
+    deconv_species: Optional[List[sym.Symbol]] = None,
+    autoresample: bool = True,
+    autoscale: bool = True,
+    **options
+):
     """Simulate the given reaction system over time.
 
     Args:
@@ -49,33 +53,38 @@ def simulate_xps(rsys: RxnSystem,
     sol_t, sol_y = bulk_crn.solve_rsys_ode(rsys, time or 0, end_when_settled, **options)
     cts = time_series.CRNTimeSeries(sol_t, sol_y, rsys)
 
-    return cts.xps_with(title=title,
-                        species=species,
-                        ignore=ignore,
-                        x_range=x_range,
-                        scale_factor=scale_factor,
-                        experimental=experimental,
-                        gas_interval=gas_interval,
-                        contam_spectra=contam_spectra,
-                        deconv_species=deconv_species,
-                        autoresample=autoresample,
-                        autoscale=autoscale)
+    return cts.xps_with(
+        title=title,
+        species=species,
+        ignore=ignore,
+        x_range=x_range,
+        scale_factor=scale_factor,
+        experimental=experimental,
+        gas_interval=gas_interval,
+        contam_spectra=contam_spectra,
+        deconv_species=deconv_species,
+        autoresample=autoresample,
+        autoscale=autoscale,
+    )
 
-def simulate_xps_with_cts(rsys: RxnSystem,
-                 time: Optional[float] = None,
-                 end_when_settled: bool = False,
-                 title: str = '',
-                 species: List[sym.Symbol] = None,
-                 ignore: List[sym.Symbol] = None,
-                 x_range: Optional[np.ndarray] = None,
-                 scale_factor: float = None,
-                 experimental: pd.Series = None,
-                 gas_interval: Tuple[float, float] = None,
-                 contam_spectra: Optional[Dict[sym.Symbol, pd.Series]] = None,
-                 deconv_species: Optional[List[sym.Symbol]] = None,
-                 autoresample: bool = True,
-                 autoscale: bool = True,
-                 **options):
+
+def simulate_xps_with_cts(
+    rsys: RxnSystem,
+    time: Optional[float] = None,
+    end_when_settled: bool = False,
+    title: str = "",
+    species: List[sym.Symbol] = None,
+    ignore: List[sym.Symbol] = None,
+    x_range: Optional[np.ndarray] = None,
+    scale_factor: float = None,
+    experimental: pd.Series = None,
+    gas_interval: Tuple[float, float] = None,
+    contam_spectra: Optional[Dict[sym.Symbol, pd.Series]] = None,
+    deconv_species: Optional[List[sym.Symbol]] = None,
+    autoresample: bool = True,
+    autoscale: bool = True,
+    **options
+):
     """Simulate the given reaction system over time.
 
     Args:
@@ -104,14 +113,19 @@ def simulate_xps_with_cts(rsys: RxnSystem,
     sol_t, sol_y = bulk_crn.solve_rsys_ode(rsys, time, end_when_settled, **options)
     cts = time_series.CRNTimeSeries(sol_t, sol_y, rsys)
 
-    return cts.xps_with(title=title,
-                        species=species,
-                        ignore=ignore,
-                        x_range=x_range,
-                        scale_factor=scale_factor,
-                        experimental=experimental,
-                        gas_interval=gas_interval,
-                        contam_spectra=contam_spectra,
-                        deconv_species=deconv_species,
-                        autoresample=autoresample,
-                        autoscale=autoscale), cts
+    return (
+        cts.xps_with(
+            title=title,
+            species=species,
+            ignore=ignore,
+            x_range=x_range,
+            scale_factor=scale_factor,
+            experimental=experimental,
+            gas_interval=gas_interval,
+            contam_spectra=contam_spectra,
+            deconv_species=deconv_species,
+            autoresample=autoresample,
+            autoscale=autoscale,
+        ),
+        cts,
+    )
