@@ -206,6 +206,6 @@ def simulate_crn(rsys: RxnSystem, time: float, end_when_settled: bool = False,
     Returns:
         A CRNTimeSeries object with the concentrations over time.
     """
-
+    print("This is a deprecated function")
     sol_t, sol_y = bulk_crn.solve_rsys_ode(rsys, time, end_when_settled, **options)
     return CRNTimeSeries(sol_t, sol_y, rsys)

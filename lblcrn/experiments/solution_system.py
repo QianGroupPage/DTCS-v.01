@@ -4,6 +4,7 @@ import sympy as sym
 from lblcrn.crn_sym import reaction
 import lblcrn.experiments.xps_io as xps_io
 import lblcrn.experiments.xps as xps
+import lblcrn.experiments.simulate as simulate
 from lblcrn.experiments.tp_correlation import XPSTPCorrelator
 from lblcrn.experiments.time_series import CRNTimeSeries
 import pandas as pd
@@ -25,6 +26,9 @@ class SolutionSystem:
         corresponding list of experimental files, experimental data is added to the XPSExperiment
         objects and the data is then auto-scaled.
         """
+        assert len(experiments) > 0, 'Must pass at least one experiment to a Solution System.'
+        assert len(time_series) == len(experiments), 'Must pass the same number of simulations and time series.'
+
         self.systems = experiments
         self.time_series = time_series
 
@@ -108,8 +112,7 @@ class SolutionSystem:
         for j, ax in enumerate(fig.axes):
             plt.sca(ax)
             self.systems[index][j].plot()
-            # TODO(Rithvik) I might have broken this line, sorry.
-            plt.title(f'Eq: {str(int(j / rows))} Const: {str(j % cols)}')
+            plt.title(f'Eq: {str(j // cols)} Const: {str(j % cols)}')
         plt.show()
 
 class XPSInitializationData:
@@ -158,6 +161,9 @@ class XPSSystemRunner:
                  tp_correlator: Optional[XPSTPCorrelator] = None):
         """Create a new XPS system runner.
         """
+        if len(multipliers) == 0:
+            multipliers = [1]
+
         self.rsys_generator = rsys_generator
         self.time = time
         self.multipliers = multipliers
@@ -195,7 +201,6 @@ class XPSSystemRunner:
                 
 
     def simulate(self, index: int):
-        # Test code that will be moved into a module
         data = self.initializer_data[index]
         sols = []
         cts = []
@@ -213,7 +218,7 @@ class XPSSystemRunner:
                     scaled[i] *= self.multipliers[j]
 
                     rsys = self.rsys_generator(scaled)
-                    s, ts = xps.simulate_xps_with_cts(rsys, time=self.time, title=data.title + " Eq: "
+                    s, ts = simulate.simulate_xps_with_cts(rsys, time=self.time, title=data.title + " Eq: "
                         + str(i) + "Constant: " + str(j))
 
                     cts.append(ts)
@@ -233,7 +238,6 @@ class XPSSystemRunner:
         """Returns a solution system if all experiments have been simulated.
         """
         if not all(self.complete):
-            print("All experiments have not yet been simulated.")
-            return
+            raise AssertionError("All experiments have not yet been simulated.")
         return SolutionSystem(self.solutions, self.time_series, [x.experimental_file for x in self.initializer_data if x.experimental_file],
                               self.multipliers)

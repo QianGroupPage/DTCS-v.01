@@ -46,6 +46,11 @@ class RxnSystem(monty.json.MSONable):
         not have to worry about unpacking the collection: it will unpack and
         flatten lists and tuples for you.
         """
+        assert len(components) > 0, 'Must pass at least one reaction and a species manager to a solution system.'
+        if len(components) == 1:
+            assert not isinstance(components[0], species.SpeciesManager), 'Must pass at least one reaction to a solution system.'
+            raise AssertionError('Must pass a species manager to a solution system.')
+
         # Flatten the components
         flat = False
         while not flat:
@@ -92,7 +97,9 @@ class RxnSystem(monty.json.MSONable):
             elif isinstance(component, species.SpeciesManager):
                 self.species_manager = component
             else:
-                assert False, f'Unknown input {component} of type ' + str(type(component))
+                raise AssertionError(f'Unknown input {component} of type ' + str(type(component)) + ' to reaction system.')
+
+        assert self.species_manager is not None, 'Must pass a species manager to a solution system.'
 
          # Share the surface name to the species manager
         if self.surface is not None:
