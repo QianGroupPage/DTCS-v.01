@@ -1,4 +1,4 @@
-'''
+"""
 Simulates a surface chemical reaction network (CRN) on a 2D lattice.
 
 Usage: python surface_CRN_simulator.py -m <manifest>
@@ -6,43 +6,40 @@ Usage: python surface_CRN_simulator.py -m <manifest>
 Simulates the stochastic behavior of a surface CRN on a 2D grid lattice. Only
 implements unimolecular and bimolecular rules. Uses a Gillespie-Gibson-Bruck-
 like algorithm for computing next reactions with a priority queue.
-'''
+"""
 
 from __future__ import print_function
+
 try:
     import surface_crns
 except ImportError:
     import sys
     sys.path.append("./")
-import lblcrn.surface_crn.surface_crns.readers as readers
-import math
-
-from lblcrn.surface_crn.surface_crns.options.option_processor import SurfaceCRNOptionParser
-from lblcrn.surface_crn.surface_crns.models.grids import SquareGrid, HexGrid
-from lblcrn.surface_crn.surface_crns.views.text_display import TextDisplay
-from lblcrn.surface_crn.surface_crns.views.time_display import TimeDisplay
-from lblcrn.surface_crn.surface_crns.views.grid_display import SquareGridDisplay, HexGridDisplay
-from lblcrn.surface_crn.surface_crns.views.legend_display import LegendDisplay
-from lblcrn.surface_crn.surface_crns.simulators.queue_simulator import QueueSimulator
-from lblcrn.surface_crn.surface_crns.simulators.synchronous_simulator import SynchronousSimulator
-from lblcrn.surface_crn.surface_crns.simulators.event_history import EventHistory
-from lblcrn.surface_crn.surface_crns.simulators.event import Event
-from lblcrn.surface_crn.surface_crns.base.transition_rule import TransitionRule
-from lblcrn.surface_crn.surface_crns.pygbutton import *
-from lblcrn.surface_crn.surface_crns.views.grid_display import ParallelEmulatedSquareGridDisplay
-from lblcrn.surface_crn.results import Results
-from lblcrn.common import ipython_visuals, ProgressBar
-
-
 import cProfile
+import math
 import optparse
-import sys
 import os
 import subprocess as sp
+import sys
 from time import process_time
 
-import pygame
-from pygame.locals import *
+import lblcrn.surface_crn.surface_crns.readers as readers
+from lblcrn.common import ipython_visuals
+from lblcrn.surface_crn.results import Results
+from lblcrn.surface_crn.surface_crns.options.option_processor import \
+    SurfaceCRNOptionParser
+from lblcrn.surface_crn.surface_crns.pygbutton import *
+from lblcrn.surface_crn.surface_crns.simulators.event_history import \
+    EventHistory
+from lblcrn.surface_crn.surface_crns.simulators.queue_simulator import \
+    QueueSimulator
+from lblcrn.surface_crn.surface_crns.simulators.synchronous_simulator import \
+    SynchronousSimulator
+from lblcrn.surface_crn.surface_crns.views.grid_display import (
+    HexGridDisplay, ParallelEmulatedSquareGridDisplay, SquareGridDisplay)
+from lblcrn.surface_crn.surface_crns.views.legend_display import LegendDisplay
+from lblcrn.surface_crn.surface_crns.views.text_display import TextDisplay
+from lblcrn.surface_crn.surface_crns.views.time_display import TimeDisplay
 
 # TODO: study whether commenting these out would cause any unintended effects.
 # These prevent pygame from opening when the entire library is loaded or when
@@ -54,7 +51,7 @@ from pygame.locals import *
 # CONSTANTS #
 #############
 PROFILE = False
-WHITE = (255,255,255)
+WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 #time_font = pygame.font.SysFont('monospace', 24)
 # TODO: unify font with other figures
@@ -104,7 +101,7 @@ def main():
 def simulate_surface_crn(manifest_filename, group_selection_seed, display_class=None,
                          init_state=None, rxns=None, spectra_in_video=True, running_average=10,
                          spectra_max_conc=-1):
-    '''
+    """
     Runs a simulation, and displays it in a GUI window OR saves all frames
     as PNG images.
 
@@ -115,7 +112,7 @@ def simulate_surface_crn(manifest_filename, group_selection_seed, display_class=
     contain surface_crns.base.Node objects) and a class that can display your
     state (should subclass surface_crns.views.grid_display.SurfaceDisplay),
     which you should pass as "init_state" and "DisplayClass", respectively.
-    '''
+    """
 
     ################################
     # READ MANIFEST AND INITIALIZE #
@@ -130,7 +127,8 @@ def simulate_surface_crn(manifest_filename, group_selection_seed, display_class=
     # print(" Done.")
 
     if opts.capture_directory != None:
-        from signal import signal, SIG_DFL
+        from signal import SIG_DFL, signal
+
         # SIGPIPE is not used on any Windows system.
         if not sys.platform.startswith('win'):
             from signal import SIGPIPE
@@ -344,7 +342,9 @@ def simulate_surface_crn(manifest_filename, group_selection_seed, display_class=
     # TODO
     # progress_bar = ProgressBar(total_tasks=round(opts.max_duration/opts.fps))
     progress_bar = None
-    update_display(opts, simulation, progress_bar, grid_display, FRAME_DIRECTORY, time_display=time_display, title_display=title_display,
+    update_display(opts, simulation, progress_bar, grid_display, FRAME_DIRECTORY,
+                   time_display=time_display,
+                   title_display=title_display,
                    spectra_max_conc=spectra_max_conc)
 
     # State variables for simulation
