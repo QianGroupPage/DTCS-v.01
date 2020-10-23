@@ -1,34 +1,42 @@
 import os
 from shutil import rmtree
+
 import pandas as pd
 from IPython.display import clear_output
+
 from lblcrn.common import ipython_visuals
-from lblcrn.surface_crn.api_adapter.api_adapt import generate_manifest_stream, \
-    generate_surface, HexGridPlusIntersectionDisplay
+from lblcrn.surface_crn.api_adapter.api_adapt import (
+    HexGridPlusIntersectionDisplay, generate_manifest_stream, generate_surface)
 from lblcrn.surface_crn.ensemble import Ensemble
 from lblcrn.surface_crn.results import Results
 from lblcrn.surface_crn.surface_crns import SurfaceCRNQueueSimulator
-from lblcrn.surface_crn.surface_crns.simulators.queue_simulator import *
-from lblcrn.surface_crn.surface_crns.readers.manifest_readers import read_manifest
-from lblcrn.surface_crn.surface_crns.options.option_processor import SurfaceCRNOptionParser
 from lblcrn.surface_crn.surface_crns.models.coord_grid import CoordGrid
-from lblcrn.surface_crn.surface_crns.views.coord_grid_display import CoordGridDisplay
+from lblcrn.surface_crn.surface_crns.options.option_processor import \
+    SurfaceCRNOptionParser
+from lblcrn.surface_crn.surface_crns.readers.manifest_readers import \
+    read_manifest
+from lblcrn.surface_crn.surface_crns.simulators.queue_simulator import *
+from lblcrn.surface_crn.surface_crns.views.coord_grid_display import \
+    CoordGridDisplay
 
 
-def scrn_simulate_single_run(rxns, time_max=100, lattice=None, display_class=None, video=False, spectra_in_video=True,
-                             spectra_average_duration=2, species_tracked=[], manifest_file="", rng_seed=923123122,
-                             video_path="", section_length=-1, trajectory_path="", save_trajectory=False,
+def scrn_simulate_single_run(rxns,
+                             time_max=100,
+                             lattice=None,
+                             display_class=None,
+                             video=False,
+                             spectra_in_video=True,
+                             spectra_average_duration=2,
+                             species_tracked=[],
+                             manifest_file="",
+                             rng_seed=923123122,
+                             video_path="",
+                             section_length=-1,
+                             trajectory_path="",
+                             save_trajectory=False,
                              compress_trajectory=True):
     """
-    :param rxns:
-    :param time_max:
-    :param lattice:
-    :param display_class:
-    :param video:
-    :param concentrations:
-    :param species_tracked: a list of sympy symbols or strings representing each species
-    :param manifest_file:
-    :return:
+    species_tracked: a list of sympy symbols or strings representing each species
     """
     # Dangerous! rng_seed + 1 is used
     group_selection_seed = rng_seed + 1
@@ -59,7 +67,8 @@ def scrn_simulate_single_run(rxns, time_max=100, lattice=None, display_class=Non
         surface = lattice
 
     r = simulate_without_display(manifest, surface, [str(s) for s in species_tracked], rxns, group_selection_seed,
-                                 trajectory_path=trajectory_path, compress_trajectory=compress_trajectory,
+                                 trajectory_path=trajectory_path,
+                                 compress_trajectory=compress_trajectory,
                                  section_length=section_length)
     if save_trajectory:
         if compress_trajectory:
@@ -68,12 +77,6 @@ def scrn_simulate_single_run(rxns, time_max=100, lattice=None, display_class=Non
         else:
             print(f"trajectory is at " + f"{os.getcwd()}/{trajectory_path}/trajectory.csv")
             r.df_raw.to_csv(f"{os.getcwd()}/{trajectory_path}/trajectory.csv")
-
-    #
-    # if manifest_file:
-    #     r = Results.from_concs_times(manifest_file, rxns, concs, times)
-    # else:
-    #     r = Results.from_concs_times("".join(list(manifest)), rxns, concs, times)
 
     video_link = None
     if video:
@@ -93,25 +96,33 @@ def scrn_simulate_single_run(rxns, time_max=100, lattice=None, display_class=Non
         if not manifest_file:
             manifest = generate_manifest_stream(rxns, time_max, random_seed_scrn=rng_seed, video_path=video_path)
         # Provide a grid structure for use in place of the grid structure in the rules manifest.
-        if not lattice and rxns.surface.use_coord_grid:
+        if rxns.surface.use_coord_grid and not lattice:
+
             # For CoordGrid, generate_surface function updates the surface object in accordance with
             # initial concentration and default species on the sites specified by the rules file.
             generate_surface(rsys=rxns)
             surface = CoordGrid.from_poscar(rxns.surface.poscar_file,
                                             supercell_dimensions=rxns.surface.supercell_dimensions,
                                             ignore_threhold=rxns.surface.surface_depth)
-            surface.set_initial_concentrations(rxns.surface.initial_species)
+
+            # TODO: the following two functions must be called in sequence.
             surface.set_default_species(rxns.surface.default_names)
+            surface.set_initial_concentrations(rxns.surface.initial_species)
+
         elif not lattice:
             surface = generate_surface(rsys=rxns)
         else:
             surface = lattice
 
-        # TODO: fix the issue that the video will fail if there is already file in
+        # TODO: fix the issue that the video may fail if there is already file in
         # the frames folder.
         # TODO: progress bar for the video
         # TODO: add this as an argument spectra_max_conc=r.df_raw.max()
-        r.video_trajectory = simulate_with_display(manifest, surface, group_selection_seed, rxns=rxns,
+        
+        r.video_trajectory = simulate_with_display(manifest,
+                                                   surface,
+                                                   group_selection_seed,
+                                                   rxns=rxns,
                                                    spectra_in_video=spectra_in_video,
                                                    running_average=spectra_average_duration,
                                                    spectra_max_conc=r.df_raw.to_numpy().max())
@@ -258,8 +269,11 @@ def get_frames_link(manifest):
     return f"{opts.capture_directory}/frames"
 
 
-def simulate_with_display(manifest_file, lattice, group_selection_seed, rxns=None, spectra_in_video=True,
-                          running_average=10, spectra_max_conc=-1):
+def simulate_with_display(manifest_file, lattice, group_selection_seed,
+                          rxns=None,
+                          spectra_in_video=True,
+                          running_average=10,
+                          spectra_max_conc=-1):
     if rxns.surface.use_coord_grid:
         display_class = CoordGridDisplay
     elif rxns.surface.structure == "hexagon":
