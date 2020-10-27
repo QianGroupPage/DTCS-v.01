@@ -67,7 +67,6 @@ def simulate_xps(
         autoscale=autoscale,
     )
 
-
 def simulate(
     rsys: RxnSystem,
     time: Optional[float] = None,
