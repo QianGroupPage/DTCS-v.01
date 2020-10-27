@@ -68,7 +68,7 @@ def simulate_xps(
     )
 
 
-def simulate_xps_with_cts(
+def simulate(
     rsys: RxnSystem,
     time: Optional[float] = None,
     end_when_settled: bool = False,
@@ -129,3 +129,5 @@ def simulate_xps_with_cts(
         ),
         cts,
     )
+
+simulate_xps_with_cts = simulate
