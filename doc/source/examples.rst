@@ -20,8 +20,8 @@ the information relating to species. See the docs here (TODO)::
 
 Using the species manager, you can declare as many species as desired as follows::
 
-    x1 = sm.sp('x', {0:2})
-    x2 = sm.sp('y', {0:1})
+    x1 = sm.sp('x')
+    x2 = sm.sp('y')
 
 
 Then, given these species, arbitrary reaction systems can be created using the :code:`Rxn`,
