@@ -869,6 +869,7 @@ def update_display(opts, simulation, progress_bar, grid_display, FRAME_DIRECTORY
 
                 cleanup_and_exit(simulation)
 
+
 if __name__ == '__main__':
     if PROFILE:
         '''try:

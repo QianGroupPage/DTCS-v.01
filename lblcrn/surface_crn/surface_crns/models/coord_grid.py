@@ -1,16 +1,20 @@
-from lblcrn.surface_crn.surface_crns.base.node import Node
-from lblcrn.surface_crn.connectivity.triangulation import show_triangulation, poscar_to_positions
-from lblcrn.surface_crn.connectivity.neighbors import voronoi_neighbors_dict
-from lblcrn.surface_crn.connectivity.voronoi import voronoi_plot_2d, voronoi_finite_polygons_2d, \
-    VoronoiGraph, create_supercell, fold_numbers
-from lblcrn.common.num_to_word import num2word
-from collections import Counter
-from ase import Atoms, Atom
-from scipy.spatial import Voronoi
-import numpy as np
 import json
 import math
 import random
+from collections import Counter
+
+import numpy as np
+from ase import Atom, Atoms
+from scipy.spatial import Voronoi
+
+from lblcrn.common.num_to_word import num2word
+from lblcrn.surface_crn.connectivity.neighbors import voronoi_neighbors_dict
+from lblcrn.surface_crn.connectivity.triangulation import (poscar_to_positions,
+                                                           show_triangulation)
+from lblcrn.surface_crn.connectivity.voronoi import (
+    VoronoiGraph, create_supercell, fold_numbers, voronoi_finite_polygons_2d,
+    voronoi_plot_2d)
+from lblcrn.surface_crn.surface_crns.base.node import Node
 
 
 class CoordGrid(object):

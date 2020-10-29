@@ -1,6 +1,8 @@
-from lblcrn.crn_sym import Rxn, RevRxn, Surface, SurfaceRxn, SurfaceRevRxn, Schedule, Conc
-from lblcrn.common import color_to_RGB
 import random
+
+from lblcrn.common import color_to_RGB
+from lblcrn.crn_sym import (Conc, RevRxn, Rxn, Schedule, Surface,
+                            SurfaceRevRxn, SurfaceRxn)
 
 
 def to_str(rule):
@@ -104,6 +106,7 @@ def generate_surface(rsys, random_seed=30):
             else:
                 initial_concentrations[rsys.species_manager.species_from_symbol(c.symbol).site.name][str(c.symbol)] = \
                         int(str(c.concentration))
+
             rsys.surface.set_initial_concentrations(initial_concentrations)
 
             # TODO: rename the sites in coord_grid
@@ -210,8 +213,9 @@ def generate_manifest_stream(rsys, max_duration, random_seed_scrn=923123122, ran
 
 
 from lblcrn.surface_crn.surface_crns.models.grids import *
-from lblcrn.surface_crn.surface_crns.base.node import *
 from lblcrn.surface_crn.surface_crns.views.grid_display import *
+
+
 class HexGridPlusIntersections(HexGrid):
     '''
     Represents a rectangular hex grid (as in HexGrid), plus a site at each
