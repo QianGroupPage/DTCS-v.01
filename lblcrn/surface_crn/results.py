@@ -1,17 +1,20 @@
+import csv
+import os
+
+import ffmpeg
+import matplotlib
+import matplotlib.backends.backend_agg as agg
+import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import seaborn as sns
-import matplotlib
-import matplotlib.pyplot as plt
-import csv
-import numpy as np
-from scipy.stats import norm
-import lblcrn.surface_crn.xps as xps
-from lblcrn.common.util import resample_by_skipping
-import os
 from IPython.display import HTML
-import ffmpeg
+from scipy.stats import norm
+
+import lblcrn.surface_crn.xps as xps
 from lblcrn.common import color_to_HEX
-import matplotlib.backends.backend_agg as agg
+from lblcrn.common.util import resample_by_skipping
+
 # Set default font
 matplotlib.rcParams["font.family"] = "arial"
 
@@ -361,6 +364,7 @@ class Results:
     # TODO: decrease the figure size in case zoom = False
     def plot_evolution(self,
                        names_in_figure=None,
+                       names_to_ignore=None,
                        start_time=0,
                        end_time=-1,
                        title="",
@@ -398,17 +402,26 @@ class Results:
             df = self.df
         df = df[(df.index <= end_time) & (df.index >= start_time)]
 
+        if names_to_ignore is None:
+            names_to_ignore = []
+
         if names_in_figure is None:
-            names_in_figure = self.species_ordering
-            species_in_figure = self.species_ordering
-            markers_in_figure = self.marker_names_ordering
-            sub_species_in_figure = self.sub_s_list
+            names_in_figure = [name for name in self.species_ordering if name not in names_to_ignore] \
+                if self.species_ordering else []
+            species_in_figure = [name for name in self.species_ordering if name not in names_to_ignore] \
+                if self.species_ordering else []
+            markers_in_figure = [name for name in self.marker_names_ordering if name not in names_to_ignore] \
+            if self.marker_names_ordering else []
+            sub_species_in_figure = [name for name in self.sub_s_list if name not in names_to_ignore] \
+                if self.sub_s_list else []
         # Sort user provided names into species and/or markers.
         else:
             species_in_figure = []
             markers_in_figure = []
             sub_species_in_figure = []
             for name in names_in_figure:
+                if name in names_to_ignore:
+                    continue
                 if name in self.species_ordering:
                     species_in_figure.append(name)
                     if name in self.marker_names_ordering:
