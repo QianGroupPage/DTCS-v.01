@@ -9,11 +9,13 @@ Dr. Jin Qian, Domas Buracas, Andrew Bogdan, Rithvik Panchapakesan, Ye Wang
 
 # *** Libraries ***
 from typing import List, Tuple, Union
+
 import sympy as sym
+
 from lblcrn.common import color_to_RGB
-from lblcrn.connectivity.triangulation import grid_size, show_triangulation
-from lblcrn.connectivity.voronoi import produce_voronoi, fold_numbers
 from lblcrn.common.num_to_word import num2word
+from lblcrn.connectivity.triangulation import grid_size, show_triangulation
+from lblcrn.connectivity.voronoi import fold_numbers, produce_voronoi
 
 
 # *** Classes ***
@@ -22,8 +24,13 @@ class Surface:
     A surface structure, by default, it is square with only top sites.
     """
 
-    def __init__(self, name: str, size: Tuple[int] = (0, 0), structure: str = "rectangle",
-                 color: Union[Tuple[int], List[int], str] = None, poscar_file: str = "", supercell_dimensions=1,
+    def __init__(self,
+                 name: str,
+                 size: Tuple[int] = (10, 10),
+                 structure: str = "rectangle",
+                 color: Union[Tuple[int], List[int], str] = None,
+                 poscar_file: str = "",
+                 supercell_dimensions=1,
                  surface_depth=1):
         # This surface is based on a POSCAR file.
         if poscar_file:

@@ -16,17 +16,17 @@ Usage:
 """
 
 import itertools
-from typing import List, Optional, Union
+from typing import List, Optional, Tuple, Union
 
-import lblcrn
 import monty.json
 import sympy as sym
-from lblcrn.common import color_to_RGB
+
+import lblcrn
 from lblcrn.crn_sym.surface import Site
-from typing import List, Tuple, Union
 
 _COLORS = itertools.cycle(['red', 'green', 'orange', 'blue', 'purple', 'pink',
                            'yellow', 'gray', 'cyan'])
+
 
 class Orbital(monty.json.MSONable):
     """An orbital in a species.
@@ -370,7 +370,6 @@ class SpeciesManager(monty.json.MSONable):
         """
         pass
 
-
     @property
     def sub_species_dict(self):
         """
@@ -424,7 +423,6 @@ class SpeciesManager(monty.json.MSONable):
                 d[be_name_symbol].append(sy)
                 included_species_symbols.add(sy)
         return d
-
 
     def symbol_from_name(self, name: str) -> sym.Symbol:
         """Gets the symbol for the given name, if it is a species.
