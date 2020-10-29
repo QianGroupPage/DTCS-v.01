@@ -37,7 +37,7 @@ def shirley_background(signal, max_iters=50):
     Return the background as a dataframe, where 0-th column is the background.
     """
     # Assuming binding energy decreasing: stop_index < start_index, delta_index < 0
-    start_index, stop_index = min((0, len(signal.index) - 1), key=lambda i: signal.index[i]), \
+    start_index, stop_index = min(range(0, len(signal.index)), key=lambda i: signal.index[i]), \
                               max((0, len(signal.index) - 1), key=lambda i: signal.index[i])
     delta_index = abs(signal.index[1] - signal.index[0])
     signal_copy = signal.copy() - signal.min()
@@ -63,6 +63,8 @@ def shirley_background(signal, max_iters=50):
             background_offset = background.iloc[start_index, 0] - signal_copy.iloc[start_index, 0]
             k = k - (background_offset / background.iloc[start_index, 0])*k*0.25 # 0.25 is to ensure convergence
             background_offset_old = background_offset
+
+            print("start_value", signal_copy.iloc[start_index, 0], "end_value", signal_copy.iloc[stop_index, 0])
 
             if abs(background_offset) <= 0.000001 * background.iloc[start_index, 0]:
                 break

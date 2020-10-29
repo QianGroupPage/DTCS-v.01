@@ -1,7 +1,9 @@
-import pandas as pd
 import io
-from lblcrn.raw_data.raw_region import RawRegion
-from lblcrn.raw_data.utilities import read_line_blocks
+
+import pandas as pd
+
+from lblcrn.xps_data_processing.raw_region import RawRegion
+from lblcrn.xps_data_processing.utilities import read_line_blocks
 
 
 class RawMeasurement:

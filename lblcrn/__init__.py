@@ -25,17 +25,18 @@ _DATA_FILES_PATH = sys.prefix + '/lblcrn/'
 # Master version information. Modifying this should update everything else.
 __version__ = 'dev0.1.2.3'
 
+import lblcrn._examples as lblcrn_examples
+import lblcrn._resources as lblcrn_resources
+from lblcrn._echo import lblcrn_echo_off, lblcrn_echo_on
+from lblcrn._help import *
 from lblcrn.bulk_crn import *
 from lblcrn.common import *
 from lblcrn.crn_sym import *
 from lblcrn.experiments import *
 from lblcrn.surface_crn import *
 from lblcrn.surface_crn.connectivity import *
-from lblcrn.raw_data import *
-from lblcrn._echo import lblcrn_echo_on, lblcrn_echo_off
-import lblcrn._resources as lblcrn_resources
-import lblcrn._examples as lblcrn_examples
-from lblcrn._help import *
+from lblcrn.xps_data_processing import *
+
 
 # Make the following names fake so that `from lblcrn import *` doesn't
 # create mysterious (or conflicting) variables.

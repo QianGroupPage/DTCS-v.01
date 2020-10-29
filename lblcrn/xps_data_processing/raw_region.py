@@ -1,7 +1,8 @@
-import pandas as pd
 import numpy as np
-from lblcrn.raw_data.baseline import shirley_background
-from scipy.signal import savgol_filter, argrelextrema
+import pandas as pd
+from scipy.signal import argrelextrema, savgol_filter
+
+from lblcrn.xps_data_processing.baseline import shirley_background
 
 
 class RawRegion:

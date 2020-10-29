@@ -1,9 +1,11 @@
 import os
-import pandas as pd
-from lblcrn.raw_data.raw_measurement import RawMeasurement
-from lblcrn.raw_data.read_digital_book import read_digital_notebook
-from IPython.display import display
 import re
+
+import pandas as pd
+from IPython.display import display
+
+from lblcrn.xps_data_processing.raw_measurement import RawMeasurement
+from lblcrn.xps_data_processing.read_digital_book import read_digital_notebook
 
 
 class RawExperiment:
