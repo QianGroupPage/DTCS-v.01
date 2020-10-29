@@ -105,6 +105,20 @@ class Results:
         self.video_trajectory = None
 
     @staticmethod
+    def from_csv(path, rxns, compression="infer"):
+        """
+        :param path: a path to a csv file where the results are saved;
+        :param rxns: the reaction system for the CSV file, used to infer relationships between species;
+        :param compression: the compression method for the csv file, default option "infer" detects the compression
+        method based on file extension name;
+        :return: a Results object.
+        """
+        df = pd.read_csv(path, index_col=Results.TIME_COL_NAME, compression=compression)
+        return Results(None, rxns, df,
+                       sum_sub_species=False,
+                       resample=False)
+
+    @staticmethod
     def from_directory(path, rxns):
         """
         Construct a results object from based on a directory.
@@ -123,7 +137,6 @@ class Results:
         Construct a results object based on a directory in which there is a trajectory file named "trajectory.gzip".
         """
         df = pd.read_csv(f"{path}/trajectory.gzip", compression="gzip")
-        print(f"Dataframe already created, with a length of {len(df.index)}")
         return Results(None, rxns, df,
                        sum_sub_species=False,
                        resample=False)
