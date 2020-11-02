@@ -238,7 +238,9 @@ class SpeciesManager(monty.json.MSONable):
                     self._species[default_site_sym] = parent.create_sub_species(site=Site(Site.default, parent.site))
         else:
             symbol = sym.Symbol(name)
-            if not isinstance(orbitals, list):
+            if orbitals is None:
+                orbitals = []
+            elif not isinstance(orbitals, list):
                 orbitals = [orbitals]
 
             # if symbol in self._species:

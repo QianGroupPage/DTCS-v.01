@@ -8,7 +8,7 @@ LBL Chemical Reaction Simulator
    :maxdepth: 2
    :hidden:
 
-   examples
+   bulk_examples
    contact
    license
    api_docs/index

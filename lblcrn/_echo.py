@@ -10,6 +10,11 @@ Exposes:
 
 import lblcrn
 
+@property
+def do_echo():
+    """Return lblcrn.do_echo"""
+    return lblcrn.do_echo
+
 def lblcrn_echo_on():
     """Turn on echo."""
     lblcrn.do_echo = True
@@ -43,8 +48,3 @@ def echo(*args, **kwargs):
     """Call print() if echo is on."""
     if lblcrn.do_echo:
         print(*args, **kwargs)
-
-@property
-def do_echo():
-    """Return lblcrn.do_echo"""
-    return lblcrn.do_echo
