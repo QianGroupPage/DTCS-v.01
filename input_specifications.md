@@ -5,11 +5,11 @@ folder. In addition to machine-generated measurement files, the folder contains 
 entered digital notebook.
 
 Any file whose name contains "digital" followed immediately by "notebook" is recognized as the digital notebook, for 
-instance, "digital_notebook" or "Digital  Notebook 2020-08-20". Both `_` and space are recognized as separators in 
-its file name.
+instance, "digital_notebook" or "Digital  Notebook 2020-08-20". Both `_` and space are recognized as filename 
+separators.
 
-A measurement filename is divided into sections with `_`. The last section is 
-the measurement number that corresponds to a line describing this measurement
+All filenames for measurement files are divided into sections separated by `_`. The last section is 
+the measurement number corresponding to a line describing the corresponding measurement
 in the digital notebook. For instance, `Ir_foil_20200708_0003.txt`
 
 ### Digital Notebook
@@ -37,7 +37,8 @@ For example, `036 Survey, Ir 4f, O 1s, VB at 735 eV: `
 
 To add a comment block between two condition line blocks, don't start any line 
 with a number. The system will take such a block as a comment for an event between 
-the previous condition line block and the next (TODO).
+the previous condition line block and the next (TODO, currently additional comments
+are skipped).
 
 
 
