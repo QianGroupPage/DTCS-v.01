@@ -1,11 +1,11 @@
-.. Bulk CRN Examples
+.. bulk_examples
 
 =================
 Bulk CRN Examples
 =================
 
 Predator Prey
-----------------------
+-------------
 
 This will be a step-by step explanation of setting up a basic predator-prey scenario.
 First, import the library::

@@ -11,7 +11,6 @@ LBL Chemical Reaction Simulator
    bulk_examples
    contact
    license
-   api_docs/index
 
 .. TODO: Introduction
 
@@ -33,7 +32,7 @@ to check if everything installed.
 API Rundown
 -----------
 
-For exhaustive documentation, see the full :ref:`API Docs <api_docs>`
+For exhaustive documentation, see the full API Docs TODO
 
 - Help Utilities
     - ``lblcrn_help()``
@@ -60,42 +59,6 @@ For exhaustive documentation, see the full :ref:`API Docs <api_docs>`
 
 Walkthrough
 -----------
-This will walk you through the workflow of a predator-prey system. Import::
-
-    from lblcrn import *
-
-First, you need to make a SpeciesManager to keep track of all your species.
-Then, you can create some species::
-
-    sm = SpeciesManager()
-    prey = sm.sp('rabbit', Orbital('1s', 1.0))
-    pred = sm.sp('fox', Orbital('1s', 2))
-
-Then, you define your reaction system::
-
-    rsys = RxnSystem(
-        sm,
-
-        Rxn(prey + pred, 2 * pred, 2),
-        Rxn(prey, 2 * prey, 1),
-        Rxn(pred, None, 1),
-
-        Conc(pred, 1),
-        Conc(prey, 1),
-    )
-
-Then, you solve the system. This simulates the system for ``time``::
-
-    time_series = simulate_crn(rsys, time_max=45, max_step=0.01)
-    time_series.plot()
-
-And then to plot some x-ray spectroscopy gaussians::
-
-    time_series.xps_with(t=20).plot()
-
-You can access this example through::
-
-    lblcrn_examples.load('predator-prey')
 
 .. TODO Citation Information
 
