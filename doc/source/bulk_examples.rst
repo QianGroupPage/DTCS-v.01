@@ -176,6 +176,68 @@ function::
 
 
 H20 Adsorption and Complex Formation on Ag(111) 
-----------------------------------------------
+-----------------------------------------------
+
+While the bulk CRN can be used to investigate a multitude of phenomenon, it is specifically tailored
+to simulate and predict the results of chemical reactions.
 
 
+<Description of Scenario>
+
+
+Firs create the species that are part of the reaction. The energies for various orbitals (used in
+XPS spectra plotting) can be specified when creating the species::
+
+    sm = SpeciesManager()
+
+    y1 = sm.sp('H2Og', Orbital('1s', 535.0))
+    x2 = sm.sp('H2O*', Orbital('1s', 532.2))
+    x3 = sm.sp('OH*', Orbital('1s', 530.9))
+    x4 = sm.sp('O*', Orbital('1s', 530.0))
+    x53 = sm.sp('OH.H2O_hb', Orbital('1s', 531.6))
+    x54 = sm.sp('O.H2O_hb', Orbital('1s', 531.6))
+    x6 = sm.sp('multiH2O', Orbital('1s', 533.2))
+    x7 = sm.sp('O2g', Orbital('1s', 535.0))
+
+Then, following the chemical relationships, construct the reaction systems with chosen initial
+concentrations::
+
+    rsys = RxnSystem(
+        Rxn(x4 + y1, x54, 3.207654),
+        Rxn(x3 + y1, x53, 1.363342),
+        RevRxn(x54, x3 + x3, 6.220646,0.160755),
+        Rxn(x53, x2 + x3, 0.299507),
+        Rxn(x54, x2 + x4, 0.167130),
+        Rxn(x2, y1, 1.939313),
+        Rxn(y1, x2, 0.515646),
+        Rxn(x53, y1 + x3, 0.733491),
+        Rxn(x54, x4 + y1, 0.311754),
+        Rxn(x53 + y1, x6, 1.038423),
+        Rxn(x6, x53 + y1, 0.962999),
+        RevRxn(x4 + x4, x7, 0.002342,426.922895),
+        Conc(y1,1),
+        Conc(x4,0.25),
+        sm
+    )
+
+A simple call to :code:`simulate` is all that is needed to simulate this complicated system::
+
+    xps, ts = simulate(rsys, 500, max_step=1)
+
+As with previous examples, the time-series data can be plotted::
+
+    ts.plot()
+
+.. image:: _static/img/bulk_crn/ag_time_series.png
+    :width: 400
+    :alt: H20 Adsorption and Complex Formation on Ag(111) time series data
+
+However, given the chemical context, a predicted XPS spectra can also be plotted using the xps
+return value from :code:`simulate`. Using the supplied orbital values, Gaussian peaks can be plotted
+for all species::
+
+    xps.plot()
+
+.. image:: _static/img/bulk_crn/ag_xps.png
+    :width: 400
+    :alt: H20 Adsorption and Complex Formation on Ag(111) XPS Spectra
