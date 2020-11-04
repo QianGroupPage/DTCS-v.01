@@ -28,6 +28,7 @@ kiwisolver
 MarkupSafe
 matplotlib
 mistune
+monty
 mpmath
 nbconvert
 nbformat
@@ -50,6 +51,7 @@ pyzmq
 requests
 scikit-learn
 scipy
+seaborn
 Send2Trash
 six
 sklearn
