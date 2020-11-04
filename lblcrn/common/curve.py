@@ -47,4 +47,3 @@ class Curve:
         target.set_xlim(max(max(self.xs), self.original_curve_df.index.max()),
                         min(min(self.xs), self.original_curve_df.index.min()))
         target.legend(loc='upper center', bbox_to_anchor=(0.5, 1.3), fancybox=True)
-
