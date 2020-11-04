@@ -37,7 +37,8 @@ def scrn_simulate_single_run(rxns,
                              section_length=-1,
                              trajectory_path="",
                              save_trajectory=False,
-                             compress_trajectory=True):
+                             compress_trajectory=True,
+                             display_class=None):
     """
     :param rxns: the RxnSystem object;
     :param time_max: the time at which the simulation will be terminated;
