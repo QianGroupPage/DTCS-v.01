@@ -7,14 +7,29 @@ from lblcrn.xps_data_processing.line_shapes import line_shapes
 
 
 def decompose(curve_df,
+              suggest_parameters=True,
               function="glp",
               center_ranges=None,
               fwhm_ranges=None,
               mixing_param_means=None):
     """
-    Decompose a curve into num_components independent Gaussian distributions, each of which
-    has a mean that's in center_range and fwhm in fwhm_ranges.
+    Decompose a curve into 1 or more independent peaks.
+
+    :param curve_df: a Pandas dataframe whose only column is the values of the curve;
+    :param suggest_parameters: if set to True, suggest parameters and use the following parameters as specific
+                               overrides.
+    :param function: a string indicating the type of the peaks to use in this decomposition;
+    :param center_ranges: the absolute range of the center of the peaks; 2-D array where each row represents the range
+                          for a peak.
+                          initial guesses are assumed to be the mean of the range;
+    :param fwhm_ranges: the absolute range of the fwhm; 2-D array where each row represents the range for a peak.
+                        initial guesses are assumed to be the mean of the range;
+    :param mixing_param_means: the initial guesses of the mixing parameters;
+    :return: A Curve object representing the decomposed fit. curve.plot() will plot the decomposition results.
     """
+    if suggest_parameters:
+        raise Exception("Parameter suggestions not implemented.")
+
     f = produce_fitting_function(function)
     if center_ranges is not None and fwhm_ranges is not None:
         num_components = center_ranges.shape[0]
@@ -71,20 +86,28 @@ def decompose(curve_df,
 
 
 def produce_fitting_function(type="glp"):
+    """
+    :param type: the type of the fitting function;
+    :return: a function used for peak fitting.
+    """
+
     func = line_shapes[type]["function"]
     num_params = line_shapes[type]["num_params"] - 1
 
     def f(xs, *params):
         """
-        Function of the assumed decomposition. This is the model; we optimize the params for this
+        Function of the assumed peak. This is the model; we optimize the params for this
         function towards certain goals.
+
+        :param xs: numpy array containing x values;
+        :param params: a list of additional parameters; every num_params parameters forms the parameters
+                       for one individual peak;
+        :return: a numpy array produced
         """
         params = unweave(params, num_params)
         ys = np.zeros_like(xs)
         for param_set in zip(*params):
-
             print("updated param_set", param_set)
-
             ys += func(xs, *param_set)
         return ys
     return f

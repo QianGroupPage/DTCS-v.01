@@ -1,4 +1,5 @@
 import io
+import os
 
 import pandas as pd
 
@@ -7,12 +8,16 @@ from lblcrn.xps_data_processing.utilities import read_line_blocks
 
 
 class RawMeasurement:
-    def __init__(self, file_path, sequence_number):
+    def __init__(self, file_path):
+        """
+        :param file_path: path of the machine-generated measurement file.
+        """
         self.regions_list = []
         self.regions = {}
-        self.sequence_number = sequence_number
+        self.sequence_number = int(os.path.splitext(file_path)[0].split('_')[-1]) - 1
         splitted_lines = read_line_blocks(file_path)
         header_df = pd.read_csv(io.StringIO(''.join(splitted_lines[0])), sep="=")
+
         num_regions = int(header_df["[Info]"]['Number of Regions'])
         for i in range(num_regions):
             region_header_block = io.StringIO(''.join(splitted_lines[4 * i + 1][1:]))
@@ -32,18 +37,24 @@ class RawMeasurement:
         pass
 
     def list_region_names(self):
+        """
+        :return: a list containing the names of all measured regions in the file.
+        """
         return [region.name for region in self]
 
     def calibrate(self, internal_region="VB"):
         """
-        :param internal_region: region name or the beginning part of the region to use for alignment.
-        :return:
+        Calibrate by an internal region.
+
+        :param internal_region: name or prefix of the name of the region to use for alignment;
+        :return: None
         """
         self.calibrate_by_numerical_value(self.calibration_offset(internal_region=internal_region))
 
     def has_internal_region(self, internal_region="VB"):
         """
-        Return True if the measurement has an internal region that matches with name internal_region.
+        :param internal_region: name or prefix of the name of the region to use for alignment;
+        :return: True if the measurement has an internal region that matches with name internal_region.
         """
         for region_name in self.list_region_names():
             if region_name.startswith(internal_region):
@@ -51,6 +62,12 @@ class RawMeasurement:
         return False
 
     def calibration_offset(self, internal_region="VB"):
+        """
+        Calibrate all regions in this measurement by the region whose name starts with "VB".
+
+        :param internal_region: name or any prefix of the region by which this calibration is based on;
+        :return: numerical value of the offset.
+        """
         region_name_in_use = None
         for region_name in self.list_region_names():
             if region_name.startswith(internal_region):
@@ -59,26 +76,36 @@ class RawMeasurement:
                 region_name_in_use = region_name
         return self.regions[region_name_in_use].produce_smoothed_version().find_steepest_section()
 
-    def calibrate_by_numerical_value(self, value):
+    def calibrate_by_numerical_value(self, offset):
         """
-        Add the index (usually binding energy) of each region with value.
+        :param offset: the offset value to add to the binding energy column;
+        :return: None
         """
         for region in self:
-            region.data.index = region.data.index - value
+            region.data.index = region.data.index - offset
 
     def remove_baseline(self, max_iters=50):
         """
         Calculate and subtract Shirley background from each region.
+
+        :param max_iters: maximum number of iterations to use in the Shirley algorithm;
+        :return: None
         """
         for region in self:
             region.apply_shirley_background(max_iters=max_iters)
 
     @property
     def num_regions(self):
+        """
+        :return: number of regions in the measurement.
+        """
         return len(self.regions)
 
     @property
     def energy_levels(self):
+        """
+        :return: list of energy levels in the measurement.
+        """
         return list(set([region.energy_level for region in self]))
 
     def __getitem__(self, i):
