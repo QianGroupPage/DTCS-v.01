@@ -1,7 +1,9 @@
 class Condition:
     def __init__(self, line_block):
         """
-        Read information from a block in the notebook provided by the experimentalist.
+        :param line_block: a list of lines describing a set of experiments for under a condition.
+                           The first line in the line-block describes the condition for the block;
+                           Each of the following line describes an individual set of experimental measurements.
         """
         condition_info = self.read_condition_line(line_block[0])
         self.pressure, self.temperature = condition_info[:2]
@@ -18,7 +20,9 @@ class Condition:
 
     def set_measurements(self, measurements):
         """
-        Set the measurements list of this condition.
+        This is called internally when the list of measurements for this condition has been processed.
+        :param measurements: a list of RawMeasurement objects.
+        :return: None
         """
         self.measurements = measurements
 
@@ -33,12 +37,16 @@ class Condition:
 
     @property
     def id(self):
+        """
+        :return: a unique identifier for this condition, temperature followed by pressure.
+        """
         return " ".join([self.pressure, self.temperature])
 
     @staticmethod
     def read_condition_line(line):
         """
-        Condition line consists of P, T, comments, each separated by any of ",", ":", or space.
+        :param line: a line consisting of P, T, comments, each separated by any of ",", ":", or space.
+        :return: a list of strings describing measurement conditions.
         """
         line = line.rstrip()
 
@@ -50,12 +58,13 @@ class Condition:
     @staticmethod
     def read_measurement_entry_line(line):
         """
-        A line for a measurement entry consists of sequence number for the entry
-        :param line:
-        :return:
+        :param line: a line that describes the measurement entry, starting with its sequence number.
+        :return: the sequence number of the measurement, a list of species names in it, a list of comment strings
+                 for the measurement.
         """
         sequence_number = line.split()[0]
         line_left = "".join(line.split()[1:])
-        comments = line_left.split(":")[1:]
-        species = line_left.split(":")[0].split()
+
+        comments = line_left.split(":")[1:].split(',')
+        species = line_left.split(":")[0].split(',')
         return int(sequence_number), species, comments

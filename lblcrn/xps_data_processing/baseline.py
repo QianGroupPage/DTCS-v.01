@@ -1,40 +1,15 @@
 import numpy as np
 
-# def shirley_background(df):
-#     max_iter = 50
-#     max_rdiff = 1e-6
-#     n = df.size
-#     ya = df.index[0]
-#     yb = df.index[-1]
-#     dy = yb - ya
-#     B = np.array([ya for _ in range(n)])
-#     PA = np.array([0 for _ in range(n)])
-#     old_A = 0
-#     for iter in range(max_iter):
-#         Y = df["data"] - B
-
-#         print(PA, Y, df)
-#         for i in range(1, n):
-#             PA[i] = PA[i-1] + (Y[i] + Y[i-1]) / 2 * (df.index[i] - df.index[i-1])
-#         rel_diff = abs(PA[n-1] - old_A) / old_A if old_A != 0. else 1.
-#         if rel_diff < max_rdiff:
-#             break
-#         old_A = PA[n-1]
-#         for i in range(n):
-#             B[i] = ya + dy / PA[n-1] * PA[i]
-
-#     df["shirley"] = B
-
 
 def shirley_background(signal, max_iters=50):
     """
     Based on an Igor macro developed by James Mudd at Warick.
     https://www.jamesmudd.com/downloads, accessed Oct 3, 2020.
 
-    Assumes that dataframe signal has an index that represents binding energy in decreasing order with perfectly even
-    steps.
-
-    Return the background as a dataframe, where 0-th column is the background.
+    :param signal: the input curve, with an index that represents binding energy in decreasing order with perfectly even
+    steps;
+    :param max_iters: maximum number of iterations to use in the Shirley algorithm;
+    :return: the background as a dataframe, where 0-th column is the background.
     """
     # Assuming binding energy decreasing: stop_index < start_index, delta_index < 0
     start_index, stop_index = min(range(0, len(signal.index)), key=lambda i: signal.index[i]), \
@@ -102,8 +77,9 @@ def shirley_background(signal, max_iters=50):
 
 def inclusive_range(x, y):
     """
-    Given two integers x and y, return [x, x - 1, ..., y] if x >= y
-    or [x, x + 1, ..., y] if x < y
+    :param x: any integer;
+    :param y: any integer;
+    :return: [x, x - 1, ..., y] if x >= y or [x, x + 1, ..., y] if x < y
     """
     if x < y:
         return range(x, y + 1)

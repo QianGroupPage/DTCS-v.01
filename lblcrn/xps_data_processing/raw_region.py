@@ -7,6 +7,12 @@ from lblcrn.xps_data_processing.baseline import shirley_background
 
 class RawRegion:
     def __init__(self, header_block=None, info_block=None, run_mode_block=None, data_block=None):
+        """
+        :param header_block: string buffer for the header;
+        :param info_block: string buffer for the section containing block information;
+        :param run_mode_block: string buffer for the section containing run mode;
+        :param data_block: string buffer for the section containing raw data.
+        """
         if header_block and info_block and run_mode_block and data_block:
             region_header_df = pd.read_csv(header_block, sep="=", header=None, index_col=0)
             region_info_df = pd.read_csv(info_block, sep="=", header=None, index_col=0)
@@ -35,10 +41,14 @@ class RawRegion:
             self.shirley_background = None
 
     def plot(self, data=None, **kwargs):
+        # TODO: see if kwargs explanation is good.
         """
         A wrapper around Pandas' plotting function, except the following functionalities:
             1. The axis is always inversed;
             2. The title is assigned as current region's name.
+
+        :param data: the data to visualize; if set to None, visualize data in this region itself;
+        :param kwargs: any arguments to send into the plotting method of a Pandas dataframe;
         """
         if data is None:
             data = self.data
@@ -52,7 +62,9 @@ class RawRegion:
 
     def produce_smoothed_version(self):
         """
-        Savgol filter: the standard tool for smoothening noisy signals.
+        Apply Savgol filter to the region. Savgol filter is the standard tool for smoothening noisy signals.
+        :return: a copy of the region object with "data" column smoothed, and "1st derivative" and "2nd derivative"
+        columns attached to the dataframe.
         """
         new_version = RawRegion()
         new_version.name = self.name
@@ -69,6 +81,12 @@ class RawRegion:
         return new_version
 
     def find_steepest_section(self, column="data", extrema_func="extreme"):
+        """
+        :param column: the column in self.data for which we find the steepest section;
+        :param extrema_func: if set to "extreme", take the largest and the smallest data points as extrema;
+                             if set to "zero", take the largest and the smallest values closest to 0 as extrema;
+        :return: the point where the self.data is the steepest.
+        """
         if extrema_func == "extreme":
             extremas = sorted(argrelextrema(self.data[column].to_numpy(), np.greater)[0].tolist() + (
                 argrelextrema(self.data[column].to_numpy(), np.less)[0].tolist()))
@@ -87,7 +105,10 @@ class RawRegion:
 
     def apply_shirley_background(self, max_iters=50):
         """
-        Calculate Shirley Background and subtract it from self.data.
+        Calculate the Shirley Background and subtract it from self.data.
+
+        :param max_iters: maximum number of iterations to use in the Shirley algorithm;
+        :return: None
         """
         if self.shirley_background is not None:
             raise Exception("Shirley background has been calculated.")
@@ -96,7 +117,9 @@ class RawRegion:
 
     def show_shirley_background_calculations(self):
         """
-        Show the original data and the shirley background calculated based on it.
+        Plot the original data and the shirley background calculated based on it.
+
+        :return: None
         """
         calculations_df = self.data.copy()
         if self.shirley_background is None:
@@ -110,7 +133,6 @@ class RawRegion:
     @property
     def energy_level(self):
         """
-        Find the excitation energy in this region.
-        :return:
+        :return: the excitation energy in this region.
         """
         return int(self.info_df[1]["Excitation Energy"])

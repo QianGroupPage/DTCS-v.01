@@ -10,6 +10,10 @@ from lblcrn.xps_data_processing.read_digital_book import read_digital_notebook
 
 class RawExperiment:
     def __init__(self, directory_path):
+        """
+        Process a set of XPS experiment results into a Python class.
+        :param directory_path: the path where the experiment is stored.
+        """
         measurements = []
         for file_path in os.listdir(directory_path):
             full_file_path = f"{directory_path}/{file_path}"
@@ -19,8 +23,7 @@ class RawExperiment:
                     read_digital_notebook(full_file_path)
 
             if self.is_measurement_file(file_path):
-                sequence_number = int(os.path.splitext(file_path)[0][-4:]) - 1
-                measurement = RawMeasurement(full_file_path, sequence_number)
+                measurement = RawMeasurement(full_file_path)
                 measurements.append(measurement)
         measurements.sort(key=lambda s: s.sequence_number)
         self.measurements = measurements
@@ -35,6 +38,10 @@ class RawExperiment:
         pass
 
     def show_all_conditions(self):
+        """
+        Display all conditions in the experiment as a table.
+        :return: None
+        """
         column_names_list = []
         for condition in self.conditions:
             for name in condition.list_region_names():
@@ -54,6 +61,11 @@ class RawExperiment:
         pass
 
     def calibrate(self, internal_region="VB"):
+        """
+        Calibrate all measurements in this experiment.
+        :param internal_region: region name or the beginning part of the region to use for alignment.
+        :return: None
+        """
         for i, measurement in enumerate(self.measurements):
             # TODO: quality check.
             if measurement.has_internal_region(internal_region):
@@ -68,13 +80,18 @@ class RawExperiment:
     def remove_baseline(self, max_iters=50):
         """
         Calculate and subtract Shirley background from each measurement.
+
+        :param max_iters: maximum number of iterations for use in Shirley Background calculations.
+        :return: None
         """
         for measurement in self.measurements:
             measurement.remove_baseline(max_iters=max_iters)
 
     def find_previous_measurement(self, measurement_number, region_name=""):
         """
-        Find a previous measurement at the same energy level.
+        :param measurement_number: the measurement for which we're looking for previous energy.
+        :param region_name: the name
+        :return: measurement number for a previous measurement with the same energy level.
         """
         i = measurement_number - 1
         while i >= 0:
@@ -87,11 +104,11 @@ class RawExperiment:
             i -= 1
         return -1
 
-
     @staticmethod
     def is_measurement_file(filename):
         """
-        A measurement file must end with "_" following 4 digits.
+        :param filename: any filename;
+        :return: True if the file ends with "_" following 4 digits.
         """
         return re.match(r'\w*_\d\d\d\d.txt$', filename)
 
@@ -100,6 +117,9 @@ class RawExperiment:
         """
         Enforce the following format for the digital notebook:
         'digital{any separator}notebook' must be part of the file name. Word cases don't matter.
+
+        :param filename: any filename;
+        :return: True if filename follows the format rule.
         """
         allowed_separators = [" ", "_"]
         for separator in allowed_separators:

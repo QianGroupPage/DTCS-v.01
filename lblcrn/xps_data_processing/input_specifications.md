@@ -27,6 +27,8 @@ The first line contains temperature, pressure, comments, each separated by `,`, 
 The following lines each describe a specific measurement under this condition. Each line must 
 be in the following format: 
 
+
+# TODO: formatting
 `[measurement number] +  [space] + [species names in the measurement separated by commas]`, and 
 optionally followed by `[colon] + [additional comments separated by commas]`.
 
