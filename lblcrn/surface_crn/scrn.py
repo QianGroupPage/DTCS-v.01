@@ -1,3 +1,7 @@
+"""
+The Surface CRN simulator front-end.
+"""
+
 import os
 from shutil import rmtree
 
@@ -23,7 +27,6 @@ from lblcrn.surface_crn.surface_crns.views.coord_grid_display import \
 def scrn_simulate_single_run(rxns,
                              time_max=100,
                              lattice=None,
-                             display_class=None,
                              video=False,
                              spectra_in_video=True,
                              spectra_average_duration=2,
@@ -36,7 +39,25 @@ def scrn_simulate_single_run(rxns,
                              save_trajectory=False,
                              compress_trajectory=True):
     """
-    species_tracked: a list of sympy symbols or strings representing each species
+    :param rxns: the RxnSystem object;
+    :param time_max: the time at which the simulation will be terminated;
+    :param lattice: the lattice to run the simulation;
+    :param video: True if video must be prepared for the system;
+    :param spectra_in_video: if set to True, an XPS spectra figure would be included in the video;
+    :param spectra_average_duration: The average time duration used in the trailing average spectra.
+                                     Used only when spectra_in_video is set to True;
+    :param species_tracked: species to track in the simulation run without video generation;
+    :param manifest_file: filename of the manifest file to use in the simulation;
+                          default to "", rxns will be used for reaction system instead;
+    :param rng_seed: random number generator seed used for the simulator. For Surface CRN, it has to be an even number.
+                     each unique seed will corresponds to a unique random number sequence and simulation trajectory.
+    :param video_path: the file path where the simulation video will be stored;
+    :param section_length: the length of a section where the simulation results are stored;
+    :param trajectory_path: the file path to store the simulation trajectory as a csv file or comma separated csv.
+                            Use pandas.read_csv() or Excel to visualize the CSV file;
+    :param save_trajectory: if set to True, a trajectory file would be saved;
+    :param compress_trajectory: if set to True, compress the trajectory file, recommended for longer simulations;
+    :return: a Results object to store, organize, and visualize Surface CRN results.
     """
     # Dangerous! rng_seed + 1 is used
     group_selection_seed = rng_seed + 1
@@ -131,10 +152,28 @@ def scrn_simulate_single_run(rxns,
     return r
 
 
-def scrn_simulate(rxns, time_max=100, lattice=None, display_class=None, video=False, spectra_in_video=True,
-                  spectra_average_duration=2, species_tracked=[], manifest_file="", rng_seed=923123122,
-                  video_path="", ensemble_size=1, save_trajectory=True, compress_trajectory=False,
-                  trajectory_path="", section_length=-1):
+def scrn_simulate(rxns,
+                  time_max=100,
+                  lattice=None,
+                  display_class=None,
+                  video=False,
+                  spectra_in_video=True,
+                  spectra_average_duration=2,
+                  species_tracked=[],
+                  manifest_file="",
+                  rng_seed=923123122,
+                  video_path="",
+                  ensemble_size=1,
+                  save_trajectory=True,
+                  compress_trajectory=False,
+                  trajectory_path="",
+                  section_length=-1):
+    """
+    :param ensemble_size: the size of the ensemble simulations.
+                          if set to 1, the function returns a Results object;
+                          if greater than 1, the function returns an Ensemble object.
+    :return: a Results or an Ensemble object to store, organize, and visualize Surface CRN results.
+    """
     # If both video and trajectory are saved but only trajectory_path is provided, use trajectory_path to store the
     # video.
     if video and save_trajectory and trajectory_path and not video_path:
