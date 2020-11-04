@@ -26,7 +26,10 @@ class Results:
     """
     TIME_COL_NAME = "Time (s) "  # column name used for the time entry
 
-    def __init__(self, manifest_file, rxns, df=None,
+    def __init__(self,
+                 manifest_file,
+                 rxns,
+                 df=None,
                  sum_be=True,
                  sum_sub_species=True,
                  resample=True,
@@ -118,6 +121,7 @@ class Results:
                        sum_sub_species=False,
                        resample=False)
 
+
     @staticmethod
     def from_directory(path, rxns):
         """
@@ -134,7 +138,9 @@ class Results:
     @staticmethod
     def from_trajectory(path, rxns):
         """
-        Construct a results object based on a directory in which there is a trajectory file named "trajectory.gzip".
+        :param path: path to a directory containing "trajectory.gzip";
+        :param rxns: ReactionSystem object corresponding to the trajectory file;
+        :return: a Results object.
         """
         df = pd.read_csv(f"{path}/trajectory.gzip", compression="gzip")
         return Results(None, rxns, df,
@@ -146,8 +152,8 @@ class Results:
         """
         :param manifest_file: The manifest file corresponding to the concs dictionary;
         :param concs: a dictionary from species name (string) to a list of concentration values;
-        :param times: a list of time steps corresponding to the time steps for each list in concs
-        :return: a new Solution object
+        :param times: a list of time steps corresponding to the time steps for each list in concs;
+        :return: a new Results object.
         """
         r = Results(manifest_file, rxns, Results.concs_times_df(concs, times))
         return r
@@ -155,9 +161,9 @@ class Results:
     @staticmethod
     def from_counts(rxns, counter):
         """
-        :param rxns: a rxn_system object
-        :param counter: a dictionary from species name to counts
-        :return: a results object representing only 1 timestep.
+        :param rxns: a rxn_system object;
+        :param counter: a dictionary from species name to counts at a certain time step;
+        :return: a Results object representing only 1 timestep.
         """
         concs = {s: [c] for s, c in counter.items()}
         for s in rxns.get_symbols():
@@ -195,8 +201,7 @@ class Results:
         """
         Play the simulation video if a video is produced.
 
-
-        :slowdown_factor: 1 by default, 30 is suggested for reasonable viewing by humans.
+        :param slowdown_factor: 1 by default, 30 is suggested for reasonable viewing by humans.
         :return: HTML object for playing a video in the IPython Notebook
         """
         if self.video is None:
@@ -337,7 +342,7 @@ class Results:
     def sum_same_be(self):
         """
         Sum the number of species with the same binding energy.
-        :return:
+        :return: None
         """
         return
         bes_to_names = {}
@@ -376,23 +381,23 @@ class Results:
 
     # TODO: decrease the figure size in case zoom = False
     def plot_evolution(self,
-                       names_in_figure=None,
-                       names_to_ignore=None,
                        start_time=0,
                        end_time=-1,
+                       names_in_figure=None,
+                       names_to_ignore=None,
+                       include_markers=True,
+                       show_fig=True,
+                       save=False,
+                       path="",
+                       return_fig=False,
+                       use_raw_data=True,
                        title="",
                        ax=None,
-                       save=False,
-                       return_fig=False,
-                       path="",
-                       use_raw_data=False,
-                       df=None,
                        zoom=False,
-                       show_fig=True,
                        x_axis_xlim=0,
-                       include_markers=True,
                        legend_loc="upper right",
-                       y_label="Molecule Count (#)"):
+                       y_label="Molecule Count (#)",
+                       df=None):
         """
         Plot the concentrations from start_time until time step end_time. -1 means till the end.
 
@@ -552,11 +557,35 @@ class Results:
         max_be = max(gaussian.index.max(), xps_df.index.max())
         return xps.fill_zeros(gaussian, min_be, max_be), xps.fill_zeros(xps_df, min_be, max_be)
 
-    def plot_gaussian(self, t=-1, avg_duration=1, path="", xps_path="", xps_scaling=1, save=False, return_fig=False,
-                      fig_size="Default", dpi=100, scaling_factor=1, ax=None, envelope_name="CRN"):
+    def plot_gaussian(self,
+                      t=-1,
+                      ax=None,
+                      avg_duration=1,
+                      path="", xps_path="", xps_scaling=1,
+                      save=False, return_fig=False,
+                      fig_size="Default",
+                      dpi=100,
+                      scaling_factor=1,
+                      envelope_name="CRN"):
         """
-        Plot the Gaussian function from time t to time t + 1.
+        Plot the predicted XPS curve.
+
+        :param t: time of the generated Gaussian profile;
+        :param ax: a user-provided matplotlib.pyplot axis;
+        :param avg_duration: duration length after t; the concentrations used in the peak profile will be an average
+                             value between t and t + avg_duration;
+        :param path: path to store the resulting figure;
+        :param xps_path: path to the XPS data file to use for comparison;
+        :param xps_scaling: scaling factor for XPS data;
+        :param save: save the figure to path if set to True;
+        :param return_fig: return the figure object if set to True;
+        :param fig_size: a tuple of (width, height);
+        :param dpi: resolution of the figure;
+        :param scaling_factor: scaling constant for the composed line from CRN results;
+        :param envelope_name: name of the composed line from CRN results;
+        :return: a figure object, if return_fig is set to True.
         """
+
         # if fig_size == "Default":
         #     plt.rcParams['figure.figsize'] = [27 / 2.54, 18 / 2.54]
         # elif fig_size == "Small":
@@ -658,7 +687,7 @@ class Results:
         Save the data frame in a zipped file in directory.
 
         :param directory: a path in the file system; if None, infer the directory from the rules file.
-        :return:
+        :return: None
         """
         self.df_raw.to_csv("{}/Data_raw.gz".format(directory), compression='gzip')
         self.df.to_csv("{}/Data.gz".format(directory), compression='gzip')
