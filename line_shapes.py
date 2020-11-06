@@ -16,7 +16,16 @@ def gaussian(x, h, e, f):
 
 
 def lorentzian(x, h, e, f):
-    return h * 1 / (1 + 4*np.square(x - e)/(f**2))
+    return h * 1 / (1 + 4*np.square((x - e) / f))
+
+
+def la(x, h, e, f, alpha, beta, m):
+    """
+    Line shape signature: LA(alpha, beta, m)
+    """
+    y_lorentzian = np.vectorize(lambda a: lorentzian(a, h, e, f)**alpha if x < e else lorentzian(a, h, e, f)**beta)(x)
+    y_gaussian = gaussian(x, h, e, m)
+    return np.convolve(y_lorentzian, y_gaussian)
 
 
 # Gaussian/Lorentzian Product Form
@@ -74,6 +83,10 @@ line_shapes = {
     "gls_t": {
         "num_params": 6,
         "function": gls_t
+    },
+    "la": {
+        "num_params": 6,
+        "function": la
     },
     "ds": {
         "num"
