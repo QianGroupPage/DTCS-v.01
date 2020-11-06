@@ -3,11 +3,14 @@ from scipy.optimize import curve_fit
 
 from lblcrn.common.curve import Curve
 from lblcrn.common.util import unweave, weave
+from lblcrn.xps_data_processing.fitting_suggestions import \
+    suggest_fitting_params
 from lblcrn.xps_data_processing.line_shapes import line_shapes
 
 
 def decompose(curve_df,
               suggest_parameters=True,
+              species_name="",
               function="glp",
               center_ranges=None,
               fwhm_ranges=None,
@@ -17,7 +20,10 @@ def decompose(curve_df,
 
     :param curve_df: a Pandas dataframe whose only column is the values of the curve;
     :param suggest_parameters: if set to True, suggest parameters and use the following parameters as specific
-                               overrides.
+                               overrides;
+    :param species_name: the name of the species in the curve_df; used by the fitting suggestion system;
+                         format: "Ir 4f 750ev", element, orbital name, and energy level for the measurment, separated
+                         by space or "_".
     :param function: a string indicating the type of the peaks to use in this decomposition;
     :param center_ranges: the absolute range of the center of the peaks; 2-D array where each row represents the range
                           for a peak.
@@ -28,7 +34,21 @@ def decompose(curve_df,
     :return: A Curve object representing the decomposed fit. curve.plot() will plot the decomposition results.
     """
     if suggest_parameters:
-        raise Exception("Parameter suggestions not implemented.")
+        suggestions = suggest_fitting_params(species_name)
+
+        if suggestions.empty:
+            print(f"No suggestions found for species {species_name}. Please supply your initial guesses.")
+
+        if not function:
+            function = suggestions.iloc[0]["line_shape"]
+        if not center_ranges:
+            center_guesses = suggestions["be"].to_numpy()
+            center_errors = suggestions["be_error"].to_numpy()
+            center_ranges = np.array(list(zip(center_guesses - center_errors, center_guesses + center_errors)))
+        if not fwhm_ranges:
+            fwhm_guesses = suggestions["fwhm"].to_numpy()
+            fwhm_errors = suggestions["fwhm_error"].to_numpy()
+            fwhm_ranges = np.array(list(zip(fwhm_guesses - fwhm_errors, fwhm_guesses + fwhm_errors)))
 
     f = produce_fitting_function(function)
     if center_ranges is not None and fwhm_ranges is not None:
