@@ -11,7 +11,8 @@ This will be a step-by step explanation of setting up a basic predator-prey scen
 First, import the library::
 
     from lblcrn.crn_sym import *
-    from lblcrn.experiments.simulate import *
+    from lblcrn.experiments.simulate import simulate
+    from lblcrn.experiments.xps_io import read_exp
 
 Then make your species manager. This is the object that keeps track of all
 the information relating to species. See the docs here (TODO)::
@@ -220,9 +221,11 @@ concentrations::
         sm
     )
 
-A simple call to :code:`simulate` is all that is needed to simulate this complicated system::
+A simple call to :code:`simulate` is all that is needed to simulate this complicated system. In this
+example, we also pass in a species that should be ignored when analyzing results (the gas phase of
+H2O) as well as a pandas Series of experimental results (parsed from raw output)::
 
-    xps, ts = simulate(rsys, 500, max_step=1)
+    xps, ts = simulate(rsys, 500, max_step=1, ignore=[y1], experimental=read_exp("<path to file>"))
 
 As with previous examples, the time-series data can be plotted::
 
@@ -234,7 +237,8 @@ As with previous examples, the time-series data can be plotted::
 
 However, given the chemical context, a predicted XPS spectra can also be plotted using the xps
 return value from :code:`simulate`. Using the supplied orbital values, Gaussian peaks can be plotted
-for all species::
+for all species. Since experimental values were also provided, the simulated peaks are automatically
+scaled and plotted against the real experimental Gaussian for comparison::
 
     xps.plot()
 
