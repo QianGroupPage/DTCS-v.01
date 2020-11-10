@@ -34,8 +34,9 @@ suggestions_df = \
 
 def process_species_name(species_name):
     """
-    :param species_name: a name of a species. The first section shall be the atom/molecule name, the last section shall
-    be the energy level. The middle section is the orbital information; only the first quantum number is allowed;
+    :param species_name: a name of a species. The first section shall be the atom/molecule name; the second section
+    shall be the orbital information; only the first quantum number is allowed; all sections after the first two
+    sections shall be discarded.
     :return: a list containing each section of the species name.
     """
     species_name = species_name.rstrip()
@@ -45,7 +46,7 @@ def process_species_name(species_name):
         species_name = species_name.replace(separator, "_")
 
     name_sections = [name_section.strip() for name_section in species_name.split("_")]
-    return name_sections
+    return name_sections[:2]
 
 
 def suggest_fitting_params(species_name):
@@ -53,7 +54,7 @@ def suggest_fitting_params(species_name):
     :param species_name: name of a species; the orbital must not have a spin number;
     :return: a list of dictionaries of fitting parameters, each dictionary corresponding to one peak.
     """
-    element, orbital, _ = process_species_name(species_name)
+    element, orbital = process_species_name(species_name)
     if element in [s for s in suggestions_df["element"].tolist()]:
         species_df = suggestions_df.loc[suggestions_df["element"] == element]
 
