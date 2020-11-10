@@ -1,111 +1,165 @@
+import pprint
+from collections import OrderedDict
+from inspect import signature
+
 import numpy as np
 from scipy.optimize import curve_fit
 
 from lblcrn.common.curve import Curve
-from lblcrn.common.util import unweave, weave
+from lblcrn.common.util import unweave
 from lblcrn.xps_data_processing.fitting_suggestions import \
     suggest_fitting_params
 from lblcrn.xps_data_processing.line_shapes import line_shapes
 
 
-def decompose(curve_df,
-              suggest_parameters=True,
-              species_name="",
-              function="glp",
-              center_ranges=None,
-              fwhm_ranges=None,
-              mixing_param_means=None):
-    """
-    Decompose a curve into 1 or more independent peaks.
+class PeakFit:
+    def __init__(self,
+                 curve,
+                 species,
+                 line_shape,
+                 suggest_params=True
+                 ):
+        """
+        :param curve: a dataframe whose only column is the curve to fit;
+        :param species: the name of the species to use in fitting;
+        :param suggest_params: suggest parameters if set to True;
+        :param line_shape: line_shape to use in the fitting.
+        """
+        self.curve = curve
+        self.line_shape = line_shape
+        # Store mappings from line_shape argument names to a list of [initial guess, lower bound, upper bound].
+        # One mapping should exist for each peak. Usually there should be up to two peaks.
+        self.kwargs_list = []
 
-    :param curve_df: a Pandas dataframe whose only column is the values of the curve;
-    :param suggest_parameters: if set to True, suggest parameters and use the following parameters as specific
-                               overrides;
-    :param species_name: the name of the species in the curve_df; used by the fitting suggestion system;
-                         format: "Ir 4f 750ev", element, orbital name, and energy level for the measurment, separated
-                         by space or "_".
-    :param function: a string indicating the type of the peaks to use in this decomposition;
-    :param center_ranges: the absolute range of the center of the peaks; 2-D array where each row represents the range
-                          for a peak.
-                          initial guesses are assumed to be the mean of the range;
-    :param fwhm_ranges: the absolute range of the fwhm; 2-D array where each row represents the range for a peak.
-                        initial guesses are assumed to be the mean of the range;
-    :param mixing_param_means: the initial guesses of the mixing parameters;
-    :return: A Curve object representing the decomposed fit. curve.plot() will plot the decomposition results.
-    """
-    if suggest_parameters:
-        suggestions = suggest_fitting_params(species_name)
+        if suggest_params:
+            suggestions = suggest_fitting_params(species)
 
-        if suggestions.empty:
-            print(f"No suggestions found for species {species_name}. Please supply your initial guesses.")
+            if suggestions is None or suggestions.empty:
+                print(f"No suggestions found for species {species}. Please supply your initial guesses.")
 
-        if not function:
-            function = suggestions.iloc[0]["line_shape"]
-        if not center_ranges:
-            center_guesses = suggestions["be"].to_numpy()
-            center_errors = suggestions["be_error"].to_numpy()
-            center_ranges = np.array(list(zip(center_guesses - center_errors, center_guesses + center_errors)))
-        if not fwhm_ranges:
-            fwhm_guesses = suggestions["fwhm"].to_numpy()
-            fwhm_errors = suggestions["fwhm_error"].to_numpy()
-            fwhm_ranges = np.array(list(zip(fwhm_guesses - fwhm_errors, fwhm_guesses + fwhm_errors)))
+            if not line_shape:
+                line_shape = suggestions.iloc[0]["line_shape"]
 
-    f = produce_fitting_function(function)
-    if center_ranges is not None and fwhm_ranges is not None:
-        num_components = center_ranges.shape[0]
+            line_shape_signature = list(signature(line_shapes[line_shape]["function"]).parameters.keys())
 
-        # Translate full-width-half-maximum into standard deviation ranges.
-        std_ranges = 2 * np.sqrt(2 * np.log(2)) * fwhm_ranges
+            line_shape_params_size = len(line_shape_signature) - 2 - 2
+            suggested_line_shape_params = suggestions["line_shape_params"]
 
-        std_means = np.mean(std_ranges, axis=1)
-        std_lower_bounds = std_ranges[:, 0]
-        std_upper_bounds = std_ranges[:, 1]
+            if line_shape_params_size != len(suggested_line_shape_params[0]):
+                print(f"Suggestions database has {len(suggested_line_shape_params[0])} " +
+                      f"suggested parameters whereas line shape {line_shape} requires {line_shape_params_size} " +
+                      f"number of parameters")
 
-        fwhm_means = np.mean(fwhm_ranges, axis=1)
-        fwhm_lower_bounds = fwhm_ranges[:, 0]
-        fwhm_upper_bounds = fwhm_ranges[:, 1]
+            for peak_number in range(suggestions["be"].size):
+                kwargs = OrderedDict()
+                center_guess = suggestions["be"][peak_number]
+                center_error = suggestions["be_error"][peak_number]
+                kwargs["center"] = [center_guess, center_guess - center_error, center_guess + center_error]
 
-        mean_means = np.mean(center_ranges, axis=1)
-        mean_lower_bounds = center_ranges[:, 0]
-        mean_upper_bounds = center_ranges[:, 1]
+                fwhm_guess = suggestions["fwhm"][peak_number]
+                fwhm_error = suggestions["fwhm_error"][peak_number]
+                kwargs["fwhm"] = [fwhm_guess, fwhm_guess - fwhm_error, fwhm_guess + fwhm_error]
 
-        # Give amplitude an upper bound of the maxima in assigned center ranges.
-        amp_upper_bounds = np.array([curve_df[(curve_df.index >= mean_lower_bounds[i]) &
-             (curve_df.index <= mean_upper_bounds[i])].iloc[:, 0].max() for i in range(num_components)])
-        amp_means = 1/2 * amp_upper_bounds
-        amp_lower_bounds = np.zeros(num_components)
+                i = 0
+                for param_name in line_shape_signature:
+                    if param_name not in ["x", "height", "center", "fwhm"]:
+                        kwargs[param_name] = [suggested_line_shape_params[peak_number][i]]
+                        i += 1
 
-        m_lower_bounds = np.zeros(num_components)
-        m_upper_bounds = np.ones(num_components)
-        if mixing_param_means is None:
-            m_means = m_upper_bounds.copy()
+                self.add_peak(**kwargs)
+
+        # A Curve object to organize and visualize the fitting results.
+        self.fitting_result = None
+
+    def add_peak(self, peak_index=-1, **kwargs):
+        """
+        Add or update an individual peak in the fitting process
+        :param peak_index: index of the peak whose initial argument to add to or to overwrite;
+                            default value -1 means that this peak is totally new.
+        :param kwargs: keyword arguments for passing to the line_shape. All values have to be list.
+                       If the list has only one element, the element is interpreted as a strong guess, with an error
+                       at 1% of the value;
+                       If the list has two numbers, both numbers are used as two sides of a hard constraint on the
+                       parameter. Initial guesses are taken as the mean of the two numbers;
+                       If the list has three numbers, the first number is taken as the initial guess; both subsequent
+                       numbers are used as hard constraints;
+        :return: None
+        """
+        resulting_kwargs = OrderedDict()
+        if "height" not in kwargs:
+            height_upper_bounds = self.curve.iloc[:, 0].max()
+            height_initial_guess = height_upper_bounds
+            resulting_kwargs["height"] = [height_initial_guess, 0, height_upper_bounds]
+
+        if peak_index != -1:
+            resulting_kwargs.update(self.kwargs_list[peak_index])
         else:
-            m_means = mixing_param_means
+            resulting_kwargs.update(kwargs)
+        for k, args in kwargs.items():
+            if len(args) == 1:
+                args = [args[0], args[0] * 0.8, args[0] * 1.2]
+            elif len(args) == 2:
+                args = [(args[0] + args[1]) / 2] + args
+            resulting_kwargs[k] = args
 
-        initial_params = weave(amp_means.tolist(),  mean_means.tolist(), fwhm_means.tolist(), m_means.tolist())
-        print("initial params", initial_params)
+        if peak_index != -1:
+            self.kwargs_list[peak_index] = resulting_kwargs
+        else:
+            self.kwargs_list.append(resulting_kwargs)
 
-        lower_bound = weave(amp_lower_bounds.tolist(), mean_lower_bounds.tolist(), fwhm_lower_bounds.tolist(),
-                            m_lower_bounds.tolist())
-        upper_bound = weave(amp_upper_bounds.tolist(), mean_upper_bounds.tolist(), fwhm_upper_bounds.tolist(),
-                            m_upper_bounds.tolist())
+    def fit(self):
+        f = _produce_line_shape_function(self.line_shape)
+        initial_guesses = np.array([[param_list[0] for param_list in kwargs.values()]
+                                    for kwargs in self.kwargs_list]).flatten()
 
-        print("bounds", [lower_bound, upper_bound])
-        popt, pcov = curve_fit(f, np.flip(curve_df.index.to_numpy()), np.flip(curve_df.iloc[:, 0].to_numpy()),
-                               p0=initial_params, bounds=[lower_bound, upper_bound])
-    else:
-        popt, pcov = curve_fit(f, np.flip(curve_df.index.to_numpy()), np.flip(curve_df.iloc[:, 0].to_numpy()))
+        lower_bound = np.array([[param_list[1] for param_list in kwargs.values()]
+                                for kwargs in self.kwargs_list]).flatten()
 
-    final_params = unweave(popt, line_shapes[function]["num_params"] - 1)
+        upper_bound = np.array([[param_list[2] for param_list in kwargs.values()]
+                                for kwargs in self.kwargs_list]).flatten()
 
-    print("result heights", final_params[0])
-    print("result means", final_params[1])
-    print("result widths", final_params[2])
-    return Curve(f, curve_df.index.min(), curve_df.index.max(), len(curve_df.index),
-                 curve_df, *final_params)
+        print(f"Fitting {len(self.kwargs_list)} peaks")
+        self.show_fitting_params()
+
+        popt, pcov = curve_fit(f, np.flip(self.curve.index.to_numpy()), np.flip(self.curve.iloc[:, 0].to_numpy()),
+                               p0=initial_guesses, bounds=[lower_bound, upper_bound])
+        final_params = unweave(popt, line_shapes[self.line_shape]["num_params"] - 1)
+        print(f"Fitted parameters {list(zip(*[l.tolist() for l in final_params]))}")
+
+        self.fitting_result = Curve(f,
+                                    self.curve.index.min(),
+                                    self.curve.index.max(),
+                                    len(self.curve.index),
+                                    self.curve,
+                                    *final_params)
+        self.plot()
+
+    def plot(self):
+        """
+        Plot the result of the fitting, including individual peaks, combined curve, against the original curve.
+        """
+        if self.fitting_result:
+            return self.fitting_result.plot()
+        else:
+            print("Fitting not completed.")
+
+    def show_fitting_params(self):
+        """
+        Show the current fitting parameters.
+        """
+        pp = pprint.PrettyPrinter(indent=4)
+
+        # Round numerical values in kwargs_list
+        rounded_kwargs_list = []
+        for kwargs in self.kwargs_list:
+            rounded_kwargs = OrderedDict()
+            for k, v in kwargs.items():
+                rounded_kwargs[k] = [round(p, 3) for p in v]
+            rounded_kwargs_list.append(rounded_kwargs)
+        pp.pprint(dict(enumerate(rounded_kwargs_list)))
 
 
-def produce_fitting_function(type="glp"):
+def _produce_line_shape_function(type="glp"):
     """
     :param type: the type of the fitting function;
     :return: a function used for peak fitting.
@@ -127,14 +181,6 @@ def produce_fitting_function(type="glp"):
         params = unweave(params, num_params)
         ys = np.zeros_like(xs)
         for param_set in zip(*params):
-            print("updated param_set", param_set)
             ys += func(xs, *param_set)
         return ys
     return f
-
-
-def gaussian(xs, scale, loc, std):
-    """
-    A gaussian function for np arrays.
-    """
-    return scale * np.exp(- np.square(xs - loc) / (2 * std * std))
