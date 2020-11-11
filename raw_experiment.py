@@ -4,6 +4,7 @@ import re
 import pandas as pd
 from IPython.display import display
 
+from lblcrn.xps_data_processing.peak_fit import PeakFit
 from lblcrn.xps_data_processing.raw_measurement import RawMeasurement
 from lblcrn.xps_data_processing.read_digital_book import read_digital_notebook
 
@@ -42,11 +43,7 @@ class RawExperiment:
         Display all conditions in the experiment as a table.
         :return: None
         """
-        column_names_list = []
-        for condition in self.conditions:
-            for name in condition.list_region_names():
-                if name not in column_names_list:
-                    column_names_list.append(name)
+        column_names_list = self._all_species()
 
         df = pd.DataFrame(columns=["Condition Identifier"] + column_names_list)
         for i, condition in enumerate(self.conditions):
@@ -104,6 +101,35 @@ class RawExperiment:
             i -= 1
         return -1
 
+    def peak_fit(self,
+                 species=None,
+                 ignored_species=None,
+                 suggest_params=True,
+                 peak_fitters=None
+                 ):
+        """
+        Add a Peak Fitter for the experiment.
+
+        :param species: the species or the list of species this fitter corresponds to;
+        :param ignored_species: the species or the list of species this fitter corresponds to;
+                                any species starting with "survey" and "VB" are automatically ignored, unless in the
+                                species list;
+        :param suggest_params: When set to default value True, suggest parameters;
+                               If False, use add_peak() method of the returned PeakFit objects to set peaks;
+        :param peak_fitters: a dictionary from species to existing peak_fitters.
+        :return: a PeakFit object. The object comes with initial suggested parameters,
+                 Otherwise call the object's add_peak() method to add a suggested peak to the object.
+        """
+        if species is None:
+            species = self._all_species()
+        species = [s for s in species if s not in ignored_species]
+
+        result_peak_fitters = {s: PeakFit(s, suggest_params=suggest_params) if s not in peak_fitters else
+                               peak_fitters[s] for s in species}
+
+        # TODO: run each of the peak fitters for each region
+        return result_peak_fitters
+
     @staticmethod
     def is_measurement_file(filename):
         """
@@ -130,6 +156,17 @@ class RawExperiment:
             if w == "digital" and i < len(splitted_lower_filename) and splitted_lower_filename[i + 1] == "notebook":
                 return True
         return False
+
+    def _all_species(self):
+        """
+        :return: a list with all species in the experiment.
+        """
+        region_names_list = []
+        for condition in self.conditions:
+            for name in condition.list_region_names():
+                if name not in region_names_list:
+                    region_names_list.append(name)
+        return region_names_list
 
     def __getitem__(self, name):
         return self.measurements[name]
