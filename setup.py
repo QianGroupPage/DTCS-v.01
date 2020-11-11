@@ -30,7 +30,7 @@ with open('README.md', 'r') as readme_file:
 
 # --- Get data files ---------------------------------------------------------
 # The directory under venv/ to store datafiles.
-DATA_FP = 'lblcrn/'
+DATA_FP = 'etc/lblcrn/'
 
 # The files to include. These are triples of the form
 # (destination path, path to search, [file patterns])
@@ -63,7 +63,8 @@ if __name__ == '__main__':
                          'monty',
                          'numpy',
                          'pandas',
-                         'pygame',
+                         'pygame>=2.0.0.dev10',
+                         'pyyaml',
                          'scipy',
                          'seaborn',
                          'setuptools',
