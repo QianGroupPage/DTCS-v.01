@@ -4,6 +4,7 @@ import math
 from queue import *
 from lblcrn.surface_crn.surface_crns.simulators.event import Event
 
+
 class QueueSimulator:
     '''
     Surface CRN simulator based on Gillespie-like next-reaction determination
@@ -34,7 +35,6 @@ class QueueSimulator:
         self.add_groups()
 
         self.init_state = surface.get_global_state()
-
         # Build a mapping of states to the possible transitions they could
         # undergo.
         self.rules_by_state = dict()
@@ -44,6 +44,16 @@ class QueueSimulator:
                     self.rules_by_state[input_state] = []
                 if not rule in self.rules_by_state[input_state]:
                     self.rules_by_state[input_state].append(rule)
+
+        if self.rxns:
+            self.rxns_by_rule_str = {}
+            for rxn in self.rxns.surface_rxns:
+                if rxn.is_reversible:
+                    self.rxns_by_rule_str[rxn.forward_surface_rxn.surface_engine_str] = rxn.forward_surface_rxn
+                    self.rxns_by_rule_str[rxn.backward_surface_rxn.surface_engine_str] = rxn.backward_surface_rxn
+                else:
+                    self.rxns_by_rule_str[rxn.surface_engine_str] = rxn
+            # self.surface_rxns_objects_by_rule = {rule: self.rxns_by_rule_str[str(rule)] for rule in self.rule_set}
 
         # TODO
         self.concentration_trajectory = None
@@ -57,44 +67,11 @@ class QueueSimulator:
         if self.debugging:
             print(self.surface)
 
-        # TODO: make this a dictionary from species to concentration.
-        self.concs = {}
-        self.times = []
-
-    # TODO:
-    def add_concs(self):
-        """
-        Add the concentrations from the current timestamps to concentration_trajectory dataframe.
-        """
-        # TODO: sum things up here.
-        # TODO: easy ways to average out the last 2s, including cutting out the "unqualified" seconds each
-        # time before you do averaging.
-        species_count = self.surface.species_count()
-
-        for k, l in self.concs.items():
-            if k not in species_count:
-                l.append(0)
-            else:
-                l.append(species_count[k])
-
-        for k, v in self.surface.species_count().items():
-            if k not in self.concs:
-                self.concs[k] = [0 for _ in self.times]
-                self.concs[k].append(v)
-
-        # self.concs.append(species_count)
-        #
-        self.times.append(self.time)
-        #
-        # current_row = pd.DataFrame(species_count, index=[self.time])
-        #
-        # if self.concentration_trajectory is None:
-        #     self.concentration_trajectory = current_row
-        # else:
-        #     # TODO: this will cause serious speed issues. Fix them.
-        #     self.concentration_trajectory = self.concentration_trajectory.append(current_row)
-        # self.concentration_trajectory.fillna(0, inplace=True)
-
+        self.initiate_concs()
+        if self.surface:
+            self.add_concs()
+        if rxns:
+            self.initiate_marker_concs()
 
     def reset(self):
         '''
@@ -112,6 +89,7 @@ class QueueSimulator:
             self.add_next_reactions_with_node(node=node,
                                               first_reactant_only=True,
                                               exclusion_list = [])
+
     def done(self):
         '''
         True iff there are no more reactions or the simulation has reached
@@ -164,6 +142,7 @@ class QueueSimulator:
                 self.time = self.simulation_duration
                 return None
 
+            # TODO: what's in "next_reaction"?
             next_reaction = self.event_queue.get()
             if next_reaction.time > self.simulation_duration:
                 self.time = self.simulation_duration
@@ -176,6 +155,11 @@ class QueueSimulator:
                 print("Processing event " + str(next_reaction.rule) +
                       " at time " + str(self.time) + ", position " +
                       str(participants[0].position) + " ")
+
+            # # TODO: print out the surface
+            # print("Processing event " + str(next_reaction.rule) +
+            #       " at time " + str(self.time) + ", position " +
+            #       str(participants[0].position) + " ")
 
             # If the first input was modified since the event was issued,
             # don't run it
@@ -228,6 +212,7 @@ class QueueSimulator:
                 if local_debugging:
                     print("Checking for new reactions with node:" + \
                           str(participants[1]))
+                # TODO: build up to the next reaction from here.
                 self.add_next_reactions_with_node(
                                             participants[1],
                                             first_reactant_only = False,
@@ -240,6 +225,7 @@ class QueueSimulator:
                   str(next_reaction))
 
         self.add_concs()
+        self.update_markers(next_reaction)
         return next_reaction
     #end def process_next_reaction
 
@@ -274,7 +260,10 @@ class QueueSimulator:
 
         original_state = node.state
         default_state = self.sm.get_site_name(original_state)
+
         if len(node.group) > 1:
+            # print(f"The default state for {original_state} should be {default_state}.")
+
             for neighbor_node in node.group:
                 if neighbor_node is not node:
                     # print("resetting neighbor node", neighbor_node.state)
@@ -307,6 +296,44 @@ class QueueSimulator:
             node.state = output_state
             node.timestamp = self.time
     # end def update_node
+
+    # TODO:
+    def add_concs(self):
+        """
+        Add the concentrations from the current timestamps to concentration_trajectory dataframe.
+        """
+        # TODO: sum things up here.
+        # TODO: easy ways to average out the last 2s, including cutting out the "unqualified" seconds each
+        # time before you do averaging.
+        species_count = self.surface.species_count()
+
+        for k, l in self.concs.items():
+            if k not in species_count:
+                l.append(0)
+            else:
+                l.append(species_count[k])
+
+        for k, v in self.surface.species_count().items():
+            if k not in self.concs:
+                self.concs[k] = [0 for _ in self.times]
+                self.concs[k].append(v)
+
+        # self.concs.append(species_count)
+        #
+        self.times.append(self.time)
+        #
+        # current_row = pd.DataFrame(species_count, index=[self.time])
+        #
+        # if self.concentration_trajectory is None:
+        #     self.concentration_trajectory = current_row
+        # else:
+        #     # TODO: this will cause serious speed issues. Fix them.
+        #     self.concentration_trajectory = self.concentration_trajectory.append(current_row)
+        # self.concentration_trajectory.fillna(0, inplace=True)
+
+    def initiate_concs(self):
+        self.concs = {}
+        self.times = []
 
     def add_next_reactions_with_node(self, node, first_reactant_only = False,
                                         exclusion_list = None):
@@ -344,6 +371,8 @@ class QueueSimulator:
             # If it's a unimolecular reaction, we can now add the reaction to
             # the event queue.
             if len(rule.inputs) == 1:
+                # TODO: marker addition
+                # TODO: this determines the time step till next reaction.
                 time_to_reaction = np.log(1.0 / self.main_random_generator.random()) / rule.rate
                 if math.isinf(time_to_reaction):
                     continue
@@ -414,4 +443,37 @@ class QueueSimulator:
                 raise Exception("Error in transition rule " + str(rule) + \
                                 "\nOnly rules with one or two inputs allowed!")
     #end def add_next_reactions_with_node
+
+    # Used only when RXN System is provided to the simulator.
+    def update_markers(self, reaction):
+        """
+        This should run after add_concs is run.
+
+        Update an existing marker_concs, already with initial values for all markers.
+        """
+        # In case only text-based manifest files are provided.
+        if not self.rxns:
+            return
+        rxn = self.rxns_by_rule_str[reaction.rule.identifiable_string()]
+
+        for conc in self.marker_concs.values():
+            conc.append(conc[-1])
+        for marker in rxn.markers.reactants:
+            self.marker_concs[marker][-1] -= 1
+        for marker in rxn.markers.products:
+            self.marker_concs[marker][-1] += 1
+
+    def initiate_marker_concs(self):
+        # From a Marker object to its trajectory list.
+        self.marker_concs = {marker: [marker.initial_count] for marker in self.rxns.species_manager.get_all_markers()}
+
+    def drop_data(self):
+        """
+        Drop all trajectory data stored in this simulator
+        :return:
+        """
+        for m, conc in self.marker_concs.items():
+            m.initial_count = conc[-1] if conc else 0
+        self.initiate_marker_concs()
+        self.initiate_concs()
 # end class QueueSimulator

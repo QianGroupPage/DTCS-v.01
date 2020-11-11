@@ -38,7 +38,6 @@ import sympy as sym
 import lblcrn
 from lblcrn import bulk_crn
 from lblcrn.experiments import experiment
-from lblcrn.experiments import time_series
 from lblcrn.crn_sym.rxn_system import RxnSystem
 from lblcrn.crn_sym import species
 from lblcrn.common import util
@@ -139,6 +138,11 @@ class XPSObservable(monty.json.MSONable):
             return self.df[self._EXPERIMENTAL]
         return None
 
+    @experimental.setter
+    def experimental(self, value):
+        self.df[self._EXPERIMENTAL] = value
+        return None
+
     @property
     def exp_clean(self) -> Optional[pd.Series]:
         """The experimental data without the gas phase or contaminants."""
@@ -187,6 +191,9 @@ class XPSObservable(monty.json.MSONable):
         if self.deconvoluted is None:
             return None
         # Gaussians have a species as their column name
+        if self.deconvoluted is None:
+            return None
+
         gauss_cols = []
         for col in self.deconvoluted:
             if isinstance(col, sym.Symbol):
@@ -684,6 +691,11 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
         """The factor by which the simulated data is currently scaled."""
         return self._scale_factor
 
+    @scale_factor.setter
+    def scale_factor(self, scale_factor):
+        """The factor by which the simulated data is currently scaled."""
+        self._scale_factor = scale_factor
+
     @property
     def sim_concs(self) -> Optional[Dict[sym.Symbol, float]]:
         """The simulated concentrations of each species."""
@@ -782,7 +794,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
             # Arguments for the experimental data
             experimental: Optional[bool] = None,
             exp_data: Optional[pd.Series] = None,
-            gas_phase: Optional[bool] = None,
+            gas_phase: Optional[bool] = False,
             gas_interval: Optional[Tuple[float, float]] = None,
             decontaminate: Optional[bool] = None,
             contaminate: Optional[bool] = None,
@@ -865,8 +877,6 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
             raise ValueError('Cannot evaluate gas phase without experimental.')
         elif gas_phase and not valid_gas_interval(gas_interval):
             raise ValueError(f'Invalid gas interval {gas_interval}')
-        elif gas_phase is None:
-            gas_phase = experimental
 
         # Handle: contam_spectra
         if contam_spectra and not experimental:
@@ -918,7 +928,6 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
         # Don't deconvolute species which are being decontaminated out
         deconv_species = [specie for specie in deconv_species
                           if specie not in contam_species]
-
         # Handle: deconvolute
         # deconvolute requires experimental
         if deconvolute and not experimental:
@@ -1017,8 +1026,9 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
                                    gas_interval[0] > gas_interval[1]))
         assert not (decontaminate and not experimental)
         assert not (contaminate and not simulate)
-        assert not ((decontaminate or contaminate) and not contam_spectra)
-        assert not ((decontaminate or contaminate) and not contam_species)
+        # TODO(Andrew): Fix these assertions
+        # assert not ((decontaminate or contaminate) and not contam_spectra)
+        # assert not ((decontaminate or contaminate) and not contam_species)
         assert not (contaminate and decontaminate)
         assert not (deconvolute and not experimental)
         assert not (deconvolute and not deconv_species)
@@ -1356,8 +1366,8 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
             for orbital in species_manager[specie].orbitals:
                 binding_energies.append(orbital.binding_energy)
 
-        x_lower = min(binding_energies) - _PLOT_MARGIN
-        x_upper = max(binding_energies) + _PLOT_MARGIN
+        x_lower = min(binding_energies or [0]) - _PLOT_MARGIN
+        x_upper = max(binding_energies or [0]) + _PLOT_MARGIN
         x_range = np.arange(x_lower, x_upper, _PLOT_RESOLUTION)
 
         return x_range
@@ -1400,7 +1410,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
               gas_phase: Optional[bool] = None,
               decontaminate: Optional[bool] = None,  # TODO
               contaminate: Optional[bool] = None,  # TODO
-              deconvolute: Optional[bool] = None,
+              deconvolute: Optional[bool] = False,
               # Args passed only to plotter
               sim_gaussians: bool = True,
               envelope: bool = True,
@@ -1489,58 +1499,3 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
                                              convert_axes=False)
             d['experimental'].index = d['experimental'].index.map(float)
         return cls(**d)
-
-
-def simulate_xps(rsys: RxnSystem,
-                 time: Optional[float] = None,
-                 end_when_settled: bool = False,
-                 title: str = '',
-                 species: List[sym.Symbol] = None,
-                 ignore: List[sym.Symbol] = None,
-                 x_range: Optional[np.ndarray] = None,
-                 scale_factor: float = None,
-                 experimental: pd.Series = None,
-                 gas_interval: Tuple[float, float] = None,
-                 contam_spectra: Optional[Dict[sym.Symbol, pd.Series]] = None,
-                 deconv_species: Optional[List[sym.Symbol]] = None,
-                 autoresample: bool = True,
-                 autoscale: bool = True,
-                 **options) -> XPSExperiment:
-    """Simulate the given reaction system over time.
-
-    Args:
-        TODO: add rest
-        rsys: ReactionsSystem, the reaction system to simulate
-        time: The time until which to simulate.
-        species: The species to include in the XPS.
-        ignore: The species to not include in the XPS.
-        autoresample: Decides if the XPS resamples on edits.
-        autoscale: Decides if the XPS will automatically scale
-            the gaussians and envelope to match the experimental data.
-        experimental: The experimental value of the XPS.
-        gas_interval: The interval in which the peak of the gas phase is
-            in the XPS.
-        scale_factor: The scale factor by which to scale the simulated
-            gaussians in the XPS.
-        title: The name to give the XPS, used in plotting.
-        **options: Forwarded to scipy.integrate.solve_ivp
-
-    Returns:
-        A Solution object describing the solution.
-    """
-    end_when_settled = end_when_settled or (time is None)
-
-    sol_t, sol_y = bulk_crn.solve_rsys_ode(rsys, time, end_when_settled, **options)
-    cts = time_series.CRNTimeSeries(sol_t, sol_y, rsys)
-
-    return cts.xps_with(title=title,
-                        species=species,
-                        ignore=ignore,
-                        x_range=x_range,
-                        scale_factor=scale_factor,
-                        experimental=experimental,
-                        gas_interval=gas_interval,
-                        contam_spectra=contam_spectra,
-                        deconv_species=deconv_species,
-                        autoresample=autoresample,
-                        autoscale=autoscale, )

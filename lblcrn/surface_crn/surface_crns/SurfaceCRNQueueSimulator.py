@@ -1,4 +1,4 @@
-'''
+"""
 Simulates a surface chemical reaction network (CRN) on a 2D lattice.
 
 Usage: python surface_CRN_simulator.py -m <manifest>
@@ -6,44 +6,40 @@ Usage: python surface_CRN_simulator.py -m <manifest>
 Simulates the stochastic behavior of a surface CRN on a 2D grid lattice. Only
 implements unimolecular and bimolecular rules. Uses a Gillespie-Gibson-Bruck-
 like algorithm for computing next reactions with a priority queue.
-'''
+"""
 
 from __future__ import print_function
+
 try:
     import surface_crns
 except ImportError:
     import sys
     sys.path.append("./")
-import lblcrn.surface_crn.surface_crns.readers as readers
-
-import sys
-import math
-
-from lblcrn.surface_crn.surface_crns.options.option_processor import SurfaceCRNOptionParser
-from lblcrn.surface_crn.surface_crns.models.grids import SquareGrid, HexGrid
-from lblcrn.surface_crn.surface_crns.views.text_display import TextDisplay
-from lblcrn.surface_crn.surface_crns.views.time_display import TimeDisplay
-from lblcrn.surface_crn.surface_crns.views.grid_display import SquareGridDisplay, HexGridDisplay
-from lblcrn.surface_crn.surface_crns.views.legend_display import LegendDisplay
-from lblcrn.surface_crn.surface_crns.simulators.queue_simulator import QueueSimulator
-from lblcrn.surface_crn.surface_crns.simulators.synchronous_simulator import SynchronousSimulator
-from lblcrn.surface_crn.surface_crns.simulators.event_history import EventHistory
-from lblcrn.surface_crn.surface_crns.simulators.event import Event
-from lblcrn.surface_crn.surface_crns.base.transition_rule import TransitionRule
-from lblcrn.surface_crn.surface_crns.pygbutton import *
-from lblcrn.surface_crn.surface_crns.views.grid_display import ParallelEmulatedSquareGridDisplay
-from lblcrn.surface_crn.results import Results
-from lblcrn.common import ipython_visuals, ProgressBar
-
 import cProfile
+import math
 import optparse
-import sys
 import os
 import subprocess as sp
+import sys
 from time import process_time
 
-import pygame
-from pygame.locals import *
+import lblcrn.surface_crn.surface_crns.readers as readers
+from lblcrn.common import ipython_visuals
+from lblcrn.surface_crn.results import Results
+from lblcrn.surface_crn.surface_crns.options.option_processor import \
+    SurfaceCRNOptionParser
+from lblcrn.surface_crn.surface_crns.pygbutton import *
+from lblcrn.surface_crn.surface_crns.simulators.event_history import \
+    EventHistory
+from lblcrn.surface_crn.surface_crns.simulators.queue_simulator import \
+    QueueSimulator
+from lblcrn.surface_crn.surface_crns.simulators.synchronous_simulator import \
+    SynchronousSimulator
+from lblcrn.surface_crn.surface_crns.views.grid_display import (
+    HexGridDisplay, ParallelEmulatedSquareGridDisplay, SquareGridDisplay)
+from lblcrn.surface_crn.surface_crns.views.legend_display import LegendDisplay
+from lblcrn.surface_crn.surface_crns.views.text_display import TextDisplay
+from lblcrn.surface_crn.surface_crns.views.time_display import TimeDisplay
 
 # TODO: study whether commenting these out would cause any unintended effects.
 # These prevent pygame from opening when the entire library is loaded or when
@@ -55,7 +51,7 @@ from pygame.locals import *
 # CONSTANTS #
 #############
 PROFILE = False
-WHITE = (255,255,255)
+WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 #time_font = pygame.font.SysFont('monospace', 24)
 # TODO: unify font with other figures
@@ -105,7 +101,7 @@ def main():
 def simulate_surface_crn(manifest_filename, group_selection_seed, display_class=None,
                          init_state=None, rxns=None, spectra_in_video=True, running_average=10,
                          spectra_max_conc=-1):
-    '''
+    """
     Runs a simulation, and displays it in a GUI window OR saves all frames
     as PNG images.
 
@@ -116,7 +112,7 @@ def simulate_surface_crn(manifest_filename, group_selection_seed, display_class=
     contain surface_crns.base.Node objects) and a class that can display your
     state (should subclass surface_crns.views.grid_display.SurfaceDisplay),
     which you should pass as "init_state" and "DisplayClass", respectively.
-    '''
+    """
 
     ################################
     # READ MANIFEST AND INITIALIZE #
@@ -131,7 +127,8 @@ def simulate_surface_crn(manifest_filename, group_selection_seed, display_class=
     # print(" Done.")
 
     if opts.capture_directory != None:
-        from signal import signal, SIG_DFL
+        from signal import SIG_DFL, signal
+
         # SIGPIPE is not used on any Windows system.
         if not sys.platform.startswith('win'):
             from signal import SIGPIPE
@@ -177,7 +174,7 @@ def simulate_surface_crn(manifest_filename, group_selection_seed, display_class=
         # TODO: study when to use it;
         # TODO: update the synchronous simulator to be the same fashion as the queue simulator
         simulation = SynchronousSimulator(
-                                    surface = grid,
+                                    surface=grid,
                                     update_rule = opts.update_rule,
                                     seed = opts.rng_seed,
                                     simulation_duration = opts.max_duration,
@@ -227,7 +224,7 @@ def simulate_surface_crn(manifest_filename, group_selection_seed, display_class=
     else:
         raise Exception("Unrecognized grid type '" + opts.grid_type + "'")
 
-    legend_display = LegendDisplay(colormap = opts.COLORMAP)
+    legend_display = LegendDisplay(colormap=opts.COLORMAP)
 
     # Width only requires legend and grid sizes to calculate
     display_width = grid_display.display_width + legend_display.display_width
@@ -319,9 +316,17 @@ def simulate_surface_crn(manifest_filename, group_selection_seed, display_class=
     legend_display.render(display_surface, x_pos = 0,
                                           y_pos = time_display.y_pos +
                                                   time_display.display_height)
-    grid_display.render(display_surface, x_pos = legend_display.display_width,
-                                         y_pos = time_display.y_pos +
-                                                 time_display.display_height)
+    #  TODO: - 200 is a trial for x_pos
+
+    # legend_display.display_height is intended to be a very small number.
+    grid_display.render(display_surface, x_pos=legend_display.display_width,
+                        y_pos=time_display.y_pos + time_display.display_height,
+                        width=time_display.display_width - legend_display.display_width,
+                        height=legend_display.display_height * 4)
+    # grid_display.render(display_surface, x_pos=time_display.x_pos,
+    #                                      y_pos=time_display.y_pos +
+    #                                              time_display.display_height
+    #                                      )
 
     if opts.saving_movie:
         simulation.display_surface_size = display_height * display_width
@@ -337,7 +342,9 @@ def simulate_surface_crn(manifest_filename, group_selection_seed, display_class=
     # TODO
     # progress_bar = ProgressBar(total_tasks=round(opts.max_duration/opts.fps))
     progress_bar = None
-    update_display(opts, simulation, progress_bar, FRAME_DIRECTORY, time_display=time_display, title_display=title_display,
+    update_display(opts, simulation, progress_bar, grid_display, FRAME_DIRECTORY,
+                   time_display=time_display,
+                   title_display=title_display,
                    spectra_max_conc=spectra_max_conc)
 
     # State variables for simulation
@@ -517,7 +524,7 @@ def simulate_surface_crn(manifest_filename, group_selection_seed, display_class=
         # Render updates and make the next clock tick.
         if opts.debug:
             print("Updating display.")
-        update_display(opts, simulation, progress_bar, FRAME_DIRECTORY, time_display=time_display, title_display=title_display,
+        update_display(opts, simulation, progress_bar, grid_display, FRAME_DIRECTORY, time_display=time_display, title_display=title_display,
                        spectra_max_conc=spectra_max_conc)
         fpsClock.tick(opts.fps)
 
@@ -531,12 +538,13 @@ def simulate_surface_crn(manifest_filename, group_selection_seed, display_class=
             last_frame = True
             running = False
             # Set the time to final time when done.
-            time = opts.max_duration
+            time = time
+            # time = opts.max_duration
             time_display.time = time
             time_display.render(display_surface, x_pos=time_display.x_pos, y_pos=time_display.y_pos) #opts_menu.display_height)
             if next_reaction:
                 display_next_event(next_reaction, grid_display)
-            update_display(opts, simulation, progress_bar, FRAME_DIRECTORY, time_display=time_display, title_display=title_display,
+            update_display(opts, simulation, progress_bar, grid_display, FRAME_DIRECTORY, time_display=time_display, title_display=title_display,
                            spectra_max_conc=spectra_max_conc, check_terminate=True)
             if opts.debug:
                 print("Simulation state at final time " + \
@@ -633,6 +641,7 @@ def display_next_event(next_reaction, grid_display):
     outputs      = next_reaction.rule.outputs
     # Update reactants (if changed)
     for i in range(len(participants)):
+        # TODO: this is currently very expensive for coord_grid's Voronoi pictures.
         # TODO: accomodations for 2-sized species
         if i > len(inputs) - 1:
             grid_display.update_node(participants[i])
@@ -658,7 +667,7 @@ def cleanup_and_exit(simulation):
     sys.exit()
 
 
-def update_display(opts, simulation, progress_bar, FRAME_DIRECTORY=None, time_display=None, title_display=None,
+def update_display(opts, simulation, progress_bar, grid_display, FRAME_DIRECTORY=None, time_display=None, title_display=None,
                    spectra_max_conc=-1, check_terminate=False):
     if simulation.times:
         time = simulation.times[-1]
@@ -683,6 +692,7 @@ def update_display(opts, simulation, progress_bar, FRAME_DIRECTORY=None, time_di
     # and
     # progress_bar.bar()
 
+    grid_display.re_render()
     # TODO
     # print(type(simulation))
     if opts.capture_directory == None:
@@ -783,10 +793,19 @@ def update_display(opts, simulation, progress_bar, FRAME_DIRECTORY=None, time_di
                         r = r
 
                     # print(r.df_raw)
-                    starting_time = max(0, simulation.time - simulation.running_average)
+                    if simulation.time > r.df_raw.index.max():
+                        simulation_time = r.df_raw.index.max()
+                    else:
+                        simulation_time = simulation.time
+
+
+                    starting_time = max(0, simulation_time - simulation.running_average)
                     # print("calculating running average")
                     # print("starting time", starting_time)
                     # print("duration", simulation.running_average)
+
+                    # TODO: neatly deal with early termination.
+                    # print("sim time", simulation_time)
 
                     raw_data, size = r.raw_string_gaussian(y_upper_limit=y_lim,
                                                            t=starting_time,
@@ -849,6 +868,7 @@ def update_display(opts, simulation, progress_bar, FRAME_DIRECTORY=None, time_di
                 pygame.image.save(simulation.display_surface, frame_filename)
 
                 cleanup_and_exit(simulation)
+
 
 if __name__ == '__main__':
     if PROFILE:

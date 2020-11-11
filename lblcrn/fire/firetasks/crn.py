@@ -13,7 +13,7 @@ from fireworks import FiretaskBase, FWAction, explicit_serialize
 from monty.json import MontyDecoder, MontyEncoder
 
 from lblcrn import lblcrn_echo_on
-from lblcrn.experiments.time_series import simulate_crn
+from lblcrn.experiments.simulate import simulate
 
 __author__ = 'Andrew Bogdan'
 __email__ = 'andrewbogdan@lbl.gov'
@@ -40,10 +40,10 @@ class BulkCRNSim(FiretaskBase):
         sim_options = self.get('sim_options', {})
 
         with lblcrn_echo_on():  # TODO: Does this even work?
-            cts = simulate_crn(
+            cts = simulate(
                 rsys=rsys,
                 **sim_options,
-            )
+            )[1]
 
         # Make the output dict
         out_dict = {

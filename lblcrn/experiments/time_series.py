@@ -8,7 +8,7 @@ Example:
     Once you have your reaction system rsys set up, you can proceed as
     follows:
 
-    time_series = simulate_crn(rsys, time_max=20)
+    xps, time_series = simulate(rsys, time_max=20)
     time_series.df  # Shows the DataFrame of the time series.
     time_series.plot()  # Plots the network's time series.
     time_series.at(t=2)  # Shows the state near time=2
@@ -192,20 +192,3 @@ class CRNTimeSeries(experiment.Experiment):
         d['t'] = decode(d['t'])
         d['y'] = decode(d['y'])
         return cls(**d)
-
-
-def simulate_crn(rsys: RxnSystem, time: float, end_when_settled: bool = False,
-                 **options) -> CRNTimeSeries:
-    """Simulate the given reaction system over time.
-
-    Args:
-        rsys: ReactionsSystem, the reaction system to simulate
-        time_max: The time until which to simulate.
-        **options: Forwarded to scipy.integrate.solve_ivp
-
-    Returns:
-        A CRNTimeSeries object with the concentrations over time.
-    """
-
-    sol_t, sol_y = bulk_crn.solve_rsys_ode(rsys, time, end_when_settled, **options)
-    return CRNTimeSeries(sol_t, sol_y, rsys)

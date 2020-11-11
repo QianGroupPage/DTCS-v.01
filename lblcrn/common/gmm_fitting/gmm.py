@@ -1,5 +1,5 @@
 import numpy as np
-from common.util import weave, unweave
+from lblcrn.common.util import weave, unweave
 from scipy.stats import norm, uniform
 from scipy.optimize import curve_fit
 

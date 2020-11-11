@@ -1,2 +1,0 @@
-from lblcrn.surface_crn.connectivity.triangulation import show_triangulation
-import lblcrn.surface_crn.connectivity.triangulation

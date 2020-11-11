@@ -29,6 +29,7 @@ kiwisolver
 MarkupSafe
 matplotlib
 mistune
+monty
 mpmath
 nbconvert
 nbformat
@@ -51,6 +52,7 @@ pyzmq
 requests
 scikit-learn
 scipy
+seaborn
 Send2Trash
 six
 sklearn
@@ -65,3 +67,4 @@ webencodings
 ffmpeg
 ffmpeg-python
 pygame==2.0.0.dev4
+networkx

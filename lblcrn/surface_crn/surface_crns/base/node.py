@@ -9,8 +9,8 @@ class Node:
     weight of the edge connecting the two (defaults to 1, if no weight is
     given).
     '''
-    def __init__(self, state = None, neighbors = None, timestamp = 0,\
-                 position = None, group=None):
+    def __init__(self, state=None, neighbors=None, timestamp=0, \
+                 position=None, group=None, node_id=None):
         if state == None:
             self.state = ""
         else:
@@ -27,6 +27,9 @@ class Node:
         else:
             raise TypeError("Neighbors must be a list.")
 
+        #  Keep track of all neighbors.
+        self.all_neighbors = self.neighbors.copy()
+
         self.timestamp = timestamp
         if position == None:
             position = ()
@@ -37,6 +40,9 @@ class Node:
             self.group = []
         else:
             self.group = group
+
+        self.node_id = node_id
+
 
     def is_empty(self):
         return self.state == ""

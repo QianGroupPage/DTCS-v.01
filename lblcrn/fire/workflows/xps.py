@@ -114,7 +114,7 @@ def get_wf_simulate_xps(  # TODO(Andrew) Typehints
         # The structural relaxation firework.
         relax_vinput = MPRelaxSet(
             structure=structure,
-            # user_incar_settings=...
+            # TODO: user_incar_settings=...
         )
         relax_fw = OptimizeFW(
             structure=structure,

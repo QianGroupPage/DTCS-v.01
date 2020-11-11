@@ -22,6 +22,18 @@ class TransitionRule(object):
         self.rate = rate
 
     def __str__(self):
+        return self.identifiable_string() + " (rate: " + str(self.rate) + ")"
+
+    def __repr__(self):
+        return "{inputs:" + str(self.inputs) + \
+                ";outputs:" + str(self.outputs) + \
+                ";rate:" + str(self.rate) + "}"
+
+    def identifiable_string(self):
+        """
+        A string that uniquely identifies the rule object in a reaction system.
+        :return: string representation of the rule not including the rate.
+        """
         str_rep = ""
         str_rep += self.inputs[0]
         for i in range(1, len(self.inputs)):
@@ -29,13 +41,7 @@ class TransitionRule(object):
         str_rep += " --> " + self.outputs[0]
         for i in range(1, len(self.outputs)):
             str_rep += " + " + self.outputs[i]
-        str_rep += " (rate: " + str(self.rate) + ")"
         return str_rep
-
-    def __repr__(self):
-        return "{inputs:" + str(self.inputs) + \
-                ";outputs:" + str(self.outputs) + \
-                ";rate:" + str(self.rate) + "}"
 
     def __eq__(self, other_rule):
         '''

@@ -9,8 +9,13 @@ Dr. Jin Qian, Domas Buracas, Andrew Bogdan, Rithvik Panchapakesan, Ye Wang
 
 # *** Libraries ***
 from typing import List, Tuple, Union
+
 import sympy as sym
+
 from lblcrn.common import color_to_RGB
+from lblcrn.common.num_to_word import num2word
+from lblcrn.connectivity.triangulation import grid_size, show_triangulation
+from lblcrn.connectivity.voronoi import fold_numbers, produce_voronoi
 
 
 # *** Classes ***
@@ -19,10 +24,36 @@ class Surface:
     A surface structure, by default, it is square with only top sites.
     """
 
-    def __init__(self, name: str, size: Tuple[int], structure: str = "rectangle", color: Union[Tuple[int], List[int], str] = None):
+    def __init__(self,
+                 name: str,
+                 size: Tuple[int] = (10, 10),
+                 structure: str = "rectangle",
+                 color: Union[Tuple[int], List[int], str] = None,
+                 poscar_file: str = "",
+                 supercell_dimensions=1,
+                 surface_depth=1):
+        # This surface is based on a POSCAR file.
+        if poscar_file:
+            self.use_coord_grid = True
+            self.poscar_file = poscar_file
+            self.supercell_dimensions = supercell_dimensions
+            self.surface_depth = surface_depth
+            self.default_names = {}
+
+            _, points = show_triangulation(poscar_file)
+            self.vor = produce_voronoi(points)
+
+            # a dummy variable for coord_grid's 2-d size
+            size = grid_size(points)
+        else:
+            self.use_coord_grid = False
+
         self.name = name
         self.size = size
         self.structure = structure
+        # A dictionary from site names in allowed_sites to nested dictionaries from species names to the
+        # initial concentration of the species.
+        self.initial_species = None
 
         if color:
             self.color = color_to_RGB(color)
@@ -36,13 +67,23 @@ class Surface:
 
         self.populate_sites()  # Populate all the sites for this surface
 
+    def set_initial_concentrations(self, species):
+        self.initial_species = species
+
+    def set_default_name(self, site_name, species_name):
+        self.default_names[site_name] = species_name
+
     @staticmethod
     def allowed_structures():
         return "rectangle", "hexagon"
 
     @property
     def allowed_sites(self):
-        if self.structure == "rectangle":
+        if self.use_coord_grid:
+            # TODO: do we always have two fold sites?
+            return ["top", "twofold"] + [f"{num2word(num)}fold" for num in fold_numbers(self.vor)]
+            # return self.coord_grid.fold_names
+        elif self.structure == "rectangle":
             return ["top"]
         elif self.structure == "hexagon":
             return ["top", "threefold"]
@@ -65,10 +106,14 @@ class Surface:
 
     def populate_sites(self):
         for site_name in self.allowed_sites:
-            if site_name == "threefold":
-                setattr(self, site_name, Site("3F", self))
-            elif site_name != "top":
+            if site_name != "top":
                 setattr(self, site_name, Site(site_name, self))
+
+            # TODO: verify the correct modifications for 3F sites.
+            # if site_name == "threefold":
+            #     setattr(self, site_name, Site("3F", self))
+            # elif site_name != "top":
+            #     setattr(self, site_name, Site(site_name, self))
 
     # @property
     def symbol(self):

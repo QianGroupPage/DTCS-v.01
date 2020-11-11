@@ -17,12 +17,22 @@ def RGB_to_hex(RGB):
 
 
 def color_to_RGB(color):
+    # TODO: round first 3 values if list or tuple
+    if isinstance(color, (tuple, list)):
+        color = tuple(round(color) for color in color[:3])
+        return color
     color = colors.to_rgb(color)
     color = tuple(round(val * 255) for val in color)
     return color
 
 
-def color_to_HEX(color):
+def color_to_HEX(color, zero_to_one_range=True):
+    # Send to matplotlib.color early if termination is early.
+    for c in color:
+        if isinstance(c, str):
+            return tuple(colors.to_hex(color))
+    if not zero_to_one_range:
+        color = tuple(c / 256 for c in color)
     return tuple(colors.to_hex(color))
 
 

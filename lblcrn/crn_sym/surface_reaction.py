@@ -1,12 +1,21 @@
 from lblcrn.crn_sym.reaction import Rxn
 from lblcrn.crn_sym.surface import Surface, Site
+from lblcrn.crn_sym.species import Marker
 from typing import Set, Tuple
 import sympy as sym
 
 
+class Markers():
+    """
+    A wrapper for the wrappers associated with a SurfaceRxn
+    """
+    def __init__(self):
+        self.reactants = []
+        self.products = []
+
 class SurfaceRxn(Rxn):
     """
-    A chemical reaction with reactants, products, and a rate constant, tailored for to map with the physical'
+    A chemical reaction with reactants, products, and a rate constant, tailored to map with the physical
     interactions between species.
     """
 
@@ -23,9 +32,13 @@ class SurfaceRxn(Rxn):
                             + " be equal length.")
 
         for s in reactants + products:
-            if s is not None and (not isinstance(s, sym.Symbol) and not isinstance(s, Surface)) and not isinstance(s, Site):
-                raise Exception(f"{s} is not a of sympy.Symbol, Site, or Surface class. \n" +
-                                "please create it using the sp method of a species manager")
+            if s is not None and (not isinstance(s, sym.Symbol) and not isinstance(s, Surface)) \
+                    and not isinstance(s, Site) and not isinstance(s, Marker):
+                raise Exception(f"{s} is not an object of sympy.Symbol, Site, Surface, or Marker class. \n" +
+                                "please create it using the sp method of the species manager")
+        self.markers = Markers()
+        self.markers.reactants = []
+        self.markers.products = []
 
         self.reactants = []
         for s in reactants:
@@ -36,6 +49,10 @@ class SurfaceRxn(Rxn):
                 self.reactants.append(s.symbol())
             elif isinstance(s, Site):
                 self.reactants.append(s.symbol)
+            # Handle a marker
+            elif isinstance(s, Marker):
+                self.reactants.append(s.species_symbol)
+                self.markers.reactants.append(s)
             else:
                 self.reactants.append(s)
 
@@ -45,12 +62,16 @@ class SurfaceRxn(Rxn):
                 self.products.append(s.symbol())
             elif isinstance(s, Site):
                 self.products.append(s.symbol)
+            elif isinstance(s, Marker):
+                self.products.append(s.species_symbol)
+                self.markers.products.append(s)
             else:
                 self.products.append(s)
 
         self.reactants = tuple(self.reactants)
         self.products = tuple(self.products)
         self.rate_constant = k
+        self.is_reversible = False
 
     # TODO: reactants are input as symbols and need sm to get the species object.
     def get_symbols(self) -> Set[sym.Symbol]:
@@ -72,6 +93,14 @@ class SurfaceRxn(Rxn):
     @property
     def products_str(self):
         return " + ".join([s.name for s in self.products])
+
+    @property
+    def surface_engine_str(self):
+        """
+        Mainly used to match between this class, and Surface CRN engine's internal rule class.
+        :return: a str representation in exact same style output by the Surface CRN engine.
+        """
+        return self.reactants_str + " --> " + self.products_str
 
     def __str__(self):
         return self.reactants_str + ' → ' + self.products_str + ' @ k=' + str(self.rate_constant)
@@ -104,9 +133,20 @@ class SurfaceRevRxn(SurfaceRxn):
         else:
             self.rate_constant_reverse = k2
 
+        self.forward_surface_rxn = SurfaceRxn(self.reactants, self.products, self.rate_constant)
+        self.backward_surface_rxn = SurfaceRxn(self.products, self.reactants, k=self.rate_constant_reverse)
+        self.is_reversible = True
+
     def to_rxns(self) -> Tuple[Rxn, Rxn]:
-        return SurfaceRxn(self.reactants, self.products, self.rate_constant), \
-               SurfaceRxn(self.products, self.reactants, k=self.rate_constant_reverse)
+        return self.forward_surface_rxn.surface_engine_str, self.backward_surface_rxn.surface_engine_str
+
+    @property
+    def surface_engine_str(self):
+        """
+        Mainly used to match between this class, and Surface CRN engine's internal rule class.
+        :return: a str representation in exact same style output by the Surface CRN engine.
+        """
+        return self.reactants_str + " --> " + self.products_str
 
     def __str__(self):
         return self.reactants_str + ' ↔ ' + self.products_str + ' @ k1=' + str(self.rate_constant) + ', ' \

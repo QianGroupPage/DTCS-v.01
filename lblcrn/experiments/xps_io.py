@@ -103,6 +103,16 @@ def read_data(filename):
     f.close()
     return data
 
+def read_exp(filename, be=0):
+    f = open(filename)
+
+    it = file_iter(f)
+    next(it, None)
+    bes, intensities = parse_new_data(it, be)
+    bes.reverse()
+    intensities.reverse()
+    series = pd.Series(data=intensities, index=bes)
+    return series
 
 def read_new_data(filename, be=0):
     f = open(filename)
