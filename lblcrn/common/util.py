@@ -1,11 +1,13 @@
 import itertools
 import re
 import string
+
 from typing import Union
 
+import pandas as pd
 import numpy as np
-from matplotlib import colors
 import sympy as sym
+from matplotlib import colors
 
 
 def weave(*threads):
@@ -53,6 +55,19 @@ def set_color_alpha(color: str, alpha: float = 1.0):
     if not 0 < alpha < 1:
         raise ValueError('Alpha must be in range [0, 1]')
     return colors.to_hex((red, blue, green, alpha), keep_alpha=True)
+
+
+# Dataframe Manipulation
+def resample_by_skipping(df, step=1000):
+    """
+    Resample a dataframe by skipping every thousand or "step" number of rows.
+    """
+    new_df = pd.DataFrame()
+    for i in range(0, len(df.index), step):
+        row = df.iloc[i, :]
+        row.name = df.index[i]
+        new_df.append(row)
+    return new_df
 
 
 def symbol_to_name(sym_or_str):

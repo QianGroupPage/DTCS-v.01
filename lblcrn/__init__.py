@@ -25,7 +25,9 @@ _DATA_FILES_PATH = sys.prefix + '/lblcrn/'
 # Master version information. Modifying this should update everything else.
 __version__ = 'dev0.1.2.3'
 
-
+# TODO(Andrew): I removed the import *s because importing everything was creating
+#  issues with conflicts and syntax-error-y in-development code. Add it back
+#  when you merge master.
 from lblcrn._echo import lblcrn_echo_on, lblcrn_echo_off
 import lblcrn._resources as lblcrn_resources
 import lblcrn._examples as lblcrn_examples

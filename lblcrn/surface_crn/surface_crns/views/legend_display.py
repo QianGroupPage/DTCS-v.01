@@ -1,4 +1,3 @@
-from lblcrn.surface_crn.surface_crns.base import *
 from lblcrn.surface_crn.surface_crns.constants import *
 from lblcrn.surface_crn.surface_crns.ordered_dict import OrderedDict
 import pygame

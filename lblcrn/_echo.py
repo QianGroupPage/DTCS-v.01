@@ -13,6 +13,10 @@ TODO: There _has_ to be a better way to do this, perhaps with the std
 
 import lblcrn
 
+@property
+def do_echo():
+    """Return lblcrn.do_echo"""
+    return lblcrn.do_echo
 
 def lblcrn_echo_on():
     """Turn on echo."""
@@ -72,9 +76,3 @@ def echo(*args, **kwargs):
     """Call print() if echo is on."""
     if lblcrn.do_echo:
         print(*args, **kwargs)
-
-
-@property
-def do_echo():
-    """Return lblcrn.do_echo"""
-    return lblcrn.do_echo
