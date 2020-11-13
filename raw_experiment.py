@@ -104,31 +104,45 @@ class RawExperiment:
     def peak_fit(self,
                  species=None,
                  ignored_species=None,
-                 suggest_params=True,
-                 peak_fitters=None
-                 ):
+                 name_to_peak_fitter=None,
+                 automatic_mode=True):
         """
-        Add a Peak Fitter for the experiment.
+        Fit each region in this measurement into one or several peaks of certain line shapes.
 
         :param species: the species or the list of species this fitter corresponds to;
         :param ignored_species: the species or the list of species this fitter corresponds to;
                                 any species starting with "survey" and "VB" are automatically ignored, unless in the
                                 species list;
-        :param suggest_params: When set to default value True, suggest parameters;
-                               If False, use add_peak() method of the returned PeakFit objects to set peaks;
-        :param peak_fitters: a dictionary from species to existing peak_fitters.
-        :return: a PeakFit object. The object comes with initial suggested parameters,
-                 Otherwise call the object's add_peak() method to add a suggested peak to the object.
+        :param name_to_peak_fitter: a mapping from region name to a peak_fitter. If a PeakFit object is
+                                    provided for a region, it will be used regardless of the automatic_mode parameter;
+                                    otherwise, the peak_fitter will depend upon the automatic_mode parameter;
+        :param automatic_mode: if set to default value True, the system suggests parameters, and performs the peak
+                               fitting;
+                               if set to False, return a PeakFit object to allow for manual peak fitting;
+        :return a dictionary from region name to its corresponding peak fitter.
+                If name_to_peak_fitter is not provided and automatic_mode is set to True, the peak fitter objects come
+                with suggested initial parameters,
+                Otherwise call each peak_fitter object's add_peak() method to add a suggested peak to the object, call
+                this method again with name_to_peak_fitter set to this returned dictionary of peak fitter objects.
         """
+        ignored_by_default = ["survey", "VB"]
+        ignored_species.extend(ignored_by_default)
+
         if species is None:
             species = self._all_species()
         species = [s for s in species if s not in ignored_species]
 
-        result_peak_fitters = {s: PeakFit(s, suggest_params=suggest_params) if s not in peak_fitters else
-                               peak_fitters[s] for s in species}
+        name_to_peak_fitter = {s: PeakFit(s, suggest_params=automatic_mode) if s not in name_to_peak_fitter else
+                               name_to_peak_fitter[s] for s in species}
 
-        # TODO: run each of the peak fitters for each region
-        return result_peak_fitters
+        for measurement in self.measurements:
+            measurement.fit_peaks(species=measurement.list_region_names(),
+                                  ignored_species=ignored_species,
+                                  name_to_peak_fitter=name_to_peak_fitter,
+                                  automatic_mode=automatic_mode)
+
+        # TODO: Judge which peak_fitter to run by the beginning of the names.
+        return name_to_peak_fitter
 
     @staticmethod
     def is_measurement_file(filename):
