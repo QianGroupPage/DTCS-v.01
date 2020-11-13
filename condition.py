@@ -65,6 +65,8 @@ class Condition:
         sequence_number = line.split()[0]
         line_left = "".join(line.split()[1:])
 
-        comments = line_left.split(":")[1:].split(',')
+        comments = []
+        for c in line_left.split(":")[1:]:
+            comments.extend(c.split(","))
         species = line_left.split(":")[0].split(',')
         return int(sequence_number), species, comments
