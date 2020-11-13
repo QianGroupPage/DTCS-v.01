@@ -1,49 +1,74 @@
 """
 A collection of line shape functions.
 
-The first 4 parameters for the functins are always:
+The first 4 parameters for the functions are always:
 xs: a numpy array of x values
-h: height
-e: center
-f: width
+height: height
+center: center
+fwhm: width
 """
 
 import numpy as np
 
-
-def gaussian(x, h, e, f):
-    return h * np.exp(-4 * np.log(2) * np.square(x - e) / (f ** 2))
+# --- Basic Line Shapes ------------------------------------------------\
 
 
-def lorentzian(x, h, e, f):
-    return h * 1 / (1 + 4*np.square((x - e) / f))
+def gaussian(x, height, center, fwhm):
+    return height * np.exp(-4 * np.log(2) * np.square(x - center) / (fwhm ** 2))
 
 
-def la(x, h, e, f, alpha, beta, m):
+def lorentzian(x, height, center, fwhm):
+    return height * 1 / (1 + 4*np.square((x - center) / fwhm))
+
+
+def tail_modifier(x, s, k, center, fwhm):
+    return s * np.exp(-k * (x - center) / fwhm) if x <= center else 1
+
+
+# --- Mixed Shapes ------------------------------------------------\
+
+
+def glp(x, height, center, fwhm, m):
     """
-    Line shape signature: LA(alpha, beta, m)
-    """
-    y_lorentzian = np.vectorize(lambda a: lorentzian(a, h, e, f)**alpha if x < e else lorentzian(a, h, e, f)**beta)(x)
-    y_gaussian = gaussian(x, h, e, m)
-    return np.convolve(y_lorentzian, y_gaussian)
+    Gaussian/Lorentzian Product Form
 
-
-# Gaussian/Lorentzian Product Form
-def glp(x, h, e, f, m):
-    """
-    Additional parameters:
+    Line shape signature: GL(m).
+    Additional parameter:
     m: mixing parameter, ratio of Lorentzian.
     """
-    return h * np.exp(-4 * np.log(2) * (1 - m) * np.square(x - e) / (f ** 2)) / (1 + 4*m*np.square(x - e)/(f**2))
+    return height * np.exp(-4 * np.log(2) * (1 - m) * np.square(x - center) /
+                           (fwhm ** 2)) / (1 + 4*m*np.square(x - center)/(fwhm**2))
 
 
-# Gaussian/Lorentzian Product Form
-def gls(x, h, e, f, m):
-    return (1 - m) * gaussian(x, h, e, f) + m * lorentzian(x, h, e, f)
+def la(x, height, center, fwhm, alpha, beta, m):
+    """
+    Lorentzian Assymetric Form
+
+    Line shape signature: LA(alpha, beta, m).
+    Additional parameters:
+    alpha: power applied to the Lorentzian in the region left of center; skews the left half;
+    beta: power applied to the Lorentzian in the region right of center; skews the right half;
+    m: fwhm of the Gaussian used to convolve with the skewed Lorentzian, a percentage value in the range of (0, 500).
+    """
+    m /= 100
+    y_lorentzian = np.vectorize(lambda a: np.power(lorentzian(a, 1, center, fwhm), alpha) if a < center else
+                   np.power(lorentzian(a, 1, center, fwhm), beta))(x)
+    y_gaussian = gaussian(x, 1, center, m)
+    return height * np.convolve(y_lorentzian, y_gaussian, mode="same")
 
 
-def tail_modifier(x, s, k, e, f):
-    return s * np.exp(-k * (x - e) / f) if x <= e else 1
+# --- Less-used Shapes ------------------------------------------------\
+
+
+def gls(x, height, center, fwhm, m):
+    """
+    Gaussian/Lorentzian Sum Form
+
+    Line shape signature: GLS(m).
+    Additional parameter:
+    m: mixing parameter, ratio of Lorentzian.
+    """
+    return (1 - m) * gaussian(x, height, center, fwhm) + m * lorentzian(x, height, center, fwhm)
 
 
 def glp_t(x, h, e, f, m, k):
@@ -56,14 +81,16 @@ def gls_t(x, h, e, f, m, k):
     return gls_result + (1 - gls_result) * tail_modifier(x, 1, k, e, f)
 
 
-# Doniach-Sunjic profile
 def doniach_sunjic(x, a, f, e):
+    """
+    Doniach-Sunjic profile
+    """
     return np.math.gamma(a) * np.cos(np.pi * a / 2 + (1 - a) * np.arctan((x - e) / f)) / \
            (f**2 + np.square(x - e))**((1 - a) / 2)
 
 
-# TODO: convolve with Gaussian
 def doniach_sunjic_gaussian(x, a, f, e):
+    # TODO: convolve with Gaussian
     pass
 
 
@@ -85,11 +112,11 @@ line_shapes = {
         "function": gls_t
     },
     "la": {
-        "num_params": 6,
+        "num_params": 7,
         "function": la
     },
     "ds": {
-        "num"
+        "num_params": 7,
+        "function": doniach_sunjic
     }
 }
-
