@@ -3,6 +3,7 @@ import pandas as pd
 from scipy.signal import argrelextrema, savgol_filter
 
 from lblcrn.xps_data_processing.baseline import shirley_background
+from lblcrn.xps_data_processing.peak_fit import PeakFit
 
 
 class RawRegion:
@@ -39,6 +40,10 @@ class RawRegion:
 
             # Placeholders for signal processing results
             self.shirley_background = None
+
+            # The PeakFitter for this object and a Curve object to store and visualize the result from the peak_fitter.
+            self.peak_fitter = None
+            self.peak_fit_result = None
 
     def plot(self, data=None, **kwargs):
         # TODO: see if kwargs explanation is good.
@@ -79,6 +84,32 @@ class RawRegion:
 
         new_version.data = new_version_data
         return new_version
+
+    def fit_peaks(self,
+                  peak_fitter=None,
+                  automatic_mode=True):
+        """
+        Fit current region into one or several peaks of certain line shapes.
+
+        :param peak_fitter: a PeakFit object to fit the region with. Default value is None. If a PeakFit object is
+                            provided, it will be used regardless of the automatic_mode parameter;
+        :param automatic_mode: if set to default value True, the system suggests parameters, and performs the peak
+                               fitting;
+                               if set to False, return a PeakFit object to allow for manual peak fitting;
+        :return: a PeakFitter object used to fit the data stored in this region and organize and visualize the fitting
+                 results.
+        """
+        if peak_fitter:
+            self.peak_fitter = peak_fitter
+            self.peak_fit_result = peak_fitter.fit(curve=self.data)
+        elif automatic_mode:
+            peak_fitter = PeakFit(self.name, suggest_params=True, curve=self.data)
+            self.peak_fitter = peak_fitter
+            self.peak_fit_result = peak_fitter.fit(curve=self.data)
+        else:
+            peak_fitter = PeakFit(self.name, suggest_params=False, curve=self.data)
+            self.peak_fitter = peak_fitter
+        return peak_fitter
 
     def find_steepest_section(self, column="data", extrema_func="extreme"):
         """
