@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from scipy.signal import argrelextrema, savgol_filter
@@ -39,6 +40,7 @@ class RawRegion:
             self.parent = None
 
             # Placeholders for signal processing results
+            self.calibration_offset = None
             self.shirley_background = None
 
             # The PeakFitter for this object and a Curve object to store and visualize the result from the peak_fitter.
@@ -133,6 +135,49 @@ class RawRegion:
             if deriv > max_deriv:
                 best_a, best_b = a, b
         return (best_a + best_b) / 2
+
+    def calibrate(self, offset=0):
+        """
+        Calibrate this region by a numerical value. Practically, this method deducts the binding energy column by an
+        offset.
+
+        :param offset: the calibration value.
+        :return: None.
+        """
+        if self.calibration_offset is None:
+            self.calibration_offset = offset
+            self.data.index = self.data.index - offset
+        else:
+            print(f"This region has been calibrated with offset={offset}. Consider calling undo_calibration() method" +
+                  f" first")
+
+    def undo_calibration(self):
+        """
+        Undo the current calibration, whose offset value has been stored in self.calibration_offset.
+        """
+        if self.calibration_offset is None:
+            print("Calibration has not been performed. Please calibrate this region first.")
+        else:
+            self.data.index = self.data.index + self.calibration_offset
+            self.calibration_offset = None
+
+    def show_calibration(self, ax=None):
+        """
+        Visualize the original region before calibration was applied and the calibration offset value.
+
+        :param ax: the Matplotlib axis object to use for this plot.
+                   When set to default value None, use Matplotlib's current axis.
+        """
+        if self.calibration_offset is None:
+            print("Calibration has not been performed. Please calibrate this region first.")
+        else:
+            original_data = self.data.copy()
+            original_data.index = original_data.index + self.calibration_offset
+            if ax is None:
+                ax = plt.gca()
+            self.plot(data=original_data, ax=ax)
+            ax.axvline(x=self.calibration_offset, ymin=0, ymax=1, linestyle='dashed', lw=1,
+                       label=f"offset={round(self.calibration_offset, 2)}")
 
     def apply_shirley_background(self, max_iters=50):
         """
