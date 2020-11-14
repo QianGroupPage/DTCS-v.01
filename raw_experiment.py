@@ -75,6 +75,18 @@ class RawExperiment:
                 measurement.calibrate_by_numerical_value(
                     reference_measurement.calibration_offset(internal_region=internal_region))
 
+    def show_calibration_results(self):
+        """
+        Visualize the calibration results in a grid.
+        """
+        cols = len(self._all_species())
+        fig, axes = plt.subplots(len(self.conditions), cols)
+
+        for i, condition in enumerate(self.conditions):
+            for measurement in condition.measurements:
+                for region in measurement:
+                    region.show_calibration(ax=axes[i, self._all_species().index(region.name)])
+
     def remove_baseline(self, max_iters=50):
         """
         Calculate and subtract Shirley background from each measurement.
