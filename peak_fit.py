@@ -153,7 +153,8 @@ class PeakFit:
         Plot the result of the fitting, including individual peaks, combined curve, against the original curve.
 
         :param ax: the Matplotlib axis object to use for this plot.
-        :return:
+                   When set to default value None, use Matplotlib's current axis.
+        :return: None
         """
         if self.fitting_result:
             return self.fitting_result.plot(ax=ax)
