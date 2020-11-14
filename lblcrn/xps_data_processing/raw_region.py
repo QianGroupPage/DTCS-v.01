@@ -191,10 +191,12 @@ class RawRegion:
         self.shirley_background = shirley_background(self.data.copy(), max_iters=max_iters)
         self.data = self.data - self.shirley_background
 
-    def show_shirley_background_calculations(self):
+    def show_shirley_background_calculations(self, ax=None):
         """
         Plot the original data and the shirley background calculated based on it.
 
+        :param ax: the Matplotlib axis object to use for this plot.
+                   When set to default value None, use Matplotlib's current axis.
         :return: None
         """
         calculations_df = self.data.copy()
@@ -204,7 +206,7 @@ class RawRegion:
         calculations_df += self.shirley_background
         calculations_df["Shirley Background"] = self.shirley_background
         calculations_df.rename(columns={'data': 'Original Signal'}, inplace=True)
-        self.plot(data=calculations_df)
+        self.plot(data=calculations_df, ax=ax)
 
     @property
     def energy_level(self):

@@ -11,10 +11,13 @@ from lblcrn.xps_data_processing.read_digital_book import read_digital_notebook
 
 
 class RawExperiment:
-    def __init__(self, directory_path):
+    def __init__(self, directory_path, automatic_processing=True):
         """
-        Process a set of XPS experiment results into a Python class.
-        :param directory_path: the path where the experiment is stored.
+        Process a set of XPS experiment results into a Python class;
+        :param directory_path: the path where the experiment is stored;
+        :param automatic_processing: when set to default value True, calibrate, calculate Shirley Background, and
+                                     perform peak fitting in automatic mode;
+                                     otherwise, don't do any of the tasks.
         """
         measurements = []
         for file_path in os.listdir(directory_path):
@@ -35,6 +38,21 @@ class RawExperiment:
             for s in condition.measurement_sequence_numbers:
                 included_measurements.append(measurements[s - 1])
             condition.set_measurements(included_measurements)
+
+        if automatic_processing:
+            self.show_all_conditions()
+
+            print("Start calibration.")
+            self.calibrate()
+            self.show_calibration_results()
+
+            print("Start Shirley Background calculations.")
+            self.remove_baseline()
+            self.show_baselines()
+
+            print("Start peak fitting.")
+            self.peak_fit()
+            self.show_fitting_results()
 
     def experimental_history(self):
         pass
@@ -70,7 +88,8 @@ class RawExperiment:
                 measurement.calibrate(internal_region=internal_region)
             else:
                 reference_measurement = self.measurements[self.find_previous_measurement(i)]
-                print(f"Region starting with {internal_region} is not present in measurement {measurement.sequence_number}." +
+                print(f"Region starting with {internal_region} is not present in measurement " +
+                      f"{measurement.sequence_number}." +
                       f" Using measurement {reference_measurement.sequence_number} for calibration.")
                 measurement.calibrate_by_numerical_value(
                     reference_measurement.calibration_offset(internal_region=internal_region))
@@ -96,6 +115,19 @@ class RawExperiment:
         """
         for measurement in self.measurements:
             measurement.remove_baseline(max_iters=max_iters)
+
+    def show_baselines(self):
+        """
+        Visualize all baseline calculations in this RawExperiment.
+        :return:
+        """
+        cols = len(self._all_species())
+        fig, axes = plt.subplots(len(self.conditions), cols)
+
+        for i, condition in enumerate(self.conditions):
+            for measurement in condition.measurements:
+                for region in measurement:
+                    region.show_shirley_background_calculations(axes[i, self._all_species().index(region.name)])
 
     def find_previous_measurement(self, measurement_number, region_name=""):
         """
