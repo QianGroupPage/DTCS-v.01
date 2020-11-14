@@ -1,6 +1,7 @@
 import os
 import re
 
+import matplotlib.pyplot as plt
 import pandas as pd
 from IPython.display import display
 
@@ -143,6 +144,18 @@ class RawExperiment:
 
         # TODO: Judge which peak_fitter to run by the beginning of the names.
         return name_to_peak_fitter
+
+    def show_fitting_results(self):
+        """
+        Visualize the results from peak fitting in a grid.
+        """
+        cols = len(self._all_species())
+        fig, axes = plt.subplots(len(self.conditions), cols)
+
+        for i, condition in enumerate(self.conditions):
+            for measurement in condition.measurements:
+                for region in measurement:
+                    region.peak_fitter.plot(axes[i, self._all_species().index(region.name)])
 
     @staticmethod
     def is_measurement_file(filename):

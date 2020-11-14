@@ -148,12 +148,15 @@ class PeakFit:
         else:
             return fitting_result
 
-    def plot(self):
+    def plot(self, ax=None):
         """
         Plot the result of the fitting, including individual peaks, combined curve, against the original curve.
+
+        :param ax: the Matplotlib axis object to use for this plot.
+        :return:
         """
         if self.fitting_result:
-            return self.fitting_result.plot()
+            return self.fitting_result.plot(ax=ax)
         else:
             print("Fitting not completed.")
 
