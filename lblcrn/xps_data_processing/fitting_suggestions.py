@@ -65,12 +65,22 @@ def suggest_fitting_params(species_name):
                 print(f"Element {element} Orbital {orbital} is not in database.")
                 return
 
+            # Temporary block starts.
+            print("Lorentzian Asymmetric Line Shape is in developement. We currently use Gaussian-Lorentzian Product"
+                  + " with a parameter of 0.3 as default for all species.")
+            # If the suggested line_shape is not "glp", we set "glp"'s parameter as 0.3.
+            for i in orbital_df[orbital_df["line_shape"] != "glp"].index:
+                orbital_df.loc[i, 'line_shape_params'] = 0.3
+            orbital_df = orbital_df.assign(line_shape = "glp")
+            # Temporary block ends.
+
             main_df = orbital_df.loc[orbital_df["orbital"] == orbital]
             if not main_df.empty:
                 main_dict = orbital_df.iloc[0].to_dict()
+                #  if there's only one row, take that row as the suggested peak;
                 if len(orbital_df.index) == 1:
                     suggestions = [main_dict]
-                # if there's another row, take it as the lower binding energy peak
+                # if there's another row, take that row as the lower binding energy peak
                 elif len(orbital_df.index) == 2:
                     low_be = species_df.loc[species_df["orbital"] != orbital].iloc[0].to_dict()
 
@@ -91,10 +101,3 @@ def suggest_fitting_params(species_name):
             return pd.DataFrame.from_records(suggestions)
     else:
         print(f"Element {element} not in database.")
-
-
-
-
-
-
-
