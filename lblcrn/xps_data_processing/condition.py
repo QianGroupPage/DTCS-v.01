@@ -35,6 +35,15 @@ class Condition:
             region_names.extend(measurement.list_region_names())
         return region_names
 
+    def calibration_region_names(self, internal_region_prefix):
+        """
+        Return a list of internal regions whose names start with internal_region_prefix.
+
+        :param internal_region_prefix: a string representing the prefix or the full name of a region.
+        """
+        return [s for s in self.list_region_names() if 
+               s.lower().startswith(internal_region_prefix.lower())]
+
     @property
     def id(self):
         """

@@ -86,6 +86,7 @@ class RawExperiment:
             # TODO: quality check.
             if measurement.has_internal_region(internal_region):
                 measurement.calibrate(internal_region=internal_region)
+                self.calibration_internal_region = internal_region
             else:
                 reference_measurement = self.measurements[self.find_previous_measurement(i)]
                 print(f"Region starting with {internal_region} is not present in measurement " +
@@ -98,13 +99,25 @@ class RawExperiment:
         """
         Visualize the calibration results in a grid.
         """
-        cols = len(self._all_species())
-        fig, axes = plt.subplots(len(self.conditions), cols, figsize=(72, 60))
+        # Establish the regions used for calibration, assuming the region is internal; and store
+        # in the sequence as they are output from condition.calibration_regions.
+        # TODO: simplify name sequencing.
+        overall_calibration_regions = []
+        for c in self.conditions:
+            for region in c.calibration_region_names(self.calibration_internal_region):
+                if region not in overall_calibration_regions:
+                    overall_calibration_regions.append(region)
+
+        cols = len(overall_calibration_regions)
+        fig, axes = plt.subplots(len(self.conditions), cols, figsize=(60, 60))
 
         for i, condition in enumerate(self.conditions):
-            for measurement in condition.measurements:
-                for region in measurement:
-                    region.show_calibration(ax=axes[i, self._all_species().index(region.name)])
+            calibration_regions = condition.calibration_region_names(self.calibration_internal_region)
+            if len(calibration_regions) > 0:
+                for measurement in condition.measurements:
+                    for region in measurement:
+                        if region.name in calibration_regions:
+                            region.show_calibration(ax=axes[i, overall_calibration_regions.index(region.name)])
 
     def remove_baseline(self, max_iters=50, ignored_species=None):
         """
