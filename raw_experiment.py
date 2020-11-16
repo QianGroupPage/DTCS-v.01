@@ -109,7 +109,9 @@ class RawExperiment:
                     overall_calibration_regions.append(region)
 
         cols = len(overall_calibration_regions)
-        fig, axes = plt.subplots(len(self.conditions), cols, figsize=(60, 60))
+        fig, axes = plt.subplots(len(self.conditions), cols, 
+                                 figsize=(4 * cols, 3 * len(self.conditions)),
+                                 tight_layout=True)
 
         for i, condition in enumerate(self.conditions):
             calibration_regions = condition.calibration_region_names(self.calibration_internal_region)
@@ -141,7 +143,9 @@ class RawExperiment:
         :return: None
         """
         cols = len(self._all_species())
-        fig, axes = plt.subplots(len(self.conditions), cols,  figsize=(72, 60))
+        fig, axes = plt.subplots(len(self.conditions), cols,  
+                                 figsize=(4 * cols, 3 * len(self.conditions)),
+                                 tight_layout=True)
 
         for i, condition in enumerate(self.conditions):
             for measurement in condition.measurements:
@@ -234,7 +238,9 @@ class RawExperiment:
         Visualize the results from peak fitting in a grid.
         """
         cols = len(self._all_species())
-        fig, axes = plt.subplots(len(self.conditions), cols,  figsize=(72, 60))
+        fig, axes = plt.subplots(len(self.conditions), cols, 
+                                 figsize=(4 * cols, 3 *  len(self.conditions)),
+                                 tight_layout=True)
 
         for i, condition in enumerate(self.conditions):
             for measurement in condition.measurements:
