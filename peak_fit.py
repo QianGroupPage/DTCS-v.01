@@ -36,17 +36,20 @@ class PeakFit:
 
             if suggestions is None or suggestions.empty:
                 print(f"No suggestions found for species {species}. Please supply your initial guesses.")
+                return
 
             if not line_shape:
                 line_shape = suggestions.iloc[0]["line_shape"]
 
+            # List of argument names for the line_shape function we pick.
             line_shape_signature = list(signature(line_shapes[line_shape]["function"]).parameters.keys())
 
             line_shape_params_size = len(line_shape_signature) - 2 - 2
             suggested_line_shape_params = suggestions["line_shape_params"]
-
-            if line_shape_params_size != len(suggested_line_shape_params[0]):
-                print(f"Suggestions database has {len(suggested_line_shape_params[0])} " +
+            suggested_line_shape_params_size = 1 if not isinstance(suggested_line_shape_params[0], list) \
+                                               else len(suggested_line_shape_params[0])
+            if line_shape_params_size != suggested_line_shape_params_size:
+                print(f"Suggestions database has {suggested_line_shape_params_size} " +
                       f"suggested parameters whereas line shape {line_shape} requires {line_shape_params_size} " +
                       f"number of parameters")
 
@@ -63,7 +66,10 @@ class PeakFit:
                 i = 0
                 for param_name in line_shape_signature:
                     if param_name not in ["x", "height", "center", "fwhm"]:
-                        kwargs[param_name] = [suggested_line_shape_params[peak_number][i]]
+                        if isinstance(suggested_line_shape_params, list):
+                            kwargs[param_name] = [suggested_line_shape_params[peak_number][i]]
+                        else:
+                            kwargs[param_name] = suggested_line_shape_params[peak_number]
                         i += 1
 
                 self.add_peak(**kwargs)
