@@ -92,17 +92,19 @@ class PeakFit:
         :return: None
         """
         resulting_kwargs = OrderedDict()
-        if "height" not in kwargs:
-            height_upper_bounds = self.curve.iloc[:, 0].max()
-            height_initial_guess = height_upper_bounds
-            resulting_kwargs["height"] = [height_initial_guess, 0, height_upper_bounds]
+        # if "height" not in kwargs:
+        #     height_upper_bounds = self.curve.iloc[:, 0].max()
+        #     height_initial_guess = height_upper_bounds
+        #     resulting_kwargs["height"] = [height_initial_guess, 0, height_upper_bounds]
 
         if peak_index != -1:
             resulting_kwargs.update(self.kwargs_list[peak_index])
         else:
             resulting_kwargs.update(kwargs)
         for k, args in kwargs.items():
-            if len(args) == 1:
+            if not isinstance(args, list):
+                args = [args, args * 0.8, args * 1.2]
+            elif len(args) == 1:
                 args = [args[0], args[0] * 0.8, args[0] * 1.2]
             elif len(args) == 2:
                 args = [(args[0] + args[1]) / 2] + args
@@ -122,20 +124,33 @@ class PeakFit:
         :return: if curve is provided, a Curve object to visualize fitting results;
                  otherwise, store the resulting Curve object in self.fitting_result and visualize the fitting results.
         """
+        curve_to_fit = self.curve if curve is None else curve
+
+        # if height is not in kwargs for the line_shape, guess by the maximum value in the curve.
+        kwargs_list = []
+        for kwargs in self.kwargs_list:
+            if "height" not in kwargs:
+                resulting_kwargs = OrderedDict()
+                height_upper_bounds = curve_to_fit.iloc[:, 0].max()
+                height_initial_guess = height_upper_bounds
+                resulting_kwargs["height"] = [height_initial_guess, 0, height_upper_bounds]
+            else:
+                resulting_kwargs = kwargs.copy()
+            kwargs_list.append(resulting_kwargs)
+
         f = self._produce_line_shape_function(self.line_shape)
         initial_guesses = np.array([[param_list[0] for param_list in kwargs.values()]
-                                    for kwargs in self.kwargs_list]).flatten()
+                                    for kwargs in kwargs_list]).flatten()
 
         lower_bound = np.array([[param_list[1] for param_list in kwargs.values()]
-                                for kwargs in self.kwargs_list]).flatten()
+                                for kwargs in kwargs_list]).flatten()
 
         upper_bound = np.array([[param_list[2] for param_list in kwargs.values()]
-                                for kwargs in self.kwargs_list]).flatten()
+                                for kwargs in kwargs_list]).flatten()
 
         print(f"Fitting {len(self.kwargs_list)} peaks")
         self.show_fitting_params()
 
-        curve_to_fit = self.curve if curve is None else curve
         popt, pcov = curve_fit(f, np.flip(curve_to_fit.index.to_numpy()), np.flip(curve_to_fit.iloc[:, 0].to_numpy()),
                                p0=initial_guesses, bounds=[lower_bound, upper_bound])
         final_params = unweave(popt, line_shapes[self.line_shape]["num_params"] - 1)
