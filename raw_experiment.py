@@ -118,6 +118,7 @@ class RawExperiment:
         if ignored_species is None:
             ignored_species = [species for species in self._all_species() if species.startswith("Survey") 
                                or species.startswith("VB")]
+
         for measurement in self.measurements[:1]:
             measurement.remove_baseline(max_iters=max_iters, ignored_species=ignored_species)
 
@@ -163,31 +164,41 @@ class RawExperiment:
         Fit each region in this measurement into one or several peaks of certain line shapes.
 
         :param species: the species or the list of species this fitter corresponds to;
-        :param ignored_species: the species or the list of species this fitter corresponds to;
-                                any species starting with "survey" and "VB" are automatically ignored, unless in the
-                                species list;
+                        If set to default value None, fit all species in the experiment, except for any species 
+                        in ignored_species or starting with "Survey" or "VB";
+        :param ignored_species: the species or the list of species this fitter should ignore; 
+                                Use this parameter only when species is set to None;
+                                If set to default value None, the system ignore any species starting with "Survey" 
+                                or "VB"
         :param name_to_peak_fitter: a mapping from region name to a peak_fitter. If a PeakFit object is
                                     provided for a region, it will be used regardless of the automatic_mode parameter;
                                     otherwise, the peak_fitter will depend upon the automatic_mode parameter;
         :param automatic_mode: if set to default value True, the system suggests parameters, and performs the peak
                                fitting;
-                               if set to False, return a PeakFit object to allow for manual peak fitting;
+                               If set to False, return a PeakFit object to allow for manual peak fitting;
         :return a dictionary from region name to its corresponding peak fitter.
                 If name_to_peak_fitter is not provided and automatic_mode is set to True, the peak fitter objects come
                 with suggested initial parameters,
                 Otherwise call each peak_fitter object's add_peak() method to add a suggested peak to the object, call
                 this method again with name_to_peak_fitter set to this returned dictionary of peak fitter objects.
         """
-        ignored_by_default = [species for species in self._all_species() if species.startswith("survey") or
-                              species.startswith("VB")]
-        if ignored_species is None:
-            ignored_species = ignored_by_default.copy()
-        else:
-            ignored_species.extend(ignored_by_default)
+        # Check that only one of species and ignored_species is set.
+        if species is not None and ignored_species is not None:
+            print("Species and ignored_species lists cannot be specified together. Please specify only one of them.")
+            return
 
+        if species is not None and not isinstance(species, list):
+            species = [species]
+
+        # When all species should be in the peak-fitter, ignore certain species.  
         if species is None:
+            if ignored_species is None:
+                ignored_by_default = [species for species in self._all_species() if species.lower().startswith("survey") or
+                                     species.lower().startswith("vb")]
+                ignored_species = ignored_by_default
+
             species = self._all_species()
-        species = [s for s in species if s not in ignored_species]
+            species = [s for s in species if s not in ignored_species]
 
         new_name_to_peak_fitter = {}
         for s in species:
