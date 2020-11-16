@@ -1,3 +1,8 @@
+"""
+General utility code used in XPS Data Processing.
+"""
+
+
 def read_line_blocks(file_path, encoding=None):
     """
     :param file_path: path to the file;
