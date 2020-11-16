@@ -16,7 +16,7 @@ class RawExperiment:
         Process a set of XPS experiment results into a Python class;
         :param directory_path: the path where the experiment is stored;
         :param automatic_processing: when set to default value True, calibrate, calculate Shirley Background, and
-                                     perform peak fitting in automatic mode;
+                                     perform peak fitting in the automatic mode;
                                      otherwise, don't do any of the tasks.
         """
         measurements = []
@@ -99,35 +99,43 @@ class RawExperiment:
         Visualize the calibration results in a grid.
         """
         cols = len(self._all_species())
-        fig, axes = plt.subplots(len(self.conditions), cols)
+        fig, axes = plt.subplots(len(self.conditions), cols, figsize=(72, 60))
 
         for i, condition in enumerate(self.conditions):
             for measurement in condition.measurements:
                 for region in measurement:
                     region.show_calibration(ax=axes[i, self._all_species().index(region.name)])
 
-    def remove_baseline(self, max_iters=50):
+    def remove_baseline(self, max_iters=50, ignored_species=None):
         """
         Calculate and subtract Shirley background from each measurement.
 
-        :param max_iters: maximum number of iterations for use in Shirley Background calculations.
+        :param max_iters: maximum number of iterations for use in Shirley Background calculations;
+        :param ignored_species: if set to None, ignore any species starting with "Survey" or "VB";
+                                otherwise, ignore all species in the list.
         :return: None
         """
-        for measurement in self.measurements:
-            measurement.remove_baseline(max_iters=max_iters)
+        if ignored_species is None:
+            ignored_species = [species for species in self._all_species() if species.startswith("Survey") 
+                               or species.startswith("VB")]
+        for measurement in self.measurements[:1]:
+            measurement.remove_baseline(max_iters=max_iters, ignored_species=ignored_species)
 
     def show_baselines(self):
         """
         Visualize all baseline calculations in this RawExperiment.
-        :return:
+        :return: None
         """
         cols = len(self._all_species())
-        fig, axes = plt.subplots(len(self.conditions), cols)
+        fig, axes = plt.subplots(len(self.conditions), cols,  figsize=(72, 60))
 
         for i, condition in enumerate(self.conditions):
             for measurement in condition.measurements:
                 for region in measurement:
                     region.show_shirley_background_calculations(axes[i, self._all_species().index(region.name)])
+
+    # def ignored_in_baselines(self):
+
 
     def find_previous_measurement(self, measurement_number, region_name=""):
         """
@@ -170,20 +178,28 @@ class RawExperiment:
                 Otherwise call each peak_fitter object's add_peak() method to add a suggested peak to the object, call
                 this method again with name_to_peak_fitter set to this returned dictionary of peak fitter objects.
         """
-        ignored_by_default = ["survey", "VB"]
-        ignored_species.extend(ignored_by_default)
+        ignored_by_default = [species for species in self._all_species() if species.startswith("survey") or
+                              species.startswith("VB")]
+        if ignored_species is None:
+            ignored_species = ignored_by_default.copy()
+        else:
+            ignored_species.extend(ignored_by_default)
 
         if species is None:
             species = self._all_species()
         species = [s for s in species if s not in ignored_species]
 
-        name_to_peak_fitter = {s: PeakFit(s, suggest_params=automatic_mode) if s not in name_to_peak_fitter else
-                               name_to_peak_fitter[s] for s in species}
+        new_name_to_peak_fitter = {}
+        for s in species:
+            if name_to_peak_fitter is None or s not in name_to_peak_fitter:
+                new_name_to_peak_fitter[s] = PeakFit(s, suggest_params=automatic_mode)
+            else:
+                new_name_to_peak_fitter[s] = name_to_peak_fitter[s]
 
         for measurement in self.measurements:
             measurement.fit_peaks(species=measurement.list_region_names(),
                                   ignored_species=ignored_species,
-                                  name_to_peak_fitter=name_to_peak_fitter,
+                                  name_to_peak_fitter=new_name_to_peak_fitter,
                                   automatic_mode=automatic_mode)
 
         # TODO: Judge which peak_fitter to run by the beginning of the names.
@@ -194,7 +210,7 @@ class RawExperiment:
         Visualize the results from peak fitting in a grid.
         """
         cols = len(self._all_species())
-        fig, axes = plt.subplots(len(self.conditions), cols)
+        fig, axes = plt.subplots(len(self.conditions), cols,  figsize=(72, 60))
 
         for i, condition in enumerate(self.conditions):
             for measurement in condition.measurements:

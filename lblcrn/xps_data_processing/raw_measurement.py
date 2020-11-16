@@ -51,6 +51,14 @@ class RawMeasurement:
         """
         self.calibrate_by_numerical_value(self.calibration_offset(internal_region=internal_region))
 
+    def calibrate_by_numerical_value(self, offset):
+        """
+        :param offset: the offset value to add to the binding energy column;
+        :return: None
+        """
+        for region in self:
+            region.calibrate(offset=offset)
+
     def has_internal_region(self, internal_region="VB"):
         """
         :param internal_region: name or prefix of the name of the region to use for alignment;
@@ -76,23 +84,18 @@ class RawMeasurement:
                 region_name_in_use = region_name
         return self.regions[region_name_in_use].produce_smoothed_version().find_steepest_section()
 
-    def calibrate_by_numerical_value(self, offset):
-        """
-        :param offset: the offset value to add to the binding energy column;
-        :return: None
-        """
-        for region in self:
-            region.data.index = region.data.index - offset
-
-    def remove_baseline(self, max_iters=50):
+    def remove_baseline(self, max_iters=50, ignored_species=None):
         """
         Calculate and subtract Shirley background from each region.
 
         :param max_iters: maximum number of iterations to use in the Shirley algorithm;
+        :param ignored_species: if set to None, ignore any species starting with "Survey" or "VB";
+                                otherwise, ignore all species in the list.
         :return: None
         """
         for region in self:
-            region.apply_shirley_background(max_iters=max_iters)
+            if ignored_species is None or region.name not in ignored_species:
+                region.apply_shirley_background(max_iters=max_iters)
 
     def fit_peaks(self,
                   species=None,

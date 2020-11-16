@@ -201,8 +201,9 @@ class RawRegion:
         """
         calculations_df = self.data.copy()
         if self.shirley_background is None:
-            raise Exception("Shirley Background has not been calculated. "
-                            + "Use apply_shirley_background method first.")
+            print("Shirley Background has not been calculated. "
+                  + "Use apply_shirley_background method first.")
+            return
         calculations_df += self.shirley_background
         calculations_df["Shirley Background"] = self.shirley_background
         calculations_df.rename(columns={'data': 'Original Signal'}, inplace=True)
