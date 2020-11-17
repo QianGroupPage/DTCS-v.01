@@ -224,12 +224,12 @@ class SpeciesManager(monty.json.MSONable):
         Keeps track of their correspondence.
         Orbitals can be either a list of orbitals or just one orbital
         TODO: use in the backend to consult for which products shall take two spots.
+
         Args:
-            name: The name of the new species and of the symbol.
-            orbitals: The Orbitals of the species. Can be an Orbital or a list
-                of Orbitals, just to be nice
+        name: The name of the new species and of the symbol.
+        orbitals: The Orbitals of the species. Can be an Orbital or a list of Orbitals, just to be nice
         Returns:
-             The sym.Symbol corresponding to the new Species.
+        The sym.Symbol corresponding to the new Species.
         """
         if isinstance(name, sym.Symbol):
             parent = self.species_from_symbol(name)
@@ -412,8 +412,7 @@ class SpeciesManager(monty.json.MSONable):
         """
         Provide users with dictionary to represent the summation relationships between species.
 
-        :return: a list of names from species to sub-species and from binding energy to a list of species
-        with the same binding energy.
+        :return: a list of names from species to sub-species and from binding energy to a list of species with the same binding energy.
         """
         d = {}
         included_species_symbols = set()

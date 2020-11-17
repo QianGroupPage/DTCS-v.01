@@ -23,10 +23,10 @@ class TestBulk(unittest.TestCase):
         _, ts = simulate(rsys, time=45, max_step=1e-3)
         want = pd.read_csv("./tests/data/bulk_predator_prey.csv")
         for step in want.iterrows():
-            got_x1 = ts.at(step[0])[0]
-            got_x2 = ts.at(step[0])[1]
-            want_x1 = step[1][0]
-            want_x2 = step[1][1]
+            got_x1 = ts.at(step[1][0])[0]
+            got_x2 = ts.at(step[1][0])[1]
+            want_x1 = step[1][1]
+            want_x2 = step[1][2]
 
             x1_correct, x2_correct = False, False
             if got_x1 <= want_x1*1.003 and got_x1 >= want_x1*0.997:
@@ -35,41 +35,6 @@ class TestBulk(unittest.TestCase):
                 x2_correct = True
             self.assertTrue(x1_correct, f"Expected {want_x1}, got {got_x1}")
             self.assertTrue(x2_correct, f"Expected {want_x2}, got {got_x2}")
-
-    def test_hiv(self):
-        sm = SpeciesManager()
-        v = sm.sp('virus')
-        h = sm.sp('healthy')
-        inf = sm.sp('infected')
-        rsys = RxnSystem(
-            sm,
-            Rxn(h + v, inf, 2e-7),
-            Rxn(inf, None, 0.5),
-            Rxn(h, None, 0.2),
-            Rxn(v, None, 5),
-            Rxn(None, h, 1e5),
-            Rxn(inf, v + inf, 100),
-
-            Conc(h, 1000000),
-            Conc(v, 100),
-        )
-
-        _, ts = simulate(rsys, time=45, max_step=1e-3)
-        # want = pd.read_csv("./tests/data/bulk_hiv.csv")
-        # for step in want.iterrows():
-            # got_x1 = ts.at(step[0])[0]
-            # got_x2 = ts.at(step[0])[1]
-            # got_x3 = ts.at(step[0])[2]
-            # want_x1 = step[1][0]
-            # want_x2 = step[1][1]
-
-            # x1_correct, x2_correct = False, False
-            # if got_x1 <= want_x1*1.003 and got_x1 >= want_x1*0.997:
-                # x1_correct = True
-            # if got_x2 <= want_x2*1.003 and got_x2 >= want_x2*0.997:
-                # x2_correct = True
-            # self.assertTrue(x1_correct, f"Expected {want_x1}, got {got_x1}")
-            # self.assertTrue(x2_correct, f"Expected {want_x2}, got {got_x2}")
 
     def test_ag(self):
         sm = SpeciesManager()
@@ -127,5 +92,17 @@ class TestBulk(unittest.TestCase):
         )
         _, ts = simulate(rsys, 3600*10, max_step=1)
         want = pd.read_csv("./tests/data/bulk_nanomolar.csv")
+
         for step in want.iterrows():
-            pass
+            got_x1 = ts.at(step[1][0])[0]
+            got_x2 = ts.at(step[1][0])[1]
+            want_x1 = step[1][1]
+            want_x2 = step[1][2]
+
+            x1_correct, x2_correct = False, False
+            if got_x1 <= want_x1*1.04 and got_x1 >= want_x1*0.9:
+                x1_correct = True
+            if got_x2 <= want_x2*1.04 and got_x2 >= want_x2*0.9:
+                x2_correct = True
+            self.assertTrue(x1_correct, f"Expected {want_x1}, got {got_x1}")
+            self.assertTrue(x2_correct, f"Expected {want_x2}, got {got_x2}")

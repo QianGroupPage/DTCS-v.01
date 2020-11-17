@@ -1,8 +1,10 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from scipy.signal import argrelextrema, savgol_filter
 
 from lblcrn.xps_data_processing.baseline import shirley_background
+from lblcrn.xps_data_processing.peak_fit import PeakFit
 
 
 class RawRegion:
@@ -38,7 +40,12 @@ class RawRegion:
             self.parent = None
 
             # Placeholders for signal processing results
+            self.calibration_offset = None
             self.shirley_background = None
+
+            # The PeakFitter for this object and a Curve object to store and visualize the result from the peak_fitter.
+            self.peak_fitter = None
+            self.peak_fit_result = None
 
     def plot(self, data=None, **kwargs):
         # TODO: see if kwargs explanation is good.
@@ -80,6 +87,32 @@ class RawRegion:
         new_version.data = new_version_data
         return new_version
 
+    def fit_peaks(self,
+                  peak_fitter=None,
+                  automatic_mode=True):
+        """
+        Fit current region into one or several peaks of certain line shapes.
+
+        :param peak_fitter: a PeakFit object to fit the region with. Default value is None. If a PeakFit object is
+                            provided, it will be used regardless of the automatic_mode parameter;
+        :param automatic_mode: if set to default value True, the system suggests parameters, and performs the peak
+                               fitting;
+                               if set to False, return a PeakFit object to allow for manual peak fitting;
+        :return: a PeakFitter object used to fit the data stored in this region and organize and visualize the fitting
+                 results.
+        """
+        if peak_fitter:
+            self.peak_fitter = peak_fitter
+            self.peak_fit_result = peak_fitter.fit(curve=self.data)
+        elif automatic_mode:
+            peak_fitter = PeakFit(self.name, suggest_params=True, curve=self.data)
+            self.peak_fitter = peak_fitter
+            self.peak_fit_result = peak_fitter.fit(curve=self.data)
+        else:
+            peak_fitter = PeakFit(self.name, suggest_params=False, curve=self.data)
+            self.peak_fitter = peak_fitter
+        return peak_fitter
+
     def find_steepest_section(self, column="data", extrema_func="extreme"):
         """
         :param column: the column in self.data for which we find the steepest section;
@@ -103,6 +136,49 @@ class RawRegion:
                 best_a, best_b = a, b
         return (best_a + best_b) / 2
 
+    def calibrate(self, offset=0):
+        """
+        Calibrate this region by a numerical value. Practically, this method deducts the binding energy column by an
+        offset.
+
+        :param offset: the calibration value.
+        :return: None.
+        """
+        if self.calibration_offset is None:
+            self.calibration_offset = offset
+            self.data.index = self.data.index - offset
+        else:
+            print(f"This region has been calibrated with offset={offset}. Consider calling undo_calibration() method" +
+                  f" first")
+
+    def undo_calibration(self):
+        """
+        Undo the current calibration, whose offset value has been stored in self.calibration_offset.
+        """
+        if self.calibration_offset is None:
+            print("Calibration has not been performed. Please calibrate this region first.")
+        else:
+            self.data.index = self.data.index + self.calibration_offset
+            self.calibration_offset = None
+
+    def show_calibration(self, ax=None):
+        """
+        Visualize the original region before calibration was applied and the calibration offset value.
+
+        :param ax: the Matplotlib axis object to use for this plot.
+                   When set to default value None, use Matplotlib's current axis.
+        """
+        if self.calibration_offset is None:
+            print("Calibration has not been performed. Please calibrate this region first.")
+        else:
+            original_data = self.data.copy()
+            original_data.index = original_data.index + self.calibration_offset
+            if ax is None:
+                ax = plt.gca()
+            self.plot(data=original_data, ax=ax)
+            ax.axvline(x=self.calibration_offset, ymin=0, ymax=1, linestyle='dashed', lw=1,
+                       label=f"offset={round(self.calibration_offset, 2)}")
+
     def apply_shirley_background(self, max_iters=50):
         """
         Calculate the Shirley Background and subtract it from self.data.
@@ -115,20 +191,23 @@ class RawRegion:
         self.shirley_background = shirley_background(self.data.copy(), max_iters=max_iters)
         self.data = self.data - self.shirley_background
 
-    def show_shirley_background_calculations(self):
+    def show_shirley_background_calculations(self, ax=None):
         """
         Plot the original data and the shirley background calculated based on it.
 
+        :param ax: the Matplotlib axis object to use for this plot.
+                   When set to default value None, use Matplotlib's current axis.
         :return: None
         """
         calculations_df = self.data.copy()
         if self.shirley_background is None:
-            raise Exception("Shirley Background has not been calculated. "
-                            + "Use apply_shirley_background method first.")
+            print("Shirley Background has not been calculated. "
+                  + "Use apply_shirley_background method first.")
+            return
         calculations_df += self.shirley_background
         calculations_df["Shirley Background"] = self.shirley_background
         calculations_df.rename(columns={'data': 'Original Signal'}, inplace=True)
-        self.plot(data=calculations_df)
+        self.plot(data=calculations_df, ax=ax)
 
     @property
     def energy_level(self):

@@ -39,7 +39,7 @@ def shirley_background(signal, max_iters=50):
             k = k - (background_offset / background.iloc[start_index, 0])*k*0.25 # 0.25 is to ensure convergence
             background_offset_old = background_offset
 
-            print("start_value", signal_copy.iloc[start_index, 0], "end_value", signal_copy.iloc[stop_index, 0])
+            # print("start_value", signal_copy.iloc[start_index, 0], "end_value", signal_copy.iloc[stop_index, 0])
 
             if abs(background_offset) <= 0.000001 * background.iloc[start_index, 0]:
                 break

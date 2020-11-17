@@ -35,6 +35,15 @@ class Condition:
             region_names.extend(measurement.list_region_names())
         return region_names
 
+    def calibration_region_names(self, internal_region_prefix):
+        """
+        Return a list of internal regions whose names start with internal_region_prefix.
+
+        :param internal_region_prefix: a string representing the prefix or the full name of a region.
+        """
+        return [s for s in self.list_region_names() if 
+               s.lower().startswith(internal_region_prefix.lower())]
+
     @property
     def id(self):
         """
@@ -65,6 +74,8 @@ class Condition:
         sequence_number = line.split()[0]
         line_left = "".join(line.split()[1:])
 
-        comments = line_left.split(":")[1:].split(',')
+        comments = []
+        for c in line_left.split(":")[1:]:
+            comments.extend(c.split(","))
         species = line_left.split(":")[0].split(',')
         return int(sequence_number), species, comments

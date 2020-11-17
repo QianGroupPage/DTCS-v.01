@@ -51,6 +51,14 @@ class RawMeasurement:
         """
         self.calibrate_by_numerical_value(self.calibration_offset(internal_region=internal_region))
 
+    def calibrate_by_numerical_value(self, offset):
+        """
+        :param offset: the offset value to add to the binding energy column;
+        :return: None
+        """
+        for region in self:
+            region.calibrate(offset=offset)
+
     def has_internal_region(self, internal_region="VB"):
         """
         :param internal_region: name or prefix of the name of the region to use for alignment;
@@ -76,23 +84,63 @@ class RawMeasurement:
                 region_name_in_use = region_name
         return self.regions[region_name_in_use].produce_smoothed_version().find_steepest_section()
 
-    def calibrate_by_numerical_value(self, offset):
-        """
-        :param offset: the offset value to add to the binding energy column;
-        :return: None
-        """
-        for region in self:
-            region.data.index = region.data.index - offset
-
-    def remove_baseline(self, max_iters=50):
+    def remove_baseline(self, max_iters=50, ignored_species=None):
         """
         Calculate and subtract Shirley background from each region.
 
         :param max_iters: maximum number of iterations to use in the Shirley algorithm;
+        :param ignored_species: if set to None, ignore any species starting with "Survey" or "VB";
+                                otherwise, ignore all species in the list.
         :return: None
         """
         for region in self:
-            region.apply_shirley_background(max_iters=max_iters)
+            if ignored_species is None or region.name not in ignored_species:
+                region.apply_shirley_background(max_iters=max_iters)
+
+    def fit_peaks(self,
+                  species=None,
+                  ignored_species=None,
+                  name_to_peak_fitter=None,
+                  automatic_mode=True):
+        """
+        Fit each region in this measurement into one or several peaks of certain line shapes.
+
+        :param species: the species or the list of species this fitter corresponds to;
+        :param ignored_species: the species or the list of species this fitter corresponds to;
+                                any species starting with "survey" and "VB" are automatically ignored, unless in the
+                                species list;
+        :param name_to_peak_fitter: a mapping from region name to a peak_fitter. If a PeakFit object is
+                                    provided for a region, it will be used regardless of the automatic_mode parameter;
+                                    otherwise, the peak_fitter will depend upon the automatic_mode parameter;
+        :param automatic_mode: if set to default value True, the system suggests parameters, and performs the peak
+                               fitting;
+                               if set to False, return a PeakFit object to allow for manual peak fitting;
+        :return a dictionary from region name to its corresponding peak fitter.
+                The peak fitter objects come with initial suggested parameters, if name_to_peak_fitter is not provided
+                and automatic_mode is set to True;
+                Otherwise call each peak_fitter object's add_peak() method to add a suggested peak to the object, call
+                this method again with name_to_peak_fitter set to this dictionary of peak fitters.
+        """
+        ignored_by_default = ["survey", "VB"]
+        if species is None:
+            species = self.list_region_names()
+        species = [s for s in species if s not in ignored_species + ignored_by_default]
+
+        if name_to_peak_fitter is None:
+            name_to_peak_fitter = {}
+
+            for region in self:
+                if region.name in species:
+                    name_to_peak_fitter[region.name] = region.fit_peaks(automatic_mode=automatic_mode)
+        else:
+            for region in self:
+                if region.name in species:
+                    if region.name in name_to_peak_fitter:
+                        name_to_peak_fitter[region.name] = region.fit_peaks(peak_fitter=
+                                                                            name_to_peak_fitter[region.name])
+                    else:
+                        name_to_peak_fitter[region.name] = region.fit_peaks(automatic_mode=automatic_mode)
+        return name_to_peak_fitter
 
     @property
     def num_regions(self):
