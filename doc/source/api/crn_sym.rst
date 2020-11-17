@@ -2,9 +2,11 @@ API reference
 =============================
 
 The crn_sym module
---------------------
+------------------
 
-.. automodule:: lblcrn.crn_sym
+.. currentmodule:: lblcrn.crn_sym
+
+.. autoclass:: Orbital
    :members:
 
 .. autoclass:: Species
@@ -19,7 +21,5 @@ The crn_sym module
 .. autoclass:: RevRxn
    :members:
 
-.. autoclass:: Orbital
+.. autoclass:: RxnSystem
    :members:
-
-

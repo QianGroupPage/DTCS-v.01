@@ -21,18 +21,15 @@ class RxnSystem(monty.json.MSONable):
     of each chemical) over time.
 
     Attributes:
-        components: Everything the RxnSystem contains
-        terms: Terms in the ODE of the system.
-        reactions: Bulk CRN reactions in the system.
-        schedules: The Schedules and Concs passed during initialization.
-        conc_eqs: The ConcEqs in the system.
-        conc_diffeqs: The ConcDiffEqs in the system.
-        species_manager: The SpeciesManager the system uses.
-        symbol_index: A dictionary {sym.Symbol: int} to keep track of the order
-            of the symbols.
-        scheduler: A comprehensive Schedule of the system, has entries (which
-            might be Conc(species, 0) for each species which isn't set by a
-            ConcEq.
+    components: Everything the RxnSystem contains
+    terms: Terms in the ODE of the system.
+    reactions: Bulk CRN reactions in the system.
+    schedules: The Schedules and Concs passed during initialization.
+    conc_eqs: The ConcEqs in the system.
+    conc_diffeqs: The ConcDiffEqs in the system.
+    species_manager: The SpeciesManager the system uses.
+    symbol_index: A dictionary {sym.Symbol: int} to keep track of the order of the symbols.
+    scheduler: A comprehensive Schedule of the system, has entries (which might be Conc(species, 0) for each species which isn't set by a ConcEq.
     """
 
     def __init__(self, *components):
