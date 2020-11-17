@@ -25,7 +25,7 @@ Usage:
 """
 
 import copy
-from typing import List, Optional, Set, Tuple
+from typing import List, Optional, Set, Tuple, Dict
 
 import monty.json
 import sympy as sym
@@ -140,6 +140,37 @@ class Rxn(monty.json.MSONable):
         d['products'] = sympy_parser.parse_expr(d['products'])
         return cls(**d)
 
+    def text(self) -> str:
+        reactants: Dict[str, int] = self.reactants.as_coefficients_dict()
+        products: Dict[str, int] = self.products.as_coefficients_dict()
+
+        text = self.coeff_dict_to_text(reactants)
+
+        conversion_verb = "are"
+        if len(reactants) == 1:
+            conversion_verb = "is"
+        text += f" {conversion_verb} converted to "
+        text += self.coeff_dict_to_text(products)
+
+        text += f" at a rate of {self.rate_constant}."
+        return text
+    
+    def coeff_dict_to_text(self, coeff_dict) -> str:
+        """Given a coefficient dictionary, convert it to a string.
+        """
+        items, text = coeff_dict.items(), ""
+        for i, item in enumerate(items):
+            symbol, coeff = item
+            conjunction, units, end_comma = "", "units", ","
+            if len(items) <= 2:
+                end_comma = ""
+            if i == len(items)-1 and len(items) > 1:
+                conjunction, end_comma = "and ", ""
+            if coeff == 1:
+                units = "unit"
+            text += f"{conjunction}{coeff} {units} of {symbol}{end_comma} "
+
+        return text[:-1]
 
     def __str__(self):
         return f'{self.reactants} -> {self.products} @ k={self.rate_constant}'

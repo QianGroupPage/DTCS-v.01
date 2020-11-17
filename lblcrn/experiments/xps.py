@@ -180,7 +180,7 @@ class XPSObservable:
     def deconv_gaussians(self) -> Optional[pd.DataFrame]:
         """The deconvoluted gaussians of the XPS observable."""
         # Gaussians have a species as their column name
-        if not self.deconvoluted:
+        if self.deconvoluted is None:
             return None
 
         gauss_cols = []
@@ -729,7 +729,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
             # Arguments for the experimental data
             experimental: Optional[bool] = None,
             exp_data: Optional[pd.Series] = None,
-            gas_phase: Optional[bool] = None,
+            gas_phase: Optional[bool] = False,
             gas_interval: Optional[Tuple[float, float]] = None,
             decontaminate: Optional[bool] = None,
             contaminate: Optional[bool] = None,
@@ -812,8 +812,6 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
             raise ValueError('Cannot evaluate gas phase without experimental.')
         elif gas_phase and not valid_gas_interval(gas_interval):
             raise ValueError(f'Invalid gas interval {gas_interval}')
-        elif gas_phase is None:
-            gas_phase = experimental
 
         # Handle: contam_spectra
         if contam_spectra and not experimental:
@@ -1340,7 +1338,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
               gas_phase: Optional[bool] = None,
               decontaminate: Optional[bool] = None,  # TODO
               contaminate: Optional[bool] = None,  # TODO
-              deconvolute: Optional[bool] = None,
+              deconvolute: Optional[bool] = False,
               # Args passed only to plotter
               sim_gaussians: bool = True,
               envelope: bool = True,
@@ -1429,60 +1427,3 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
                                              convert_axes=False)
             d['experimental'].index = d['experimental'].index.map(float)
         return cls(**d)
-
-def simulate_xps(rsys: RxnSystem,
-                 time: Optional[float] = None,
-                 end_when_settled: bool = False,
-                 title: str = '',
-                 species: List[sym.Symbol] = None,
-                 ignore: List[sym.Symbol] = None,
-                 x_range: Optional[np.ndarray] = None,
-                 scale_factor: float = None,
-                 experimental: pd.Series = None,
-                 gas_interval: Tuple[float, float] = None,
-                 contam_spectra: Optional[Dict[sym.Symbol, pd.Series]] = None,
-                 deconv_species: Optional[List[sym.Symbol]] = None,
-                 autoresample: bool = True,
-                 autoscale: bool = True,
-                 **options) -> XPSExperiment:
-    """Simulate the given reaction system over time.
-
-    Args:
-        TODO: add rest
-        rsys: ReactionsSystem, the reaction system to simulate
-        time: The time until which to simulate.
-        species: The species to include in the XPS.
-        ignore: The species to not include in the XPS.
-        autoresample: Decides if the XPS resamples on edits.
-        autoscale: Decides if the XPS will automatically scale
-            the gaussians and envelope to match the experimental data.
-        experimental: The experimental value of the XPS.
-        gas_interval: The interval in which the peak of the gas phase is
-            in the XPS.
-        scale_factor: The scale factor by which to scale the simulated
-            gaussians in the XPS.
-        title: The name to give the XPS, used in plotting.
-        **options: Forwarded to scipy.integrate.solve_ivp
-
-    Returns:
-        A Solution object describing the solution.
-    """
-    end_when_settled = end_when_settled or (time is None)
-
-    sol_t, sol_y = bulk_crn.solve_rsys_ode(rsys, time, end_when_settled, **options)
-    cts = time_series.CRNTimeSeries(sol_t, sol_y, rsys)
-
-    return cts.xps_with(title=title,
-                        species=species,
-                        ignore=ignore,
-                        x_range=x_range,
-                        scale_factor=scale_factor,
-                        experimental=experimental,
-                        gas_interval=gas_interval,
-                        contam_spectra=contam_spectra,
-                        deconv_species=deconv_species,
-                        autoresample=autoresample,
-                        autoscale=autoscale)
-
-def simulate_xps_with_cts():
-    print("this function has been moved to simulate.py")

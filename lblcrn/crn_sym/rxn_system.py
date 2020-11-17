@@ -322,7 +322,7 @@ class RxnSystem(monty.json.MSONable):
                 add(p, r)
         return G
     
-    def network_graph_plot(self):
+    def plot_network_graph(self):
         """Plot the reaction network graph for this system.
         """
         G = self.network_graph()
@@ -333,6 +333,12 @@ class RxnSystem(monty.json.MSONable):
             'edge_color': 'gray',
             'width': 1,
         })
+
+    def text(self) -> str:
+        text: str = ""
+        for rxn in self.reactions:
+            text += rxn.text() + " "
+        return text[:-1]
 
     def __str__(self):
         s = self.__class__.__name__ + ' with components:\n'
