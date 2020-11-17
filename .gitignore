@@ -4,6 +4,7 @@ __pycache__/
 .idea/
 data/
 !examples/data/
+!tests/data/
 venv/
 venv
 dist/
