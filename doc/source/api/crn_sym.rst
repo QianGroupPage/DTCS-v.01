@@ -1,25 +1,25 @@
-API reference
-=============================
+crn_sym
+==================
 
-The crn_sym module
-------------------
+.. automodule:: lblcrn.crn_sym
 
-.. currentmodule:: lblcrn.crn_sym
+.. autosummary::
+    :toctree: _autosummary
 
-.. autoclass:: Orbital
-   :members:
+    Orbital
+    Species
+    Marker
+    SpeciesManager
 
-.. autoclass:: Species
-   :members:
+    Rxn
+    RevRxn
 
-.. autoclass:: SpeciesManager
-   :members:
+    ChemExpression   
+    Term
+    ConcEq
+    ConcDiffEq
+    Conc
+    Schedule
 
-.. autoclass:: Rxn
-   :members:
+    RxnSystem
 
-.. autoclass:: RevRxn
-   :members:
-
-.. autoclass:: RxnSystem
-   :members:

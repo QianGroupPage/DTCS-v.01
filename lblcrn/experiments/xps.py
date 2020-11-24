@@ -529,10 +529,8 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
 
     Attributes:
         autoresample: Defaults to true, decides if it resamples on edits.
-        autoscale: Defaults to true, decides if it will automatically scale
-            the gaussians and envelope to match the experimental data.
-        sim_concs: The concentrations of each species, for the creation of
-            simulated data.
+        autoscale: Defaults to true, decides if it will automatically scale the gaussians and envelope to match the experimental data.
+        sim_concs: The concentrations of each species, for the creation of simulated data.
         species_manager: The SpeciesManager in use.
         ignore: Species to ignore during processing.
     """

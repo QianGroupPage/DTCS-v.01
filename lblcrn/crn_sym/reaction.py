@@ -199,8 +199,7 @@ class RevRxn(Rxn):
             reactants: The left-hand side of the chemical reaction.
             products: The right-hand side of the chemical reaction.
             k: The rate constant.
-            k2: Optional, the rate constant for the reverse reaction. If not
-                supplied, it's assumed to be 1/k.
+            k2: Optional, the rate constant for the reverse reaction. If not supplied, it's assumed to be 1/k.
         """
 
         super().__init__(reactants, products, k)

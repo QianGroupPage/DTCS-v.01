@@ -32,19 +32,15 @@ def simulate(
         species: The species to include in the XPS.
         ignore: The species to not include in the XPS.
         autoresample: Decides if the XPS resamples on edits.
-        autoscale: Decides if the XPS will automatically scale
-            the gaussians and envelope to match the experimental data.
+        autoscale: Decides if the XPS will automatically scale the gaussians and envelope to match the experimental data.
         experimental: The experimental value of the XPS.
-        gas_interval: The interval in which the peak of the gas phase is
-            in the XPS.
-        scale_factor: The scale factor by which to scale the simulated
-            gaussians in the XPS.
+        gas_interval: The interval in which the peak of the gas phase is in the XPS.
+        scale_factor: The scale factor by which to scale the simulated gaussians in the XPS.
         title: The name to give the XPS, used in plotting.
-        **options: Forwarded to scipy.integrate.solve_ivp
+        options: Forwarded to scipy.integrate.solve_ivp
 
     Returns:
-        An XPSExperiment with the simulation results as well as a CRNTimeSeries object with the
-        time series data.
+        An XPSExperiment with the simulation results as well as a CRNTimeSeries object with the time series data.
     """
     end_when_settled = end_when_settled or (time is None)
 

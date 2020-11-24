@@ -4,14 +4,19 @@ LBL Chemical Reaction Simulator
 ===============================
 
 .. toctree::
-   :name: mastertoc
-   :maxdepth: 3
-   :hidden:
+    :maxdepth: 2
+    :hidden:
 
-   bulk_examples
-   api/crn_sym
-   contact
-   license
+    bulk_examples
+    surface_examples
+    api/index
+
+.. toctree::
+    :maxdepth: 1
+    :hidden:
+
+    contact
+    license
 
 .. TODO: Introduction
 
@@ -33,7 +38,7 @@ to check if everything installed.
 API Rundown
 -----------
 
-For exhaustive documentation, see the full API Docs TODO
+For exhaustive documentation, see the full :ref:`API Docs<API Documentation>`.
 
 Walkthrough
 -----------

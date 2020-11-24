@@ -1,5 +1,3 @@
-.. bulk_examples
-
 =================
 Bulk CRN Examples
 =================
