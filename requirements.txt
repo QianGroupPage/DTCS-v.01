@@ -67,3 +67,4 @@ ffmpeg
 ffmpeg-python
 pygame==2.0.0.dev4
 networkx
+plotly==4.13.0

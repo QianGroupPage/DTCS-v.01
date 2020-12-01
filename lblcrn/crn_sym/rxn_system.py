@@ -5,6 +5,7 @@ from typing import List
 import monty.json
 import networkx as nx
 import sympy as sym
+import plotly.graph_objects as go
 
 import lblcrn
 from lblcrn.common import color_to_RGB, generate_new_color
@@ -319,17 +320,75 @@ class RxnSystem(monty.json.MSONable):
                 add(p, r)
         return G
     
-    def plot_network_graph(self):
+    def plot(self):
         """Plot the reaction network graph for this system.
         """
         G = self.network_graph()
 
-        nx.draw_shell(G, with_labels=True, **{
-            'node_color': 'lightblue',
-            'node_size': 500,
-            'edge_color': 'gray',
-            'width': 1,
-        })
+        pos = nx.spring_layout(G)
+        # nx.draw(G, pos, with_labels=True, **{
+            # 'node_color': 'lightblue',
+            # 'node_size': 500,
+            # 'edge_color': 'gray',
+            # 'width': 1,
+        # })
+
+        edge_x, edge_y = [], []
+        for edge in G.edges():
+            x0, y0 = pos[edge[0]]
+            x1, y1 = pos[edge[1]]
+            edge_x.append(x0)
+            edge_x.append(x1)
+            edge_x.append(None)
+            edge_y.append(y0)
+            edge_y.append(y1)
+            edge_y.append(None)
+
+        edge_trace = go.Scatter(
+            x=edge_x, y=edge_y,
+            line=dict(width=0.5, color='#888'),
+            hoverinfo='none',
+            mode='lines')
+
+        node_x, node_y, node_text = [], [], []
+        for node in G.nodes():
+            x, y = pos[node]
+            node_x.append(x)
+            node_y.append(y)
+            node_text.append(str(node))
+
+
+        node_trace = go.Scatter(
+            x=node_x,
+            y=node_y,
+            mode='text',
+            text=node_text,
+            marker=dict(
+                showscale=False,
+                colorscale='YlGnBu',
+                size=12,
+                line_width=3
+            )
+        )
+
+        fig = go.Figure(data=[edge_trace, node_trace],
+             layout=go.Layout(
+                title='Reaction Network',
+                titlefont_size=18,
+                showlegend=False,
+                hovermode='closest',
+                margin=dict(b=20,l=5,r=5,t=40),
+                annotations=[ dict(
+                    text="",
+                    showarrow=False,
+                    xref="paper", yref="paper",
+                    x=0.005, y=-0.002 ) ],
+                xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)
+            )
+        )
+
+        fig.show()
 
     def text(self) -> str:
         text: str = ""
