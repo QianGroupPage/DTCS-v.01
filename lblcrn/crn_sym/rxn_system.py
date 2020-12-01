@@ -9,11 +9,10 @@ import plotly.graph_objects as go
 
 # import bokeh.plotting as plotting
 # import bokeh.models as models
-import dash
+from jupyter_dash import JupyterDash
 import dash_cytoscape as cyto
 import dash_html_components as html
 import IPython.display as display
-
 
 import lblcrn
 from lblcrn.common import color_to_RGB, generate_new_color
@@ -340,7 +339,7 @@ class RxnSystem(monty.json.MSONable):
             for e in G.out_edges(node):
                 elements.append({"data": {"source": str(node), "target": str(e[1])}})
 
-        app = dash.Dash("Network Plot")
+        app = JupyterDash("Network Plot")
         app.layout = html.Div([
             cyto.Cytoscape(
                 id="network-plot",
@@ -367,16 +366,7 @@ class RxnSystem(monty.json.MSONable):
             )
         ])
 
-        def start_display(app, port = 900, width = 750, height = 500):
-            url = f"http://localhost:{port}"
-            iframe = "<iframe src='{url}' width={width} height={height}></iframe>".format(url = url, width = width, height = height) 
-
-            display.display_html(iframe, raw = True)
-            app.css.config.serve_locally = True
-            app.scripts.config.serve_locally = True
-            return app.run_server(debug=False, host = "0.0.0.0", port=port)
-
-        start_display(app)
+        app.run_server(mode="inline")
 
         # fig = plotting.figure(title="Network Plot", x_range=(-1.1,1.1), y_range=(-1.1,1.1))
         # graph = plotting.from_networkx(G, nx.spring_layout, center=((0,0)))

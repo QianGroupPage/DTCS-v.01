@@ -68,4 +68,4 @@ ffmpeg-python
 pygame==2.0.0.dev4
 networkx
 bokeh==2.2.3
-dash==1.17.0
+jupyter-dash==0.3.1
