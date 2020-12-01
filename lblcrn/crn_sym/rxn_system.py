@@ -336,27 +336,40 @@ class RxnSystem(monty.json.MSONable):
         for node in G.nodes():
             x, y = pos[node]
             x, y = 500*x, 500*y
-            elements.append({"data": {"id": str(node), "label": str(node)}, "position": {"x": x, "y":
-                y}})
+            elements.append({"data": {"id": str(node), "label": str(node)}, "position": {"x": x, "y": y}})
             for e in G.out_edges(node):
                 elements.append({"data": {"source": str(node), "target": str(e[1])}})
 
         app = dash.Dash("Network Plot")
         app.layout = html.Div([
             cyto.Cytoscape(
-                id='network-plot',
-                layout={'name': 'preset'},
-                style={'width': '100%', 'height': '500px'},
-                elements=elements
-                    # {'data': {'id': 'one', 'label': 'Node 1'}, 'position': {'x': 75, 'y': 75}},
-                    # {'data': {'id': 'two', 'label': 'Node 2'}, 'position': {'x': 200, 'y': 200}},
-                    # {'data': {'source': 'one', 'target': 'two'}}
+                id="network-plot",
+                layout={"name": "preset"},
+                style={"width": "100%", "height": "500px"},
+                elements=elements,
+                stylesheet=[
+                    {
+                        "selector": "edge",
+                        "style": {
+                            # The default curve style does not work with certain arrows
+                            "curve-style": "bezier",
+                            "source-arrow-color": "black",
+                            "source-arrow-shape": "triangle",
+                        }
+                    },
+                    {
+                        "selector": "node",
+                        "style": {
+                            "label": "data(label)",
+                        }
+                    },
+                ],
             )
         ])
 
         def start_display(app, port = 900, width = 750, height = 500):
             url = f"http://localhost:{port}"
-            iframe = '<iframe src="{url}" width={width} height={height}></iframe>'.format(url = url, width = width, height = height) 
+            iframe = "<iframe src='{url}' width={width} height={height}></iframe>".format(url = url, width = width, height = height) 
 
             display.display_html(iframe, raw = True)
             app.css.config.serve_locally = True
