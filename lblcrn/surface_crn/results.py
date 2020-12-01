@@ -171,64 +171,6 @@ class Results:
                 concs[str(s)] = [0]
         return Results.from_concs_times(None, rxns, concs, [0])
 
-    @staticmethod
-    def side_by_side_axes(num_axes=2, output_fig=False):
-        """
-        A function designed to wrap around matplotlib to encourage
-        people to do side by side comparisons more often.
-        :param num_axes: number of axes to generate
-        :param output_fig: output fig, axes if set to True
-        :return: a list of axes
-        """
-        num_lines = num_axes // 2 + num_axes % 2
-        fig, axes = plt.subplots(num_lines, 2, figsize=(16, 6 * num_lines))
-
-        def trim_axs(axs, N):
-            """little helper to massage the axs list to have correct length..."""
-            """https://matplotlib.org/3.1.1/gallery/lines_bars_and_markers/
-            markevery_demo.html#sphx-glr-gallery-lines-bars-and-markers-markevery-demo-py"""
-            axs = axs.flat
-            for ax in axs[N:]:
-                ax.remove()
-            return axs[:N]
-
-        if output_fig:
-            return fig, trim_axs(axes, num_axes)
-        else:
-            return trim_axs(axes, num_axes)
-
-    def play_video(self, slowdown_factor=1):
-        """
-        Play the simulation video if a video is produced.
-
-        :param slowdown_factor: 1 by default, 30 is suggested for reasonable viewing by humans.
-        :return: HTML object for playing a video in the IPython Notebook
-        """
-        if self.video is None:
-            # TODO: does absolute path work?
-            # self.video = "/Users/ye/Desktop/lbl-crn/Surface CRN Videos/scrn simulation.mp4"
-            # self.video = "Surface CRN Videos/scrn simulation.mp4"
-            raise Exception("There is no video generated for the reaction system.")
-
-        if slowdown_factor == 1:
-            video = self.video
-        else:
-            # Use a factor for slowing down the video
-            head, name = os.path.split(self.video)
-            name, ext = os.path.splitext(name)
-            slowmo_name = f'{head}/{name}_{slowdown_factor}x_slower{ext}'
-            # Overwrite existing files.
-            if os.path.isfile(slowmo_name):
-                os.remove(slowmo_name)
-            ffmpeg.input(self.video).setpts(f"{slowdown_factor}*PTS").output(
-                f'{head}/{name}_{slowdown_factor}x_slower{ext}').run()
-            video = slowmo_name
-        return HTML(f"""
-        <video width="960" height="720" controls>
-          <source src="{video}" type="video/mp4">
-        </video>
-        """)
-
     def resample_evolution(self, round=1):
         df = self.df.copy()
         df["Time (s)"] = df.index
@@ -393,11 +335,37 @@ class Results:
                        use_raw_data=True,
                        title="",
                        ax=None,
+                       fig_size="Default",
+                       dpi=100,
                        zoom=False,
                        x_axis_xlim=0,
+                       ylim=0,
                        legend_loc="upper right",
                        y_label="Molecule Count (#)",
                        df=None):
+        """
+
+        :param start_time:
+        :param end_time:
+        :param names_in_figure:
+        :param names_to_ignore:
+        :param include_markers:
+        :param show_fig:
+        :param save:
+        :param path:
+        :param return_fig:
+        :param use_raw_data:
+        :param title:
+        :param ax:
+        :param fig_size: a tuple of (width, height);
+        :param dpi: resolution of the figure;
+        :param zoom:
+        :param x_axis_xlim:
+        :param legend_loc:
+        :param y_label:
+        :param df: an alternative dataframe to use as the trajectory.
+        :return:
+        """
         """
         Plot the concentrations from start_time until time step end_time. -1 means till the end.
 
@@ -461,10 +429,19 @@ class Results:
             ax_given = False
             fig, axes = plt.subplots(len(irange), 1)
             # TODO: fix this for multiple axes
-            fig.set_figheight(6)
-            fig.set_figwidth(8)
+            # fig.set_figheight(6)
+            # fig.set_figwidth(8)
             # fig.subplots_adjust(top=0.95)
             # fig.suptitle(f"{title}", fontsize=48)
+            # fig, ax = plt.subplots()
+            if fig_size == "Default":
+                fig.set_figheight(6)
+                fig.set_figwidth(8)
+            else:
+                # For the plotting used in videos
+                fig.set_dpi(dpi)
+                fig.set_figheight(fig_size[1])
+                fig.set_figwidth(fig_size[0])
         else:
             ax_given = True
             axes = [ax]
@@ -475,10 +452,17 @@ class Results:
         for i in irange:
             ax = axes[i]
             ax.set_xlim(left=x_axis_xlim, right=end_time)
+            if ylim:
+                ax.set_ylim(0, ylim)
             for j in range(i, len(species_in_figure)):
                 species = species_in_figure[j]
+
                 ax.tick_params(axis='both', which='both', labelsize=12)
-                ax.plot(df[species], color=self.species_colors[species], label=species, linewidth=2)
+                if species not in df:
+                    zero_df = pd.DataFrame(0, index=df.index, columns=[species])
+                    ax.plot(zero_df[species], color=self.species_colors[species], label=species, linewidth=2)
+                else:
+                    ax.plot(df[species], color=self.species_colors[species], label=species, linewidth=2)
                 ax.legend(fontsize=12, numpoints=30, loc=legend_loc)
 
             # for sub_species_name in sub_species_in_figure:
@@ -488,8 +472,13 @@ class Results:
 
             if include_markers:
                 for marker_name in markers_in_figure:
+
                     ax.tick_params(axis='both', which='both', labelsize=12)
-                    ax.plot(df[marker_name], color=self.marker_colors[marker_name], label=marker_name, linewidth=2)
+                    if marker_name not in df:
+                        zero_df = pd.DataFrame(0, index=df.index, columns=[marker_name])
+                        ax.plot(zero_df[marker_name], color=self.marker_colors[marker_name], label=marker_name, linewidth=2)
+                    else:
+                        ax.plot(df[marker_name], color=self.marker_colors[marker_name], label=marker_name, linewidth=2)
                     ax.legend(fontsize=12, numpoints=30, loc=legend_loc)
 
 
@@ -681,6 +670,101 @@ class Results:
         # TODO: close plt in case too many plots got opened.
         plt.close(fig)
         return renderer.tostring_rgb(),  canvas.get_width_height()
+        # return self.fig_to_raw_string(self.plot_gaussian, ylim=y_upper_limit,self=self, t=t, avg_duration=avg_duration,
+        #                               xps_scaling=xps_scaling, return_fig=True,
+        #                               fig_size=fig_size, dpi=dpi, scaling_factor=scaling_factor, ax=ax,
+        #                               envelope_name="total")
+
+    def raw_string_evolution(self, **kwargs):
+        """
+        Return a raw string for an evolution figure.
+
+        :param kwargs: keyword arguments to send into self.plot_evolution();
+        :return: a tuple containing a raw string for the evolution figure, and its (width, height).
+        """
+        return self.fig_to_raw_string(self.plot_evolution, **kwargs)
+
+    @staticmethod
+    def fig_to_raw_string(fig_func, ylim, **kwargs):
+        """
+        Takes in a Matplotlib Figure object and output a corresponding raw string representing the figure.
+        :param fig_func: a function producing a Matplotlib Figure object;
+        :param kwargs: keyword arguments to send into fig_func function;
+        :return: a tuple containing a raw string and the size, a (width, height) tuple of the object.
+        """
+        backend = matplotlib.rcParams['backend']
+        matplotlib.use("Agg")
+        # TODO: determine if this solves the issue with inconsistent font.
+        matplotlib.rcParams["font.family"] = "arial"
+        fig = fig_func(**kwargs)
+        fig.tight_layout()
+        matplotlib.pyplot.ylim((0, ylim))
+        canvas = agg.FigureCanvasAgg(fig)
+        canvas.draw()
+        renderer = canvas.get_renderer()
+        matplotlib.use(backend)
+        # TODO: close plt in case too many plots got opened.
+        plt.close(fig)
+        return renderer.tostring_rgb(),  canvas.get_width_height()
+
+
+    @staticmethod
+    def side_by_side_axes(num_axes=2, output_fig=False):
+        """
+        A function designed to wrap around matplotlib to encourage
+        people to do side by side comparisons more often.
+        :param num_axes: number of axes to generate
+        :param output_fig: output fig, axes if set to True
+        :return: a list of axes
+        """
+        num_lines = num_axes // 2 + num_axes % 2
+        fig, axes = plt.subplots(num_lines, 2, figsize=(16, 6 * num_lines))
+
+        def trim_axs(axs, N):
+            """little helper to massage the axs list to have correct length..."""
+            """https://matplotlib.org/3.1.1/gallery/lines_bars_and_markers/
+            markevery_demo.html#sphx-glr-gallery-lines-bars-and-markers-markevery-demo-py"""
+            axs = axs.flat
+            for ax in axs[N:]:
+                ax.remove()
+            return axs[:N]
+
+        if output_fig:
+            return fig, trim_axs(axes, num_axes)
+        else:
+            return trim_axs(axes, num_axes)
+
+    def play_video(self, slowdown_factor=1):
+        """
+        Play the simulation video if a video is produced.
+
+        :param slowdown_factor: 1 by default, 30 is suggested for reasonable viewing by humans.
+        :return: HTML object for playing a video in the IPython Notebook
+        """
+        if self.video is None:
+            # TODO: does absolute path work?
+            # self.video = "/Users/ye/Desktop/lbl-crn/Surface CRN Videos/scrn simulation.mp4"
+            # self.video = "Surface CRN Videos/scrn simulation.mp4"
+            raise Exception("There is no video generated for the reaction system.")
+
+        if slowdown_factor == 1:
+            video = self.video
+        else:
+            # Use a factor for slowing down the video
+            head, name = os.path.split(self.video)
+            name, ext = os.path.splitext(name)
+            slowmo_name = f'{head}/{name}_{slowdown_factor}x_slower{ext}'
+            # Overwrite existing files.
+            if os.path.isfile(slowmo_name):
+                os.remove(slowmo_name)
+            ffmpeg.input(self.video).setpts(f"{slowdown_factor}*PTS").output(
+                f'{head}/{name}_{slowdown_factor}x_slower{ext}').run()
+            video = slowmo_name
+        return HTML(f"""
+            <video width="960" height="720" controls>
+              <source src="{video}" type="video/mp4">
+            </video>
+            """)
 
     def save(self, directory=None):
         """

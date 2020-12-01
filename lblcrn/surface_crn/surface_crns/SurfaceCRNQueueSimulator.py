@@ -732,21 +732,36 @@ def update_display(opts, simulation, progress_bar, grid_display, FRAME_DIRECTORY
                 trajectory_size = simulation.display_surface.get_size()
                 trajectory_width = trajectory_size[0]
                 trajectory_height = trajectory_size[1]
+                # Horizontal gap between grid video and spectrum.
                 h_gap = 40
                 up_gap = 50
 
+
+
+                # Make entire screen, display the saved video on the left side.
                 spectrum_width = trajectory_width * 1 / 2
-                temp_screen = pygame.Surface([trajectory_width + spectrum_width + h_gap, trajectory_height])
-                temp_screen.fill((255, 255, 255))
-                temp_screen.blit(simulation.display_surface, (0, 0))
+                # The number of spectra in display.
+                number_of_spectra = 3
+                # The number of spectra per column
+                number_of_spectrum_rows = 2
+                # The number of columns of spectra
+                number_of_spectrum_cols = number_of_spectra // number_of_spectrum_rows \
+                                            if number_of_spectra % number_of_spectrum_rows == 0 else \
+                                            number_of_spectra // number_of_spectrum_rows + 1
+
+                entire_screen = pygame.Surface([trajectory_width + (spectrum_width + h_gap) * number_of_spectrum_cols,
+                                trajectory_height])
+                entire_screen.fill((255, 255, 255))
+                entire_screen.blit(simulation.display_surface, (0, 0))
 
                 r = Results.from_counts(simulation.rxns, simulation.surface.species_count())
                 dpi = 100
 
                 if time_display is not None:
                     title_x, title_y = title_display.x_pos, title_display.y_pos
+
                     display = TextDisplay(spectrum_width, text="Dynamical XPS Spectrum")
-                    display.render(temp_screen, title_x + trajectory_width + h_gap, title_y)
+                    display.render(entire_screen, title_x + trajectory_width + h_gap, title_y)
 
                     # TODO: add a text display
 
@@ -766,7 +781,7 @@ def update_display(opts, simulation, progress_bar, grid_display, FRAME_DIRECTORY
                     time = time_display.get_time()
                     new_time_display = TimeDisplay(spectrum_width)
                     new_time_display.set_time(time)
-                    new_time_display.render(temp_screen, x_pos=time_x + trajectory_width + h_gap, y_pos=time_y)
+                    new_time_display.render(entire_screen, x_pos=time_x + trajectory_width + h_gap, y_pos=time_y)
                     gap = 0
                     fig_gap = 0   # the gap between two figures
                     fig_height = trajectory_height - title_display.display_height - \
@@ -782,10 +797,12 @@ def update_display(opts, simulation, progress_bar, grid_display, FRAME_DIRECTORY
                     gaussian = pygame.image.fromstring(raw_data, size, "RGB")
 
                     start = new_time_display.y_pos + new_time_display.display_height + gap
-                    temp_screen.blit(gaussian, (new_time_display.x_pos, start))
+
+                    # Blit the entire Gaussian into certain positions on the screen.
+                    entire_screen.blit(gaussian, (new_time_display.x_pos, start))
 
                     start += fig_height
-                    running_avg_display.render(temp_screen, x_pos=new_time_display.x_pos, y_pos=start)
+                    running_avg_display.render(entire_screen, x_pos=new_time_display.x_pos, y_pos=start)
 
                     if simulation.concs:
                         r = Results.from_concs_times(None, simulation.rxns, simulation.concs, simulation.times)
@@ -814,7 +831,28 @@ def update_display(opts, simulation, progress_bar, grid_display, FRAME_DIRECTORY
                                                            dpi=dpi)
                     gaussian = pygame.image.fromstring(raw_data, size, "RGB")
                     start += running_avg_display.display_height + fig_gap
-                    temp_screen.blit(gaussian, (new_time_display.x_pos, start))
+                    entire_screen.blit(gaussian, (new_time_display.x_pos, start))
+
+                    # Display IR
+                    # Cascading X positions from the previous display
+                    left_x_pos = new_time_display.x_pos + spectrum_width + h_gap
+
+                    display = TextDisplay(spectrum_width, text="Dynamical Concentration Plot")
+                    display.render(entire_screen, left_x_pos, title_y)
+                    time = new_time_display.get_time()
+                    time_display = TimeDisplay(spectrum_width)
+                    time_display.set_time(time)
+                    time_display.render(entire_screen, x_pos=left_x_pos, y_pos=new_time_display.y_pos)
+
+                    raw_string_c, size = r.raw_string_evolution(ylim=y_lim,
+                                                                return_fig=True,
+                                                                fig_size=(spectrum_width / dpi, fig_height / dpi),
+                                                                dpi=dpi)
+
+                    gaussian = pygame.image.fromstring(raw_string_c, size, "RGB")
+
+                    entire_screen.blit(gaussian, (left_x_pos,
+                                                  new_time_display.y_pos + new_time_display.display_height + gap))
 
                 else:
                     raw_data, size = r.raw_string_gaussian(y_upper_limit=simulation.surface.num_nodes,
@@ -822,9 +860,9 @@ def update_display(opts, simulation, progress_bar, grid_display, FRAME_DIRECTORY
                                                                      (trajectory_height - up_gap) / dpi),
                                                            dpi=dpi)
                     gaussian = pygame.image.fromstring(raw_data, size, "RGB")
-                    temp_screen.blit(gaussian, (trajectory_width + h_gap, up_gap - 10))
+                    entire_screen.blit(gaussian, (trajectory_width + h_gap, up_gap - 10))
 
-                screen = temp_screen
+                screen = entire_screen
             pygame.image.save(screen, frame_filename)
 
             # Determine next capture time
