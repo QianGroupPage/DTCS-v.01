@@ -346,7 +346,7 @@ class RxnSystem(monty.json.MSONable):
 
         edge_trace = go.Scatter(
             x=edge_x, y=edge_y,
-            line=dict(width=0.5, color='#888'),
+            line=dict(width=0.5, color='#333'),
             hoverinfo='none',
             mode='lines')
 
@@ -374,15 +374,11 @@ class RxnSystem(monty.json.MSONable):
         fig = go.Figure(data=[edge_trace, node_trace],
              layout=go.Layout(
                 title='Reaction Network',
+                title_x=.005,
                 titlefont_size=18,
                 showlegend=False,
                 hovermode='closest',
                 margin=dict(b=20,l=5,r=5,t=40),
-                annotations=[ dict(
-                    text="",
-                    showarrow=False,
-                    xref="paper", yref="paper",
-                    x=0.005, y=-0.002 ) ],
                 xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
                 yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)
             )
