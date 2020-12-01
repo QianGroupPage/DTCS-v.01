@@ -7,6 +7,14 @@ import networkx as nx
 import sympy as sym
 import plotly.graph_objects as go
 
+# import bokeh.plotting as plotting
+# import bokeh.models as models
+import dash
+import dash_cytoscape as cyto
+import dash_html_components as html
+import IPython.display as display
+
+
 import lblcrn
 from lblcrn.common import color_to_RGB, generate_new_color
 from lblcrn.crn_sym import conditions, species, surface
@@ -309,7 +317,7 @@ class RxnSystem(monty.json.MSONable):
         def add(r, p):
             for reactant in r:
                 for product in p:
-                    G.add_edge(reactant, product)
+                    G.add_edge(str(reactant), str(product))
 
         for rxn in self.reactions:
             r = rxn.reactants.free_symbols
@@ -321,70 +329,69 @@ class RxnSystem(monty.json.MSONable):
         return G
     
     def plot(self):
-        """Plot the reaction network graph for this system.
-        """
         G = self.network_graph()
-
         pos = nx.spring_layout(G)
-        # nx.draw(G, pos, with_labels=True, **{
-            # 'node_color': 'lightblue',
-            # 'node_size': 500,
-            # 'edge_color': 'gray',
-            # 'width': 1,
-        # })
 
-        edge_x, edge_y = [], []
-        for edge in G.edges():
-            x0, y0 = pos[edge[0]]
-            x1, y1 = pos[edge[1]]
-            edge_x.append(x0)
-            edge_x.append(x1)
-            edge_x.append(None)
-            edge_y.append(y0)
-            edge_y.append(y1)
-            edge_y.append(None)
-
-        edge_trace = go.Scatter(
-            x=edge_x, y=edge_y,
-            line=dict(width=0.5, color='#333'),
-            hoverinfo='none',
-            mode='lines')
-
-        node_x, node_y, node_text = [], [], []
+        elements = []
         for node in G.nodes():
             x, y = pos[node]
-            node_x.append(x)
-            node_y.append(y)
-            node_text.append(str(node))
+            x, y = 500*x, 500*y
+            elements.append({"data": {"id": str(node), "label": str(node)}, "position": {"x": x, "y":
+                y}})
+            for e in G.out_edges(node):
+                elements.append({"data": {"source": str(node), "target": str(e[1])}})
 
-
-        node_trace = go.Scatter(
-            x=node_x,
-            y=node_y,
-            mode='text',
-            text=node_text,
-            marker=dict(
-                showscale=False,
-                colorscale='YlGnBu',
-                size=12,
-                line_width=3
+        app = dash.Dash("Network Plot")
+        app.layout = html.Div([
+            cyto.Cytoscape(
+                id='network-plot',
+                layout={'name': 'preset'},
+                style={'width': '100%', 'height': '500px'},
+                elements=elements
+                    # {'data': {'id': 'one', 'label': 'Node 1'}, 'position': {'x': 75, 'y': 75}},
+                    # {'data': {'id': 'two', 'label': 'Node 2'}, 'position': {'x': 200, 'y': 200}},
+                    # {'data': {'source': 'one', 'target': 'two'}}
             )
-        )
+        ])
 
-        fig = go.Figure(data=[edge_trace, node_trace],
-             layout=go.Layout(
-                title='Reaction Network',
-                title_x=.005,
-                titlefont_size=18,
-                showlegend=False,
-                hovermode='closest',
-                margin=dict(b=20,l=5,r=5,t=40),
-                xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-                yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)
-            )
-        )
+        def start_display(app, port = 900, width = 750, height = 500):
+            url = f"http://localhost:{port}"
+            iframe = '<iframe src="{url}" width={width} height={height}></iframe>'.format(url = url, width = width, height = height) 
 
-        fig.show()
+            display.display_html(iframe, raw = True)
+            app.css.config.serve_locally = True
+            app.scripts.config.serve_locally = True
+            return app.run_server(debug=False, host = "0.0.0.0", port=port)
+
+        start_display(app)
+
+        # fig = plotting.figure(title="Network Plot", x_range=(-1.1,1.1), y_range=(-1.1,1.1))
+        # graph = plotting.from_networkx(G, nx.spring_layout, center=((0,0)))
+        # graph.node_renderer.glyph = models.Circle(size=10)
+        # fig.renderers.append(graph)
+
+        # node_x, node_y, node_text = [], [], []
+        # for node in G.nodes():
+            # x, y = pos[node]
+            # node_x.append(x)
+            # node_y.append(y)
+            # node_text.append(str(node))
+
+        # source = models.ColumnDataSource({"x": node_x, "y": node_y, "names": node_text})
+        # renderer = fig.scatter(x="x", y="y", source=source)
+        # labels = models.LabelSet(x="x", y="y", text="names", x_offset=5, y_offset=5, source=source,
+                # render_mode="canvas", text_font_size="11pt")
+        # fig.add_layout(labels)
+
+        # line = models.Line(x="x", y="y")
+        # fig.add_glyph(source, line)
+
+        # pointer = models.PointDrawTool(renderers=[renderer], empty_value="black")
+        # fig.add_tools(pointer)
+        # fig.toolbar.active_tap = pointer
+
+        # plotting.output_notebook()
+        # plotting.show(fig)
 
     def text(self) -> str:
         text: str = ""

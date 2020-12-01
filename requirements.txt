@@ -67,4 +67,5 @@ ffmpeg
 ffmpeg-python
 pygame==2.0.0.dev4
 networkx
-plotly==4.13.0
+bokeh==2.2.3
+dash==1.17.0
