@@ -22,6 +22,7 @@ from lblcrn.surface_crn.surface_crns.readers.manifest_readers import \
 from lblcrn.surface_crn.surface_crns.simulators.queue_simulator import *
 from lblcrn.surface_crn.surface_crns.views.coord_grid_display import \
     CoordGridDisplay
+from lblcrn.common.line_shapes.ir import ir_intensity
 
 
 def scrn_simulate_single_run(rxns,
@@ -38,7 +39,8 @@ def scrn_simulate_single_run(rxns,
                              trajectory_path="",
                              save_trajectory=False,
                              compress_trajectory=True,
-                             display_class=None):
+                             display_class=None,
+                             outcar_directory=""):
     """
     :param rxns: the RxnSystem object;
     :param time_max: the time at which the simulation will be terminated;
@@ -58,6 +60,8 @@ def scrn_simulate_single_run(rxns,
                             Use pandas.read_csv() or Excel to visualize the CSV file;
     :param save_trajectory: if set to True, a trajectory file would be saved;
     :param compress_trajectory: if set to True, compress the trajectory file, recommended for longer simulations;
+    :param outcar_directory: a directory of OUTCAR files; each file must correspond to one species and be named after
+                             that species;
     :return: a Results object to store, organize, and visualize Surface CRN results.
     """
     # Dangerous! rng_seed + 1 is used
@@ -147,7 +151,8 @@ def scrn_simulate_single_run(rxns,
                                                    rxns=rxns,
                                                    spectra_in_video=spectra_in_video,
                                                    running_average=spectra_average_duration,
-                                                   spectra_max_conc=r.df_raw.to_numpy().max())
+                                                   spectra_max_conc=r.df_raw.to_numpy().max(),
+                                                   outcar_directory=outcar_directory)
     r.video = video_link
     # TODO: warn the user if termination is early.
     return r
@@ -168,7 +173,8 @@ def scrn_simulate(rxns,
                   save_trajectory=True,
                   compress_trajectory=False,
                   trajectory_path="",
-                  section_length=-1):
+                  section_length=-1,
+                  outcar_directory=""):
     """
     :param ensemble_size: the size of the ensemble simulations.
                           if set to 1, the function returns a Results object;
@@ -206,7 +212,8 @@ def scrn_simulate(rxns,
                                         rng_seed=rng_seed, video_path=video_path, section_length=section_length,
                                         trajectory_path=trajectory_path,
                                         save_trajectory=save_trajectory,
-                                        compress_trajectory=compress_trajectory)
+                                        compress_trajectory=compress_trajectory,
+                                        outcar_directory=outcar_directory)
     else:
         ensemble_results = []
         for i in range(ensemble_size):
@@ -218,7 +225,8 @@ def scrn_simulate(rxns,
                                                rng_seed=rng_seed + 2 * i, video_path=run_video_path,
                                                section_length=section_length, trajectory_path=trajectory_path,
                                                save_trajectory=save_trajectory,
-                                               compress_trajectory=compress_trajectory)
+                                               compress_trajectory=compress_trajectory,
+                                               outcar_directory=outcar_directory)
             ensemble_results.append(results)
         return Ensemble(ensemble_results)
 
@@ -309,22 +317,39 @@ def get_frames_link(manifest):
     return f"{opts.capture_directory}/frames"
 
 
+def ir_intensities(outcar_directory=""):
+    """
+    :param outcar_directory: a directory of OUTCAR files; each file must correspond to one species and be named after
+                             that species;
+    :return: a dictionary from species name to its ir intensity.
+    """
+    results = {}
+    for entry in os.scandir(outcar_directory):
+        if entry.is_file():
+            results[entry.name] = ir_intensity(entry.path)
+    return results
+
+
 def simulate_with_display(manifest_file, lattice, group_selection_seed,
                           rxns=None,
                           spectra_in_video=True,
                           running_average=10,
-                          spectra_max_conc=-1):
+                          spectra_max_conc=-1,
+                          outcar_directory=""):
     if rxns.surface.use_coord_grid:
         display_class = CoordGridDisplay
     elif rxns.surface.structure == "hexagon":
         display_class = HexGridPlusIntersectionDisplay
     else:
         display_class = None
-    concs, times = SurfaceCRNQueueSimulator.simulate_surface_crn(manifest_file, group_selection_seed, display_class,
+    concs, times = SurfaceCRNQueueSimulator.simulate_surface_crn(manifest_file,
+                                                                 group_selection_seed,
+                                                                 display_class,
                                                                  init_state=lattice, rxns=rxns,
                                                                  spectra_in_video=spectra_in_video,
                                                                  running_average=running_average,
-                                                                 spectra_max_conc=spectra_max_conc)
+                                                                 spectra_max_conc=spectra_max_conc,
+                                                                 ir_intensities=ir_intensities(outcar_directory))
     return Results.concs_times_df(concs, times)
 
 

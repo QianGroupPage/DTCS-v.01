@@ -24,6 +24,8 @@ def parse_born_charges(outcar_file):
     tensor_rows = []
     with open(outcar_file, "r") as file:
         for line in file:
+            line = line.replace("-", " -")
+
             if re.search("BORN EFFECTIVE CHARGE FOR ION", line):
                 floats = [float(s) for s in line.split()[-3:]]
                 tensor_rows.append(floats)

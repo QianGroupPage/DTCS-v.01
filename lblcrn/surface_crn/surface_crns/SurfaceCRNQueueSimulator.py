@@ -86,6 +86,7 @@ simulation = None
 ################
 # MAIN PROGRAM #
 ################
+
 def main():
     available_options = optparse.OptionParser()
     available_options.add_option("-m", '--manifest', action = "store",
@@ -98,9 +99,15 @@ def main():
     simulate_surface_crn(manifest_filename)
 
 
-def simulate_surface_crn(manifest_filename, group_selection_seed, display_class=None,
-                         init_state=None, rxns=None, spectra_in_video=True, running_average=10,
-                         spectra_max_conc=-1):
+def simulate_surface_crn(manifest_filename,
+                         group_selection_seed,
+                         display_class=None,
+                         init_state=None,
+                         rxns=None,
+                         spectra_in_video=True,
+                         running_average=10,
+                         spectra_max_conc=-1,
+                         ir_intensities=None):
     """
     Runs a simulation, and displays it in a GUI window OR saves all frames
     as PNG images.
@@ -175,9 +182,9 @@ def simulate_surface_crn(manifest_filename, group_selection_seed, display_class=
         # TODO: update the synchronous simulator to be the same fashion as the queue simulator
         simulation = SynchronousSimulator(
                                     surface=grid,
-                                    update_rule = opts.update_rule,
-                                    seed = opts.rng_seed,
-                                    simulation_duration = opts.max_duration,
+                                    update_rule=opts.update_rule,
+                                    seed=opts.rng_seed,
+                                    simulation_duration=opts.max_duration,
                                     )
         simulation.init_wall_time = process_time()
     else:
@@ -185,8 +192,11 @@ def simulate_surface_crn(manifest_filename, group_selection_seed, display_class=
     time = simulation.time
     event_history = EventHistory()
     simulation.rxns = rxns
+
+    # Properties for visualizing the spectra along the grid frames.
     simulation.running_average = running_average
     simulation.spectra_in_video = spectra_in_video
+    simulation.ir_intensities = ir_intensities
 
 
     ################
@@ -815,7 +825,6 @@ def update_display(opts, simulation, progress_bar, grid_display, FRAME_DIRECTORY
                     else:
                         simulation_time = simulation.time
 
-
                     starting_time = max(0, simulation_time - simulation.running_average)
                     # print("calculating running average")
                     # print("starting time", starting_time)
@@ -897,7 +906,7 @@ def update_display(opts, simulation, progress_bar, grid_display, FRAME_DIRECTORY
                 display_width = simulation.display_surface.get_size()[1]
                 text_display = TextDisplay(display_width)
                 text_display.text = termination_string
-                text_display.render(simulation.display_surface, x_pos = 0, y_pos = 0)
+                text_display.render(simulation.display_surface, x_pos=0, y_pos=0)
                 frame_filename = os.path.join(FRAME_DIRECTORY,
                                               opts.movie_title + "_" +
                                               str(frame_number) + ".jpeg")
