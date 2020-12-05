@@ -289,7 +289,9 @@ def fold_numbers(vor):
             counts[v1_index] += 1
         if v2_index >= 0:
             counts[v2_index] += 1
-    return np.unique(counts).tolist()
+
+    #  TODO: account for edge nodes
+    return [2, max(np.unique(counts))]
 
 def voronoi_include_edge(points):
     """
