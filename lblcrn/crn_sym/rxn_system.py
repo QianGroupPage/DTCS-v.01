@@ -368,34 +368,6 @@ class RxnSystem(monty.json.MSONable):
 
         app.run_server(mode="inline")
 
-        # fig = plotting.figure(title="Network Plot", x_range=(-1.1,1.1), y_range=(-1.1,1.1))
-        # graph = plotting.from_networkx(G, nx.spring_layout, center=((0,0)))
-        # graph.node_renderer.glyph = models.Circle(size=10)
-        # fig.renderers.append(graph)
-
-        # node_x, node_y, node_text = [], [], []
-        # for node in G.nodes():
-            # x, y = pos[node]
-            # node_x.append(x)
-            # node_y.append(y)
-            # node_text.append(str(node))
-
-        # source = models.ColumnDataSource({"x": node_x, "y": node_y, "names": node_text})
-        # renderer = fig.scatter(x="x", y="y", source=source)
-        # labels = models.LabelSet(x="x", y="y", text="names", x_offset=5, y_offset=5, source=source,
-                # render_mode="canvas", text_font_size="11pt")
-        # fig.add_layout(labels)
-
-        # line = models.Line(x="x", y="y")
-        # fig.add_glyph(source, line)
-
-        # pointer = models.PointDrawTool(renderers=[renderer], empty_value="black")
-        # fig.add_tools(pointer)
-        # fig.toolbar.active_tap = pointer
-
-        # plotting.output_notebook()
-        # plotting.show(fig)
-
     def text(self) -> str:
         text: str = ""
         for rxn in self.reactions:

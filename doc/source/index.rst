@@ -15,6 +15,7 @@ LBL Chemical Reaction Simulator
     :maxdepth: 1
     :hidden:
 
+    gallery
     contact
     license
 
