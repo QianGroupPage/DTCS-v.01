@@ -30,7 +30,8 @@ author = 'Lawrence Berkeley National Laboratory'
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
-    'sphinx.ext.autosectionlabel'
+    'sphinx.ext.autosectionlabel',
+    'sphinx_gallery.gen_gallery'
 ]
 
 autodoc_default_flags = ['members', 'undoc-members']
@@ -45,16 +46,21 @@ templates_path = ['_templates']
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = []
 
+# Gallery configuration
+sphinx_gallery_conf = {
+    'example_dirs': 'source/gallery',
+    'gallery_dirs': 'auto_examples',
+}
 
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'sphinxdoc'#'alabaster'
-# html_theme_options = {
-    # 'page_width': '90%'
-# }
+html_theme = 'alabaster'#'sphinxdoc'
+html_theme_options = {
+    'page_width': '90%'
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

@@ -23,7 +23,7 @@
       ~RxnSystem.get_species
       ~RxnSystem.get_symbols
       ~RxnSystem.network_graph
-      ~RxnSystem.plot_network_graph
+      ~RxnSystem.plot
       ~RxnSystem.show_colors
       ~RxnSystem.text
       ~RxnSystem.to_json

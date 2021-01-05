@@ -337,7 +337,7 @@ class RxnSystem(monty.json.MSONable):
             x, y = 500*x, 500*y
             elements.append({"data": {"id": str(node), "label": str(node)}, "position": {"x": x, "y": y}})
             for e in G.out_edges(node):
-                elements.append({"data": {"source": str(node), "target": str(e[1])}})
+                elements.append({"data": {"target": str(node), "source": str(e[1])}})
 
         app = JupyterDash("Network Plot")
         app.layout = html.Div([

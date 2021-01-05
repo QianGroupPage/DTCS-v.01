@@ -10,6 +10,7 @@ LBL Chemical Reaction Simulator
     bulk_examples
     surface_examples
     api/index
+    auto_examples/index
 
 .. toctree::
     :maxdepth: 1
