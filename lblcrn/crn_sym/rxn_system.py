@@ -313,23 +313,29 @@ class RxnSystem(monty.json.MSONable):
         """
         G = nx.DiGraph()
 
-        def add(r, p):
+        def add(r, p, w):
             for reactant in r:
                 for product in p:
-                    G.add_edge(str(reactant), str(product))
+                    G.add_edge(str(reactant), str(product), weight=w)
 
         for rxn in self.reactions:
             r = rxn.reactants.free_symbols
             p = rxn.products.free_symbols
             
-            add(r, p)
+            add(r, p, rxn.rate_constant)
             if isinstance(rxn, RevRxn):
-                add(p, r)
+                add(p, r, rxn.rate_constant_reverse)
         return G
     
     def plot(self):
         G = self.network_graph()
         pos = nx.spring_layout(G)
+        largest_weight = -1
+
+        for node in G.nodes():
+            for e in G.out_edges(node):
+                weight = G.get_edge_data(node, e[1])["weight"]
+                largest_weight = max(largest_weight, weight)
 
         elements = []
         for node in G.nodes():
@@ -337,7 +343,10 @@ class RxnSystem(monty.json.MSONable):
             x, y = 500*x, 500*y
             elements.append({"data": {"id": str(node), "label": str(node)}, "position": {"x": x, "y": y}})
             for e in G.out_edges(node):
-                elements.append({"data": {"source": str(node), "target": str(e[1])}})
+                weight = G.get_edge_data(node, e[1])["weight"]
+                elements.append({"data": {
+                    "source": str(node), "target": str(e[1]), "weight": weight, "normalized_weight": weight / largest_weight * 7
+                }})
 
         app = JupyterDash("Network Plot")
         app.layout = html.Div([
@@ -354,6 +363,8 @@ class RxnSystem(monty.json.MSONable):
                             "curve-style": "bezier",
                             "source-arrow-color": "black",
                             "source-arrow-shape": "triangle",
+                            "label": "data(weight)",
+                            "width": "data(weight)",
                         }
                     },
                     {
