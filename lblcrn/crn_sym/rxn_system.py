@@ -345,7 +345,7 @@ class RxnSystem(monty.json.MSONable):
             for e in G.out_edges(node):
                 weight = G.get_edge_data(node, e[1])["weight"]
                 elements.append({"data": {
-                    "source": str(node), "target": str(e[1]), "weight": weight, "normalized_weight": weight / largest_weight * 7
+                    "source": str(node), "target": str(e[1]), "weight": weight, "normalized_weight": weight / largest_weight * 3.75 + 2
                 }})
 
         app = JupyterDash("Network Plot")
@@ -364,7 +364,7 @@ class RxnSystem(monty.json.MSONable):
                             "source-arrow-color": "black",
                             "source-arrow-shape": "triangle",
                             "label": "data(weight)",
-                            "width": "data(weight)",
+                            "width": "data(normalized_weight)",
                         }
                     },
                     {
