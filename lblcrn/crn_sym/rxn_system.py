@@ -1,17 +1,17 @@
 import copy
 import random
-from typing import List
+from typing import List, Tuple
 
 import monty.json
 import networkx as nx
 import sympy as sym
 import plotly.graph_objects as go
 
-# import bokeh.plotting as plotting
-# import bokeh.models as models
 from jupyter_dash import JupyterDash
 import dash_cytoscape as cyto
 import dash_html_components as html
+import dash_core_components as dcc
+import dash
 import IPython.display as display
 
 import lblcrn
@@ -332,6 +332,7 @@ class RxnSystem(monty.json.MSONable):
         pos = nx.spring_layout(G)
         largest_weight = -1
 
+        # Convert the networkx graph to a format that Cytoscape can use
         for node in G.nodes():
             for e in G.out_edges(node):
                 weight = G.get_edge_data(node, e[1])["weight"]
@@ -348,6 +349,7 @@ class RxnSystem(monty.json.MSONable):
                     "source": str(node), "target": str(e[1]), "weight": weight, "normalized_weight": weight / largest_weight * 3.75 + 2
                 }})
 
+        # Display the plot as well as the related edit inputs
         app = JupyterDash("Network Plot")
         app.layout = html.Div([
             cyto.Cytoscape(
@@ -374,10 +376,97 @@ class RxnSystem(monty.json.MSONable):
                         }
                     },
                 ],
-            )
+            ),
+            html.Div([
+                html.Div(dcc.Input(id="input-rxn", type="text", placeholder="Enter a reaction"), style={"padding": "5px"}),
+                html.Div(dcc.Input(id="input-const-rxn", type="text", placeholder="Enter a reaction constant"), style={"padding": "5px"}),
+                html.Button("Add species", id="button-rxn", style={"padding": "5px"}),
+                html.Div(id='label-rxn', children="", style={"padding": "5px"})
+            ], style={"display": "flex", "flex-direction": "row"})
         ])
 
+        # Setup a callback in case the edit inputs are used
+        @app.callback(
+        dash.dependencies.Output('label-rxn', 'children'),
+        [dash.dependencies.Input("button-rxn", "n_clicks")],
+        [dash.dependencies.State("input-rxn", "value")],
+        [dash.dependencies.State("input-const-rxn", "value")])
+        def add_reaction(n_clicks, rxn, k):
+            rxn = "v_h2+v_nh3=v_4n"
+            k = 1
+            if rxn is None or k is None:
+                return
+            success, msg = self.add_reaction(rxn, float(k))
+            return "Success!" if success else msg
+
         app.run_server(mode="inline")
+
+    def add_reaction(self, raw: str, k: float) -> Tuple[bool, str]:
+        """Add a new reaction given the raw text form and reaction constant.
+        
+        The species in the reaction must already be defined in the system. True is returned iff the
+        addition is successful. If the addition fails, a string error message is also returned.
+
+        The given raw text is split into reactants and products sections which are individually
+        parsed to determine matching symbols which can be combined together to create a new
+        reaction.
+        """
+        syms = {str(s): s for s in self.species_manager.all_symbols}
+        sides = [s.strip() for s in raw.split("=")]
+        if len(sides) != 2:
+            return False, "Invalid equation format: there must be exactly one \"=\"."
+
+        raw_reactants = [s.strip() for s in sides[0].split("+")]
+        raw_products = [s.strip() for s in sides[1].split("+")]
+
+        # Parse a single term such as "4x" into a coefficient and symbol
+        def parse_term(t: str) -> Tuple[str, int, bool]:
+            if len(t) < 1:
+                return "", 0, False
+            i = 0
+            c = t[i]
+            raw_coeff = ""
+            while c.isdigit():
+                raw_coeff += c
+                i += 1
+                c = t[i]
+            if raw_coeff == "":
+                raw_coeff = "1"
+            return t[i:], int(raw_coeff), True
+
+        # Create lists of tuples of sympy symbols and coefficients
+        reactants = []
+        for r in raw_reactants:
+            v, coeff, ok = parse_term(r)
+            if not ok:
+                return False, f"Invalid reactant species {r}."
+            if v not in syms:
+                return False, f"Reactant species does not exist {v}."
+            reactants.append((syms[v], coeff))
+
+        products = []
+        for p in raw_products:
+            v, coeff, ok = parse_term(p)
+            if not ok:
+                return False, f"Invalid product species {p}."
+            if v not in syms:
+                return False, f"Product species does not exist {v}."
+            products.append((syms[v], coeff))
+
+        if len(reactants) == 0:
+            return False, "At least one reactant is required"
+
+        # Create the sympy expressions
+        inp = reactants[0][1] * reactants[0][0]
+        for i in range(1, len(reactants)):
+            inp += reactants[i][1]*reactants[i][0]
+
+        out = products[0][1] * products[0][0]
+        for i in range(1, len(products)):
+            inp += products[i][1]*products[i][0]
+
+        r = Rxn(inp, out, k)
+        print(r)
 
     def text(self) -> str:
         text: str = ""
