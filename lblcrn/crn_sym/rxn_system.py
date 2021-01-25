@@ -339,7 +339,6 @@ class RxnSystem(monty.json.MSONable):
     def plot(self):
         G = self.network_graph
         pos = self.network_graph_pos
-        print(pos)
         largest_weight = -1
 
         # Convert the networkx graph to a format that Cytoscape can use
@@ -388,7 +387,7 @@ class RxnSystem(monty.json.MSONable):
         app.layout = html.Div([
             cy,
             html.Div([
-                html.Div(dcc.Input(id="input-rxn", type="text", placeholder="Enter a reaction"), style={"padding": "5px"}),
+                html.Div(dcc.Input(id="input-rxn", type="text", placeholder="Enter a reaction"), style={"height": 15"padding": "5px"}),
                 html.Div(dcc.Input(id="input-const-rxn", type="number", placeholder="Enter a reaction constant"), style={"padding": "5px"}),
                 html.Button("Add species", id="button-rxn", style={"padding": "5px"}),
                 html.Div(id='label-rxn', children="", style={"padding": "5px"})
