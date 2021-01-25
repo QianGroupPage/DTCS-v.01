@@ -5,6 +5,7 @@ crn_sym
 
 .. autosummary::
     :toctree: _autosummary
+    :template: ../_templates/class.rst
 
     Orbital
     Species

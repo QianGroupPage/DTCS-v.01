@@ -25,20 +25,8 @@
       ~RxnSystem.get_species
       ~RxnSystem.get_symbols
       ~RxnSystem.plot
-      ~RxnSystem.show_colors
       ~RxnSystem.text
       ~RxnSystem.to_json
       ~RxnSystem.unsafe_hash
-   
-   
-
-   
-   
-   .. rubric:: Attributes
-
-   .. autosummary::
-   
-      ~RxnSystem.REDIRECT
-      ~RxnSystem.surface_names
    
    

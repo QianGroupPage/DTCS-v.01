@@ -20,13 +20,3 @@
       ~SolutionSystem.time_series_at
    
    
-
-   
-   
-   .. rubric:: Attributes
-
-   .. autosummary::
-   
-      ~SolutionSystem.ignore
-   
-   

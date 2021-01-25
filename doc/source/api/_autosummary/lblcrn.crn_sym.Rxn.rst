@@ -24,13 +24,3 @@
       ~Rxn.unsafe_hash
    
    
-
-   
-   
-   .. rubric:: Attributes
-
-   .. autosummary::
-   
-      ~Rxn.REDIRECT
-   
-   

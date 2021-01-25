@@ -3,4 +3,10 @@
 
 .. currentmodule:: lblcrn.experiments
 
-.. autofunction:: simulate
+.. autoclass:: simulate
+
+   
+   .. automethod:: __init__
+
+   
+   

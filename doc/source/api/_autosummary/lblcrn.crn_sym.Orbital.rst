@@ -20,13 +20,3 @@
       ~Orbital.unsafe_hash
    
    
-
-   
-   
-   .. rubric:: Attributes
-
-   .. autosummary::
-   
-      ~Orbital.REDIRECT
-   
-   

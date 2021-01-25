@@ -25,13 +25,3 @@
       ~RevRxn.unsafe_hash
    
    
-
-   
-   
-   .. rubric:: Attributes
-
-   .. autosummary::
-   
-      ~RevRxn.REDIRECT
-   
-   

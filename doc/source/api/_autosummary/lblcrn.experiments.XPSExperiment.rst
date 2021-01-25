@@ -30,35 +30,3 @@
       ~XPSExperiment.unsafe_hash
    
    
-
-   
-   
-   .. rubric:: Attributes
-
-   .. autosummary::
-   
-      ~XPSExperiment.REDIRECT
-      ~XPSExperiment.contam_concs
-      ~XPSExperiment.contam_spectra
-      ~XPSExperiment.contaminants
-      ~XPSExperiment.deconv_concs
-      ~XPSExperiment.deconv_envelope
-      ~XPSExperiment.deconv_gaussians
-      ~XPSExperiment.deconv_species
-      ~XPSExperiment.deconvoluted
-      ~XPSExperiment.exp_clean
-      ~XPSExperiment.exp_input
-      ~XPSExperiment.exp_raw
-      ~XPSExperiment.experimental
-      ~XPSExperiment.gas_interval
-      ~XPSExperiment.gas_phase
-      ~XPSExperiment.gaussians
-      ~XPSExperiment.scale_factor
-      ~XPSExperiment.sim_concs
-      ~XPSExperiment.sim_envelope
-      ~XPSExperiment.sim_gaussians
-      ~XPSExperiment.simulated
-      ~XPSExperiment.species
-      ~XPSExperiment.x_range
-   
-   

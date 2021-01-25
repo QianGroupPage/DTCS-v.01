@@ -21,13 +21,3 @@
       ~Schedule.unsafe_hash
    
    
-
-   
-   
-   .. rubric:: Attributes
-
-   .. autosummary::
-   
-      ~Schedule.REDIRECT
-   
-   

@@ -32,24 +32,3 @@
       ~SpeciesManager.unsafe_hash
    
    
-
-   
-   
-   .. rubric:: Attributes
-
-   .. autosummary::
-   
-      ~SpeciesManager.REDIRECT
-      ~SpeciesManager.aggregated_symbols
-      ~SpeciesManager.all_species
-      ~SpeciesManager.all_symbols
-      ~SpeciesManager.backend_symbols
-      ~SpeciesManager.large_species
-      ~SpeciesManager.large_species_dict
-      ~SpeciesManager.names_by_site_name
-      ~SpeciesManager.species
-      ~SpeciesManager.sub_species_dict
-      ~SpeciesManager.symbols_ordering
-      ~SpeciesManager.to_sum_dict
-   
-   

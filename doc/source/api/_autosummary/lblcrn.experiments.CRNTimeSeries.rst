@@ -23,16 +23,3 @@
       ~CRNTimeSeries.xps_with
    
    
-
-   
-   
-   .. rubric:: Attributes
-
-   .. autosummary::
-   
-      ~CRNTimeSeries.REDIRECT
-      ~CRNTimeSeries.species
-      ~CRNTimeSeries.t
-      ~CRNTimeSeries.xps
-   
-   

@@ -23,25 +23,3 @@
       ~XPSObservable.rmse
    
    
-
-   
-   
-   .. rubric:: Attributes
-
-   .. autosummary::
-   
-      ~XPSObservable.contaminants
-      ~XPSObservable.deconv_envelope
-      ~XPSObservable.deconv_gaussians
-      ~XPSObservable.deconvoluted
-      ~XPSObservable.exp_clean
-      ~XPSObservable.exp_raw
-      ~XPSObservable.experimental
-      ~XPSObservable.gas_phase
-      ~XPSObservable.gaussians
-      ~XPSObservable.sim_envelope
-      ~XPSObservable.sim_gaussians
-      ~XPSObservable.simulated
-      ~XPSObservable.x_range
-   
-   

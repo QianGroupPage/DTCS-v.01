@@ -20,13 +20,3 @@
       ~Marker.unsafe_hash
    
    
-
-   
-   
-   .. rubric:: Attributes
-
-   .. autosummary::
-   
-      ~Marker.REDIRECT
-   
-   

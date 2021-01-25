@@ -21,13 +21,3 @@
       ~Term.unsafe_hash
    
    
-
-   
-   
-   .. rubric:: Attributes
-
-   .. autosummary::
-   
-      ~Term.REDIRECT
-   
-   

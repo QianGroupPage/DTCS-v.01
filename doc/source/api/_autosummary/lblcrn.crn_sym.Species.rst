@@ -24,13 +24,3 @@
       ~Species.unsafe_hash
    
    
-
-   
-   
-   .. rubric:: Attributes
-
-   .. autosummary::
-   
-      ~Species.REDIRECT
-   
-   

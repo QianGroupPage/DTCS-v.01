@@ -29,18 +29,18 @@ class RxnSystem(monty.json.MSONable):
     reaction system for the purpose of simulating it (namely the concentrations
     of each chemical) over time.
 
-    Attributes:
-    components: Everything the RxnSystem contains
-    terms: Terms in the ODE of the system.
-    reactions: Bulk CRN reactions in the system.
-    schedules: The Schedules and Concs passed during initialization.
-    conc_eqs: The ConcEqs in the system.
-    conc_diffeqs: The ConcDiffEqs in the system.
-    species_manager: The SpeciesManager the system uses.
-    symbol_index: A dictionary {sym.Symbol: int} to keep track of the order of the symbols.
-    scheduler: A comprehensive Schedule of the system, has entries (which might be Conc(species, 0) for each species which isn't set by a ConcEq.
-    network_graph: A graph representing the reaction network
-    network_graph_pos: A position map for the network graph.
+    :var components: Everything the RxnSystem contains
+    :var terms: Terms in the ODE of the system.
+    :var reactions: Bulk CRN reactions in the system.
+    :var schedules: The Schedules and Concs passed during initialization.
+    :var conc_eqs: The ConcEqs in the system.
+    :var conc_diffeqs: The ConcDiffEqs in the system.
+    :var species_manager: The SpeciesManager the system uses.
+    :var symbol_index: A dictionary {sym.Symbol: int} to keep track of the order of the symbols.
+    :var scheduler: A comprehensive Schedule of the system, has entries (which might be Conc(species, 0) for each species which isn't set by a ConcEq.
+    :var surface_names: A list for names that appear on the surface.
+    :var network_graph: A graph representing the reaction network
+    :var network_graph_pos: A position map for the network graph.
     """
 
     def __init__(self, *components):
@@ -74,7 +74,7 @@ class RxnSystem(monty.json.MSONable):
 
         # Split into terms, schedules, and conc (diff.) eq.s
         # These are not sorted by the symbol index.
-        self.terms = []
+        self.terms = [] #: Terms are terms.
         self.surface_rxns = []
         self.schedules = []
         self.conc_eqs = []
@@ -243,8 +243,7 @@ class RxnSystem(monty.json.MSONable):
 
     # TODO
     def get_colors(self):
-        """
-        :return: colors for each species, if color is assigned.
+        """Assign (if applicable) and return colors for all species.
         """
         if self.color_index:
             return self.color_index
@@ -306,16 +305,9 @@ class RxnSystem(monty.json.MSONable):
                 self.color_index[marker_name] = color
         return self.color_index
 
-    def show_colors(self):
-        # TODO: write a function to show the colors.
-        if self.color_index is None:
-            pass
-        pass
-
     @property
     def surface_names(self) -> List[str]:
-        """
-        :return: a list for names that appear on the surface
+        """A list for names that appear on the surface.
         """
         return [self.surface.name] + [s.name for s in self.surface.sites]
 

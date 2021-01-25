@@ -21,14 +21,3 @@
       ~Experiment.unsafe_hash
    
    
-
-   
-   
-   .. rubric:: Attributes
-
-   .. autosummary::
-   
-      ~Experiment.REDIRECT
-      ~Experiment.species
-   
-   

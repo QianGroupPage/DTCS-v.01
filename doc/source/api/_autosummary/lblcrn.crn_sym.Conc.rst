@@ -21,13 +21,3 @@
       ~Conc.unsafe_hash
    
    
-
-   
-   
-   .. rubric:: Attributes
-
-   .. autosummary::
-   
-      ~Conc.REDIRECT
-   
-   

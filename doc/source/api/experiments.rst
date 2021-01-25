@@ -5,6 +5,7 @@ experiments
 
 .. autosummary::
     :toctree: _autosummary
+    :template: ../_templates/class.rst
 
     simulate
 

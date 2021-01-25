@@ -21,13 +21,3 @@
       ~ChemExpression.unsafe_hash
    
    
-
-   
-   
-   .. rubric:: Attributes
-
-   .. autosummary::
-   
-      ~ChemExpression.REDIRECT
-   
-   
