@@ -112,6 +112,11 @@ class RxnSystem(monty.json.MSONable):
         if self.surface is not None:
             self.species_manager.default_surface_name = self.surface.name
 
+        self.update_symbols()
+        self.generate_network_graph()
+
+    def update_symbols(self):
+        """Iterate over reactions etc and update the symbols set and scheduler."""
         # Pick an order for the symbol
         self._symbols = set()
         for rxn in self.surface_rxns:
@@ -142,7 +147,6 @@ class RxnSystem(monty.json.MSONable):
 
         # an index from symbols to their colors
         self.color_index = None
-        self.generate_network_graph()
 
     def get_ode_expressions(self) -> List[sym.Expr]:
         """Return a list of expressions, corresponding to the derivative of the
@@ -495,33 +499,7 @@ class RxnSystem(monty.json.MSONable):
 
         self.reactions.append(rxn)
         self.terms.extend(rxn.to_terms())
-
-        # TODO(rithvik): Refactor all of this as there is duplication with the constructor
-        self._symbols = set()
-        for rxn in self.surface_rxns:
-            for s in rxn.get_symbols():
-                if s not in self.surface.symbols:
-                    self._symbols.add(s)
-        for term in self.terms:
-            self._symbols.update(term.get_symbols())
-        for schedule in self.schedules:
-            self._symbols.add(schedule.symbol)
-        for equation in self.conc_eqs:
-            self._symbols.update(equation.get_symbols())
-        for equation in self.conc_diffeqs:
-            self._symbols.update(equation.get_symbols())
-        self._symbols = sorted(list(self._symbols), key=lambda s: str(s))
-
-        # Make an indexing dictionary
-        self.symbol_index = {}
-        for index, symbol in enumerate(self._symbols):
-            self.symbol_index[symbol] = index
-        # Make symbol:concentration/schedule list
-        # Make default (Conc 0 @ t=0 for each species) scheduler list
-        self.scheduler = [conditions.Conc(symbol, 0) for symbol in self._symbols]
-        # Overwrite scheduler with Concs and Schedules
-        for schedule in self.schedules:
-            self.scheduler[self.symbol_index[schedule.symbol]] = schedule
+        self.update_symbols()
 
         self.add_to_network_graph(rxn.reactants.free_symbols, rxn.products.free_symbols, rxn.rate_constant)
         
