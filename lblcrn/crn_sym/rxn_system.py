@@ -1,11 +1,12 @@
 import copy
 import random
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 
 import monty.json
 import networkx as nx
 import sympy as sym
 import plotly.graph_objects as go
+import numpy as np
 
 from jupyter_dash import JupyterDash
 import dash_cytoscape as cyto
@@ -38,6 +39,8 @@ class RxnSystem(monty.json.MSONable):
     species_manager: The SpeciesManager the system uses.
     symbol_index: A dictionary {sym.Symbol: int} to keep track of the order of the symbols.
     scheduler: A comprehensive Schedule of the system, has entries (which might be Conc(species, 0) for each species which isn't set by a ConcEq.
+    network_graph: A graph representing the reaction network
+    network_graph_pos: A position map for the network graph.
     """
 
     def __init__(self, *components):
@@ -130,7 +133,7 @@ class RxnSystem(monty.json.MSONable):
         for index, symbol in enumerate(self._symbols):
             self.symbol_index[symbol] = index
 
-        # Make symbol:concentration/scheudle list
+        # Make symbol:concentration/schedule list
         # Make default (Conc 0 @ t=0 for each species) scheduler list
         self.scheduler = [conditions.Conc(symbol, 0) for symbol in self._symbols]
         # Overwrite scheduler with Concs and Schedules
@@ -139,6 +142,7 @@ class RxnSystem(monty.json.MSONable):
 
         # an index from symbols to their colors
         self.color_index = None
+        self.generate_network_graph()
 
     def get_ode_expressions(self) -> List[sym.Expr]:
         """Return a list of expressions, corresponding to the derivative of the
@@ -307,29 +311,35 @@ class RxnSystem(monty.json.MSONable):
         :return: a list for names that appear on the surface
         """
         return [self.surface.name] + [s.name for s in self.surface.sites]
-    
-    def network_graph(self) -> nx.DiGraph:
-        """Create a reaction network graph (data structure) and return it.
-        """
-        G = nx.DiGraph()
 
-        def add(r, p, w):
-            for reactant in r:
-                for product in p:
-                    G.add_edge(str(reactant), str(product), weight=w)
+    def add_to_network_graph(self, r, p, w):
+        """Add the given reactions and products to the network graph.
+        """
+        for reactant in r:
+            for product in p:
+                self.network_graph.add_edge(str(product), str(reactant), weight=w)
+
+    def generate_network_graph(self):
+        """Create a reaction network graph (data structure).
+        """
+        self.network_graph = nx.DiGraph()
 
         for rxn in self.reactions:
             r = rxn.reactants.free_symbols
             p = rxn.products.free_symbols
             
-            add(r, p, rxn.rate_constant)
+            self.add_to_network_graph(r, p, rxn.rate_constant)
             if isinstance(rxn, RevRxn):
-                add(p, r, rxn.rate_constant_reverse)
-        return G
+                self.add_to_network_graph(p, r, rxn.rate_constant_reverse)
+        self.network_graph_pos = nx.spring_layout(self.network_graph)
+        for k, pos in self.network_graph_pos.items():
+            # Scale positions to make graphing easier.
+            self.network_graph_pos[k] = np.array([500*pos[0], 500*pos[1]])
     
     def plot(self):
-        G = self.network_graph()
-        pos = nx.spring_layout(G)
+        G = self.network_graph
+        pos = self.network_graph_pos
+        print(pos)
         largest_weight = -1
 
         # Convert the networkx graph to a format that Cytoscape can use
@@ -341,7 +351,6 @@ class RxnSystem(monty.json.MSONable):
         elements = []
         for node in G.nodes():
             x, y = pos[node]
-            x, y = 500*x, 500*y
             elements.append({"data": {"id": str(node), "label": str(node)}, "position": {"x": x, "y": y}})
             for e in G.out_edges(node):
                 weight = G.get_edge_data(node, e[1])["weight"]
@@ -350,58 +359,73 @@ class RxnSystem(monty.json.MSONable):
                 }})
 
         # Display the plot as well as the related edit inputs
+        cy = cyto.Cytoscape(
+            id="network-plot",
+            layout={"name": "preset"},
+            style={"width": "100%", "height": "500px"},
+            elements=elements,
+            stylesheet=[
+                {
+                    "selector": "edge",
+                    "style": {
+                        # The default curve style does not work with certain arrows
+                        "curve-style": "bezier",
+                        "source-arrow-color": "black",
+                        "source-arrow-shape": "triangle",
+                        "label": "data(weight)",
+                        "width": "data(normalized_weight)",
+                    }
+                },
+                {
+                    "selector": "node",
+                    "style": {
+                        "label": "data(label)",
+                    }
+                },
+            ],
+        )
         app = JupyterDash("Network Plot")
         app.layout = html.Div([
-            cyto.Cytoscape(
-                id="network-plot",
-                layout={"name": "preset"},
-                style={"width": "100%", "height": "500px"},
-                elements=elements,
-                stylesheet=[
-                    {
-                        "selector": "edge",
-                        "style": {
-                            # The default curve style does not work with certain arrows
-                            "curve-style": "bezier",
-                            "source-arrow-color": "black",
-                            "source-arrow-shape": "triangle",
-                            "label": "data(weight)",
-                            "width": "data(normalized_weight)",
-                        }
-                    },
-                    {
-                        "selector": "node",
-                        "style": {
-                            "label": "data(label)",
-                        }
-                    },
-                ],
-            ),
+            cy,
             html.Div([
                 html.Div(dcc.Input(id="input-rxn", type="text", placeholder="Enter a reaction"), style={"padding": "5px"}),
-                html.Div(dcc.Input(id="input-const-rxn", type="text", placeholder="Enter a reaction constant"), style={"padding": "5px"}),
+                html.Div(dcc.Input(id="input-const-rxn", type="number", placeholder="Enter a reaction constant"), style={"padding": "5px"}),
                 html.Button("Add species", id="button-rxn", style={"padding": "5px"}),
                 html.Div(id='label-rxn', children="", style={"padding": "5px"})
-            ], style={"display": "flex", "flex-direction": "row"})
+            ], style={"display": "flex", "flex-direction": "row"}),
+            html.Pre(id='cytoscape-tapNodeData-json'),
         ])
 
         # Setup a callback in case the edit inputs are used
         @app.callback(
-        dash.dependencies.Output('label-rxn', 'children'),
-        [dash.dependencies.Input("button-rxn", "n_clicks")],
-        [dash.dependencies.State("input-rxn", "value")],
-        [dash.dependencies.State("input-const-rxn", "value")])
+            dash.dependencies.Output('label-rxn', 'children'),
+            [dash.dependencies.Input("button-rxn", "n_clicks")],
+            [dash.dependencies.State("input-rxn", "value")],
+            [dash.dependencies.State("input-const-rxn", "value")],
+        )
         def add_reaction(n_clicks, rxn, k):
-            rxn = "v_h2+v_nh3=v_4n"
-            k = 1
             if rxn is None or k is None:
                 return
-            success, msg = self.add_reaction(rxn, float(k))
-            return "Success!" if success else msg
+            
+            # Store the updated positions before adding the new elements.
+            # TODO(rithvik): This is very brittle
+            # elems = cy.elements
+            # for e in elems:
+                # # Only process vertices, not edges (as those are not changeable through drag-drop).
+                # if "position" not in e:
+                    # continue
+                # d = e["data"]
+                # p = e["position"]
+                # print("updating", d["id"], p["x"], p["y"])
+                # self.network_graph_pos[d["id"]] = np.array([p["x"], p["y"]])
+            # print(self.network_graph_pos)
 
+            success, msg = self.add_raw_reaction(rxn, float(k))
+            return "Success!" if success else msg
+        
         app.run_server(mode="inline")
 
-    def add_reaction(self, raw: str, k: float) -> Tuple[bool, str]:
+    def add_raw_reaction(self, raw: str, k: float) -> Tuple[bool, str]:
         """Add a new reaction given the raw text form and reaction constant.
         
         The species in the reaction must already be defined in the system. True is returned iff the
@@ -411,6 +435,8 @@ class RxnSystem(monty.json.MSONable):
         parsed to determine matching symbols which can be combined together to create a new
         reaction.
         """
+        # Use Species Manager instead of the current class's symbol list as any defined symbol can
+        # be used in a reaction.
         syms = {str(s): s for s in self.species_manager.all_symbols}
         sides = [s.strip() for s in raw.split("=")]
         if len(sides) != 2:
@@ -465,8 +491,42 @@ class RxnSystem(monty.json.MSONable):
         for i in range(1, len(products)):
             inp += products[i][1]*products[i][0]
 
-        r = Rxn(inp, out, k)
-        print(r)
+        rxn = Rxn(inp, out, k)
+
+
+        self.reactions.append(rxn)
+        self.terms.extend(rxn.to_terms())
+
+        # TODO(rithvik): Refactor all of this as there is duplication with the constructor
+        self._symbols = set()
+        for rxn in self.surface_rxns:
+            for s in rxn.get_symbols():
+                if s not in self.surface.symbols:
+                    self._symbols.add(s)
+        for term in self.terms:
+            self._symbols.update(term.get_symbols())
+        for schedule in self.schedules:
+            self._symbols.add(schedule.symbol)
+        for equation in self.conc_eqs:
+            self._symbols.update(equation.get_symbols())
+        for equation in self.conc_diffeqs:
+            self._symbols.update(equation.get_symbols())
+        self._symbols = sorted(list(self._symbols), key=lambda s: str(s))
+
+        # Make an indexing dictionary
+        self.symbol_index = {}
+        for index, symbol in enumerate(self._symbols):
+            self.symbol_index[symbol] = index
+        # Make symbol:concentration/schedule list
+        # Make default (Conc 0 @ t=0 for each species) scheduler list
+        self.scheduler = [conditions.Conc(symbol, 0) for symbol in self._symbols]
+        # Overwrite scheduler with Concs and Schedules
+        for schedule in self.schedules:
+            self.scheduler[self.symbol_index[schedule.symbol]] = schedule
+
+        self.add_to_network_graph(rxn.reactants.free_symbols, rxn.products.free_symbols, rxn.rate_constant)
+        
+        return True, ""
 
     def text(self) -> str:
         text: str = ""
