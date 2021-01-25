@@ -112,11 +112,14 @@ class RxnSystem(monty.json.MSONable):
         if self.surface is not None:
             self.species_manager.default_surface_name = self.surface.name
 
-        self.update_symbols()
-        self.generate_network_graph()
+        self._update_symbols()
+        self._generate_network_graph()
 
-    def update_symbols(self):
-        """Iterate over reactions etc and update the symbols set and scheduler."""
+    def _update_symbols(self):
+        """Iterate over reactions etc and update the symbols set and scheduler.
+
+        This method should be called whenever the reaction system is updated.
+        """
         # Pick an order for the symbol
         self._symbols = set()
         for rxn in self.surface_rxns:
@@ -323,8 +326,11 @@ class RxnSystem(monty.json.MSONable):
             for product in p:
                 self.network_graph.add_edge(str(product), str(reactant), weight=w)
 
-    def generate_network_graph(self):
+    def _generate_network_graph(self):
         """Create a reaction network graph (data structure).
+
+        Each species becomes a vertex and reactions are represented with directed edges from
+        reactants to products (where the reaction constants are the edge weights).
         """
         self.network_graph = nx.DiGraph()
 
@@ -341,6 +347,12 @@ class RxnSystem(monty.json.MSONable):
             self.network_graph_pos[k] = np.array([500*pos[0], 500*pos[1]])
     
     def plot(self):
+        """Plot the reaction network as an interactive graph.
+
+        The reaction network graph is plotted in a user-draggable view. Users can also add new
+        reactions to the system using the provided text input (simply re-run the cell to view the
+        updated graph with the new reaction).
+        """
         G = self.network_graph
         pos = self.network_graph_pos
         largest_weight = -1
@@ -391,7 +403,8 @@ class RxnSystem(monty.json.MSONable):
         app.layout = html.Div([
             cy,
             html.Div([
-                html.Div(dcc.Input(id="input-rxn", type="text", placeholder="Enter a reaction"), style={"height": 15"padding": "5px"}),
+                html.Div(dcc.Input(id="input-rxn", type="text", placeholder="Enter a reaction"),
+                    style={"height": 15, "padding": "5px"}),
                 html.Div(dcc.Input(id="input-const-rxn", type="number", placeholder="Enter a reaction constant"), style={"padding": "5px"}),
                 html.Button("Add species", id="button-rxn", style={"padding": "5px"}),
                 html.Div(id='label-rxn', children="", style={"padding": "5px"})
@@ -496,16 +509,16 @@ class RxnSystem(monty.json.MSONable):
 
         rxn = Rxn(inp, out, k)
 
-
         self.reactions.append(rxn)
         self.terms.extend(rxn.to_terms())
-        self.update_symbols()
+        self._update_symbols()
 
         self.add_to_network_graph(rxn.reactants.free_symbols, rxn.products.free_symbols, rxn.rate_constant)
         
         return True, ""
 
     def text(self) -> str:
+        """Return a text representation of the reaction system, describing the chemical equations in natural language."""
         text: str = ""
         for rxn in self.reactions:
             text += rxn.text() + " "

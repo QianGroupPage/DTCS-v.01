@@ -14,6 +14,8 @@
    .. autosummary::
    
       ~RxnSystem.__init__
+      ~RxnSystem.add_raw_reaction
+      ~RxnSystem.add_to_network_graph
       ~RxnSystem.as_dict
       ~RxnSystem.from_dict
       ~RxnSystem.get_colors
@@ -22,7 +24,6 @@
       ~RxnSystem.get_ode_functions
       ~RxnSystem.get_species
       ~RxnSystem.get_symbols
-      ~RxnSystem.network_graph
       ~RxnSystem.plot
       ~RxnSystem.show_colors
       ~RxnSystem.text
