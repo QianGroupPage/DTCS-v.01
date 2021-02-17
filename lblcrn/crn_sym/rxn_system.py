@@ -210,7 +210,7 @@ class RxnSystem(monty.json.MSONable):
 
         return conc_eq_funcs
 
-    def get_species(self) -> List[species.Species]:
+    def _get_species(self) -> List[species.Species]:
         species = []
 
         for symbol in self._symbols:
@@ -311,7 +311,7 @@ class RxnSystem(monty.json.MSONable):
         """
         return [self.surface.name] + [s.name for s in self.surface.sites]
 
-    def add_to_network_graph(self, r, p, w):
+    def _add_to_network_graph(self, r, p, w):
         """Add the given reactions and products to the network graph.
         """
         for reactant in r:
@@ -330,9 +330,9 @@ class RxnSystem(monty.json.MSONable):
             r = rxn.reactants.free_symbols
             p = rxn.products.free_symbols
             
-            self.add_to_network_graph(r, p, rxn.rate_constant)
+            self._add_to_network_graph(r, p, rxn.rate_constant)
             if isinstance(rxn, RevRxn):
-                self.add_to_network_graph(p, r, rxn.rate_constant_reverse)
+                self._add_to_network_graph(p, r, rxn.rate_constant_reverse)
         self.network_graph_pos = nx.spring_layout(self.network_graph)
         for k, pos in self.network_graph_pos.items():
             # Scale positions to make graphing easier.
@@ -428,12 +428,12 @@ class RxnSystem(monty.json.MSONable):
                 # self.network_graph_pos[d["id"]] = np.array([p["x"], p["y"]])
             # print(self.network_graph_pos)
 
-            success, msg = self.add_raw_reaction(rxn, float(k))
+            success, msg = self._add_raw_reaction(rxn, float(k))
             return "Success!" if success else msg
         
         app.run_server(mode="inline")
 
-    def add_raw_reaction(self, raw: str, k: float) -> Tuple[bool, str]:
+    def _add_raw_reaction(self, raw: str, k: float) -> Tuple[bool, str]:
         """Add a new reaction given the raw text form and reaction constant.
         
         The species in the reaction must already be defined in the system. True is returned iff the
@@ -505,7 +505,7 @@ class RxnSystem(monty.json.MSONable):
         self.terms.extend(rxn.to_terms())
         self._update_symbols()
 
-        self.add_to_network_graph(rxn.reactants.free_symbols, rxn.products.free_symbols, rxn.rate_constant)
+        self._add_to_network_graph(rxn.reactants.free_symbols, rxn.products.free_symbols, rxn.rate_constant)
         
         return True, ""
 

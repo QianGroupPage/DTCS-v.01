@@ -152,8 +152,7 @@ class Species(monty.json.MSONable):
 
 
 class Marker(monty.json.MSONable):
-    """
-    A marker object to mark occurances of a given species with a different name.
+    """A marker object to mark occurences of a given species with a different name.
     """
     def __init__(self, species: str, name: str, species_symbol: sym.Symbol = None, color: str = ""):
         self.species = species
