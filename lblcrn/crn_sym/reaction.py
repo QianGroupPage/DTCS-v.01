@@ -181,6 +181,10 @@ class Rxn(monty.json.MSONable):
                f'products={repr(self.products)}, ' \
                f'k={self.rate_constant})'
 
+    def fingerprint(self):
+        """Return a unique identifier for this reaction, ignoring the reaction constant."""
+        return [f'{self.reactants}->{self.products}']
+
 
 class RevRxn(Rxn):
     """A reversible reaction, essentially a reaction with two rate constants.
@@ -238,3 +242,11 @@ class RevRxn(Rxn):
                f'(reactants={repr(self.reactants)}, ' \
                f'products={repr(self.products)}, ' \
                f'k={self.rate_constant}, k2={self.rate_constant_reverse})'
+
+    def fingerprint(self):
+        """Return a unique identifier for this reaction, ignoring the reaction constants.
+
+        This fingerprint is intentionally designed to return the same result as fingerprinting the
+        same reversible reaction formed with two Rxns.
+        """
+        return [f'{self.reactants}->{self.products}',f'{self.products}->{self.reactants}']

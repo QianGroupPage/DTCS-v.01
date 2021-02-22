@@ -83,6 +83,7 @@ class Species(monty.json.MSONable):
 
         self.site = site
         self.size = size
+        self.include_sub_species = include_sub_species
         if include_sub_species and self.site and self.site != Site.default:
             self.create_sub_species(suffix=site.name, color=self.color)
 
