@@ -1297,7 +1297,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
         binding_energies = []
         for specie in species:
             for orbital in self.species_manager[specie].orbitals:
-                print(self.species_manager[specie].orbitals)
+                # print(self.species_manager[specie].orbitals)
                 binding_energies.append(orbital.binding_energy)
 
         x_lower = min(binding_energies or [0]) - _PLOT_MARGIN

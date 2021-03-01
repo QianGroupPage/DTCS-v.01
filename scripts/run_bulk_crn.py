@@ -1,4 +1,5 @@
 import argparse
+import sys
 import os
 
 from lblcrn.crn_sym import *
@@ -42,26 +43,27 @@ def rsys_generator(scaled):
     return rsys
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--equation", "-e", type=int, default=0, help="Specify the index of which equation to modify")
-    args = parser.parse_args()
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument("--equation", "-e", type=int, default=0, help="Specify the index of which equation to modify")
+    # args = parser.parse_args()
+    equation = int(sys.argv[1])
     cs = CRNStorage(uri=os.getenv("MONGO_URI"))
 
     for i in range(len(multipliers)):
         scaled = list(constants)
-        scaled[args.equation] *= self.multipliers[i]
+        scaled[equation] *= multipliers[i]
 
-        rsys = self.rsys_generator(scaled)
+        rsys = rsys_generator(scaled)
         
         # Check if the system has already been simulated
         existing = cs.load_from_rsys_id(rsys)
         if len(existing) > 0:
             continue
 
-        xps, ts = simulate(rsys, time=self.time, title=data.title + " Eq: " + str(args.equation) + "Constant: " + str(i))
+        xps, ts = simulate(rsys, time=500, title="Eq: " + str(equation) + "Constant: " + str(i))
 
         cs.store(xps, ts)
 
-        print('Solved for ('+str(args.equation)+', '+str(i)+')')
+        print('Solved for ('+str(equation)+', '+str(i)+')')
         print(scaled)
         print('\n')
