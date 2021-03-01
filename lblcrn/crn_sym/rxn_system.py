@@ -525,9 +525,24 @@ class RxnSystem(monty.json.MSONable):
 
     def __repr__(self):
         return f'{self.__class__.__name__}(components={repr(self.components)})'
+
+    def id(self):
+        """Return a unique identifier for the reactions in this system.
+
+        This identifier does not ignore concentrations or reaction constants. The order of reactions
+        (and whether they are formed as reversible or pairs of regular reactions) also do not
+        matter.
+        """
+        f = []
+        for c in self.components:
+            if isinstance(c, Rxn):
+                f.extend(c.id())
+            elif isinstance(c, conditions.Schedule):
+                f.extend(repr(c)) # TODO(rithvik): This is a hack
+        return "_".join(sorted(f))
     
     def fingerprint(self):
-        """Return a unique identifier for the reactions in this system.
+        """Return a unique fingerprint for the reactions in this system.
 
         This identifier ignores concentrations and reaction constants. The order of reactions
         (and whether they are formed as reversible or pairs of regular reactions) also do not

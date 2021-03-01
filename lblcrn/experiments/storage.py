@@ -26,13 +26,15 @@ class CRNStorage:
     def store(self, xps: XPSExperiment, ts: CRNTimeSeries) -> None:
         raw_ts = ts.df.to_json(double_precision=15)
         raw_xps = xps.df.simulated.to_json(double_precision=15)
-        rsys_id = ts.rsys.fingerprint()
+        rsys_fingerprint = ts.rsys.fingerprint()
+        rsys_id = ts.rsys.id()
 
         doc_id = ObjectId()
         timestamp = datetime.now(timezone.utc)
         doc = {
             "_id": doc_id,
             "rsys_id": rsys_id,
+            "rsys_fingerprint": rsys_fingerprint,
             "rsys": str(ts.rsys),
             "xps_data": raw_xps,
             "ts_data": raw_ts,
@@ -45,14 +47,24 @@ class CRNStorage:
         doc = self._mongo[crn_collection].find_one({"_id": ObjectId(doc_id)})
         return CRNData(doc)
 
-    def load_from_rsys(self, rsys) -> List[CRNData]:
-        docs = self._mongo[crn_collection].find({"rsys_id": rsys.fingerprint()})
+    def load_from_rsys_fingerprint(self, rsys) -> List[CRNData]:
+        docs = self._mongo[crn_collection].find({"rsys_fingerprint": rsys.fingerprint()})
         
         data = []
         for doc in docs:
             data.append(CRNData(doc))
 
         return data
+
+    def load_from_rsys_id(self, rsys) -> List[CRNData]:
+        docs = self._mongo[crn_collection].find({"rsys_id": rsys.id()})
+        
+        data = []
+        for doc in docs:
+            data.append(CRNData(doc))
+
+        return data
+
 
     def find_closest_xps(self, rsys, xps_spectra: pd.Series) -> CRNData:
         """Given the rsys and xps spectra, find and return the closest match in the database.
