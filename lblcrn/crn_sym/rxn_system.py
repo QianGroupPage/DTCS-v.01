@@ -538,6 +538,7 @@ class RxnSystem(monty.json.MSONable):
             if isinstance(c, Rxn):
                 f.extend(c.id())
             elif isinstance(c, conditions.Schedule):
+                print(c)
                 f.extend(repr(c)) # TODO(rithvik): This is a hack
         return "_".join(sorted(f))
     

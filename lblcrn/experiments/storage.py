@@ -71,13 +71,13 @@ class CRNStorage:
 
         The closest match is defined by the minimum RMSE between the spectra.
         """
-        docs = self._mongo[crn_collection].find({"rsys_id": rsys.fingerprint()})
+        docs = self._mongo[crn_collection].find({"rsys_fingerprint": rsys.fingerprint()})
         
         min_rmse = -1
         min_rmse_data = None
         for i, doc in enumerate(docs):
             data = CRNData(doc)
-            rmse = ((xps_spectra - data.xps_data.envelope)**2).mean() **.5
+            rmse = ((xps_spectra.to_numpy() - data.xps_data.envelope.to_numpy())**2).mean() **.5
             if rmse < min_rmse or min_rmse < 0:
                 min_rmse = rmse
                 min_rmse_data = data

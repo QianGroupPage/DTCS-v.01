@@ -24,20 +24,22 @@ multipliers = [1]
 
 def rsys_generator(scaled):
     rsys = RxnSystem(
-        Rxn(x4 + y1, x54, 3.207654),
-        Rxn(x3 + y1, x53, 1.363342),
-        RevRxn(x54, x3 + x3, 6.220646,0.160755),
-        Rxn(x53, x2 + x3, 0.299507),
-        Rxn(x54, x2 + x4, 0.167130),
-        Rxn(x2, y1, 1.939313),
-        Rxn(y1, x2, 0.515646),
-        Rxn(x53, y1 + x3, 0.733491),
-        Rxn(x54, x4 + y1, 0.311754),
-        Rxn(x53 + y1, x6, 1.038423),
-        Rxn(x6, x53 + y1, 0.962999),
-        RevRxn(x4 + x4, x7, 0.002342,426.922895),
-        Conc(y1,1),
-        Conc(x4,0.25),
+        Rxn(x4 + y1, x54, scaled[0]),
+        Rxn(x3 + y1, x53, scaled[1]),
+        Rxn(x54, x3 + x3, scaled[2]),
+        Rxn(x3 + x3, x54, scaled[3]),
+        Rxn(x53, x2 + x3, scaled[4]),
+        Rxn(x54, x2 + x4, scaled[5]),
+        Rxn(x2, y1, scaled[6]),
+        Rxn(y1, x2, scaled[7]),
+        Rxn(x53, y1 + x3, scaled[8]),
+        Rxn(x54, x4 + y1, scaled[9]),
+        Rxn(x53 + y1, x6, scaled[10]),
+        Rxn(x6, x53 + y1, scaled[11]),
+        Rxn(x4 + x4, x7, scaled[12]),
+        Rxn(x7, x4 + x4, scaled[13]),
+        Conc(y1, 1),
+        Conc(x4, 0.25),
         sm
     )
     return rsys
@@ -55,15 +57,15 @@ if __name__ == "__main__":
 
         rsys = rsys_generator(scaled)
         
+        xps, ts = simulate(rsys, time=500, title="Eq: " + str(equation) + "Constant: " + str(i))
+
         # Check if the system has already been simulated
         existing = cs.load_from_rsys_id(rsys)
         if len(existing) > 0:
             continue
 
-        xps, ts = simulate(rsys, time=500, title="Eq: " + str(equation) + "Constant: " + str(i))
-
-        cs.store(xps, ts)
-
-        print('Solved for ('+str(equation)+', '+str(i)+')')
-        print(scaled)
-        print('\n')
+        try:
+            cs.store(xps, ts)
+            print('Solved for ('+str(equation)+', '+str(i)+')')
+        except Exception as e:
+            print("unable to solve for" + str(equation) + ", " + str(i))
