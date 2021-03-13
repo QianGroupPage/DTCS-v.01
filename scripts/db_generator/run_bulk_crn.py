@@ -19,8 +19,8 @@ x6 = sm.sp('multiH2O', Orbital('1s', 533.2))
 x7 = sm.sp('O2g', Orbital('1s', 535.0))
 
 
-constants = [3.207654,1.363342,6.220646,0.160755,0.299507,0.167130,1.939313,0.515646,0.733491,0.311754,1.038423, 0.962999,0.002342,426.992895]
-multipliers = [1]
+constants = [3.207654,1.363342,6.220646,0.160755,0.299507,0.167130,1.939313,0.515646,0.733491,0.311754,1.038423, 0.962999,0.002342,426.922895]
+multipliers = [0.5, 1, 2]
 
 def rsys_generator(scaled):
     rsys = RxnSystem(
@@ -38,35 +38,42 @@ def rsys_generator(scaled):
         Rxn(x6, x53 + y1, scaled[11]),
         Rxn(x4 + x4, x7, scaled[12]),
         Rxn(x7, x4 + x4, scaled[13]),
-        Conc(y1, 1),
-        Conc(x4, 0.25),
+        Conc(y1,1),
+        Conc(x4,0.25),
         sm
     )
     return rsys
 
+def ternary (n):
+    if n == 0:
+        return [0]
+    nums = []
+    while n:
+        n, r = divmod(n, 3)
+        nums.append(r)
+    return list(reversed(nums))
+
 if __name__ == "__main__":
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument("--equation", "-e", type=int, default=0, help="Specify the index of which equation to modify")
-    # args = parser.parse_args()
-    equation = int(sys.argv[1])
-    cs = CRNStorage(uri=os.getenv("MONGO_URI"))
+    n = int(sys.argv[1])
+    indices = ternary(n)
+    indices = [0 for _ in range(len(multipliers)-len(indices))] + indices
+    cs = CRNStorage(uri=os.getenv("MONGO_URI"), db=os.getenv("MONGO_DB"))
 
-    for i in range(len(multipliers)):
-        scaled = list(constants)
-        scaled[equation] *= multipliers[i]
+    scaled = list(constants)
+    for eq, i in enumerate(indices):
+        scaled[eq] *= multipliers[i]
 
-        rsys = rsys_generator(scaled)
-        
-        xps, ts = simulate(rsys, time=500, title="Eq: " + str(equation) + "Constant: " + str(i))
+    rsys = rsys_generator(scaled)
 
-        # Check if the system has already been simulated
-        existing = cs.load_from_rsys_id(rsys)
-        if len(existing) > 0:
-            print("Skipped:", str(equation))
-            continue
+    # Check if the system has already been simulated
+    existing = cs.load_from_rsys_id(rsys)
+    if len(existing) > 0:
+        print("skipped", n)
+    else:
+        xps, ts = simulate(rsys, time=500, title="Factors: " + str(n))
 
         try:
             cs.store(xps, ts)
-            print('Solved for ('+str(equation)+', '+str(i)+')')
+            print('Solved for '+str(n))
         except Exception as e:
-            print("unable to solve for" + str(equation) + ", " + str(i))
+            print("Unable to solve for " + str(n))
