@@ -1,0 +1,24 @@
+experiments
+==================
+
+.. automodule:: lblcrn.experiments
+
+.. autosummary::
+    :toctree: _autosummary
+    :template: ../_templates/class.rst
+
+    simulate
+
+    CRNTimeSeries
+
+    XPSObservable
+    XPSExperiment
+
+    Experiment
+
+    SolutionSystem
+    XPSInitializationData
+    XPSSystemRunner
+    XPSTPCorrelator
+
+    .. TODO: Document xps_io

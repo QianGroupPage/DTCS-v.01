@@ -122,8 +122,7 @@ class XPSInitializationData:
 
     Instance Variables:
         name: The name of this specific experiment.
-        constants: A list reaction constants for this experiment, with an order corresponding to
-            that of the reaction system to be simulated.
+        constants: A list reaction constants for this experiment, with an order corresponding to that of the reaction system to be simulated.
         temp: The temperature associated with this experiment.
         pressure: The pressure associated with this experiment.
         experimental_file: The location of the experimental XPS file to be used for comparison

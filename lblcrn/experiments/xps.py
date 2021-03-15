@@ -44,6 +44,7 @@ from lblcrn import _echo
 _PLOT_MARGIN = 5
 _PLOT_RESOLUTION = 0.001
 _SIGMA = 0.75 * np.sqrt(2) / (np.sqrt(2 * np.log(2)) * 2)
+_NOISE_MAX = 0.005 # A proportion of the maximum value that will form the upper bound for added noise.
 
 _REQUIRED = 'required'
 _OPTIONAL = 'optional'
@@ -529,10 +530,8 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
 
     Attributes:
         autoresample: Defaults to true, decides if it resamples on edits.
-        autoscale: Defaults to true, decides if it will automatically scale
-            the gaussians and envelope to match the experimental data.
-        sim_concs: The concentrations of each species, for the creation of
-            simulated data.
+        autoscale: Defaults to true, decides if it will automatically scale the gaussians and envelope to match the experimental data.
+        sim_concs: The concentrations of each species, for the creation of simulated data.
         species_manager: The SpeciesManager in use.
         ignore: Species to ignore during processing.
     """
@@ -713,7 +712,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
 
     # --- Calculations -------------------------------------------------------
     # Note that functions in this section will only modify state if
-    # overwwrite=True.
+    # overwrite=True.
 
     def resample(
             self,
@@ -736,6 +735,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
             contam_spectra: Optional[Dict[sym.Symbol, pd.Series]] = None,
             deconvolute: Optional[bool] = None,
             deconv_species: Optional[List[sym.Symbol]] = None,
+            augment = False,
     ) -> XPSObservable:
         """TODO"""
         # --- Parse Arguments ------------------------------------------------
@@ -908,6 +908,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
             contam_species=contam_species,
             deconvolute=deconvolute,
             deconv_species=deconv_species,
+            augment=augment,
         )
 
         if overwrite:
@@ -944,6 +945,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
             decontaminate: bool,
             contaminate: bool,
             deconvolute: bool,
+            augment: bool,
     ) -> Tuple[pd.DataFrame,
                float,
                Union[Dict[sym.Symbol, float], None],
@@ -1121,6 +1123,10 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
             if self._DECONV_ENV in df:
                 df[self._DECONV_ENV] *= scale_factor
 
+        if augment:
+            m = max(df[self._SIM_ENV])
+            df[self._SIM_ENV] += (_NOISE_MAX*m)*np.random.normal(0,1,len(df[self._SIM_ENV]))
+
         return df, scale_factor, deconv_concs, contam_concs
 
     # --- Calculation Helper-functions ---------------------------------------
@@ -1291,7 +1297,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
         binding_energies = []
         for specie in species:
             for orbital in self.species_manager[specie].orbitals:
-                print(self.species_manager[specie].orbitals)
+                # print(self.species_manager[specie].orbitals)
                 binding_energies.append(orbital.binding_energy)
 
         x_lower = min(binding_energies or [0]) - _PLOT_MARGIN
@@ -1345,7 +1351,9 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
               experimental_raw: bool = True,
               experimental_clean: bool = True,
               deconv_gaussians: bool = True,
-              deconv_envelope: bool = True, ) -> plt.Axes:
+              deconv_envelope: bool = True,
+              augment: bool = False,
+    ) -> plt.Axes:
         """Plot the XPS observable.
 
         Args:
@@ -1365,6 +1373,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
             decontaminate=decontaminate,
             contaminate=contaminate,
             deconvolute=deconvolute,
+            augment=augment,
         )
 
         # Default behavior; yes I know there are shorter ways to do this, but

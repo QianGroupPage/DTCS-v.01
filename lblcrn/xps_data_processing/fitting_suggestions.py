@@ -28,8 +28,10 @@ def _read_string_tuples(s):
         return ()
 
 
-suggestions_df = \
-    _read_suggestions_table('/Users/ye/Desktop/lbl-crn/lblcrn/_resources/metals.xlsx')
+# Breaking any code that imports this file, so I commented it out --> We shouldn't read in this
+# data unless necessary probably.
+# suggestions_df = \
+#    _read_suggestions_table('/Users/ye/Desktop/lbl-crn/lblcrn/_resources/metals.xlsx')
 
 
 def process_species_name(species_name):

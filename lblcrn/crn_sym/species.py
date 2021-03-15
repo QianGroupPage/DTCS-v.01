@@ -83,6 +83,7 @@ class Species(monty.json.MSONable):
 
         self.site = site
         self.size = size
+        self.include_sub_species = include_sub_species
         if include_sub_species and self.site and self.site != Site.default:
             self.create_sub_species(suffix=site.name, color=self.color)
 
@@ -152,8 +153,7 @@ class Species(monty.json.MSONable):
 
 
 class Marker(monty.json.MSONable):
-    """
-    A marker object to mark occurances of a given species with a different name.
+    """A marker object to mark occurences of a given species with a different name.
     """
     def __init__(self, species: str, name: str, species_symbol: sym.Symbol = None, color: str = ""):
         self.species = species
@@ -212,12 +212,12 @@ class SpeciesManager(monty.json.MSONable):
         Keeps track of their correspondence.
         Orbitals can be either a list of orbitals or just one orbital
         TODO: use in the backend to consult for which products shall take two spots.
+
         Args:
-            name: The name of the new species and of the symbol.
-            orbitals: The Orbitals of the species. Can be an Orbital or a list
-                of Orbitals, just to be nice
+        name: The name of the new species and of the symbol.
+        orbitals: The Orbitals of the species. Can be an Orbital or a list of Orbitals, just to be nice
         Returns:
-             The sym.Symbol corresponding to the new Species.
+        The sym.Symbol corresponding to the new Species.
         """
         if isinstance(name, sym.Symbol):
             parent = self.species_from_symbol(name)
@@ -400,8 +400,7 @@ class SpeciesManager(monty.json.MSONable):
         """
         Provide users with dictionary to represent the summation relationships between species.
 
-        :return: a list of names from species to sub-species and from binding energy to a list of species
-        with the same binding energy.
+        :return: a list of names from species to sub-species and from binding energy to a list of species with the same binding energy.
         """
         d = {}
         included_species_symbols = set()

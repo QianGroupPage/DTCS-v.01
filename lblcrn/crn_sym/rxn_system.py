@@ -1,10 +1,19 @@
 import copy
 import random
-from typing import List
+from typing import List, Tuple, Dict
 
 import monty.json
 import networkx as nx
 import sympy as sym
+import plotly.graph_objects as go
+import numpy as np
+
+from jupyter_dash import JupyterDash
+import dash_cytoscape as cyto
+import dash_html_components as html
+import dash_core_components as dcc
+import dash
+import IPython.display as display
 
 import lblcrn
 from lblcrn.common import color_to_RGB, generate_new_color
@@ -20,19 +29,18 @@ class RxnSystem(monty.json.MSONable):
     reaction system for the purpose of simulating it (namely the concentrations
     of each chemical) over time.
 
-    Attributes:
-        components: Everything the RxnSystem contains
-        terms: Terms in the ODE of the system.
-        reactions: Bulk CRN reactions in the system.
-        schedules: The Schedules and Concs passed during initialization.
-        conc_eqs: The ConcEqs in the system.
-        conc_diffeqs: The ConcDiffEqs in the system.
-        species_manager: The SpeciesManager the system uses.
-        symbol_index: A dictionary {sym.Symbol: int} to keep track of the order
-            of the symbols.
-        scheduler: A comprehensive Schedule of the system, has entries (which
-            might be Conc(species, 0) for each species which isn't set by a
-            ConcEq.
+    :var components: Everything the RxnSystem contains
+    :var terms: Terms in the ODE of the system.
+    :var reactions: Bulk CRN reactions in the system.
+    :var schedules: The Schedules and Concs passed during initialization.
+    :var conc_eqs: The ConcEqs in the system.
+    :var conc_diffeqs: The ConcDiffEqs in the system.
+    :var species_manager: The SpeciesManager the system uses.
+    :var symbol_index: A dictionary {sym.Symbol: int} to keep track of the order of the symbols.
+    :var scheduler: A comprehensive Schedule of the system, has entries (which might be Conc(species, 0) for each species which isn't set by a ConcEq.
+    :var surface_names: A list for names that appear on the surface.
+    :var network_graph: A graph representing the reaction network
+    :var network_graph_pos: A position map for the network graph.
     """
 
     def __init__(self, *components):
@@ -66,7 +74,7 @@ class RxnSystem(monty.json.MSONable):
 
         # Split into terms, schedules, and conc (diff.) eq.s
         # These are not sorted by the symbol index.
-        self.terms = []
+        self.terms = [] #: Terms are terms.
         self.surface_rxns = []
         self.schedules = []
         self.conc_eqs = []
@@ -104,6 +112,14 @@ class RxnSystem(monty.json.MSONable):
         if self.surface is not None:
             self.species_manager.default_surface_name = self.surface.name
 
+        self._update_symbols()
+        self._generate_network_graph()
+
+    def _update_symbols(self):
+        """Iterate over reactions etc and update the symbols set and scheduler.
+
+        This method should be called whenever the reaction system is updated.
+        """
         # Pick an order for the symbol
         self._symbols = set()
         for rxn in self.surface_rxns:
@@ -125,7 +141,7 @@ class RxnSystem(monty.json.MSONable):
         for index, symbol in enumerate(self._symbols):
             self.symbol_index[symbol] = index
 
-        # Make symbol:concentration/scheudle list
+        # Make symbol:concentration/schedule list
         # Make default (Conc 0 @ t=0 for each species) scheduler list
         self.scheduler = [conditions.Conc(symbol, 0) for symbol in self._symbols]
         # Overwrite scheduler with Concs and Schedules
@@ -194,7 +210,7 @@ class RxnSystem(monty.json.MSONable):
 
         return conc_eq_funcs
 
-    def get_species(self) -> List[species.Species]:
+    def _get_species(self) -> List[species.Species]:
         species = []
 
         for symbol in self._symbols:
@@ -227,8 +243,7 @@ class RxnSystem(monty.json.MSONable):
 
     # TODO
     def get_colors(self):
-        """
-        :return: colors for each species, if color is assigned.
+        """Assign (if applicable) and return colors for all species.
         """
         if self.color_index:
             return self.color_index
@@ -290,51 +305,212 @@ class RxnSystem(monty.json.MSONable):
                 self.color_index[marker_name] = color
         return self.color_index
 
-    def show_colors(self):
-        # TODO: write a function to show the colors.
-        if self.color_index is None:
-            pass
-        pass
-
     @property
     def surface_names(self) -> List[str]:
-        """
-        :return: a list for names that appear on the surface
+        """A list for names that appear on the surface.
         """
         return [self.surface.name] + [s.name for s in self.surface.sites]
-    
-    def network_graph(self) -> nx.DiGraph:
-        """Create a reaction network graph (data structure) and return it.
-        """
-        G = nx.DiGraph()
 
-        def add(r, p):
-            for reactant in r:
-                for product in p:
-                    G.add_edge(reactant, product)
+    def _add_to_network_graph(self, r, p, w):
+        """Add the given reactions and products to the network graph.
+        """
+        for reactant in r:
+            for product in p:
+                self.network_graph.add_edge(str(product), str(reactant), weight=w)
+
+    def _generate_network_graph(self):
+        """Create a reaction network graph (data structure).
+
+        Each species becomes a vertex and reactions are represented with directed edges from
+        reactants to products (where the reaction constants are the edge weights).
+        """
+        self.network_graph = nx.DiGraph()
 
         for rxn in self.reactions:
             r = rxn.reactants.free_symbols
             p = rxn.products.free_symbols
             
-            add(r, p)
+            self._add_to_network_graph(r, p, rxn.rate_constant)
             if isinstance(rxn, RevRxn):
-                add(p, r)
-        return G
+                self._add_to_network_graph(p, r, rxn.rate_constant_reverse)
+        self.network_graph_pos = nx.spring_layout(self.network_graph)
+        for k, pos in self.network_graph_pos.items():
+            # Scale positions to make graphing easier.
+            self.network_graph_pos[k] = np.array([500*pos[0], 500*pos[1]])
     
-    def plot_network_graph(self):
-        """Plot the reaction network graph for this system.
-        """
-        G = self.network_graph()
+    def plot(self):
+        """Plot the reaction network as an interactive graph.
 
-        nx.draw_shell(G, with_labels=True, **{
-            'node_color': 'lightblue',
-            'node_size': 500,
-            'edge_color': 'gray',
-            'width': 1,
-        })
+        The reaction network graph is plotted in a user-draggable view. Users can also add new
+        reactions to the system using the provided text input (simply re-run the cell to view the
+        updated graph with the new reaction).
+        """
+        G = self.network_graph
+        pos = self.network_graph_pos
+        largest_weight = -1
+
+        # Convert the networkx graph to a format that Cytoscape can use
+        for node in G.nodes():
+            for e in G.out_edges(node):
+                weight = G.get_edge_data(node, e[1])["weight"]
+                largest_weight = max(largest_weight, weight)
+
+        elements = []
+        for node in G.nodes():
+            x, y = pos[node]
+            elements.append({"data": {"id": str(node), "label": str(node)}, "position": {"x": x, "y": y}})
+            for e in G.out_edges(node):
+                weight = G.get_edge_data(node, e[1])["weight"]
+                elements.append({"data": {
+                    "source": str(node), "target": str(e[1]), "weight": weight, "normalized_weight": weight / largest_weight * 3.75 + 2
+                }})
+
+        # Display the plot as well as the related edit inputs
+        cy = cyto.Cytoscape(
+            id="network-plot",
+            layout={"name": "preset"},
+            style={"width": "100%", "height": "500px"},
+            elements=elements,
+            stylesheet=[
+                {
+                    "selector": "edge",
+                    "style": {
+                        # The default curve style does not work with certain arrows
+                        "curve-style": "bezier",
+                        "source-arrow-color": "black",
+                        "source-arrow-shape": "triangle",
+                        "label": "data(weight)",
+                        "width": "data(normalized_weight)",
+                    }
+                },
+                {
+                    "selector": "node",
+                    "style": {
+                        "label": "data(label)",
+                    }
+                },
+            ],
+        )
+        app = JupyterDash("Network Plot")
+        app.layout = html.Div([
+            cy,
+            html.Div([
+                html.Div(dcc.Input(id="input-rxn", type="text", placeholder="Enter a reaction"),
+                    style={"height": 15, "padding": "5px"}),
+                html.Div(dcc.Input(id="input-const-rxn", type="number", placeholder="Enter a reaction constant"), style={"padding": "5px"}),
+                html.Button("Add species", id="button-rxn", style={"padding": "5px"}),
+                html.Div(id='label-rxn', children="", style={"padding": "5px"})
+            ], style={"display": "flex", "flex-direction": "row"}),
+            html.Pre(id='cytoscape-tapNodeData-json'),
+        ])
+
+        # Setup a callback in case the edit inputs are used
+        @app.callback(
+            dash.dependencies.Output('label-rxn', 'children'),
+            [dash.dependencies.Input("button-rxn", "n_clicks")],
+            [dash.dependencies.State("input-rxn", "value")],
+            [dash.dependencies.State("input-const-rxn", "value")],
+        )
+        def add_reaction(n_clicks, rxn, k):
+            if rxn is None or k is None:
+                return
+            
+            # Store the updated positions before adding the new elements.
+            # TODO(rithvik): This is very brittle
+            # elems = cy.elements
+            # for e in elems:
+                # # Only process vertices, not edges (as those are not changeable through drag-drop).
+                # if "position" not in e:
+                    # continue
+                # d = e["data"]
+                # p = e["position"]
+                # print("updating", d["id"], p["x"], p["y"])
+                # self.network_graph_pos[d["id"]] = np.array([p["x"], p["y"]])
+            # print(self.network_graph_pos)
+
+            success, msg = self._add_raw_reaction(rxn, float(k))
+            return "Success!" if success else msg
+        
+        app.run_server(mode="inline")
+
+    def _add_raw_reaction(self, raw: str, k: float) -> Tuple[bool, str]:
+        """Add a new reaction given the raw text form and reaction constant.
+        
+        The species in the reaction must already be defined in the system. True is returned iff the
+        addition is successful. If the addition fails, a string error message is also returned.
+
+        The given raw text is split into reactants and products sections which are individually
+        parsed to determine matching symbols which can be combined together to create a new
+        reaction.
+        """
+        # Use Species Manager instead of the current class's symbol list as any defined symbol can
+        # be used in a reaction.
+        syms = {str(s): s for s in self.species_manager.all_symbols}
+        sides = [s.strip() for s in raw.split("=")]
+        if len(sides) != 2:
+            return False, "Invalid equation format: there must be exactly one \"=\"."
+
+        raw_reactants = [s.strip() for s in sides[0].split("+")]
+        raw_products = [s.strip() for s in sides[1].split("+")]
+
+        # Parse a single term such as "4x" into a coefficient and symbol
+        def parse_term(t: str) -> Tuple[str, int, bool]:
+            if len(t) < 1:
+                return "", 0, False
+            i = 0
+            c = t[i]
+            raw_coeff = ""
+            while c.isdigit():
+                raw_coeff += c
+                i += 1
+                c = t[i]
+            if raw_coeff == "":
+                raw_coeff = "1"
+            return t[i:], int(raw_coeff), True
+
+        # Create lists of tuples of sympy symbols and coefficients
+        reactants = []
+        for r in raw_reactants:
+            v, coeff, ok = parse_term(r)
+            if not ok:
+                return False, f"Invalid reactant species {r}."
+            if v not in syms:
+                return False, f"Reactant species does not exist {v}."
+            reactants.append((syms[v], coeff))
+
+        products = []
+        for p in raw_products:
+            v, coeff, ok = parse_term(p)
+            if not ok:
+                return False, f"Invalid product species {p}."
+            if v not in syms:
+                return False, f"Product species does not exist {v}."
+            products.append((syms[v], coeff))
+
+        if len(reactants) == 0:
+            return False, "At least one reactant is required"
+
+        # Create the sympy expressions
+        inp = reactants[0][1] * reactants[0][0]
+        for i in range(1, len(reactants)):
+            inp += reactants[i][1]*reactants[i][0]
+
+        out = products[0][1] * products[0][0]
+        for i in range(1, len(products)):
+            inp += products[i][1]*products[i][0]
+
+        rxn = Rxn(inp, out, k)
+
+        self.reactions.append(rxn)
+        self.terms.extend(rxn.to_terms())
+        self._update_symbols()
+
+        self._add_to_network_graph(rxn.reactants.free_symbols, rxn.products.free_symbols, rxn.rate_constant)
+        
+        return True, ""
 
     def text(self) -> str:
+        """Return a text representation of the reaction system, describing the chemical equations in natural language."""
         text: str = ""
         for rxn in self.reactions:
             text += rxn.text() + " "
@@ -349,3 +525,31 @@ class RxnSystem(monty.json.MSONable):
 
     def __repr__(self):
         return f'{self.__class__.__name__}(components={repr(self.components)})'
+
+    def id(self):
+        """Return a unique identifier for the reactions in this system.
+
+        This identifier does not ignore concentrations or reaction constants. The order of reactions
+        (and whether they are formed as reversible or pairs of regular reactions) also do not
+        matter.
+        """
+        f = []
+        for c in self.components:
+            if isinstance(c, Rxn):
+                f.extend(c.id())
+            elif isinstance(c, conditions.Schedule):
+                f.append(repr(c)) # TODO(rithvik): This is a hack
+        return "_".join(sorted(f))
+    
+    def fingerprint(self):
+        """Return a unique fingerprint for the reactions in this system.
+
+        This identifier ignores concentrations and reaction constants. The order of reactions
+        (and whether they are formed as reversible or pairs of regular reactions) also do not
+        matter.
+        """
+        f = []
+        for c in self.components:
+            if isinstance(c, Rxn):
+                f.extend(c.fingerprint())
+        return "_".join(sorted(f))

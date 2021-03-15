@@ -67,3 +67,6 @@ ffmpeg
 ffmpeg-python
 pygame==2.0.0.dev4
 networkx
+plotly
+jupyter-dash==0.3.1
+pymongo
