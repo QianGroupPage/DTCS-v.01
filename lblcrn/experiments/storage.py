@@ -80,15 +80,19 @@ class CRNStorage:
         for i, doc in enumerate(docs):
             data = CRNData(doc)
             db_env = np.array([])
+            raw_db_env = data.xps_data.envelope.to_numpy()
             input_i = 0
 
+            scale_factor = max(input_env) / max(raw_db_env)
+            raw_db_env *= scale_factor
+
             # Resample the stored data to match the number of datapoints in the external
-            for i, pt in enumerate(data.xps_data.envelope.to_numpy()):
+            for i, pt in enumerate(raw_db_env):
                 if pt > input_env[input_i]:
                     if i == 0:
                         db_env = np.append(db_env, pt)
                     else:
-                        db_env = np.append(db_env, data.xps_data.envelope.to_nump()[i-1])
+                        db_env = np.append(db_env, raw_db_env[i-1])
                     input_i += 1
                 if input_i == len(input_env):
                     break
