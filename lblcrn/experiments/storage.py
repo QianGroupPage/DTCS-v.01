@@ -6,6 +6,7 @@ import pymongo
 from bson.objectid import ObjectId
 import monty
 import pandas as pd
+import numpy as np
 
 from lblcrn.experiments.xps import XPSExperiment
 from lblcrn.experiments.time_series import CRNTimeSeries
@@ -75,9 +76,27 @@ class CRNStorage:
         
         min_rmse = -1
         min_rmse_data = None
+        input_env = xps_spectra.to_numpy()
         for i, doc in enumerate(docs):
             data = CRNData(doc)
-            rmse = ((xps_spectra.to_numpy() - data.xps_data.envelope.to_numpy())**2).mean() **.5
+            db_env = np.array([])
+            input_i = 0
+
+            # Resample the stored data to match the number of datapoints in the external
+            for i, pt in enumerate(data.xps_data.envelope.to_numpy()):
+                if pt > input_env[input_i]:
+                    if i == 0:
+                        db_env = np.append(db_env, pt)
+                    else:
+                        db_env = np.append(db_env, data.xps_data.envelope.to_nump()[i-1])
+                    input_i += 1
+                if input_i == len(input_env):
+                    break
+
+            if len(db_env) < len(input_env):
+                db_env = np.append(db_env, np.array([db_env[-1] for _ in range(len(input_env)-len(db_env))]))
+
+            rmse = ((input_env - db_env)**2).mean() **.5
             if rmse < min_rmse or min_rmse < 0:
                 min_rmse = rmse
                 min_rmse_data = data

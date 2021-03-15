@@ -44,7 +44,7 @@ def rsys_generator(scaled):
     )
     return rsys
 
-def ternary (n):
+def ternary(n):
     if n == 0:
         return [0]
     nums = []
