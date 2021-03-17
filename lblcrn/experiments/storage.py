@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 import json
-from typing import List
+from typing import List, Dict
 
 import pymongo
 from bson.objectid import ObjectId
@@ -24,7 +24,7 @@ class CRNStorage:
     def __init__(self, uri: str="mongodb://localhost:27017", db: str="lblcrn") -> None:
         self._mongo = pymongo.MongoClient(uri)[db]
     
-    def store(self, xps: XPSExperiment, ts: CRNTimeSeries) -> None:
+    def store(self, xps: XPSExperiment, ts: CRNTimeSeries, fake=False) -> Dict:
         raw_ts = ts.df.to_json(double_precision=15)
         raw_xps = xps.df.simulated.to_json(double_precision=15)
         rsys_fingerprint = ts.rsys.fingerprint()
@@ -42,7 +42,10 @@ class CRNStorage:
             "created_at": timestamp,
         }
 
-        self._mongo[crn_collection].insert_one(doc)
+        if not fake:
+            self._mongo[crn_collection].insert_one(doc)
+
+        return doc
 
     def load(self, doc_id: str) -> CRNData:
         doc = self._mongo[crn_collection].find_one({"_id": ObjectId(doc_id)})

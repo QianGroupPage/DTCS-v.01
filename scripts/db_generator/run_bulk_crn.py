@@ -1,6 +1,7 @@
 import argparse
 import sys
 import os
+import json
 
 from lblcrn.crn_sym import *
 from lblcrn.experiments.simulate import simulate
@@ -66,14 +67,17 @@ if __name__ == "__main__":
     rsys = rsys_generator(scaled)
 
     # Check if the system has already been simulated
-    existing = cs.load_from_rsys_id(rsys)
+    # existing = cs.load_from_rsys_id(rsys)
+    existing = []
     if len(existing) > 0:
         print("skipped", n)
     else:
         xps, ts = simulate(rsys, time=500, title="Factors: " + str(n))
 
         try:
-            cs.store(xps, ts)
+            doc = cs.store(xps, ts, fake=True)
+            with open(os.path.join("results", str(n)+".json"), 'w') as f:
+                json.dump(doc, f)
             print('Solved for '+str(n))
         except Exception as e:
             print("Unable to solve for " + str(n))
