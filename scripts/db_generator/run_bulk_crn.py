@@ -76,7 +76,7 @@ if __name__ == "__main__":
 
         try:
             doc = cs.store(xps, ts, fake=True)
-            with open(os.path.join("results", str(n)+".json"), 'w') as f:
+            with open(os.path.join("./results", str(n)+".json"), 'w') as f:
                 json.dump(doc, f)
             print('Solved for '+str(n))
         except Exception as e:
