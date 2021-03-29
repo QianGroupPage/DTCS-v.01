@@ -574,8 +574,11 @@ def simulate_surface_crn(manifest_filename,
                             name_found = True
                             break
                     if not name_found:
-                        raise Exception("Could not find executable ffmpeg in"
-                                        " any of the expected locations!")
+                        ffmpeg_name = 'ffmpeg'
+                        print("Could not find executable ffmpeg in" +
+                              " any of the expected locations!")
+                        # raise Exception("Could not find executable ffmpeg in"
+                        #                 " any of the expected locations!")
                 else:
                     raise Exception("Unexpected OS name '" + os.name + "'")
 
