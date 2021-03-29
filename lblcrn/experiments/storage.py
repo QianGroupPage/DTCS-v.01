@@ -1,11 +1,12 @@
 from datetime import datetime, timezone
 import json
-from typing import List
+from typing import List, Dict
 
 import pymongo
 from bson.objectid import ObjectId
 import monty
 import pandas as pd
+import numpy as np
 
 from lblcrn.experiments.xps import XPSExperiment
 from lblcrn.experiments.time_series import CRNTimeSeries
@@ -23,7 +24,7 @@ class CRNStorage:
     def __init__(self, uri: str="mongodb://localhost:27017", db: str="lblcrn") -> None:
         self._mongo = pymongo.MongoClient(uri)[db]
     
-    def store(self, xps: XPSExperiment, ts: CRNTimeSeries) -> None:
+    def store(self, xps: XPSExperiment, ts: CRNTimeSeries, fake=False) -> Dict:
         raw_ts = ts.df.to_json(double_precision=15)
         raw_xps = xps.df.simulated.to_json(double_precision=15)
         rsys_fingerprint = ts.rsys.fingerprint()
@@ -41,7 +42,10 @@ class CRNStorage:
             "created_at": timestamp,
         }
 
-        self._mongo[crn_collection].insert_one(doc)
+        if not fake:
+            self._mongo[crn_collection].insert_one(doc)
+
+        return doc
 
     def load(self, doc_id: str) -> CRNData:
         doc = self._mongo[crn_collection].find_one({"_id": ObjectId(doc_id)})
@@ -75,9 +79,31 @@ class CRNStorage:
         
         min_rmse = -1
         min_rmse_data = None
+        input_env = xps_spectra.to_numpy()
         for i, doc in enumerate(docs):
             data = CRNData(doc)
-            rmse = ((xps_spectra.to_numpy() - data.xps_data.envelope.to_numpy())**2).mean() **.5
+            db_env = np.array([])
+            raw_db_env = data.xps_data.envelope.to_numpy()
+            input_i = 0
+
+            scale_factor = max(input_env) / max(raw_db_env)
+            raw_db_env *= scale_factor
+
+            # Resample the stored data to match the number of datapoints in the external
+            for i, pt in enumerate(raw_db_env):
+                if pt > input_env[input_i]:
+                    if i == 0:
+                        db_env = np.append(db_env, pt)
+                    else:
+                        db_env = np.append(db_env, raw_db_env[i-1])
+                    input_i += 1
+                if input_i == len(input_env):
+                    break
+
+            if len(db_env) < len(input_env):
+                db_env = np.append(db_env, np.array([db_env[-1] for _ in range(len(input_env)-len(db_env))]))
+
+            rmse = ((input_env - db_env)**2).mean() **.5
             if rmse < min_rmse or min_rmse < 0:
                 min_rmse = rmse
                 min_rmse_data = data
