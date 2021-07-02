@@ -8,7 +8,7 @@ from uuid import uuid4
 
 from atomate.common.firetasks.glue_tasks import CopyFilesFromCalcLoc
 from atomate.vasp.config import DB_FILE, VASP_CMD
-from atomate.vasp.fireworks.core import OptimizeFW, StaticFW
+from atomate.vasp.fireworks.core import OptimizeFW, StaticFW, DFPTFW
 from atomate.vasp.powerups import add_additional_fields_to_taskdocs
 from fireworks import Firework, Workflow
 from fireworks.user_objects.firetasks.script_task import ScriptTask, PyTask
@@ -24,9 +24,9 @@ __email__ = 'andrewbogdan@lbl.gov'
 
 
 def get_wf_simulate_ir(
-    species,
-    vasp_cmd=VASP_CMD,
-    db_file=DB_FILE,
+        species,
+        vasp_cmd=VASP_CMD,
+        db_file=DB_FILE,
 ):
     """TODO
 
@@ -35,11 +35,19 @@ def get_wf_simulate_ir(
         vasp_cmd:
         db_file:
 
+    Specification Schema:
+        species: a list of dicts with keys:
+            name: TODO
+            structure: TODO
+            supercell_matrix: TODO
+            vis_relax_params: TODO
+            vis_born_params: TODO
+            vis_fconsts_params: TODO
+
     Returns:
         TODO
     """
     # Sanitize input
-
 
     # Generate workflow metadata to keep track of what is and isn't part of
     #  this workflow. This is used for database searching internally.
@@ -53,12 +61,45 @@ def get_wf_simulate_ir(
 
     _echo.echo(f'Creating Workflow "{wf_name}" with uuid {wf_uuid}...')
 
+    # Make the fireworks
+    fws = []
 
-def get_fws_ir_species(
+    index = 1
+    for specie in species:
+        fws.extend(_get_fws_ir_species(
+            structure=specie['structure'],
+            vis_params_relax=specie['vis_params_relax'],
+            vis_params_born=specie['vis_params_born'],
+            vis_params_fconsts=specie['vis_params_fconsts'],
+            supercell_matrix=specie['supercell_matrix'],
+            vasp_cmd=VASP_CMD,
+            db_file=DB_FILE,
+            tracking_id=f'{index}-{wf_uuid_head} ({specie["name"]})',
+        ))
+        index += 1
+
+    # Make the workflow
+    wf = Workflow(
+        fireworks=fws,
+        name=wf_name,
+        metadata=wf_meta,
+    )
+
+    # TODO: Apply common/necessary powerups, both user-supplied and built-in.
+    #  Use atomate.add_common_powerups.
+
+    wf = add_additional_fields_to_taskdocs(wf, {
+        'wf_meta': wf_meta
+    })
+
+    return wf
+
+
+def _get_fws_ir_species(
     structure,
-    relax_vis,
-    born_vis,
-    fconsts_vis,
+    vis_params_relax,
+    vis_params_born,
+    vis_params_fconsts,
     supercell_matrix=(1, 1, 1),
     vasp_cmd=VASP_CMD,
     db_file=DB_FILE,
@@ -68,9 +109,9 @@ def get_fws_ir_species(
 
     Args:
         structure:
-        relax_vis:
-        born_vis:
-        fconsts_vis:
+        vis_params_relax:
+        vis_params_born:
+        vis_params_fconsts:
         supercell_matrix:
         vasp_cmd:
         db_file:
@@ -88,7 +129,7 @@ def get_fws_ir_species(
     fw_vasp_relax = OptimizeFW(
         structure=structure,
         name=fv_vasp_relax_name,
-        vasp_input_set=relax_vis,
+        override_default_vasp_params=vis_params_relax,
         vasp_cmd=vasp_cmd,
         db_file=db_file,
     )
@@ -98,7 +139,7 @@ def get_fws_ir_species(
     fw_vasp_born = StaticFW(
         structure=structure,
         name=fw_vasp_born_name,
-        vasp_input_set=born_vis,
+        vasp_input_set_params=vis_params_born,
         prev_calc_loc=fv_vasp_relax_name,
         vasp_cmd=vasp_cmd,
         db_file=db_file,
@@ -111,7 +152,7 @@ def get_fws_ir_species(
         structure=structure * supercell_matrix,  # Optionally use a supercell
         name=fw_vasp_force_consts_name,
         prev_calc_loc=False,
-        vasp_input_set=fconsts_vis,
+        vasp_input_set_params=vis_params_fconsts,
         vasp_cmd=vasp_cmd,
         db_file=db_file,
     )
@@ -122,9 +163,9 @@ def get_fws_ir_species(
         tasks=[
             CopyFilesFromCalcLoc(
                 calc_loc=fw_vasp_born_name,
-                filenames=['OUTCAR']
+                filenames=['OUTCAR', 'vasprun.xml']
             ),
-            ScriptTask(script='outcar-born')],
+            ScriptTask(script='phonopy-vasp-born')],
         name=fw_outcar_to_born_name,
         parents=fw_vasp_born,
     )
