@@ -159,7 +159,7 @@ class ForwardSimConcs(FiretaskBase):
 
 def _make_mod_spec(updates: dict) -> dict:
     """
-    Convert a dictg into Firework's DictMod language in a sensible manner.
+    Convert a dict into Firework's DictMod language in a sensible manner.
     """
     to_set = {}
     to_push_all = {}

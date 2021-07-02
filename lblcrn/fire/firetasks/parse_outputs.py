@@ -21,7 +21,7 @@ _logger = get_logger(__name__)
 
 
 @explicit_serialize
-class MsonToDb(FiretaskBase):  # TODO: Move this out of the vasp module.
+class MsonToDb(FiretaskBase):
     """
     Copy Monty JSON data from a file to a database (or to another .json file).
 
