@@ -35,7 +35,21 @@ from lblcrn.crn_sym import *
 from lblcrn.experiments import *
 from lblcrn.surface_crn import *
 from lblcrn.surface_crn.connectivity import *
-from lblcrn.xps_data_processing import *
+
+# User input APIs
+from lblcrn.crn_sym.rxn_system import RxnSystem
+# Bulk CRN specific commands
+from lblcrn.crn_sym.rxn_system import Rxn
+from lblcrn.experiments import simulate  # This function returns (XPSExperiment, CRNTimeSeries)
+from lblcrn.experiments.time_series import CRNTimeSeries
+from lblcrn.experiments.xps import XPSExperiment
+# Surface CRN specific commands
+from lblcrn.crn_sym.surface import Surface
+from lblcrn.crn_sym.surface_reaction import SurfaceRxn, SurfaceRevRxn
+from lblcrn.surface_crn.scrn import scrn_simulate  # This function returns Results
+from lblcrn.surface_crn.results import Results
+# General IO helpers
+from lblcrn.tables import read_line_delimited_excel
 
 
 # Make the following names fake so that `from lblcrn import *` doesn't
@@ -60,6 +74,7 @@ def __getattr__(name: str):
     else:
         raise AttributeError(f'module \'{__name__}\' '
                              f'has no attribute \'{name}\'')
+
 
 def __setattr__(name: str, value):
     if name == 'do_echo':
