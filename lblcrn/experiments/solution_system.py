@@ -1,11 +1,9 @@
-from typing import List, Dict, Optional
+from typing import List, Optional
 import matplotlib.pyplot as plt
 import sympy as sym
-from lblcrn.crn_sym import reaction
 import lblcrn.experiments.xps_io as xps_io
-import lblcrn.experiments.xps as xps
 import lblcrn.experiments.simulate as simulate
-from lblcrn.experiments.tp_correlation import XPSTPCorrelator
+from lblcrn.model_input.relations.tprate_relation import TPRateRelation
 from lblcrn.experiments.time_series import CRNTimeSeries
 import pandas as pd
 
@@ -157,7 +155,7 @@ class XPSSystemRunner:
                  time: float,
                  initializer_data: List[XPSInitializationData],
                  multipliers: List[float],
-                 tp_correlator: Optional[XPSTPCorrelator] = None):
+                 tp_correlator: Optional[TPRateRelation] = None):
         """Create a new XPS system runner.
         """
         if len(multipliers) == 0:

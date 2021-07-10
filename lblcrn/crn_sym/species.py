@@ -23,6 +23,7 @@ import sympy as sym
 
 import lblcrn
 from lblcrn.crn_sym.surface import Site
+from lblcrn.model_input.model_input import InputElement
 
 _COLORS = itertools.cycle(['red', 'green', 'orange', 'blue', 'purple', 'pink',
                            'yellow', 'gray', 'cyan'])
@@ -71,8 +72,16 @@ class Species(monty.json.MSONable):
         orbitals: A list of Orbitals.
     """
 
-    def __init__(self, name: str, orbitals: List[Orbital], color: Union[Tuple[int], List[int], str] = None,
-                 parent=None, site: Site = None, include_sub_species: bool=True, size: int = 1):
+    def __init__(self,
+                 name: str,
+                 orbitals: List[Orbital],
+                 color: Union[Tuple[int],
+                 List[int], str] = None,
+                 parent=None,
+                 site: Site = None,
+                 include_sub_species: bool=True,
+                 size: int = 1,
+                 is_gas: bool=False):
         self.name = name
         self.name_without_suffix = name
 
@@ -86,6 +95,7 @@ class Species(monty.json.MSONable):
         self.include_sub_species = include_sub_species
         if include_sub_species and self.site and self.site != Site.default:
             self.create_sub_species(suffix=site.name, color=self.color)
+        self.is_gas = is_gas
 
     def create_sub_species(self, suffix: str = "", color: Union[Tuple[int], List[int], str] = "", entire_name: str ="",
                            orbitals: Union[Orbital, List[Orbital]] = None, site: Site = None):
@@ -170,7 +180,7 @@ class Marker(monty.json.MSONable):
         return f'{self.__class__.__name__}(name={repr(self.name)}, species={repr(self.species)}'
 
 
-class SpeciesManager(monty.json.MSONable):
+class SpeciesManager(InputElement):
     """A smart wrapper of a dictionary {sym.Symbol: Species}.
 
     Exists for the purpose of keeping track of which symbols correspond to
@@ -185,7 +195,10 @@ class SpeciesManager(monty.json.MSONable):
     for example you loaded the SpeciesManager from a file.
     """
 
-    def __init__(self, species: dict = None, colors: dict = None):
+    def __init__(self,
+                 species: dict = None,
+                 colors: dict = None,
+                 description: str = ""):
         if species:
             self._species = species
         else:
@@ -195,6 +208,7 @@ class SpeciesManager(monty.json.MSONable):
         self.default_surface_name = None
 
         self._markers = {}
+        super().__init__(description=description)
 
     @property
     def species(self) -> List[sym.Symbol]:
@@ -299,6 +313,17 @@ class SpeciesManager(monty.json.MSONable):
     def species_from_symbol(self, key: sym.Symbol) -> Species:
         return self._species[key]
 
+    def is_gas(self, species: sym.Symbol) -> bool:
+        """
+        Check if a species is gas.
+
+        :param species: a Sympy symbol referring to a gas species;
+        :return: whether the symbol is a gas.
+        """
+        if self.symbol_in_sm(key=species) and self.species_from_symbol(species):
+            return True
+        return False
+
     def symbol_in_sm(self, key: sym.Symbol) -> bool:
         return key in self._species
 
@@ -388,8 +413,7 @@ class SpeciesManager(monty.json.MSONable):
                         d[k] = [sym.Symbol(n)]
 
                 # if sub_s.site.name == Site.default:
-                #     all_defauly
-                #
+                #     all_default
 
             if k in d and d[k]:
                 d[k].append(k)

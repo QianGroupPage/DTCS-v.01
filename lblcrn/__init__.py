@@ -49,7 +49,9 @@ from lblcrn.crn_sym.surface_reaction import SurfaceRxn, SurfaceRevRxn
 from lblcrn.surface_crn.scrn import scrn_simulate  # This function returns Results
 from lblcrn.surface_crn.results import Results
 # General IO helpers
+from lblcrn.io.rsys_from_excel import excel_to_crn
 from lblcrn.tables import read_line_delimited_excel
+from lblcrn.model_input.state_variable import T, P
 
 
 # Make the following names fake so that `from lblcrn import *` doesn't

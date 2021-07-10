@@ -1,3 +1,7 @@
+"""
+Credit:
+Rithvik Panchapakesan
+"""
 from typing import List, Dict, Optional
 import numpy as np
 import re
@@ -20,7 +24,8 @@ num_defs_env_total_row = 6
 env_total_row_s_column = 2
 env_total_row_h_column = 3
 
-class XPSTPCorrelator:
+
+class TPRateRelation:
     """Correlate temperature and pressure terms to auto-scale reaction constants.
     """
     def __init__(self, tp_file: str, init_temp: float, init_pressure: float,
@@ -54,12 +59,11 @@ class XPSTPCorrelator:
         corr_g_t = (self.zpe + h - (s * temp) / 1000) / kcal_mol_ev_conversion_factor
         corr_g_p = boltzmann_constant * temp * np.log(pressure / standard_pressure)
         return corr_g_t + corr_g_p
-        
 
     def _parse_tp_file(self) -> None:
         """Parse the temperature and pressure specification jaguar file. Calculating corrG.
         """
-        zpe: float = 0.0 # kcal/mol
+        zpe: float = 0.0  # kcal/mol
 
         f = open(self.tp_file)
 
@@ -110,7 +114,6 @@ class XPSTPCorrelator:
         self.h[temp] = float(match.groups()[env_total_row_h_column])
         self.s[temp] = float(match.groups()[env_total_row_s_column])
 
-
     def constant(self, index: int, temp: float, pressure: float) -> float:
         """Given reaction index, temperature, pressure, and the type of reaction, return a reaction constant.
         """
@@ -139,4 +142,3 @@ class XPSTPCorrelator:
         """Get all reaction constants for a given temperature and pressure.
         """
         return [self.constant(i, temp, pressure) for i in range(len(self.init_constants))]
-

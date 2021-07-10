@@ -23,19 +23,20 @@ Usage:
     two initial concentrations, that's a contradiction).
 """
 
-from typing import Set
+from typing import Set, Optional
 
-import monty.json
 import sympy as sym
 from sympy.parsing import sympy_parser
 
 import lblcrn
+from lblcrn.model_input.model_input import InputElement
+import copy
 
 
 T = sym.Symbol('t')  # Time
 
 
-class ChemExpression(monty.json.MSONable):
+class ChemExpression(InputElement):
     """Abstract base class for classes in this module.
 
     It is essentially a pair of a symbol/species and an expression which
@@ -45,6 +46,7 @@ class ChemExpression(monty.json.MSONable):
     def __init__(self, symbol: sym.Symbol, expression: sym.Expr):
         self.symbol = symbol
         self.expression = sym.sympify(expression)
+        super().__init__(name=symbol, description=expression)
 
     def as_dict(self) -> dict:
         """Return a MSON-serializable dict representation."""
@@ -117,14 +119,15 @@ class ConcDiffEq(ChemExpression):
         return f'[{self.symbol}]\' = {self.expression}'
 
 
-class Schedule(monty.json.MSONable):
+# TODO: consider whether this should be an input element.
+class Schedule(InputElement):
     """A schedule describing when amounts of a species are added/removed.
 
     Attributes:
         symbol: The species the Schedule corresponds to.
     """
 
-    def __init__(self, symbol: sym.Symbol, schedule={}):  # TODO: Remove dict
+    def __init__(self, symbol: sym.Symbol, schedule={}, name="", description=""):  # TODO: Remove dict
         """Create a new schedule given a symbol and a schedule.
 
         The schedule can be either a dictionary or a list. Internally, it will
@@ -159,6 +162,7 @@ class Schedule(monty.json.MSONable):
         # Add the initial if it's not specified.
         if not 0 in self._schedule:
             self._schedule[0] = 0
+        super().__init__(name=name, description=description, value=schedule)
 
     def as_dict(self) -> dict:
         """Return a MSON-serializable dict representation."""
@@ -177,9 +181,33 @@ class Schedule(monty.json.MSONable):
         d['symbol'] = sympy_parser.parse_expr(d['symbol'])
         return cls(**d)
 
+    def update_conc(self, func=lambda x: x, inplace=False):
+        """
+        Update each concentration value in the schedule with a function of that value
+
+        :param func: function to update concentration value; by default, it's concentration.
+        :param inplace: if true, modify this object; otherwise, modify other objects;
+        :return: None if inplace, otherwise a deepcopy of current schedule with modified values.
+        """
+        if inplace:
+            for k in self._schedule:
+                self._schedule[k] = func(self._schedule[k])
+        else:
+             new_schedule = copy.deepcopy(self)
+             new_schedule = func(new_schedule)
+        return new_schedule
+
     def items(self):
         """So that you can do schedule.items() as if it's a dict."""
         return self._schedule.items()
+
+    @property
+    def initial_concentration(self) -> float:
+        """
+        Find the initial concentration;
+        :return: the initial concentration.
+        """
+        return self._schedule[0]
 
     def __str__(self):
         s = f'{self.__class__.__name__} for {self.symbol}:\n'
@@ -199,17 +227,13 @@ class Schedule(monty.json.MSONable):
 class Conc(Schedule):
     """Specify the initial concentration of a symbol.
 
-    Internally, it is a schedule where the symbol gets its initial
-    concentration added at t=0.
+    Internally, it is a schedule where the symbol gets its initial concentration added at t=0.
     """
-
-    def __init__(self, symbol, concentration, locs=[]):
+    def __init__(self, symbol, concentration, locs=[], name="", description=""):
         """
         Make a new Conc: it's a Schedule where it all gets added at t=0.
         """
-
-        Schedule.__init__(self, symbol, {0: concentration})
-        self.concentration = concentration
+        Schedule.__init__(self, symbol, {0: concentration}, name=name, description=description)
         self.locs = locs
 
     def as_dict(self) -> dict:
@@ -218,6 +242,10 @@ class Conc(Schedule):
         del d['schedule']
         d['concentration'] = self.concentration
         return d
+
+    @property
+    def concentration(self):
+        return self._schedule[0]
 
     @classmethod
     def from_dict(cls, d: dict):

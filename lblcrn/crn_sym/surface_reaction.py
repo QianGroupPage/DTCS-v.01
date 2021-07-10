@@ -13,6 +13,7 @@ class Markers():
         self.reactants = []
         self.products = []
 
+
 class SurfaceRxn(Rxn):
     """
     A chemical reaction with reactants, products, and a rate constant, tailored to map with the physical

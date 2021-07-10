@@ -1,11 +1,10 @@
 import copy
 import random
-from typing import List, Tuple, Dict
+from typing import Tuple, List, Dict, Optional
 
 import monty.json
 import networkx as nx
 import sympy as sym
-import plotly.graph_objects as go
 import numpy as np
 
 from jupyter_dash import JupyterDash
@@ -13,16 +12,16 @@ import dash_cytoscape as cyto
 import dash_html_components as html
 import dash_core_components as dcc
 import dash
-import IPython.display as display
 
 import lblcrn
 from lblcrn.common import color_to_RGB, generate_new_color
 from lblcrn.crn_sym import conditions, species, surface
 from lblcrn.crn_sym.reaction import RevRxn, Rxn
 from lblcrn.crn_sym.surface_reaction import SurfaceRxn
+from lblcrn.model_input import InputCollection, T, P, TPRateRelation, IdealGasLawRelation
 
 
-class RxnSystem(monty.json.MSONable):
+class RxnSystem(InputCollection):
     """A chemical reaction system, for simulation.
 
     A collection of Terms, Rxns, Schedules, etc. which describes a chemical
@@ -43,7 +42,7 @@ class RxnSystem(monty.json.MSONable):
     :var network_graph_pos: A position map for the network graph.
     """
 
-    def __init__(self, *components):
+    def __init__(self, *components, name: str = "", description: str = ""):
         """Create a new reaction system. Requires a SpeciesManager.
 
         Accepts Rxns, Revrxns, Concs, Schedules, Terms, ConcEqs,
@@ -53,6 +52,12 @@ class RxnSystem(monty.json.MSONable):
         not have to worry about unpacking the collection: it will unpack and
         flatten lists and tuples for you.
         """
+        # A partial list of all properties, with initial value.
+        # Relation to govern (T, P) and the rate for each species.
+        self.tprate_relation = None
+        # Relation to govern (T, P) and the gas concentration.
+        self.tpconc_relation = None
+
         assert len(components) > 0, 'Must pass at least one reaction and a species manager to a solution system.'
         if len(components) == 1:
             assert not isinstance(components[0], species.SpeciesManager), 'Must pass at least one reaction to a solution system.'
@@ -74,7 +79,7 @@ class RxnSystem(monty.json.MSONable):
 
         # Split into terms, schedules, and conc (diff.) eq.s
         # These are not sorted by the symbol index.
-        self.terms = [] #: Terms are terms.
+        self.terms = []  #: Terms are terms.
         self.surface_rxns = []
         self.schedules = []
         self.conc_eqs = []
@@ -82,6 +87,8 @@ class RxnSystem(monty.json.MSONable):
         self.species_manager = None
         self.surface = None
         self.reactions = []
+        self.temperature = T(value=None)
+        self.pressure = P(value=None)
 
         for component in self.components:
             if isinstance(component, conditions.Schedule):
@@ -92,6 +99,7 @@ class RxnSystem(monty.json.MSONable):
                 self.surface_rxns.append(component)
             elif isinstance(component, Rxn):
                 self.reactions.append(component)
+                # TODO (ye): double check if this mismatches with Surface CRN capabilities
                 self.terms.extend(component.to_terms())
             elif isinstance(component, conditions.Term):
                 self.terms.append(component)
@@ -103,17 +111,31 @@ class RxnSystem(monty.json.MSONable):
                 self.surface = component
             elif isinstance(component, species.SpeciesManager):
                 self.species_manager = component
+            elif isinstance(component, T):
+                self.temperature = component
+            elif isinstance(component, P):
+                self.pressure = component
             else:
                 raise AssertionError(f'Unknown input {component} of type ' + str(type(component)) + ' to reaction system.')
 
         assert self.species_manager is not None, 'Must pass a species manager to a solution system.'
 
-         # Share the surface name to the species manager
+        # Share the surface name to the species manager
         if self.surface is not None:
             self.species_manager.default_surface_name = self.surface.name
 
         self._update_symbols()
         self._generate_network_graph()
+
+        # Map the reactions to rates:
+        self.rxns_to_rates = {rxn: [rxn.rate_constant, rxn.rate_constant_reverse] if isinstance(rxn, RevRxn) else [rxn.rate_constant] for rxn in self.reactions}
+        # self.rxns_by_name = {rxn.name: rxn for rxn in self.rxns}
+        # TODO: support Surface CRN.
+        self.surface_rxns_to_rates = {surface_rxn: surface_rxn.rate for surface_rxn in self.surface_rxns}
+
+        super().__init__(name=name,
+                         description=description,
+                         elements=self.components)
 
     def _update_symbols(self):
         """Iterate over reactions etc and update the symbols set and scheduler.
@@ -174,7 +196,6 @@ class RxnSystem(monty.json.MSONable):
 
     def get_ode_functions(self):
         """Return the ODE function with signature func(t, y) of the system."""
-
         symbols = self.get_symbols()
         odes = self.get_ode_expressions()
         time = sym.symbols('t')
@@ -207,7 +228,6 @@ class RxnSystem(monty.json.MSONable):
             index = self.symbol_index[conc_eq.symbol]
             func = sym.lambdify((time, symbols), conc_eq.expression)
             conc_eq_funcs[index] = func
-
         return conc_eq_funcs
 
     def _get_species(self) -> List[species.Species]:
@@ -510,7 +530,8 @@ class RxnSystem(monty.json.MSONable):
         return True, ""
 
     def text(self) -> str:
-        """Return a text representation of the reaction system, describing the chemical equations in natural language."""
+        """Return a text representation of the reaction system, describing the chemical equations in
+        natural language."""
         text: str = ""
         for rxn in self.reactions:
             text += rxn.text() + " "
@@ -553,3 +574,75 @@ class RxnSystem(monty.json.MSONable):
             if isinstance(c, Rxn):
                 f.extend(c.fingerprint())
         return "_".join(sorted(f))
+
+    @property
+    def ode(self):
+        """
+        Return the list of ODE expressions.
+        """
+        return self.get_ode_expressions()
+
+    def show_ode(self):
+        """
+        Print the ODEs line by line.
+        """
+        for e in self.ode:
+            print(e)
+
+    def tp_enum(self, dft_outputs: Optional[Dict[str, str]] = None):
+        """
+        Build a new TP relation class based on DFT calculations.
+
+        :dft_ios: a dictionary from reaction name to the corresponding DFT output file path.
+        """
+        self.tprate_relation = {}
+        for name, dft_io in dft_outputs.items():
+            rxn = self.elements_by_name[name]
+            if isinstance(rxn, RevRxn):
+                self.tprate_relation[rxn.name] = TPRateRelation(tp_file=dft_io,
+                                                                init_temp=self.temperature.value,
+                                                                init_pressure=self.pressure.value,
+                                                                adsorption=[0] if rxn.is_adsorption else [1],
+                                                                desorption=[0] if rxn.is_desorption else [1],
+                                                                # TODO: include Surface Rxns
+                                                                init_constants=[rxn.rate_constant, rxn.rate_constant])
+            else:
+                self.tprate_relation[rxn.name] = TPRateRelation(tp_file=dft_io,
+                                                                init_temp=self.temperature.value,
+                                                                init_pressure=self.pressure.value,
+                                                                adsorption=[0] if rxn.is_adsorption else [],
+                                                                desorption=[0] if rxn.is_desorption else [],
+                                                                # TODO: include Surface Rxns
+                                                                init_constants=[rxn.rate_constant])
+        for s in self.schedules:
+            if self.species_manager.is_gas(s.symbol):
+                self.tpconc_relation[s.symbol] = IdealGasLawRelation(p_in_torr=self.pressure.value,
+                                                                     n=s.initial_concentration,
+                                                                     t=self.temperature.value)
+
+    def tp_next_rsys(self, t=None, p=None, inplace=False):
+        """
+        Return a new Rsys following same TP relation.
+
+        :return: if inplace, return None; otherwise, return a RxnSystem.
+        """
+        next_constants = {name: r.constants(temp=p, t=t) for name, r in self.tprate_relation.items()}
+        next_rsys = self if inplace else copy.deepcopy(self)
+        for name, next_constants in next_constants:
+            rxn = next_rsys.elements_by_name[name]
+            if rxn.is_reversible:
+                rxn.set_rate(rate=next_constants[0], rate_reverse=next_constants[1])
+            else:
+                rxn.set_rate(rate=next_constants[0])
+        next_rsys.temperature.value = t
+        next_rsys.pressure.value = p
+
+        # Reset gas molecular count, assuming that volume is constant.
+        for s in next_rsys.schedules:
+            if next_rsys.species_manager.is_gas(s.Symbol):
+                new_n = next_rsys.tpconc_relation[s.Symbol].calculate_n(p=p, t=t)
+                s.update_conc(func=lambda x: new_n, inplace=True)
+        if inplace:
+            return
+        else:
+            return next_rsys

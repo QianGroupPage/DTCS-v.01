@@ -16,10 +16,11 @@ from lblcrn.common import color_to_RGB
 from lblcrn.common.num_to_word import num2word
 from lblcrn.connectivity.triangulation import grid_size, show_triangulation
 from lblcrn.connectivity.voronoi import fold_numbers, produce_voronoi
+from lblcrn.model_input.model_input import InputElement
 
 
 # *** Classes ***
-class Surface:
+class Surface(InputElement):
     """
     A surface structure, by default, it is square with only top sites.
     """
@@ -31,7 +32,8 @@ class Surface:
                  color: Union[Tuple[int], List[int], str] = None,
                  poscar_file: str = "",
                  supercell_dimensions=1,
-                 surface_depth=1):
+                 surface_depth=1,
+                 description=""):
         # This surface is based on a POSCAR file.
         if poscar_file:
             self.use_coord_grid = True
@@ -66,6 +68,7 @@ class Surface:
                             " ".join(Surface.allowed_structures()))
 
         self.populate_sites()  # Populate all the sites for this surface
+        super().__init__(name, description)
 
     def set_initial_concentrations(self, species):
         self.initial_species = species
@@ -157,4 +160,3 @@ class Site:
 
     def set_color(self, color):
         self.color = color_to_RGB(color)
-

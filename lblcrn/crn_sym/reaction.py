@@ -25,17 +25,17 @@ Usage:
 """
 
 import copy
-from typing import List, Optional, Set, Tuple, Dict
+from typing import List, Optional, Set, Tuple, Dict, Union
 
-import monty.json
 import sympy as sym
 from sympy.parsing import sympy_parser
 
 import lblcrn
 from lblcrn.crn_sym import conditions
+from lblcrn.model_input.model_input import InputElement
 
 
-class Rxn(monty.json.MSONable):
+class Rxn(InputElement):
     """A chemical reaction with reactants, products, and a rate constant.
 
     Attributes:
@@ -45,7 +45,11 @@ class Rxn(monty.json.MSONable):
     """
 
     def __init__(self, reactants: Optional[sym.Expr],
-                 products: Optional[sym.Expr], k: float = 0):
+                 products: Optional[sym.Expr], k: float = 0,
+                 name: str = "",
+                 description: str = "",
+                 is_adsorption: bool = True,
+                 is_desorption: bool = False):
         """Create a new reaction by giving equation of the reactants.
 
         This is intended to look like reactants -> products @ rate k. That is,
@@ -56,6 +60,8 @@ class Rxn(monty.json.MSONable):
             reactants: The left-hand side of the chemical reaction.
             products: The right-hand side of the chemical reaction.
             k: The rate constant.
+            is_adsorption: whether the reaction is an adsorption rule;
+            is_desorption: whether the reaction is an desorption rule;
         """
 
         # Note that the type suggestion is Optional[sym.Expr].
@@ -72,6 +78,10 @@ class Rxn(monty.json.MSONable):
             self.products = products
 
         self.rate_constant = k
+        self.is_reversible = False
+        self.is_adsorption = is_adsorption
+        self.is_desorption = is_desorption
+        super().__init__(name, description)
 
     def get_symbols(self) -> Set[sym.Symbol]:
         symbol = set()
@@ -154,7 +164,7 @@ class Rxn(monty.json.MSONable):
 
         text += f" at a rate of {self.rate_constant}."
         return text
-    
+
     def coeff_dict_to_text(self, coeff_dict) -> str:
         """Given a coefficient dictionary, convert it to a string.
         """
@@ -190,6 +200,15 @@ class Rxn(monty.json.MSONable):
         """Return a unique identifier for this reaction, ignoring the reaction constant."""
         return [f'{self.reactants}->{self.products}']
 
+    def set_rate(self, rate: float) -> None:
+        """
+        Set or reset the rate constant in this reaction.
+
+        :param rate: the new rate constant.
+        :return: None
+        """
+        self.rate_constant = rate
+
 
 class RevRxn(Rxn):
     """A reversible reaction, essentially a reaction with two rate constants.
@@ -198,7 +217,10 @@ class RevRxn(Rxn):
     """
 
     def __init__(self, reactants: Optional[sym.Expr],
-                 products: Optional[sym.Expr], k: float, k2: float = None):
+                 products: Optional[sym.Expr], k: float, k2: float = None,
+                 is_adsorption: bool = True,
+                 is_desorption: bool = False
+                 ):
         """Create a reversible reaction by giving equation.
 
         This is intended to look like reactants <-> products @ rate k1,
@@ -209,14 +231,28 @@ class RevRxn(Rxn):
             products: The right-hand side of the chemical reaction.
             k: The rate constant.
             k2: Optional, the rate constant for the reverse reaction. If not supplied, it's assumed to be 1/k.
+            is_adsorption: whether the reaction is an adsorption rule;
+            is_desorption: whether the reaction is an desorption rule;
         """
-
         super().__init__(reactants, products, k)
 
-        if k2 is None:
-            self.rate_constant_reverse = 1 / k
-        else:
-            self.rate_constant_reverse = k2
+        self.set_rates(rate=k, rate_reverse=k2)
+        self.is_reversible = True
+        self.is_adsorption = is_adsorption
+        self.is_desorption = is_desorption
+
+    def set_rates(self, rate: float, rate_reverse: Optional[float]) -> None:
+        """
+        Set the rate and its reverse.
+
+        :param rate: the forward rate;
+        :param rate_reverse: the reverse direction rate;
+        :return: None.
+        """
+        self.set_rate(rate)
+        if rate_reverse is None:
+            rate_reverse = 1 / rate
+        self.rate_constant_reverse = rate_reverse
 
     def get_symbols(self) -> Set[sym.Symbol]:
         symbol = set()

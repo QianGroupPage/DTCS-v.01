@@ -6,6 +6,7 @@ from lblcrn import bulk_crn
 from lblcrn.experiments import time_series
 from lblcrn.crn_sym.rxn_system import RxnSystem
 
+
 def simulate(
     rsys: RxnSystem,
     time: Optional[float] = None,
