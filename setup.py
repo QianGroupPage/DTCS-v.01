@@ -36,7 +36,7 @@ DATA_FP = 'lblcrn/'
 # (destination path, path to search, [file patterns])
 # The search is recursive.
 INCLUDE = [
-    ('data', 'examples/objects', 'examples/objects', ['*.json']),
+    ('examples/objects', 'examples/objects', ['*.json']),
     ('docs', 'docs/build', ['*']),
 ]
 
