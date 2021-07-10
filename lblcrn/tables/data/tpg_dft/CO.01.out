@@ -1,0 +1,1490 @@
+Job CO.01 started on ion.wag.caltech.edu at Thu Jul  8 09:47:36 2021
+jobid: ion-0-60e72c26
+
+  +--------------------------------------------------------------------+
+  |  Jaguar version 8.8, release  11                                   |
+  |                                                                    |
+  |  Copyright Schrodinger, Inc.                                       |
+  |  All Rights Reserved.                                              |
+  |                                                                    |
+  |  The following have contributed to Jaguar (listed alphabetically): |
+  |  Mike Beachy, Art Bochevarov, Dale Braden, Yixiang Cao,            |
+  |  Chris Cortis, Rich Friesner, Bill Goddard, Hod Greeley,           |
+  |  Tom Hughes, Jean-Marc Langlois, Daniel Mainz, Rob Murphy,         |
+  |  Dean Philipp, Tom Pollard, Murco Ringnalda.                       |
+  |                                                                    |
+  |  Use of this program should be acknowledged in publications as:    |
+  |                                                                    |
+  |  Jaguar, version 8.8, Schrodinger, Inc., New York, NY, 2015.       |
+  |                                                                    |
+  |  A. D. Bochevarov, E. Harder, T. F. Hughes, J. R. Greenwood,       |
+  |  D. A. Braden, D. M. Philipp, D. Rinaldo, M. D. Halls,             |
+  |  J. Zhang, R. A. Friesner, "Jaguar: A High-Performance Quantum     |
+  |  Chemistry Software Program with Strengths in Life and Materials   |
+  |  Sciences", Int. J. Quantum Chem., 2013, 113(18), 2110-2142.       |
+  +--------------------------------------------------------------------+
+  
+  start of program pre
+  
+  Job name: CO.01
+  Executables used: /project/exec/schrodinger_2015/jaguar-v88011/bin/Linux-x86_64
+  Temporary files : /net/hulk/home3/jqian/.schrodinger/tmp/CO.01
+  Maestro file (input):  CO.01.mae
+  Maestro file (output): CO.02.mae
+  
+  
+  basis set:             lacvp**                         
+  net molecular charge:    0
+  multiplicity:            1
+  
+  number of basis functions....           28
+  
+ Input geometry:
+                                   angstroms
+  atom               x                 y                 z
+  C1            0.0000000000      0.0000000000      0.0000000000 
+  O1            0.0000000000      0.0000000000      1.1260980000 
+   
+  principal moments of inertia:
+        amu*angstrom^2:        0.00000        8.69434        8.69434
+                g*cm^2: 0.00000000E+00 1.44372821E-39 1.44372821E-39
+   
+  rotational constants:
+               cm^(-1):        infinite      1.93892092      1.93892092
+                   GHz:        infinite     58.12738675     58.12738675
+   
+  Z-matrix: (angstroms and degrees) 
+ C1
+ O1   C1 1.1260980000
+  
+  Molecular weight:      27.99 amu
+   
+  Stoichiometry: CO
+  Molecule is linear 
+  Molecular Point Group: C_inf_v 
+	Molecule translated to center of mass 
+	Molecule reoriented along symmetry axes
+  Point Group used: C_inf_v
+  
+ 
+Number of optimization coordinates:     1
+Number of independent coordinates:      1
+Number of non-redundant coordinates:    1
+Number of frozen coordinates:           0
+Number of harmonic constraints:         0
+ 
+Number of geometric degrees of freedom:     1
+Maximum geometric degrees of freedom:       1
+ " " " " " excluding dummy atoms:           1
+ 
+  
+ Symmetrized geometry:
+                                   angstroms
+  atom               x                 y                 z
+  C1            0.0000000000      0.0000000000      0.6433969029 
+  O1            0.0000000000      0.0000000000     -0.4827010971 
+   
+  Z-matrix: (angstroms and degrees) 
+ C1
+ O1   C1 1.1260980000
+  
+  nuclear repulsion energy.......      22.556212797 hartrees
+ 
+ Non-default options chosen:
+   SCF calculation type: DFT(pbe)                    
+   DFT=PBE(X+LC)+PW91 (PBE)
+   Geometry will be optimized in redundant internal coordinates
+   Vibrational frequencies and related properties will be computed
+      from analytic second derivatives
+   IR intensities will be computed
+   Thermochemical data will be computed for  25 temperatures starting at
+       298.15 K, at intervals of   25.00 K
+   Highest accuracy cutoffs used in SCF
+   Maximum number of geometry steps:   10
+   Mulliken populations computed by atom
+  
+ Temporary integer options set:
+     73=  2
+  
+  Peak memory usage:    519 Mb
+  
+  end of program pre
+   
+ Time(pre)  user:        0.3  user+sys:        0.3  wallclock:        1.4
+  
+  start of program onee
+  
+  smallest eigenvalue of S:    1.505E-02
+  number of canonical orbitals.....           28
+  Peak memory usage:    671 Mb
+  
+  end of program onee
+   
+ Time(onee)  user:        0.2  user+sys:        0.2  wallclock:        0.3
+  
+  start of program hfig
+  
+  initial wavefunction generated automatically from atomic wavefunctions
+ 
+  Irreducible     Total no   No of occupied orbitals 
+  representation  orbitals   Shell_1  Shell_2    ...
+  A1/Sig+           12          5
+  A2/Sig-            0          0
+  E2/Del1            2          0
+  E2/Del2            2          0
+  E1/Pi1             6          1
+  E1/Pi2             6          1
+  ------------------------
+  Orbital occupation/shell    1.000
+ 
+  Peak memory usage:    608 Mb
+  
+  end of program hfig
+   
+ Time(hfig)  user:        0.2  user+sys:        0.2  wallclock:        0.3
+  
+  start of program probe
+  
+  Peak memory usage:    608 Mb
+  
+  end of program probe
+   
+ Time(probe)  user:        0.2  user+sys:        0.2  wallclock:        0.2
+  
+  start of program grid
+  
+  
+   grid     grid set  grid #  grid sym
+  ------    --------  ------  --------
+  coarse        0        0        1
+  medium        2        1        8
+  fine          0        0        1
+  ultrafine     4        2        8
+  charge        0        0        1
+  gradient      4        2        8
+  density       0        0        1
+  DFT-fine    -11        3        8
+  DFT-med.    -10        4        8
+  DFT-grad    -12        5        8
+  DFT-der2     -8        6        8
+  DFT-cphf     -9        7        8
+  LMP2-enrg     4        2        8
+  LMP2-grad     2        1        8
+  DFT-cphf2   -15        8        8
+  PBF-dens      0        0        1
+  plotting      0        0        1
+  Rel-grad    -17        0        1
+  
+   
+  number of gridpoints: 
+     atom        C1       O1    total
+  grid # 1       28       29       57
+  grid # 2      108      111      219
+  grid # 3      939      939     1878
+  grid # 4      337      337      674
+  grid # 5     1079     1079     2158
+  grid # 6     2244     3936     6180
+  grid # 7      171      176      347
+  grid # 8      100      104      204
+   
+  Peak memory usage:    638 Mb
+  
+  end of program grid
+   
+ Time(grid)  user:        0.2  user+sys:        0.2  wallclock:        0.3
+  
+  start of program rwr
+  
+  Peak memory usage:    519 Mb
+  
+  end of program rwr
+   
+ Time(rwr)  user:        0.2  user+sys:        0.2  wallclock:        0.4
+  
+  start of program scf
+  
+ number of electrons..........         14
+ number of alpha electrons....          7
+ number of beta electrons.....          7
+ number of orbitals, total....         28
+ number of doubly-occ'd orbs..          7
+ number of open shell orbs....          0
+ number of occupied orbitals..          7
+ number of virtual orbitals...         21
+ number of hamiltonians.......          1
+ number of shells.............          1
+ SCF type: DFT=PBE(X+LC)+PW91 (PBE)
+  
+       i  u  d  i  g                   
+       t  p  i  c  r                                 RMS    maximum
+       e  d  i  u  i                       energy  density   DIIS  
+       r  t  s  t  d       total energy    change  change    error 
+  
+etot    1  N  N  1  U    -112.88686252040           1.5E-02  2.1E-01
+etot    2  N  Y  1  U    -113.10947980277  2.2E-01  1.4E-02  1.0E-01
+etot    3  N  Y  1  U    -113.00381472893 -1.1E-01  9.6E-03  2.3E-01
+etot    4  N  Y  1  U    -113.17569436707  1.7E-01  2.2E-03  2.9E-02
+etot    5  N  Y  1  U    -113.17944766220  3.8E-03  3.9E-04  4.2E-03
+etot    6  N  Y  1  U    -113.17954204088  9.4E-05  1.9E-05  4.8E-04
+etot    7  N  Y  1  U    -113.17954285969  8.2E-07  3.0E-07  2.6E-06
+etot    8  N  N  1  U    -113.17954285974  4.6E-11  0.0E+00  0.0E+00
+  
+  
+ Energy components, in hartrees:
+   (A)  Nuclear repulsion............      22.55621279711
+   (E)  Total one-electron terms.....    -198.42785311097
+   (I)  Total two-electron terms.....      62.69209745412
+   (J)    Coulomb....................      76.47065084134
+   (K)    Exchange+Correlation.......     -13.77855338722
+   (L)  Electronic energy............    -135.73575565685  (E+I)
+   (N)  Total energy.................    -113.17954285974  (A+L)
+  
+ SCFE: SCF energy: DFT(pbe)      -113.17954285974 hartrees   iterations:   8
+  
+ 
+ HOMO energy:    -0.31334
+ LUMO energy:    -0.05189
+ 
+  Orbital energies (hartrees)/symmetry label: 
+   -18.87049 A1/Sig+    -9.99692 A1/Sig+    -1.06765 A1/Sig+    -0.50298 A1/Sig+
+    -0.42112 E1/Pi1     -0.42112 E1/Pi2     -0.31334 A1/Sig+    -0.05189 E1/Pi2 
+    -0.05189 E1/Pi1      0.24250 A1/Sig+     0.47878 E1/Pi2      0.47878 E1/Pi1 
+     0.55796 A1/Sig+     0.71544 A1/Sig+     0.78570 A1/Sig+     0.86665 E1/Pi1 
+     0.86665 E1/Pi2 
+ 
+  Peak memory usage:    816 Mb
+  
+  end of program scf
+   
+ Time(scf)  user:        1.1  user+sys:        1.1  wallclock:        1.7
+  
+  start of program der1a
+  
+  Peak memory usage:    673 Mb
+  
+  end of program der1a
+   
+ Time(der1a)  user:        0.2  user+sys:        0.2  wallclock:        0.3
+  
+  start of program rwr
+  
+  Peak memory usage:    522 Mb
+  
+  end of program rwr
+   
+ Time(rwr)  user:        0.2  user+sys:        0.2  wallclock:        0.9
+  
+  start of program der1b
+  
+   
+  forces (hartrees/bohr) : total     
+   
+ atom  label           x              y              z
+ ---- --------   -------------  -------------  -------------
+    1 C1          0.000000E+00   0.000000E+00   5.494105E-02
+    2 O1          0.000000E+00   0.000000E+00  -5.510391E-02
+ -------------   -------------  -------------  -------------
+     total        0.000000E+00   0.000000E+00  -1.628684E-04
+   
+  Peak memory usage:    750 Mb
+  
+  end of program der1b
+   
+ Time(der1b)  user:        0.4  user+sys:        0.4  wallclock:        0.6
+  
+  start of program geopt
+  
+  geometry optimization step  1
+  energy:            -113.17954285974 hartrees
+  
+  gradient maximum:        5.5022E-02 .  (  4.5000E-04 )
+  gradient rms:            5.5022E-02 .  (  3.0000E-04 )
+  displacement maximum:    4.9767E-02 .  (  1.8000E-03 )
+  displacement rms:        4.9767E-02 .  (  1.2000E-03 )
+  
+  predicted energy change:  -1.3726E-03
+  step size:     0.04977
+  trust radius:  0.30000
+  
+  molecular structure not yet converged...
+  
+  center of mass moved by:
+     x:     0.0000E+00     y:     0.0000E+00     z:    -3.5509E-03
+  
+  new geometry: 
+                                   angstroms
+  atom               x                 y                 z
+  C1            0.0000000000      0.0000000000      0.6584438447 
+  O1            0.0000000000      0.0000000000     -0.4939898914 
+   
+  Z-matrix: (angstroms and degrees) 
+ C1
+ O1   C1 1.1524337361
+  
+  nuclear repulsion energy.......      22.040751951 hartrees
+  -------------------------------------------------
+ /  end of geometry optimization iteration   1   /
+ -------------------------------------------------
+   
+  Peak memory usage:    516 Mb
+  
+  end of program geopt
+   
+ Time(geopt)  user:        0.2  user+sys:        0.2  wallclock:        0.4
+  
+  start of program onee
+  
+  smallest eigenvalue of S:    1.599E-02
+  number of canonical orbitals.....           28
+  Peak memory usage:    671 Mb
+  
+  end of program onee
+   
+ Time(onee)  user:        0.2  user+sys:        0.2  wallclock:        0.3
+  
+  start of program probe
+  
+  Peak memory usage:    608 Mb
+  
+  end of program probe
+   
+ Time(probe)  user:        0.2  user+sys:        0.2  wallclock:        0.1
+  
+  start of program grid
+  
+  
+   grid     grid set  grid #  grid sym
+  ------    --------  ------  --------
+  coarse        0        0        1
+  medium        2        1        8
+  fine          0        0        1
+  ultrafine     4        2        8
+  charge        0        0        1
+  gradient      4        2        8
+  density       0        0        1
+  DFT-fine    -11        3        8
+  DFT-med.    -10        4        8
+  DFT-grad    -12        5        8
+  DFT-der2     -8        6        8
+  DFT-cphf     -9        7        8
+  LMP2-enrg     4        2        8
+  LMP2-grad     2        1        8
+  DFT-cphf2   -15        8        8
+  PBF-dens      0        0        1
+  plotting      0        0        1
+  Rel-grad    -17        0        1
+  
+   
+  number of gridpoints: 
+     atom        C1       O1    total
+  grid # 1       28       30       58
+  grid # 2      109      111      220
+  grid # 3      939      939     1878
+  grid # 4      337      337      674
+  grid # 5     1079     1079     2158
+  grid # 6     2244     3936     6180
+  grid # 7      171      176      347
+  grid # 8      100      104      204
+   
+  Peak memory usage:    638 Mb
+  
+  end of program grid
+   
+ Time(grid)  user:        0.2  user+sys:        0.2  wallclock:        0.3
+  
+  start of program rwr
+  
+  Peak memory usage:    519 Mb
+  
+  end of program rwr
+   
+ Time(rwr)  user:        0.2  user+sys:        0.2  wallclock:        0.2
+  
+  start of program scf
+  
+  
+       i  u  d  i  g                   
+       t  p  i  c  r                                 RMS    maximum
+       e  d  i  u  i                       energy  density   DIIS  
+       r  t  s  t  d       total energy    change  change    error 
+  
+etot    1  N  N  1  U    -113.18024566701           9.8E-04  6.3E-03
+etot    2  N  Y  1  U    -113.18050767701  2.6E-04  5.5E-04  5.6E-03
+etot    3  N  Y  1  U    -113.18042336061 -8.4E-05  4.1E-04  8.4E-03
+etot    4  N  Y  1  U    -113.18068163848  2.6E-04  8.7E-05  1.6E-03
+etot    5  N  Y  1  U    -113.18069220940  1.1E-05  1.5E-06  2.8E-05
+etot    6  N  N  1  U    -113.18069221309  3.7E-09  0.0E+00  0.0E+00
+  
+  
+ Energy components, in hartrees:
+   (A)  Nuclear repulsion............      22.04075195126
+   (E)  Total one-electron terms.....    -197.45409689875
+   (I)  Total two-electron terms.....      62.23265273440
+   (J)    Coulomb....................      75.98487637457
+   (K)    Exchange+Correlation.......     -13.75222364016
+   (L)  Electronic energy............    -135.22144416435  (E+I)
+   (N)  Total energy.................    -113.18069221309  (A+L)
+  
+ SCFE: SCF energy: DFT(pbe)      -113.18069221309 hartrees   iterations:   6
+  
+ 
+ HOMO energy:    -0.31584
+ LUMO energy:    -0.06195
+ 
+  Orbital energies (hartrees)/symmetry label: 
+   -18.87128 A1/Sig+   -10.00481 A1/Sig+    -1.05376 A1/Sig+    -0.50359 A1/Sig+
+    -0.41290 E1/Pi2     -0.41290 E1/Pi1     -0.31584 A1/Sig+    -0.06195 E1/Pi2 
+    -0.06195 E1/Pi1      0.23855 A1/Sig+     0.47982 E1/Pi2      0.47982 E1/Pi1 
+     0.55695 A1/Sig+     0.67531 A1/Sig+     0.78695 A1/Sig+     0.86549 E1/Pi1 
+     0.86549 E1/Pi2 
+ 
+  Peak memory usage:    816 Mb
+  
+  end of program scf
+   
+ Time(scf)  user:        0.9  user+sys:        0.9  wallclock:        1.4
+  
+  start of program der1a
+  
+  Peak memory usage:    673 Mb
+  
+  end of program der1a
+   
+ Time(der1a)  user:        0.2  user+sys:        0.2  wallclock:        0.4
+  
+  start of program rwr
+  
+  Peak memory usage:    522 Mb
+  
+  end of program rwr
+   
+ Time(rwr)  user:        0.2  user+sys:        0.2  wallclock:        0.4
+  
+  start of program der1b
+  
+   
+  forces (hartrees/bohr) : total     
+   
+ atom  label           x              y              z
+ ---- --------   -------------  -------------  -------------
+    1 C1          0.000000E+00   0.000000E+00  -7.578868E-03
+    2 O1          0.000000E+00   0.000000E+00   7.296212E-03
+ -------------   -------------  -------------  -------------
+     total        0.000000E+00   0.000000E+00  -2.826558E-04
+   
+  Peak memory usage:    750 Mb
+  
+  end of program der1b
+   
+ Time(der1b)  user:        0.3  user+sys:        0.3  wallclock:        0.4
+  
+  start of program geopt
+  
+  geometry optimization step  2
+  energy:            -113.18069221309 hartrees
+  
+  energy change:          -1.1494E-03 .  (  5.0000E-05 )
+  gradient maximum:        7.4375E-03 .  (  4.5000E-04 )
+  gradient rms:            7.4375E-03 .  (  3.0000E-04 )
+  displacement maximum:    5.9259E-03 .  (  1.8000E-03 )
+  displacement rms:        5.9259E-03 .  (  1.2000E-03 )
+  
+  predicted energy change:  -2.2038E-05
+  step size:     0.00593
+  trust radius:  0.30000
+  
+  molecular structure not yet converged...
+  
+  center of mass moved by:
+     x:     0.0000E+00     y:     0.0000E+00     z:     4.2282E-04
+  
+  new geometry: 
+                                   angstroms
+  atom               x                 y                 z
+  C1            0.0000000000      0.0000000000      0.6566521808 
+  O1            0.0000000000      0.0000000000     -0.4926457162 
+   
+  Z-matrix: (angstroms and degrees) 
+ C1
+ O1   C1 1.1492978970
+  
+  nuclear repulsion energy.......      22.100889755 hartrees
+  -------------------------------------------------
+ /  end of geometry optimization iteration   2   /
+ -------------------------------------------------
+   
+  Peak memory usage:    516 Mb
+  
+  end of program geopt
+   
+ Time(geopt)  user:        0.2  user+sys:        0.2  wallclock:        0.2
+  
+  start of program onee
+  
+  smallest eigenvalue of S:    1.588E-02
+  number of canonical orbitals.....           28
+  Peak memory usage:    671 Mb
+  
+  end of program onee
+   
+ Time(onee)  user:        0.2  user+sys:        0.2  wallclock:        0.2
+  
+  start of program probe
+  
+  Peak memory usage:    608 Mb
+  
+  end of program probe
+   
+ Time(probe)  user:        0.2  user+sys:        0.2  wallclock:        0.3
+  
+  start of program grid
+  
+  
+   grid     grid set  grid #  grid sym
+  ------    --------  ------  --------
+  coarse        0        0        1
+  medium        2        1        8
+  fine          0        0        1
+  ultrafine     4        2        8
+  charge        0        0        1
+  gradient      4        2        8
+  density       0        0        1
+  DFT-fine    -11        3        8
+  DFT-med.    -10        4        8
+  DFT-grad    -12        5        8
+  DFT-der2     -8        6        8
+  DFT-cphf     -9        7        8
+  LMP2-enrg     4        2        8
+  LMP2-grad     2        1        8
+  DFT-cphf2   -15        8        8
+  PBF-dens      0        0        1
+  plotting      0        0        1
+  Rel-grad    -17        0        1
+  
+   
+  number of gridpoints: 
+     atom        C1       O1    total
+  grid # 1       28       30       58
+  grid # 2      109      111      220
+  grid # 3      939      939     1878
+  grid # 4      337      337      674
+  grid # 5     1079     1079     2158
+  grid # 6     2244     3936     6180
+  grid # 7      171      176      347
+  grid # 8      100      104      204
+   
+  Peak memory usage:    638 Mb
+  
+  end of program grid
+   
+ Time(grid)  user:        0.2  user+sys:        0.2  wallclock:        0.3
+  
+  start of program rwr
+  
+  Peak memory usage:    519 Mb
+  
+  end of program rwr
+   
+ Time(rwr)  user:        0.2  user+sys:        0.2  wallclock:        0.2
+  
+  start of program scf
+  
+  
+       i  u  d  i  g                   
+       t  p  i  c  r                                 RMS    maximum
+       e  d  i  u  i                       energy  density   DIIS  
+       r  t  s  t  d       total energy    change  change    error 
+  
+etot    1  N  N  1  U    -113.18070821569           1.2E-04  7.3E-04
+etot    2  N  Y  1  U    -113.18071184401  3.6E-06  6.4E-05  6.5E-04
+etot    3  N  Y  1  U    -113.18071068298 -1.2E-06  4.7E-05  9.8E-04
+etot    4  N  Y  1  U    -113.18071422713  3.5E-06  1.0E-05  1.8E-04
+etot    5  N  Y  1  U    -113.18071436964  1.4E-07  6.0E-08  2.5E-06
+etot    6  N  N  1  U    -113.18071436966  2.2E-11  0.0E+00  0.0E+00
+  
+  
+ Energy components, in hartrees:
+   (A)  Nuclear repulsion............      22.10088975543
+   (E)  Total one-electron terms.....    -197.56799175808
+   (I)  Total two-electron terms.....      62.28638763299
+   (J)    Coulomb....................      76.04165920614
+   (K)    Exchange+Correlation.......     -13.75527157315
+   (L)  Electronic energy............    -135.28160412509  (E+I)
+   (N)  Total energy.................    -113.18071436966  (A+L)
+  
+ SCFE: SCF energy: DFT(pbe)      -113.18071436966 hartrees   iterations:   6
+  
+ 
+ HOMO energy:    -0.31555
+ LUMO energy:    -0.06078
+ 
+  Orbital energies (hartrees)/symmetry label: 
+   -18.87120 A1/Sig+   -10.00388 A1/Sig+    -1.05540 A1/Sig+    -0.50351 A1/Sig+
+    -0.41386 E1/Pi2     -0.41386 E1/Pi1     -0.31555 A1/Sig+    -0.06078 E1/Pi1 
+    -0.06078 E1/Pi2      0.23907 A1/Sig+     0.47970 E1/Pi2      0.47970 E1/Pi1 
+     0.55708 A1/Sig+     0.68009 A1/Sig+     0.78657 A1/Sig+     0.86563 E1/Pi1 
+     0.86563 E1/Pi2 
+ 
+  Peak memory usage:    816 Mb
+  
+  end of program scf
+   
+ Time(scf)  user:        0.9  user+sys:        0.9  wallclock:       21.7
+  
+  start of program der1a
+  
+  Peak memory usage:    673 Mb
+  
+  end of program der1a
+   
+ Time(der1a)  user:        0.2  user+sys:        0.2  wallclock:        0.4
+  
+  start of program rwr
+  
+  Peak memory usage:    522 Mb
+  
+  end of program rwr
+   
+ Time(rwr)  user:        0.2  user+sys:        0.2  wallclock:        0.2
+  
+  start of program der1b
+  
+   
+  forces (hartrees/bohr) : total     
+   
+ atom  label           x              y              z
+ ---- --------   -------------  -------------  -------------
+    1 C1          0.000000E+00   0.000000E+00  -7.317103E-04
+    2 O1          0.000000E+00   0.000000E+00   4.501315E-04
+ -------------   -------------  -------------  -------------
+     total        0.000000E+00   0.000000E+00  -2.815788E-04
+   
+  Peak memory usage:    750 Mb
+  
+  end of program der1b
+   
+ Time(der1b)  user:        0.3  user+sys:        0.3  wallclock:        0.4
+  
+  start of program geopt
+  
+  geometry optimization step  3
+  energy:            -113.18071436966 hartrees
+  
+  energy change:          -2.2157E-05 *  (  5.0000E-05 )
+  gradient maximum:        5.9092E-04 .  (  4.5000E-04 )
+  gradient rms:            5.9092E-04 .  (  3.0000E-04 )
+  displacement maximum:    5.0974E-04 *  (  1.8000E-03 )
+  displacement rms:        5.0974E-04 *  (  1.2000E-03 )
+  
+  predicted energy change:  -1.5111E-07
+  step size:     0.00051
+  trust radius:  0.30000
+  
+  molecular structure not yet converged...
+  
+  center of mass moved by:
+     x:     0.0000E+00     y:     0.0000E+00     z:     3.6370E-05
+  
+  new geometry: 
+                                   angstroms
+  atom               x                 y                 z
+  C1            0.0000000000      0.0000000000      0.6564980635 
+  O1            0.0000000000      0.0000000000     -0.4925300915 
+   
+  Z-matrix: (angstroms and degrees) 
+ C1
+ O1   C1 1.1490281549
+  
+  nuclear repulsion energy.......      22.106078088 hartrees
+  -------------------------------------------------
+ /  end of geometry optimization iteration   3   /
+ -------------------------------------------------
+   
+  Peak memory usage:    516 Mb
+  
+  end of program geopt
+   
+ Time(geopt)  user:        0.1  user+sys:        0.1  wallclock:        0.1
+  
+  start of program onee
+  
+  smallest eigenvalue of S:    1.587E-02
+  number of canonical orbitals.....           28
+  Peak memory usage:    671 Mb
+  
+  end of program onee
+   
+ Time(onee)  user:        0.2  user+sys:        0.2  wallclock:        0.3
+  
+  start of program probe
+  
+  Peak memory usage:    608 Mb
+  
+  end of program probe
+   
+ Time(probe)  user:        0.2  user+sys:        0.2  wallclock:        0.1
+  
+  start of program grid
+  
+  
+   grid     grid set  grid #  grid sym
+  ------    --------  ------  --------
+  coarse        0        0        1
+  medium        2        1        8
+  fine          0        0        1
+  ultrafine     4        2        8
+  charge        0        0        1
+  gradient      4        2        8
+  density       0        0        1
+  DFT-fine    -11        3        8
+  DFT-med.    -10        4        8
+  DFT-grad    -12        5        8
+  DFT-der2     -8        6        8
+  DFT-cphf     -9        7        8
+  LMP2-enrg     4        2        8
+  LMP2-grad     2        1        8
+  DFT-cphf2   -15        8        8
+  PBF-dens      0        0        1
+  plotting      0        0        1
+  Rel-grad    -17        0        1
+  
+   
+  number of gridpoints: 
+     atom        C1       O1    total
+  grid # 1       28       30       58
+  grid # 2      109      111      220
+  grid # 3      939      939     1878
+  grid # 4      337      337      674
+  grid # 5     1079     1079     2158
+  grid # 6     2244     3936     6180
+  grid # 7      171      176      347
+  grid # 8      100      104      204
+   
+  Peak memory usage:    638 Mb
+  
+  end of program grid
+   
+ Time(grid)  user:        0.2  user+sys:        0.2  wallclock:        0.3
+  
+  start of program rwr
+  
+  Peak memory usage:    519 Mb
+  
+  end of program rwr
+   
+ Time(rwr)  user:        0.2  user+sys:        0.2  wallclock:        0.2
+  
+  start of program scf
+  
+  
+       i  u  d  i  g                   
+       t  p  i  c  r                                 RMS    maximum
+       e  d  i  u  i                       energy  density   DIIS  
+       r  t  s  t  d       total energy    change  change    error 
+  
+etot    1  N  N  1  U    -113.18071433215           9.9E-06  6.4E-05
+etot    2  N  Y  1  U    -113.18071436073  2.9E-08  5.3E-06  5.3E-05
+etot    3  N  Y  1  U    -113.18071435190 -8.8E-09  4.0E-06  8.2E-05
+etot    4  N  N  1  U    -113.18071437632  2.4E-08  0.0E+00  0.0E+00
+  
+  
+ Energy components, in hartrees:
+   (A)  Nuclear repulsion............      22.10607808849
+   (E)  Total one-electron terms.....    -197.57778983431
+   (I)  Total two-electron terms.....      62.29099736949
+   (J)    Coulomb....................      76.04652854310
+   (K)    Exchange+Correlation.......     -13.75553117360
+   (L)  Electronic energy............    -135.28679246482  (E+I)
+   (N)  Total energy.................    -113.18071437632  (A+L)
+  
+ SCFE: SCF energy: DFT(pbe)      -113.18071437632 hartrees   iterations:   4
+  
+ 
+ HOMO energy:    -0.31553
+ LUMO energy:    -0.06068
+ 
+  Orbital energies (hartrees)/symmetry label: 
+   -18.87117 A1/Sig+   -10.00383 A1/Sig+    -1.05554 A1/Sig+    -0.50350 A1/Sig+
+    -0.41394 E1/Pi2     -0.41394 E1/Pi1     -0.31553 A1/Sig+    -0.06068 E1/Pi2 
+    -0.06068 E1/Pi1      0.23911 A1/Sig+     0.47968 E1/Pi2      0.47968 E1/Pi1 
+     0.55708 A1/Sig+     0.68050 A1/Sig+     0.78655 A1/Sig+     0.86565 E1/Pi2 
+     0.86565 E1/Pi1 
+ 
+  Peak memory usage:    816 Mb
+  
+  end of program scf
+   
+ Time(scf)  user:        0.8  user+sys:        0.8  wallclock:        1.2
+  
+  start of program der1a
+  
+  Peak memory usage:    673 Mb
+  
+  end of program der1a
+   
+ Time(der1a)  user:        0.2  user+sys:        0.2  wallclock:        0.2
+  
+  start of program rwr
+  
+  Peak memory usage:    522 Mb
+  
+  end of program rwr
+   
+ Time(rwr)  user:        0.2  user+sys:        0.2  wallclock:        0.2
+  
+  start of program der1b
+  
+   
+  forces (hartrees/bohr) : total     
+   
+ atom  label           x              y              z
+ ---- --------   -------------  -------------  -------------
+    1 C1          0.000000E+00   0.000000E+00  -1.334916E-04
+    2 O1          0.000000E+00   0.000000E+00  -1.477701E-04
+ -------------   -------------  -------------  -------------
+     total        0.000000E+00   0.000000E+00  -2.812617E-04
+   
+  Peak memory usage:    750 Mb
+  
+  end of program der1b
+   
+ Time(der1b)  user:        0.4  user+sys:        0.4  wallclock:        0.4
+  
+  start of program geopt
+  
+  geometry optimization step  4
+  energy:            -113.18071437632 hartrees
+  
+  energy change:          -6.6595E-09 !  (  5.0000E-05 )
+  gradient maximum:        7.1393E-06 #  (  4.5000E-04 )
+  gradient rms:            7.1393E-06 #  (  3.0000E-04 )
+  displacement maximum:    2.3399E-07 #  (  1.8000E-03 )
+  displacement rms:        2.3399E-07 #  (  1.2000E-03 )
+  
+  predicted energy change:  -1.6384E-12
+  step size:     0.00000
+  trust radius:  0.30000
+  
+  ********************************************************
+  **           Geometry optimization complete           **
+  ********************************************************
+  
+  Checking the geometry optimization convergence pattern ...
+  
+  best                    worst
+  ==0=====1=====2=====3=====4==
+    ^                          
+  
+  Convergence category 0: monotonic convergence.
+  Geometry optimization was OK.
+  
+  center of mass moved by:
+     x:     0.0000E+00     y:     0.0000E+00     z:     0.0000E+00
+  
+  final geometry: 
+                                   angstroms
+  atom               x                 y                 z
+  C1            0.0000000000      0.0000000000      0.6564980635 
+  O1            0.0000000000      0.0000000000     -0.4925300915 
+   
+  principal moments of inertia:
+        amu*angstrom^2:        0.00000        9.05202        9.05202
+                g*cm^2: 0.00000000E+00 1.50312262E-39 1.50312262E-39
+   
+  rotational constants:
+               cm^(-1):        infinite      1.86230637      1.86230637
+                   GHz:        infinite     55.83054047     55.83054047
+   
+  Z-matrix: (angstroms and degrees) 
+ C1
+ O1   C1 1.1490281549
+  
+  nuclear repulsion energy.......      22.106078088 hartrees
+  -------------------------------------------------
+ /  end of geometry optimization iteration   4   /
+ -------------------------------------------------
+   
+  Peak memory usage:    643 Mb
+  
+  end of program geopt
+   
+ Time(geopt)  user:        0.5  user+sys:        0.5  wallclock:        0.7
+  
+  start of program ch
+  
+  Atomic charges from Mulliken population analysis: 
+   
+ Atom       C1           O1      
+ Charge    0.13032     -0.13032
+  
+  sum of atomic charges:    -0.000000
+   
+  Peak memory usage:    680 Mb
+  
+  end of program ch
+   
+ Time(ch)  user:        0.6  user+sys:        0.6  wallclock:        0.8
+  
+  start of program cutabab2
+  
+  Peak memory usage:    616 Mb
+  
+  end of program cutabab2
+   
+ Time(cutabab2)  user:        0.2  user+sys:        0.2  wallclock:        0.3
+  
+  start of program der2a
+  
+  Peak memory usage:    673 Mb
+  
+  end of program der2a
+   
+ Time(der2a)  user:        0.2  user+sys:        0.2  wallclock:        0.2
+  
+  start of program grid
+  
+  
+   Turning symmetry off because some of the
+   following programs cannot use it.
+  
+   grid     grid set  grid #  grid sym
+  ------    --------  ------  --------
+  coarse        0        0        1
+  medium        2        1        8
+  fine          0        0        1
+  ultrafine     4        2        8
+  charge        0        0        1
+  gradient      4        2        8
+  density       0        0        1
+  DFT-fine    -11        3        8
+  DFT-med.    -10        4        8
+  DFT-grad    -12        5        8
+  DFT-der2     -8        6        8
+  DFT-cphf     -9        7        8
+  LMP2-enrg     4        2        8
+  LMP2-grad     2        1        8
+  DFT-cphf2   -15        8        8
+  PBF-dens      0        0        1
+  plotting      0        0        1
+  Rel-grad    -17        0        1
+  
+   
+  number of gridpoints: 
+     atom        C1       O1    total
+  grid # 1      120      125      245
+  grid # 2      511      523     1034
+  grid # 3     4304     4304     8608
+  grid # 4     1192     1192     2384
+  grid # 5     5226     5226    10452
+  grid # 6    12650    23504    36154
+  grid # 7      688      714     1402
+  grid # 8      358      360      718
+   
+  Peak memory usage:    640 Mb
+  
+  end of program grid
+   
+ Time(grid)  user:        0.2  user+sys:        0.2  wallclock:        0.4
+  
+  start of program der2b
+  
+  Peak memory usage:    806 Mb
+  
+  end of program der2b
+   
+ Time(der2b)  user:        0.7  user+sys:        0.7  wallclock:        0.8
+  
+  start of program der2nda
+  
+ 
+  Peak memory usage:    671 Mb
+  
+  end of program der2nda
+   
+ Time(der2nda)  user:        0.2  user+sys:        0.2  wallclock:        0.3
+  
+  start of program der2ndb
+  
+  Peak memory usage:    633 Mb
+  
+  end of program der2ndb
+   
+ Time(der2ndb)  user:        1.9  user+sys:        1.9  wallclock:        1.9
+  
+  start of program rwr
+  
+  Peak memory usage:    519 Mb
+  
+  end of program rwr
+   
+ Time(rwr)  user:        0.2  user+sys:        0.2  wallclock:        0.2
+  
+  start of program cphfa
+  
+       1  vectors produced in CPHF
+  
+     v    i  j  k  i  g
+     e    t  c  c  c  r
+     c    e  o  o  u  i
+     t    r  r  r  t  d       RMS  
+  
+     1    1  0  0  6  M     7.0E-02
+     1    2  0  0  6  M     9.8E-03
+     1    3  0  0  6  M     4.2E-04
+     1    4  0  0  6  M     2.6E-05
+  
+  
+  Atomic Polar Tensors (au): Total
+  =========================
+  
+  APT for atom C1      
+  --------------------------------------
+       -0.0302       0.0000       0.0000
+        0.0000      -0.0302       0.0000
+        0.0000       0.0000       0.6302
+  --------------------------------------
+  
+  APT for atom O1      
+  --------------------------------------
+        0.0302      -0.0000      -0.0000
+       -0.0000       0.0302      -0.0000
+       -0.0000      -0.0000      -0.6302
+  --------------------------------------
+  
+  Peak memory usage:    742 Mb
+  
+  end of program cphfa
+   
+ Time(cphfa)  user:        0.6  user+sys:        0.6  wallclock:        1.1
+  
+  start of program freq
+  
+   
+  harmonic frequencies in cm**-1, reduced masses in amu,
+  force constants in mDyne/A, and
+  normal modes in cartesian coordinates:
+  IR intensities in km/mol
+  
+  frequencies      2125.28
+  symmetries       A1/Sig+ 
+  intensities        56.46
+  reduc. mass         6.86
+  force const        18.25
+    C1       X     0.00000
+    C1       Y     0.00000
+    C1       Z    -0.21820
+    O1       X     0.00000
+    O1       Y     0.00000
+    O1       Z     0.16370
+  
+  Number of imaginary frequencies:   0
+   
+  Writing vibrational animation data to CO.01.vib
+  Writing vibrational spectrum data to CO.01_vib.spm
+  
+  Thermochemical properties at    1.0000 atm
+  
+  rotational symmetry number:  1
+
+  rotational temperatures (K):      2.679440      2.679440
+   
+  vibrational temperatures:
+       mode:      1
+  temp. (K):  3057.80
+   
+   
+  Thermodynamic properties calculated assuming an ideal gas
+
+  In the table below, the units for temperature
+  are kelvins, the units for U, H, and G are
+  kcal/mol and the units for Cv and S are cal/(mol K)
+
+  The zero point energy (ZPE):      3.038 kcal/mol
+  is not included in U, H, or G in the table below
+
+
+  T =   298.15 K
+   
+              U         Cv          S          H          G        ln(Q)
+          ---------  ---------  ---------  ---------  ---------  ---------
+  trans.      0.889      2.981     35.923      1.481     -9.229   15.57716
+    rot.      0.592      1.987     11.351      0.592     -2.792    4.71199
+    vib.      0.000      0.007      0.001      0.000     -0.000    0.00004
+   elec.      0.000      0.000      0.000      0.000      0.000    0.00000
+   total      1.481      4.975     47.275      2.074    -12.021   20.28918
+   
+  Total internal energy, Utot (SCFE + ZPE + U):    -113.173512 hartrees
+              Total enthalpy, Htot (Utot + pV):    -113.172568 hartrees
+    Total Gibbs free energy, Gtot (Htot - T*S):    -113.195029 hartrees
+
+
+  T =   323.15 K
+   
+              U         Cv          S          H          G        ln(Q)
+          ---------  ---------  ---------  ---------  ---------  ---------
+  trans.      0.963      2.981     36.323      1.605    -10.132   15.77846
+    rot.      0.642      1.987     11.511      0.642     -3.078    4.79251
+    vib.      0.000      0.014      0.002      0.000     -0.000    0.00008
+   elec.      0.000      0.000      0.000      0.000      0.000    0.00000
+   total      1.606      4.982     47.836      2.248    -13.210   20.57104
+   
+  Total internal energy, Utot (SCFE + ZPE + U):    -113.173313 hartrees
+              Total enthalpy, Htot (Utot + pV):    -113.172290 hartrees
+    Total Gibbs free energy, Gtot (Htot - T*S):    -113.196924 hartrees
+
+
+  T =   348.15 K
+   
+              U         Cv          S          H          G        ln(Q)
+          ---------  ---------  ---------  ---------  ---------  ---------
+  trans.      1.038      2.981     36.693      1.730    -11.045   15.96475
+    rot.      0.692      1.987     11.659      0.692     -3.367    4.86703
+    vib.      0.001      0.024      0.003      0.001     -0.000    0.00015
+   elec.      0.000      0.000      0.000      0.000      0.000    0.00000
+   total      1.731      4.992     48.355      2.422    -14.412   20.83193
+   
+  Total internal energy, Utot (SCFE + ZPE + U):    -113.173115 hartrees
+              Total enthalpy, Htot (Utot + pV):    -113.172012 hartrees
+    Total Gibbs free energy, Gtot (Htot - T*S):    -113.198840 hartrees
+
+
+  T =   373.15 K
+   
+              U         Cv          S          H          G        ln(Q)
+          ---------  ---------  ---------  ---------  ---------  ---------
+  trans.      1.112      2.981     37.038      1.854    -11.967   16.13812
+    rot.      0.742      1.987     11.797      0.742     -3.660    4.93637
+    vib.      0.002      0.037      0.005      0.002     -0.000    0.00028
+   elec.      0.000      0.000      0.000      0.000      0.000    0.00000
+   total      1.855      5.005     48.840      2.597    -15.627   21.07477
+   
+  Total internal energy, Utot (SCFE + ZPE + U):    -113.172916 hartrees
+              Total enthalpy, Htot (Utot + pV):    -113.171734 hartrees
+    Total Gibbs free energy, Gtot (Htot - T*S):    -113.200777 hartrees
+
+
+  T =   398.15 K
+   
+              U         Cv          S          H          G        ln(Q)
+          ---------  ---------  ---------  ---------  ---------  ---------
+  trans.      1.187      2.981     37.360      1.978    -12.897   16.30024
+    rot.      0.791      1.987     11.926      0.791     -3.957    5.00122
+    vib.      0.003      0.054      0.008      0.003     -0.000    0.00046
+   elec.      0.000      0.000      0.000      0.000      0.000    0.00000
+   total      1.981      5.022     49.294      2.772    -16.854   21.30192
+   
+  Total internal energy, Utot (SCFE + ZPE + U):    -113.172716 hartrees
+              Total enthalpy, Htot (Utot + pV):    -113.171455 hartrees
+    Total Gibbs free energy, Gtot (Htot - T*S):    -113.202732 hartrees
+
+
+  T =   423.15 K
+   
+              U         Cv          S          H          G        ln(Q)
+          ---------  ---------  ---------  ---------  ---------  ---------
+  trans.      1.261      2.981     37.662      2.102    -13.835   16.45248
+    rot.      0.841      1.987     12.047      0.841     -4.257    5.06212
+    vib.      0.004      0.076      0.012      0.004     -0.001    0.00073
+   elec.      0.000      0.000      0.000      0.000      0.000    0.00000
+   total      2.107      5.044     49.721      2.948    -18.092   21.51533
+   
+  Total internal energy, Utot (SCFE + ZPE + U):    -113.172515 hartrees
+              Total enthalpy, Htot (Utot + pV):    -113.171175 hartrees
+    Total Gibbs free energy, Gtot (Htot - T*S):    -113.204704 hartrees
+
+
+  T =   448.15 K
+   
+              U         Cv          S          H          G        ln(Q)
+          ---------  ---------  ---------  ---------  ---------  ---------
+  trans.      1.336      2.981     37.948      2.226    -14.780   16.59599
+    rot.      0.891      1.987     12.161      0.891     -4.559    5.11952
+    vib.      0.007      0.101      0.017      0.007     -0.001    0.00109
+   elec.      0.000      0.000      0.000      0.000      0.000    0.00000
+   total      2.233      5.069     50.125      3.124    -19.340   21.71660
+   
+  Total internal energy, Utot (SCFE + ZPE + U):    -113.172314 hartrees
+              Total enthalpy, Htot (Utot + pV):    -113.170895 hartrees
+    Total Gibbs free energy, Gtot (Htot - T*S):    -113.206693 hartrees
+
+
+  T =   473.15 K
+   
+              U         Cv          S          H          G        ln(Q)
+          ---------  ---------  ---------  ---------  ---------  ---------
+  trans.      1.410      2.981     38.217      2.351    -15.732   16.73170
+    rot.      0.940      1.987     12.269      0.940     -4.865    5.17380
+    vib.      0.009      0.130      0.023      0.009     -0.001    0.00156
+   elec.      0.000      0.000      0.000      0.000      0.000    0.00000
+   total      2.360      5.098     50.509      3.300    -20.598   21.90706
+   
+  Total internal energy, Utot (SCFE + ZPE + U):    -113.172112 hartrees
+              Total enthalpy, Htot (Utot + pV):    -113.170613 hartrees
+    Total Gibbs free energy, Gtot (Htot - T*S):    -113.208698 hartrees
+
+
+  T =   498.15 K
+   
+              U         Cv          S          H          G        ln(Q)
+          ---------  ---------  ---------  ---------  ---------  ---------
+  trans.      1.485      2.981     38.473      2.475    -16.691   16.86042
+    rot.      0.990      1.987     12.371      0.990     -5.173    5.22529
+    vib.      0.013      0.162      0.031      0.013     -0.002    0.00216
+   elec.      0.000      0.000      0.000      0.000      0.000    0.00000
+   total      2.488      5.130     50.875      3.478    -21.865   22.08787
+   
+  Total internal energy, Utot (SCFE + ZPE + U):    -113.171908 hartrees
+              Total enthalpy, Htot (Utot + pV):    -113.170330 hartrees
+    Total Gibbs free energy, Gtot (Htot - T*S):    -113.210717 hartrees
+
+
+  T =   523.15 K
+   
+              U         Cv          S          H          G        ln(Q)
+          ---------  ---------  ---------  ---------  ---------  ---------
+  trans.      1.559      2.981     38.716      2.599    -17.655   16.98284
+    rot.      1.040      1.987     12.468      1.040     -5.483    5.27426
+    vib.      0.018      0.198      0.039      0.018     -0.003    0.00290
+   elec.      0.000      0.000      0.000      0.000      0.000    0.00000
+   total      2.617      5.166     51.224      3.656    -23.142   22.26000
+   
+  Total internal energy, Utot (SCFE + ZPE + U):    -113.171703 hartrees
+              Total enthalpy, Htot (Utot + pV):    -113.170046 hartrees
+    Total Gibbs free energy, Gtot (Htot - T*S):    -113.212751 hartrees
+
+
+  T =   548.15 K
+   
+              U         Cv          S          H          G        ln(Q)
+          ---------  ---------  ---------  ---------  ---------  ---------
+  trans.      1.634      2.981     38.948      2.723    -18.626   17.09954
+    rot.      1.089      1.987     12.561      1.089     -5.796    5.32094
+    vib.      0.023      0.235      0.050      0.023     -0.004    0.00379
+   elec.      0.000      0.000      0.000      0.000      0.000    0.00000
+   total      2.746      5.203     51.559      3.836    -24.426   22.42427
+   
+  Total internal energy, Utot (SCFE + ZPE + U):    -113.171496 hartrees
+              Total enthalpy, Htot (Utot + pV):    -113.169760 hartrees
+    Total Gibbs free energy, Gtot (Htot - T*S):    -113.214799 hartrees
+
+
+  T =   573.15 K
+   
+              U         Cv          S          H          G        ln(Q)
+          ---------  ---------  ---------  ---------  ---------  ---------
+  trans.      1.708      2.981     39.170      2.847    -19.603   17.21104
+    rot.      1.139      1.987     12.650      1.139     -6.111    5.36554
+    vib.      0.029      0.275      0.061      0.029     -0.006    0.00483
+   elec.      0.000      0.000      0.000      0.000      0.000    0.00000
+   total      2.877      5.243     51.880      4.016    -25.719   22.58141
+   
+  Total internal energy, Utot (SCFE + ZPE + U):    -113.171288 hartrees
+              Total enthalpy, Htot (Utot + pV):    -113.169473 hartrees
+    Total Gibbs free energy, Gtot (Htot - T*S):    -113.216859 hartrees
+
+
+  T =   598.15 K
+   
+              U         Cv          S          H          G        ln(Q)
+          ---------  ---------  ---------  ---------  ---------  ---------
+  trans.      1.783      2.981     39.382      2.972    -20.585   17.31777
+    rot.      1.189      1.987     12.734      1.189     -6.428    5.40823
+    vib.      0.037      0.317      0.074      0.037     -0.007    0.00604
+   elec.      0.000      0.000      0.000      0.000      0.000    0.00000
+   total      3.008      5.285     52.190      4.197    -27.020   22.73205
+   
+  Total internal energy, Utot (SCFE + ZPE + U):    -113.171078 hartrees
+              Total enthalpy, Htot (Utot + pV):    -113.169184 hartrees
+    Total Gibbs free energy, Gtot (Htot - T*S):    -113.218932 hartrees
+
+
+  T =   623.15 K
+   
+              U         Cv          S          H          G        ln(Q)
+          ---------  ---------  ---------  ---------  ---------  ---------
+  trans.      1.857      2.981     39.585      3.096    -21.572   17.42013
+    rot.      1.238      1.987     12.816      1.238     -6.748    5.44918
+    vib.      0.045      0.359      0.087      0.045     -0.009    0.00742
+   elec.      0.000      0.000      0.000      0.000      0.000    0.00000
+   total      3.141      5.327     52.489      4.379    -28.329   22.87674
+   
+  Total internal energy, Utot (SCFE + ZPE + U):    -113.170867 hartrees
+              Total enthalpy, Htot (Utot + pV):    -113.168894 hartrees
+    Total Gibbs free energy, Gtot (Htot - T*S):    -113.221018 hartrees
+
+
+  T =   648.15 K
+   
+              U         Cv          S          H          G        ln(Q)
+          ---------  ---------  ---------  ---------  ---------  ---------
+  trans.      1.932      2.981     39.781      3.220    -22.564   17.51847
+    rot.      1.288      1.987     12.894      1.288     -7.069    5.48851
+    vib.      0.055      0.402      0.102      0.055     -0.012    0.00898
+   elec.      0.000      0.000      0.000      0.000      0.000    0.00000
+   total      3.275      5.370     52.777      4.563    -29.645   23.01596
+   
+  Total internal energy, Utot (SCFE + ZPE + U):    -113.170654 hartrees
+              Total enthalpy, Htot (Utot + pV):    -113.168601 hartrees
+    Total Gibbs free energy, Gtot (Htot - T*S):    -113.223115 hartrees
+
+
+  T =   673.15 K
+   
+              U         Cv          S          H          G        ln(Q)
+          ---------  ---------  ---------  ---------  ---------  ---------
+  trans.      2.007      2.981     39.969      3.344    -23.561   17.61309
+    rot.      1.338      1.987     12.969      1.338     -7.393    5.52636
+    vib.      0.065      0.446      0.118      0.065     -0.014    0.01070
+   elec.      0.000      0.000      0.000      0.000      0.000    0.00000
+   total      3.410      5.414     53.056      4.747    -30.968   23.15015
+   
+  Total internal energy, Utot (SCFE + ZPE + U):    -113.170439 hartrees
+              Total enthalpy, Htot (Utot + pV):    -113.168307 hartrees
+    Total Gibbs free energy, Gtot (Htot - T*S):    -113.225223 hartrees
+
+
+  T =   698.15 K
+   
+              U         Cv          S          H          G        ln(Q)
+          ---------  ---------  ---------  ---------  ---------  ---------
+  trans.      2.081      2.981     40.150      3.468    -24.562   17.70425
+    rot.      1.387      1.987     13.042      1.387     -7.718    5.56283
+    vib.      0.077      0.490      0.135      0.077     -0.017    0.01261
+   elec.      0.000      0.000      0.000      0.000      0.000    0.00000
+   total      3.546      5.458     53.327      4.933    -32.297   23.27968
+   
+  Total internal energy, Utot (SCFE + ZPE + U):    -113.170223 hartrees
+              Total enthalpy, Htot (Utot + pV):    -113.168012 hartrees
+    Total Gibbs free energy, Gtot (Htot - T*S):    -113.227342 hartrees
+
+
+  T =   723.15 K
+   
+              U         Cv          S          H          G        ln(Q)
+          ---------  ---------  ---------  ---------  ---------  ---------
+  trans.      2.156      2.981     40.325      3.593    -25.568   17.79221
+    rot.      1.437      1.987     13.112      1.437     -8.045    5.59801
+    vib.      0.090      0.533      0.153      0.090     -0.021    0.01468
+   elec.      0.000      0.000      0.000      0.000      0.000    0.00000
+   total      3.682      5.501     53.590      5.120    -33.634   23.40490
+   
+  Total internal energy, Utot (SCFE + ZPE + U):    -113.170004 hartrees
+              Total enthalpy, Htot (Utot + pV):    -113.167714 hartrees
+    Total Gibbs free energy, Gtot (Htot - T*S):    -113.229472 hartrees
+
+
+  T =   748.15 K
+   
+              U         Cv          S          H          G        ln(Q)
+          ---------  ---------  ---------  ---------  ---------  ---------
+  trans.      2.230      2.981     40.494      3.717    -26.579   17.87718
+    rot.      1.487      1.987     13.179      1.487     -8.373    5.63200
+    vib.      0.104      0.576      0.172      0.104     -0.025    0.01693
+   elec.      0.000      0.000      0.000      0.000      0.000    0.00000
+   total      3.821      5.544     53.845      5.307    -34.977   23.52610
+   
+  Total internal energy, Utot (SCFE + ZPE + U):    -113.169784 hartrees
+              Total enthalpy, Htot (Utot + pV):    -113.167415 hartrees
+    Total Gibbs free energy, Gtot (Htot - T*S):    -113.231612 hartrees
+
+
+  T =   773.15 K
+   
+              U         Cv          S          H          G        ln(Q)
+          ---------  ---------  ---------  ---------  ---------  ---------
+  trans.      2.305      2.981     40.657      3.841    -27.593   17.95935
+    rot.      1.536      1.987     13.244      1.536     -8.704    5.66487
+    vib.      0.119      0.619      0.192      0.119     -0.030    0.01934
+   elec.      0.000      0.000      0.000      0.000      0.000    0.00000
+   total      3.960      5.587     54.093      5.496    -36.326   23.64356
+   
+  Total internal energy, Utot (SCFE + ZPE + U):    -113.169562 hartrees
+              Total enthalpy, Htot (Utot + pV):    -113.167114 hartrees
+    Total Gibbs free energy, Gtot (Htot - T*S):    -113.233762 hartrees
+
+
+  T =   798.15 K
+   
+              U         Cv          S          H          G        ln(Q)
+          ---------  ---------  ---------  ---------  ---------  ---------
+  trans.      2.379      2.981     40.815      3.965    -28.611   18.03891
+    rot.      1.586      1.987     13.308      1.586     -9.035    5.69669
+    vib.      0.135      0.661      0.212      0.135     -0.035    0.02192
+   elec.      0.000      0.000      0.000      0.000      0.000    0.00000
+   total      4.100      5.629     54.335      5.686    -37.682   23.75752
+   
+  Total internal energy, Utot (SCFE + ZPE + U):    -113.169339 hartrees
+              Total enthalpy, Htot (Utot + pV):    -113.166811 hartrees
+    Total Gibbs free energy, Gtot (Htot - T*S):    -113.235922 hartrees
+
+
+  T =   823.15 K
+   
+              U         Cv          S          H          G        ln(Q)
+          ---------  ---------  ---------  ---------  ---------  ---------
+  trans.      2.454      2.981     40.968      4.089    -29.634   18.11601
+    rot.      1.636      1.987     13.369      1.636     -9.369    5.72753
+    vib.      0.152      0.702      0.233      0.152     -0.040    0.02466
+   elec.      0.000      0.000      0.000      0.000      0.000    0.00000
+   total      4.241      5.670     54.571      5.877    -39.043   23.86821
+   
+  Total internal energy, Utot (SCFE + ZPE + U):    -113.169114 hartrees
+              Total enthalpy, Htot (Utot + pV):    -113.166507 hartrees
+    Total Gibbs free energy, Gtot (Htot - T*S):    -113.238091 hartrees
+
+
+  T =   848.15 K
+   
+              U         Cv          S          H          G        ln(Q)
+          ---------  ---------  ---------  ---------  ---------  ---------
+  trans.      2.528      2.981     41.117      4.214    -30.660   18.19081
+    rot.      1.685      1.987     13.428      1.685     -9.704    5.75745
+    vib.      0.170      0.742      0.255      0.170     -0.046    0.02756
+   elec.      0.000      0.000      0.000      0.000      0.000    0.00000
+   total      4.383      5.710     54.800      6.069    -40.410   23.97582
+   
+  Total internal energy, Utot (SCFE + ZPE + U):    -113.168887 hartrees
+              Total enthalpy, Htot (Utot + pV):    -113.166201 hartrees
+    Total Gibbs free energy, Gtot (Htot - T*S):    -113.240270 hartrees
+
+
+  T =   873.15 K
+   
+              U         Cv          S          H          G        ln(Q)
+          ---------  ---------  ---------  ---------  ---------  ---------
+  trans.      2.603      2.981     41.261      4.338    -31.689   18.26343
+    rot.      1.735      1.987     13.486      1.735    -10.040    5.78650
+    vib.      0.189      0.781      0.277      0.189     -0.053    0.03060
+   elec.      0.000      0.000      0.000      0.000      0.000    0.00000
+   total      4.527      5.749     55.024      6.262    -41.783   24.08053
+   
+  Total internal energy, Utot (SCFE + ZPE + U):    -113.168659 hartrees
+              Total enthalpy, Htot (Utot + pV):    -113.165894 hartrees
+    Total Gibbs free energy, Gtot (Htot - T*S):    -113.242458 hartrees
+
+
+  T =   898.15 K
+   
+              U         Cv          S          H          G        ln(Q)
+          ---------  ---------  ---------  ---------  ---------  ---------
+  trans.      2.677      2.981     41.401      4.462    -32.723   18.33401
+    rot.      1.785      1.987     13.542      1.785    -10.378    5.81473
+    vib.      0.209      0.819      0.300      0.209     -0.060    0.03379
+   elec.      0.000      0.000      0.000      0.000      0.000    0.00000
+   total      4.671      5.787     55.243      6.456    -43.161   24.18252
+   
+  Total internal energy, Utot (SCFE + ZPE + U):    -113.168429 hartrees
+              Total enthalpy, Htot (Utot + pV):    -113.165585 hartrees
+    Total Gibbs free energy, Gtot (Htot - T*S):    -113.244654 hartrees
+   
+  Peak memory usage:    643 Mb
+  
+  end of program freq
+   
+ Time(freq)  user:        0.5  user+sys:        0.5  wallclock:        0.9
+
+ Total cpu seconds     user:       8.292   user+sys:       8.292
+  
+ Total elapsed time:    63 seconds
+
+Job CO.01 completed on ion.wag.caltech.edu at Thu Jul  8 09:48:39 2021
