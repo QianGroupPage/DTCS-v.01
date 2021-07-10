@@ -56,7 +56,9 @@ if __name__ == '__main__':
     setuptools.setup(name='lblcrn',
                      version=__version__,
                      packages=setuptools.find_packages(),
-                     package_data={'lblcrn': ['resources/*.csv']},
+                     package_data={'lblcrn': ['resources/*.csv',
+                                              'tables/data',
+                                              'tables/mechanisms/data']},
                      data_files=data_files,
                      install_requires=[
                          'matplotlib',  # Core dependencies
