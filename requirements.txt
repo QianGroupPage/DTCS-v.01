@@ -8,6 +8,7 @@ bleach
 certifi
 chardet
 cycler
+dash_cytoscape
 decorator
 defusedxml
 entrypoints

@@ -4,3 +4,5 @@ include README.md
 include docs/*
 include examples/*
 include lblcrn/resources/*.csv
+include lblcrn/tables/data
+include lblcrn/tables/mechanisms/data
