@@ -35,6 +35,7 @@ nbconvert
 nbformat
 notebook
 numpy
+openpyxl
 pandas
 pandocfilters
 parso

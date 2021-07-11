@@ -83,6 +83,7 @@ if __name__ == '__main__':
                          'jupyter-dash==0.3.1',
                          'dash_cytoscape',
                          'appnope',
+                         'openpyxl',  # Implicitly required by the Pandas.read_excel
                          'attrs',  # Following dependencies may also be installed via Conda
                          'backcall',
                          'bleach',
