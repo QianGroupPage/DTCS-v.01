@@ -23,7 +23,7 @@ os.environ['LBLCRN_DO_ECHO'] = 'false'
 _DATA_FILES_PATH = sys.prefix + '/lblcrn/'
 
 # Master version information. Modifying this should update everything else.
-__version__ = 'dev0.1.2.4'
+__version__ = 'dev0.1.2.5'
 
 import lblcrn._examples as lblcrn_examples
 import lblcrn._resources as lblcrn_resources
