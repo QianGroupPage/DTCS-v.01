@@ -4,8 +4,8 @@ A chemical reaction network solver
 ## How to Install
 if you are using Anaconda:
 
-    conda install git
-    conda install git+https://github.com/rithvikp/lbl-crn
+    conda install git pip
+    git clone https://github.com/rithvikp/lbl-crn
 
 if you are using normal Python:
 
