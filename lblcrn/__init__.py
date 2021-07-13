@@ -35,7 +35,6 @@ from lblcrn.crn_sym import *
 from lblcrn.experiments import *
 from lblcrn.surface_crn import *
 from lblcrn.surface_crn.connectivity import *
-<<<<<<< Updated upstream
 
 # User input APIs
 from lblcrn.crn_sym.rxn_system import RxnSystem
@@ -53,8 +52,6 @@ from lblcrn.surface_crn.results import Results
 from lblcrn.crn_io import excel_to_crn
 from lblcrn.tables import read_line_delimited_excel
 from lblcrn.model_input.state_variable import T, P
-=======
->>>>>>> Stashed changes
 
 
 # Make the following names fake so that `from lblcrn import *` doesn't
