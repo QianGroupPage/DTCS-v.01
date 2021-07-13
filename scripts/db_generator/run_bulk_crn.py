@@ -76,8 +76,11 @@ if __name__ == "__main__":
 
         try:
             doc = cs.store(xps, ts, fake=True)
+            doc["_id"] = str(doc["_id"])
+            doc["created_at"] = str(doc["created_at"])
             with open(os.path.join("./results", str(n)+".json"), 'w') as f:
-                json.dump(doc, f)
+                json.load(doc, f)
+                f.flush()
             print('Solved for '+str(n))
         except Exception as e:
-            print("Unable to solve for " + str(n))
+            print("Unable to solve for " + str(n) + ": " + str(e))
