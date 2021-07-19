@@ -53,25 +53,39 @@ def simulate_and_compare(rsys_generator, scaled, exp_env, exp_be):
 
     return xps, rmse
 
-def crn_acquisition(rsys_generator, experimental_file_path):
-    data = read_new_data(experimental_file_path)[0]
+class CRNAcquisition:
+    def __init__(self, rsys_generator, experimental_file_path):
+        data = read_new_data(experimental_file_path)[0]
 
-    intensities, bes = np.array([]), np.array([])
-    for i, be in enumerate(data.binding_energies):
-        if be <= 534:
-            intensities = np.append(intensities, data.intensities[i])
-            bes = np.append(bes, be)
+        intensities, bes = np.array([]), np.array([])
+        for i, be in enumerate(data.binding_energies):
+            if be <= 534:
+                intensities = np.append(intensities, data.intensities[i])
+                bes = np.append(bes, be)
 
-    series = pd.Series(data=intensities, index=bes)
-    exp_env = series.to_numpy()
-    exp_be = series.index.to_numpy().astype(float)
+        series = pd.Series(data=intensities, index=bes)
 
-    def acquisition(x, obj):
-        rmses = []
-        for scaled in x:
-            xps, rmse = simulate_and_compare(rsys_generator, scaled, exp_env, exp_be)
-            print(rmse, x[0])
-            rmses.append(-rmse)
-        return np.array(rmses)
+        self.exp_env = series.to_numpy()
+        self.exp_be = series.index.to_numpy().astype(float)
+        self.rsys_generator = rsys_generator
 
-    return acquisition
+        self.rmse_evolution = []
+        self.best_constants = []
+        self.best_rmse = -1
+
+    def func(self):
+        def acquisition(x, obj):
+            calculated_rmses = []
+            for scaled in x:
+                print("start")
+                xps, rmse = simulate_and_compare(self.rsys_generator, scaled, self.exp_env, self.exp_be)
+                print(rmse, x[0])
+
+                if self.best_rmse < 0 or self.best_rmse > rmse:
+                    self.best_constants = list(scaled)
+                    self.best_rmse = rmse
+
+                calculated_rmses.append(-rmse)
+            self.rmse_evolution.append(-np.mean(calculated_rmses))
+            return np.array(calculated_rmses)
+        return acquisition
