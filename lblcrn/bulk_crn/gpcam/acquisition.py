@@ -17,7 +17,7 @@ from lblcrn.experiments.storage import CRNStorage, CRNData
 
 def simulate_and_compare(rsys_generator, scaled, exp_env, exp_be):
     rsys = rsys_generator(scaled)
-    xps, ts = simulate(rsys, time=500, title="")
+    xps, ts = simulate(rsys, time=500, title="", experimental=pd.Series(data=exp_env, index=exp_be))
 
     db_env = np.array([])
 
@@ -86,6 +86,6 @@ class CRNAcquisition:
                     self.best_rmse = rmse
 
                 calculated_rmses.append(-rmse)
-            self.rmse_evolution.append(-np.mean(calculated_rmses))
+            self.rmse_evolution.append(-np.min(calculated_rmses))
             return np.array(calculated_rmses)
         return acquisition
