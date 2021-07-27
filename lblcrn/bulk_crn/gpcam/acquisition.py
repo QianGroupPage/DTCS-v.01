@@ -53,6 +53,8 @@ def simulate_and_compare(rsys_generator, scaled, exp_env, exp_be):
 
     return xps, rmse
 
+best_constants_count = 10
+
 class CRNAcquisition:
     def __init__(self, rsys_generator, experimental_file_path):
         data = read_new_data(experimental_file_path)[0]
@@ -70,22 +72,28 @@ class CRNAcquisition:
         self.rsys_generator = rsys_generator
 
         self.rmse_evolution = []
+        # Contains tuples of (constants, rmse).
+        # This list will be ordered in ascending order of rmse.
         self.best_constants = []
-        self.best_rmse = -1
 
     def func(self):
         def acquisition(x, obj):
             calculated_rmses = []
             for scaled in x:
-                print("start")
                 xps, rmse = simulate_and_compare(self.rsys_generator, scaled, self.exp_env, self.exp_be)
-                print(rmse, x[0])
 
-                if self.best_rmse < 0 or self.best_rmse > rmse:
-                    self.best_constants = list(scaled)
-                    self.best_rmse = rmse
+                if len(self.best_constants) < best_constants_count:
+                    self.best_constants.append((list(scaled), rmse))
+                    self.best_constants.sort(key=lambda x: x[1])
+                elif max(self.best_constants, key=lambda x: x[1])[1] > rmse:
+                    self.best_constants[len(self.best_constants)-1] = (list(scaled), rmse)
+                    self.best_constants.sort(key=lambda x: x[1])
 
-                calculated_rmses.append(-rmse)
-            self.rmse_evolution.append(-np.min(calculated_rmses))
-            return np.array(calculated_rmses)
+                calculated_rmses.append(rmse)
+
+            self.rmse_evolution.append(np.min(calculated_rmses))
+
+            print([x[1] for x in self.best_constants])
+
+            return -(np.array(calculated_rmses))
         return acquisition
