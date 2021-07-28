@@ -25,7 +25,7 @@ Example:
 """
 
 import bisect
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Union
 
 from matplotlib import pyplot as plt
 import monty.json
@@ -158,6 +158,10 @@ class CRNTimeSeries(experiment.Experiment):
             species: A list of sym.Symbols, the species to plot.
             **kwargs: Forwarded.
         """
+
+        for i, name in enumerate(species):
+            if isinstance(name, str):
+                species[i] = sym.Symbol(name)
         self.df[species].plot(ax=ax, **kwargs)
 
     # --- Utility -------------------------------------------------------------
@@ -183,6 +187,33 @@ class CRNTimeSeries(experiment.Experiment):
         d['t'] = self.t
         d['y'] = np.transpose(self.df.to_numpy())
         return d
+
+    def tof(self, species: Union[str, sym.Symbol], step_difference: bool=False) -> float:
+        """
+        TOF series for the result
+
+        :param species: species name in either string or sympy.Symbol
+        :param step_difference: if True, define TOF as local concentration difference / local time step size;
+                                otherwise, define TOF as concentration so far / time till now;
+        # :param n: number used to calcualte n-th discrete difference if step_difference is True.
+        :return: TOF series.
+        """
+        if isinstance(species, sym.Symbol):
+            species = species.name
+        y = [self.df[colname] for colname in self.df.columns if str(colname) == species][0]
+        if len(y.index) == 0:
+            print("The species has an empty time series.")
+            return None
+        if step_difference:
+            n = 1
+            tof_series = np.diff(y, n=n) / np.diff(y.index, n=n)
+            time_series = y.index[:-n]
+        else:
+            tof_series =  y / y.index
+            time_series = tof_series.index
+        tof_df = pd.DataFrame.from_dict({"Time /s": time_series, "TOF /s-1": tof_series})
+        tof_df.set_index("Time /s", inplace=True)
+        return tof_df
 
     @classmethod
     def from_dict(cls, d: dict):

@@ -1,5 +1,6 @@
 import copy
 import random
+from collections import defaultdict
 from typing import Tuple, List, Dict, Optional
 
 import monty.json
@@ -57,7 +58,17 @@ class RxnSystem(InputCollection):
         self.tprate_relation = None
         # Relation to govern (T, P) and the gas concentration.
         self.tpconc_relation = None
+        self._update_elements(components)
+        super().__init__(name=name,
+                         description=description,
+                         elements=self.components)
 
+
+    def _update_elements(self, components):
+        """
+        Update the input elements in the Rsys.
+        :return:
+        """
         assert len(components) > 0, 'Must pass at least one reaction and a species manager to a solution system.'
         if len(components) == 1:
             assert not isinstance(components[0], species.SpeciesManager), 'Must pass at least one reaction to a solution system.'
@@ -79,7 +90,7 @@ class RxnSystem(InputCollection):
 
         # Split into terms, schedules, and conc (diff.) eq.s
         # These are not sorted by the symbol index.
-        self.terms = []  #: Terms are terms.
+        self.terms = []  # Terms are terms.
         self.surface_rxns = []
         self.schedules = []
         self.conc_eqs = []
@@ -133,9 +144,6 @@ class RxnSystem(InputCollection):
         # TODO: support Surface CRN.
         self.surface_rxns_to_rates = {surface_rxn: surface_rxn.rate for surface_rxn in self.surface_rxns}
 
-        super().__init__(name=name,
-                         description=description,
-                         elements=self.components)
 
     def _update_symbols(self):
         """Iterate over reactions etc and update the symbols set and scheduler.
@@ -602,47 +610,97 @@ class RxnSystem(InputCollection):
                 self.tprate_relation[rxn.name] = TPRateRelation(tp_file=dft_io,
                                                                 init_temp=self.temperature.value,
                                                                 init_pressure=self.pressure.value,
-                                                                adsorption=[0] if rxn.is_adsorption else [1],
-                                                                desorption=[0] if rxn.is_desorption else [1],
+                                                                # TODO: bug-proof this
+                                                                adsorption=[0] if rxn.is_adsorption(self.species_manager) else [1],
+                                                                desorption=[0] if rxn.is_desorption(self.species_manager) else [1],
                                                                 # TODO: include Surface Rxns
                                                                 init_constants=[rxn.rate_constant, rxn.rate_constant])
             else:
                 self.tprate_relation[rxn.name] = TPRateRelation(tp_file=dft_io,
                                                                 init_temp=self.temperature.value,
                                                                 init_pressure=self.pressure.value,
-                                                                adsorption=[0] if rxn.is_adsorption else [],
-                                                                desorption=[0] if rxn.is_desorption else [],
+                                                                adsorption=[0] if rxn.is_adsorption(self.species_manager)  else [],
+                                                                desorption=[0] if rxn.is_desorption(self.species_manager)  else [],
                                                                 # TODO: include Surface Rxns
                                                                 init_constants=[rxn.rate_constant])
+        self.tpconc_relation = {}
         for s in self.schedules:
             if self.species_manager.is_gas(s.symbol):
                 self.tpconc_relation[s.symbol] = IdealGasLawRelation(p_in_torr=self.pressure.value,
                                                                      n=s.initial_concentration,
                                                                      t=self.temperature.value)
 
-    def tp_next_rsys(self, t=None, p=None, inplace=False):
+    def tp_next_rsys(self,
+                     t=None,
+                     total_p=None,
+                     partial_pressures=None,
+                     include_rules=False,
+                     inplace=False):
         """
         Return a new Rsys following same TP relation.
 
+
+        :param partial_pressures: a dictionary from a gas species to its partial pressure.
+                                  if total_p is set, partial_pressure is a percentage of its value;
+                                  otherwise, use the original temperature value;
+                                  if a gas species does not appear in this dictionary, we assume it has same pressure
+                                  as the partial pressure.
+        :param include_rules: if set to True, apply partial pressures to adsorptions and desorptions involving the only
+                              relevant gas.
         :return: if inplace, return None; otherwise, return a RxnSystem.
         """
-        next_constants = {name: r.constants(temp=p, t=t) for name, r in self.tprate_relation.items()}
+        if total_p is None:
+            total_p = self.pressure.value
+        if t is None:
+            t = self.temperature.value
+
+        # Ensure that partial pressure is a dictionary from species name to a floating number.
+        new_partial_pressures = defaultdict(lambda: 1)
+        if partial_pressures:
+            for k, v in partial_pressures.items():
+                if isinstance(k, sym.Symbol):
+                    new_partial_pressures[k.name] = v
+                else:
+                    new_partial_pressures[k] = v
+        partial_pressures = new_partial_pressures
+
+        # TODO: check this step
+        next_constants = {}
+        for name, r in self.tprate_relation.items():
+            # TODO: try to trouble shoot the following lines.
+            sorption_species = self.elements_by_name[name].sorption_species(sm=self.species_manager)
+            if include_rules and sorption_species.name in partial_pressures:
+                pressure = total_p * partial_pressures[sorption_species.name]
+                if pressure == 0:
+                    pressure = 1e-15
+                print(f"{str(self.elements_by_name[name])} at partial pressure {partial_pressures[sorption_species.name]}")
+            else:
+                pressure = total_p
+
+
+            next_constants[name] = r.constants(temp=t, pressure=pressure)
         next_rsys = self if inplace else copy.deepcopy(self)
-        for name, next_constants in next_constants:
+        for name, next_constants in next_constants.items():
             rxn = next_rsys.elements_by_name[name]
             if rxn.is_reversible:
-                rxn.set_rate(rate=next_constants[0], rate_reverse=next_constants[1])
+                rxn.set_rates(rate=next_constants[0], rate_reverse=next_constants[1])
             else:
                 rxn.set_rate(rate=next_constants[0])
         next_rsys.temperature.value = t
-        next_rsys.pressure.value = p
+        next_rsys.pressure.value = total_p
 
         # Reset gas molecular count, assuming that volume is constant.
         for s in next_rsys.schedules:
-            if next_rsys.species_manager.is_gas(s.Symbol):
-                new_n = next_rsys.tpconc_relation[s.Symbol].calculate_n(p=p, t=t)
+            if next_rsys.species_manager.is_gas(s.symbol):
+                partial_pressure = total_p * partial_pressures[s.symbol.name]
+                print(f"{s.symbol} has a partial pressure of {partial_pressures[s.symbol.name]}")
+
+
+                new_n = next_rsys.tpconc_relation[s.symbol].calculate_n(p=partial_pressure, t=t)
                 s.update_conc(func=lambda x: new_n, inplace=True)
         if inplace:
             return
         else:
             return next_rsys
+
+

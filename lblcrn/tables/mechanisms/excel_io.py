@@ -51,7 +51,7 @@ def process_species_name(species_name):
     name_sections = [name_section.strip() for name_section in species_name.split("_")]
     return name_sections[:2]
 
-#
+
 # def suggest_fitting_params(species_name,
 #                            curve=None):
 #     """

@@ -91,6 +91,16 @@ class InputCollection(InputElement):
         self.elements_by_type = self.make_elements_by_type()
         self.elements_by_name = self.make_elements_by_name()
         self.values_by_name = self.make_values_by_name()
+        self._update_elements(self.elements)
+
+    def _update_elements(self, elements):
+        """
+        Prototypical method to update any dictionary formats of an element.
+
+        :param elements: a list of elements;
+        :return: None
+        """
+        pass
 
     def append(self, element: Any):
         """Append an element to this collection.

@@ -16,6 +16,15 @@ class StateVariable(InputElement):
         super().__init__(name=name, description=description, value=value)
         self.unit = unit
 
+    def __str__(self):
+        """
+        Return a human-readable version of the state variable.
+        """
+        base_str = f"{self.name}={self.value} {self.unit}"
+        if self.description:
+            return f"{base_str}\nDescription: {self.description}"
+        return base_str
+
 
 class T(StateVariable):
     """A class used to store and manage Temperature.

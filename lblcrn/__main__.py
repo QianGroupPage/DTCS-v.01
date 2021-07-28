@@ -21,7 +21,6 @@ def cmd_help():
         -t, --test: Test to verify successful installation
         -V, --version: Show version number
     """
-
     print(help)
 
 

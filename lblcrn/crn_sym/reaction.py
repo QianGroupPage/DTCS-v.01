@@ -48,8 +48,8 @@ class Rxn(InputElement):
                  products: Optional[sym.Expr], k: float = 0,
                  name: str = "",
                  description: str = "",
-                 is_adsorption: bool = True,
-                 is_desorption: bool = False):
+                 is_adsorption: bool = None,
+                 is_desorption: bool = None):
         """Create a new reaction by giving equation of the reactants.
 
         This is intended to look like reactants -> products @ rate k. That is,
@@ -79,9 +79,55 @@ class Rxn(InputElement):
 
         self.rate_constant = k
         self.is_reversible = False
-        self.is_adsorption = is_adsorption
-        self.is_desorption = is_desorption
         super().__init__(name, description)
+
+    @property
+    def reactant_symbols(self):
+        """
+        A list of free symbols.
+
+        :return: a list of symbols on the reactant side.
+        """
+        return [s for s in self.reactants.free_symbols]
+
+    @property
+    def product_symbols(self):
+        """
+        A list of free symbols.
+
+        :return: a list of symbols on the reactant side.
+        """
+        return [s for s in self.products.free_symbols]
+
+    def is_adsorption(self, sm, gas=None):
+        """
+        Rule: a reaction is adsorption if all reactants are gas or surface.
+        :return:
+        """
+        if gas is None:
+            return all([sm.is_gas(r) or sm.is_surface(r) for r in self.reactant_symbols])
+        return all([(sm.is_gas(r) and r.name == gas) or sm.is_surface(r) for r in self.reactant_symbols])
+
+    def is_desorption(self, sm, gas=None):
+        """
+        Rule: a reaction is desorption if all products are gas or surface.
+        """
+        if gas is None:
+            return all([sm.is_gas(r) or sm.is_surface(r) for r in self.product_symbols])
+        else:
+            return all([(sm.is_gas(r) and r.name == gas) or sm.is_surface(r) for r in self.product_symbols])
+
+    def sorption_species(self, sm):
+        """
+        Find the adsorption and desorption species.
+
+        :param sm:
+        :return:
+        """
+        if self.is_adsorption(sm=sm):
+            return [r for r in self.reactant_symbols if sm.is_gas(r)][0]
+        if self.is_desorption(sm=sm):
+            return [r for r in self.product_symbols if sm.is_gas(r)][0]
 
     def get_symbols(self) -> Set[sym.Symbol]:
         symbol = set()
@@ -218,8 +264,8 @@ class RevRxn(Rxn):
 
     def __init__(self, reactants: Optional[sym.Expr],
                  products: Optional[sym.Expr], k: float, k2: float = None,
-                 is_adsorption: bool = True,
-                 is_desorption: bool = False
+                 name="",
+                 description=""
                  ):
         """Create a reversible reaction by giving equation.
 
@@ -231,15 +277,11 @@ class RevRxn(Rxn):
             products: The right-hand side of the chemical reaction.
             k: The rate constant.
             k2: Optional, the rate constant for the reverse reaction. If not supplied, it's assumed to be 1/k.
-            is_adsorption: whether the reaction is an adsorption rule;
-            is_desorption: whether the reaction is an desorption rule;
         """
-        super().__init__(reactants, products, k)
+        super().__init__(reactants, products, k, name=name, description=description)
 
         self.set_rates(rate=k, rate_reverse=k2)
         self.is_reversible = True
-        self.is_adsorption = is_adsorption
-        self.is_desorption = is_desorption
 
     def set_rates(self, rate: float, rate_reverse: Optional[float]) -> None:
         """

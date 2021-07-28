@@ -313,15 +313,34 @@ class SpeciesManager(InputElement):
     def species_from_symbol(self, key: sym.Symbol) -> Species:
         return self._species[key]
 
-    def is_gas(self, species: sym.Symbol) -> bool:
+    def is_gas(self, species: Union[sym.Symbol, str]) -> bool:
         """
         Check if a species is gas.
+
+        Rule: any species whose name does not end with "*" is a gas.
 
         :param species: a Sympy symbol referring to a gas species;
         :return: whether the symbol is a gas.
         """
+        if isinstance(species, str):
+            species = sym.Symbol(species)
         if self.symbol_in_sm(key=species) and self.species_from_symbol(species):
-            return True
+            return species.name.endswith("_g")
+        return False
+
+    def is_surface(self, species: Union[sym.Symbol, str]) -> bool:
+        """
+        Check if a species represents a surface.
+
+        Rule: surface starts with "*".
+
+        :param species: a Sympy symbol referring to a surface;
+        :return: whether the symbol is a gas.
+        """
+        if isinstance(species, str):
+            species = sym.Symbol(species)
+        if self.symbol_in_sm(key=species) and self.species_from_symbol(species):
+            return species.name.startswith("*")
         return False
 
     def symbol_in_sm(self, key: sym.Symbol) -> bool:

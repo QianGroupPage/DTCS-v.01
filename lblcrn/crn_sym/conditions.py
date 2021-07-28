@@ -195,7 +195,7 @@ class Schedule(InputElement):
         else:
              new_schedule = copy.deepcopy(self)
              new_schedule = func(new_schedule)
-        return new_schedule
+             return new_schedule
 
     def items(self):
         """So that you can do schedule.items() as if it's a dict."""
