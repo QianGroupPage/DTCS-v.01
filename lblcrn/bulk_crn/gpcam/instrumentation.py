@@ -55,7 +55,7 @@ def simulate_and_compare(rsys_generator, scaled, exp_env, exp_be):
 
 best_constants_count = 10
 
-class CRNAcquisition:
+class CRNInstrumentation:
     def __init__(self, rsys_generator, experimental_file_path):
         data = read_new_data(experimental_file_path)[0]
 
@@ -77,9 +77,10 @@ class CRNAcquisition:
         self.best_constants = []
 
     def func(self):
-        def acquisition(x, obj):
+        def instrumentation(data):
             calculated_rmses = []
-            for scaled in x:
+            for instance in data:
+                scaled = instance["position"]
                 xps, rmse = simulate_and_compare(self.rsys_generator, scaled, self.exp_env, self.exp_be)
 
                 if len(self.best_constants) < best_constants_count:
@@ -90,10 +91,10 @@ class CRNAcquisition:
                     self.best_constants.sort(key=lambda x: x[1])
 
                 calculated_rmses.append(rmse)
+                instance["value"] = rmse
+                print(rmse)
 
             self.rmse_evolution.append(np.min(calculated_rmses))
 
-            print([x[1] for x in self.best_constants])
-
-            return -(np.array(calculated_rmses))
-        return acquisition
+            return data
+        return instrumentation

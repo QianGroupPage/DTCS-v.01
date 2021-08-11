@@ -37,5 +37,5 @@ def rsys_generator(scaled):
     return rsys
 
 
-evaluate(rsys_generator, constants, "../../data/1e-1_302k.txt")
-
+instr = evaluate(rsys_generator, constants, "../../data/1e-1_302k.txt")
+print(instr.rmse_evolution)
