@@ -16,11 +16,12 @@ def evaluate(rsys_generator, constants, experimental_file_path):
         instrument_func=instrumentation.func(),
         hyperparameters=np.ones((1+len(constants),)),
         hyperparameter_bounds=[[0.1,100.0] for _ in range(1+len(constants))],
-        acq_func = "covariance",
+        #acq_func = "covariance",
         init_dataset_size=len(constants),
-        # kernel_func=kernel_l2_single_task, # TODO(rithvikp): Add configurability.
+        kernel_func=kernel_l2_single_task, # TODO(rithvikp): Add configurability.
     )
 
-    exp.go(N=100)
+    exp.train()
+    exp.go(N=25)
 
     return instrumentation
