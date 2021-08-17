@@ -162,7 +162,8 @@ class CRNTimeSeries(experiment.Experiment):
         for i, name in enumerate(species):
             if isinstance(name, str):
                 species[i] = sym.Symbol(name)
-        self.df[species].plot(ax=ax, **kwargs)
+            specie = species[i]
+            self.df[specie].plot(ax=ax, color=self.species_manager[specie].color, **kwargs)
 
     # --- Utility -------------------------------------------------------------
 
