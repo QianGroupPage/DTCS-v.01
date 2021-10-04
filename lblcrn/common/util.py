@@ -1,7 +1,12 @@
+import itertools
 import re
+import string
 
-import numpy as np
+from typing import Union
+
 import pandas as pd
+import numpy as np
+import sympy as sym
 from matplotlib import colors
 
 
@@ -65,3 +70,30 @@ def resample_by_skipping(df, step=1000):
     return new_df
 
 
+def symbol_to_name(sym_or_str):
+    """Convert a sym.Symbol or a string to a string through sym.Symbol.name."""
+    if type(sym_or_str) == sym.Symbol:
+        return sym_or_str.name
+    else:
+        return sym_or_str
+
+
+def alphabet():
+    """Generate A, B, C, ... Z, AA, AB, ... ZZ, AAA, AAB, and so on."""
+    for size in itertools.count(1):
+        for s in itertools.product(string.ascii_uppercase, repeat=size):
+            yield ''.join(s)
+
+
+def anon_names(num):
+    """Return num anonymous names (from alphabet())."""
+    return list(itertools.islice(alphabet(), num))
+
+
+def flat(lst: Union[list, tuple]):
+    """An interator which flattens a list/tuple of list/tuples."""
+    for item in lst:
+        if isinstance(item, (list, tuple)):
+            yield from flat(item)
+        else:
+            yield item

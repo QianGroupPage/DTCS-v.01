@@ -8,7 +8,7 @@ Example:
     Once you have your reaction system rsys set up, you can proceed as
     follows:
 
-    time_series = simulate_crn(rsys, time_max=20)
+    xps, time_series = simulate(rsys, time_max=20)
     time_series.df  # Shows the DataFrame of the time series.
     time_series.plot()  # Plots the network's time series.
     time_series.at(t=2)  # Shows the state near time=2

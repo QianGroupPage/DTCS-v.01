@@ -22,6 +22,7 @@ Example:
 from __future__ import annotations
 
 import copy
+import json
 from typing import Any, Dict, List, Optional, Tuple, Union
 import warnings
 
@@ -34,6 +35,7 @@ from scipy import optimize
 from scipy import stats
 from sklearn import metrics
 import sympy as sym
+import lblcrn
 from lblcrn import bulk_crn
 from lblcrn.experiments import experiment
 from lblcrn.crn_sym.rxn_system import RxnSystem
@@ -50,7 +52,7 @@ _REQUIRED = 'required'
 _OPTIONAL = 'optional'
 
 
-class XPSObservable:
+class XPSObservable(monty.json.MSONable):
     """TODO"""
 
     # Settings for the column names
@@ -64,13 +66,18 @@ class XPSObservable:
     _GAS_PHASE = (_EXPERIMENTAL, 'gas_phase')
     _DECONV_ENV = (_DECONVOLUTED, 'envelope')
 
+    _RESERVED = [_SIMULATED, _EXPERIMENTAL, _CONTAMINANTS, _DECONV_ENV,
+                 _SIM_ENV[1], _EXP_CLEAN[1], _EXP_RAW[1], _GAS_PHASE[1],
+                 _DECONV_ENV[1]]
+
     def __init__(self, df: pd.DataFrame,
                  species_manager: species.SpeciesManager,
                  title: str = ''):
-        self.df = df
-        self.species_manager = species_manager
-        self.title = title
+        self.df: pd.DataFrame = df
+        self.species_manager: species.SpeciesManager = species_manager
+        self.title: str = title
 
+    # --- Accessors ----------------------------------------------------------
     @property
     def x_range(self) -> Optional[np.ndarray]:
         """The x-values, energies, on which there is data."""
@@ -113,6 +120,8 @@ class XPSObservable:
     @property
     def sim_gaussians(self) -> Optional[pd.DataFrame]:
         """The simulated gaussians of the XPS observable."""
+        if self.simulated is None:
+            return None
         # Gaussians have a species as their column name
         gauss_cols = []
         for col in self.simulated:
@@ -180,6 +189,8 @@ class XPSObservable:
     @property
     def deconv_gaussians(self) -> Optional[pd.DataFrame]:
         """The deconvoluted gaussians of the XPS observable."""
+        if self.deconvoluted is None:
+            return None
         # Gaussians have a species as their column name
         if self.deconvoluted is None:
             return None
@@ -192,6 +203,60 @@ class XPSObservable:
             return self.deconvoluted[gauss_cols]
         else:
             return None
+
+    # --- Serialization ------------------------------------------------------
+    def as_dict(self) -> dict:
+        d = {
+            '@module': self.__class__.__module__,
+            '@class': self.__class__.__name__,
+            '@version': lblcrn.__version__,  # TODO: Better way to do this?
+            'df': None,
+            'species_manager': self.species_manager.as_dict(),
+            'title': self.title,
+        }
+
+        def sanitize_column(column):
+            category = column[0]
+            name = util.symbol_to_name(column[1])
+
+            return f'{category}\\{name}'
+
+        df_copy = self.df.copy(deep=False)
+        df_copy.columns = [sanitize_column(col) for col in df_copy.columns]
+        # Pandas.to_dict() is couldn't do orient=table, so I'm using this
+        #  roundabout method, sorry!
+        d['df'] = json.loads(df_copy.to_json(
+            orient='table',
+        ))
+
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict):
+        decode = monty.json.MontyDecoder().process_decoded
+
+        d['species_manager'] = decode(d['species_manager'])
+        sm = d['species_manager']
+
+        def desanitize_column(column):
+            category, name = column.split('\\')
+            symbol = sym.Symbol(name)
+            if not (name in XPSObservable._RESERVED) and symbol in sm:
+                name = symbol
+            return category, name
+
+        df = pd.read_json(
+            json.dumps(d['df']),  # Frivolous string conversion
+            orient='table',
+            convert_axes=False,
+        )
+        columns = [desanitize_column(col) for col in df.columns]
+        df.columns = pd.MultiIndex.from_tuples(columns)
+        d['df'] = df
+
+        return cls(**d)
+
+    # --- Plotting -----------------------------------------------------------
 
     def plot(self, ax: plt.Axes = None,
              only: bool = False,
@@ -567,7 +632,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
         # Require either sim_concs or experimental
         if not (sim_concs or experimental is not None):
             raise ValueError(f'{self.__class__.__name__} needs at least'
-                             f'species_concs or experimental defined.')
+                             f'sim_concs or experimental defined.')
 
         # Make everything match its intended type.
         if x_range is not None:
@@ -683,7 +748,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
     def include(self, *species: sym.Symbol):
         """Add the species to the experiment, if they aren't there already.
 
-        It won't simulate data for them (unless you also edit species_concs),
+        It won't simulate data for them (unless you also edit sim_concs),
         but it will involve the species in deconvolution and the like.
 
         Prompts an autoresample.
@@ -839,7 +904,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
             warnings.warn(UserWarning('Both contaminate and decontaminate are '
                                       'True, this will yield nonsensical '
                                       'data.'))
-        else:
+        elif contam_species:
             # decontaminate defaults to experimental, contaminate to simulated,
             # and they should not both be True. Decontaminate gets first pick
             # because it's a more common operation.
@@ -847,6 +912,9 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
                 decontaminate = experimental and not contaminate
             if contaminate is None:
                 contaminate = simulate and not decontaminate
+        else:
+            contaminate = False
+            decontaminate = False
 
         # Handle: deconv_species
         if deconv_species is None:
@@ -984,7 +1052,10 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
                 species_to_plot.extend(sim_species)
             # Don't bother with deconv_/contam_species, because if they're
             # defined, then the x_range will be exp_data.index anyway.
-            x_range = self._get_x_range(species=species_to_plot)
+            x_range = XPSExperiment._get_x_range(
+                species_manager=self.species_manager,
+                species=species_to_plot,
+            )
             _echo.echo(f'Using automatically-generated x-range '
                        f'[{x_range[0]}, ..., {x_range[-1]}]...')
 
@@ -1284,7 +1355,9 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
 
         return gas_gaussian
 
-    def _get_x_range(self, species: List[sym.Symbol]) -> np.ndarray:
+    @staticmethod
+    def _get_x_range(species_manager: species.SpeciesManager,
+                     species: List[sym.Symbol]) -> np.ndarray:
         """Picks an x-range on which to calculate gaussians.
 
         Args:
@@ -1296,8 +1369,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
         """
         binding_energies = []
         for specie in species:
-            for orbital in self.species_manager[specie].orbitals:
-                # print(self.species_manager[specie].orbitals)
+            for orbital in species_manager[specie].orbitals:
                 binding_energies.append(orbital.binding_energy)
 
         x_lower = min(binding_energies or [0]) - _PLOT_MARGIN
@@ -1411,7 +1483,7 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
     def as_dict(self) -> dict:
         """Return a MSON-serializable dict representation."""
         d = super().as_dict()
-        d['species_concs'] = {str(symbol): conc for symbol, conc in
+        d['sim_concs'] = {str(symbol): conc for symbol, conc in
                               self._sim_concs.items()}
         d['species_manager'] = self.species_manager.as_dict()
         d['autoresample'] = self.autoresample
@@ -1427,8 +1499,8 @@ class XPSExperiment(experiment.Experiment, XPSObservable):
     def from_dict(cls, d: dict):
         """Load from a dict representation."""
         decode = monty.json.MontyDecoder().process_decoded
-        d['species_concs'] = {sym.Symbol(name): conc for name, conc in
-                              d['species_concs'].items()}
+        d['sim_concs'] = {sym.Symbol(name): conc for name, conc in
+                              d['sim_concs'].items()}
         d['species_manager'] = decode(d['species_manager'])
         if d['experimental'] is not None:
             d['experimental'] = pd.read_json(d['experimental'],

@@ -223,6 +223,8 @@ class Schedule(InputElement):
         return f'{self.__class__.__name__}(symbol={repr(self.symbol)}, ' \
                f'schedule={repr(self._schedule)})'
 
+    unpack = items
+
 
 class Conc(Schedule):
     """Specify the initial concentration of a symbol.

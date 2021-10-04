@@ -151,6 +151,18 @@ class Species(monty.json.MSONable):
         """
         return f"{self.name_without_suffix}_{suffix}"
 
+    def as_dict(self) -> dict:
+        d = {
+            '@module': self.__class__.__module__,
+            '@class': self.__class__.__name__,
+            '@version': lblcrn.__version__,  # TODO: Better way to do this?
+            'name': self.name,
+            'orbitals': [orbital.as_dict() for orbital in self.orbitals],
+            'color': self.color,
+        }
+
+        return d
+
     def __str__(self):
         orbitals = [str(orbital) for orbital in self.orbitals]
         if self.color:
@@ -513,6 +525,9 @@ class SpeciesManager(InputElement):
         d['species'] = species_dict
 
         return cls(**d)
+
+    def __contains__(self, item: str):
+        return item in self._species
 
     def __str__(self):
         s = self.__class__.__name__ + ' with species:\n'
