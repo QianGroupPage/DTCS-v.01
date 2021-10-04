@@ -115,11 +115,14 @@ def simulate_and_compare(scaled, exp_env, exp_be):
     return xps, rmse
 
 def crn_acquisition():
-    data = read_new_data('../../data/1e-1_302k.txt')[0]
+    """Andrew: This function looks like it loads some experimental data and
+    then makes a function which creates simulated data and compares (RMSE) it
+    with the experimental data."""
+    data = read_new_data('../../Experimental Data/1e-1_302k.txt')[0]  # TODO: Hardcoded
 
     intensities, bes = np.array([]), np.array([])
     for i, be in enumerate(data.binding_energies):
-        if be <= 534:
+        if be <= 534:  # TODO: Hardcoded
             intensities = np.append(intensities, data.intensities[i])
             bes = np.append(bes, be)
 
