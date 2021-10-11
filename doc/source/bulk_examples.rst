@@ -8,7 +8,7 @@ Predator Prey
 This will be a step-by step explanation of setting up a basic predator-prey scenario.
 First, import the library::
 
-    from lblcrn.crn_sym import *
+    from lblcrn.spec.crn import *
     from lblcrn.experiments.simulate import simulate
     from lblcrn.experiments.xps_io import read_exp
 

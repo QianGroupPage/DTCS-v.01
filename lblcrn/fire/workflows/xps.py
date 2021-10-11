@@ -12,7 +12,7 @@ from atomate.vasp.powerups import add_additional_fields_to_taskdocs
 from fireworks import Firework, Workflow
 from pymatgen.io.vasp.sets import MPRelaxSet, MPStaticSet
 
-from lblcrn import _echo
+from lblcrn import _logger
 from lblcrn.fire.firetasks.glue_tasks import ForwardCoreEigen, ForwardSimConcs
 from lblcrn.fire.fireworks.xps import XPSSimulateFW
 from lblcrn.fire.fireworks.crn import CRNSimulateFW
@@ -88,7 +88,7 @@ def get_wf_simulate_xps(  # TODO(Andrew) Typehints
         'wf_name': wf_name,
     }
 
-    _echo.echo(f'Creating Workflow "{wf_name}" with uuid {wf_uuid}...')
+    _logger.echo(f'Creating Workflow "{wf_name}" with uuid {wf_uuid}...')
 
     # Make the fireworks
     fws = []

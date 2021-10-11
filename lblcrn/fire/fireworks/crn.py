@@ -9,7 +9,7 @@ from atomate.common.firetasks.glue_tasks import PassCalcLocs
 from atomate.utils.utils import get_logger
 from fireworks import Firework
 
-from lblcrn.spec.crn.rxn_system import RxnSystem
+from lblcrn.spec.crn.crn_eni import RxnSystem
 from lblcrn.fire.firetasks.crn import BulkCRNSim
 from lblcrn.fire.firetasks.parse_outputs import MsonToDb
 

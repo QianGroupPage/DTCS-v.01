@@ -1,8 +1,7 @@
 """TODO
 """
 
-from lblcrn.spec import Spec
-from lblcrn.spec.species import Species
+from lblcrn.spec.spec_old import Species
 
 __author__ = 'Andrew Bogdan'
 __email__ = 'andrewbogdan@lbl.gov'

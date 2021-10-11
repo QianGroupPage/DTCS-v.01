@@ -24,7 +24,7 @@ import pkg_resources
 import monty.json
 
 import lblcrn
-from lblcrn import _echo
+from lblcrn import _logger
 
 
 EXAMPLE_OBJS_DIR = lblcrn._DATA_FILES_PATH + 'examples/objects/'
@@ -57,7 +57,7 @@ def load(name: str):
     example = json.loads(dct, cls=monty.json.MontyDecoder)
 
     # Echo the example you're loading.
-    _echo.echo(f'loaded: {example}')
+    _logger.echo(f'loaded: {example}')
 
     return example
 

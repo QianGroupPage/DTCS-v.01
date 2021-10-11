@@ -25,9 +25,11 @@ Usage:
     two initial concentrations, that's a contradiction).
 """
 
+import copy
+
 import sympy as sym
 
-from lblcrn.spec.crn.crn_abc import ChemInfo, ChemExpression
+from lblcrn.spec.crn.sym_abc import ChemInfo, ChemExpression
 
 
 class Term(ChemExpression):  # TODO(Andrew) Document here & beyond.
@@ -140,6 +142,35 @@ class Schedule(ChemInfo):
         return f'{self.__class__.__name__}(symbol={repr(self.symbol)}, ' \
                f'schedule={repr(self.schedule)})'
 
+    # TODO(Andrew) Copied from old:
+    def update_conc(self, func=lambda x: x, inplace=False):
+        """
+        Update each concentration value in the schedule with a function of that value
+
+        :param func: function to update concentration value; by default, it's concentration.
+        :param inplace: if true, modify this object; otherwise, modify other objects;
+        :return: None if inplace, otherwise a deepcopy of current schedule with modified values.
+        """
+        if inplace:
+            for k in self.schedule:
+                self.schedule[k] = func(self.schedule[k])
+        else:
+            new_schedule = copy.deepcopy(self)
+            new_schedule = func(new_schedule)
+            return new_schedule
+
+    def items(self):
+        """So that you can do schedule.items() as if it's a dict."""
+        return self.schedule.items()
+
+    @property
+    def initial_concentration(self) -> float:
+        """
+        Find the initial concentration;
+        :return: the initial concentration.
+        """
+        return self.schedule[0]
+
 
 class Conc(Schedule):
     """Specify the initial concentration of a symbol.
@@ -163,6 +194,8 @@ class Conc(Schedule):
     @concentration.deleter
     def concentration(self):
         del self.schedule
+
+    # TODO: Change this to modify spec, so that spec has concentration in it
 
     @classmethod
     def from_dict(cls, d: dict):

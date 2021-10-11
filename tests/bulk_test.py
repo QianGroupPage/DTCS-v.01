@@ -1,10 +1,8 @@
 import unittest
 import pandas as pd
-import numpy as np
 
-from lblcrn.crn_sym import *
-from lblcrn.experiments.simulate import simulate
-from lblcrn.experiments.xps_io import read_exp
+from lblcrn.twin.crn import simulate
+
 
 class TestBulk(unittest.TestCase):
     def test_predator_prey(self):

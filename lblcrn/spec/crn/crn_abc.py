@@ -1,110 +1,66 @@
-import abc
-import copy
-from typing import Set, Mapping
+"""TODO"""
 
-from monty.json import jsanitize
+from typing import Dict, List, Mapping, Set
+
 import sympy as sym
-from sympy.parsing import sympy_parser
 
-from lblcrn.common.const import T
-from lblcrn.spec import Spec
-
-
-class SymSpec(Spec):
-    """TODO"""
-
-    @abc.abstractmethod
-    def get_symbols(self) -> Set[sym.Symbol]:
-        """Return all the sym.Symbols in the spec."""
-        pass
-
-    @abc.abstractmethod
-    def rename(self, mapping: Mapping):
-        """Replace sym.Symbols with other sym.Symbols."""
-        pass
-
-    def subs(self, mapping: Mapping):
-        """Return a copy with substituted symbols."""
-        clone = copy.copy(self)
-        clone.rename(mapping)
-        return clone
+from lblcrn.spec.crn.sym_abc import SymSpec
+from lblcrn.spec.crn.rxn_abc import RxnSystemABC
+from lblcrn.spec.species import SpeciesManager
 
 
-class ChemInfo(SymSpec):
-    """TODO"""
+# TODO(Andrew) move this to abc
+class CRNSpecABC(SymSpec):
 
-    _schema = [
-        'symbol'
-    ]
+    _rxn_sys_cls = RxnSystemABC
 
-    def __init__(self, symbol: sym.Symbol, **kwargs):
+    def __init__(self,
+                 *components,
+                 rsys: RxnSystemABC = None,
+                 species: SpeciesManager = None,
+                 sim_type: str = None,  # TODO(Andrew) Remove
+                 **kwargs):
         super().__init__(**kwargs)
-        self.symbol: sym.Symbol = symbol
+
+        self.rsys: RxnSystemABC = rsys
+        self.species: SpeciesManager = species
+        if sim_type:  # So as to not override any default
+            self.sim_type = sim_type
+
+        # If they give it components like it's a RxnSystem, deal with it
+        rsys_components = []
+        for component in components:
+            if isinstance(component, SpeciesManager):
+                # If self.species, then they gave two SpeciesCollections.
+                if self.species:
+                    raise TypeError('You cannot give two SpeciesCollections.')
+                self.species = component
+            elif isinstance(component, self._rxn_sys_cls):
+                # If self.rsys, then they gave two RxnSystems.
+                if self.rsys:
+                    raise TypeError('You cannot give two RxnSystems.')
+                self.rsys = component
+            else:
+                # We're going to create a reaction system with these
+                rsys_components.append(component)
+
+        if rsys_components:
+            if self.rsys:
+                # They gave a rsys, so we can't create another
+                raise TypeError('Attempting to create a RxnSystem given these '
+                                'inputs, but you already supplied one.')
+            self.rsys = self._rxn_sys_cls(*rsys_components)
 
     def get_symbols(self) -> Set[sym.Symbol]:
-        return {self.symbol}
+        return self.rsys.get_symbols()
+
+    def get_symbols_ordered(self) -> List[sym.Symbol]:
+        return self.rsys.get_symbols_ordered()
+
+    @property
+    def symbol_index(self) -> Dict[sym.Symbol, int]:
+        return self.rsys.symbol_index
 
     def rename(self, mapping: Mapping):
-        self.symbol.subs(mapping)
-
-    def as_dict(self, sanitize=True) -> dict:
-        """Return a MSON-serializable dict representation."""
-        d = super().as_dict(sanitize=False)
-        d['symbol'] = str(d['symbol'])
-        if sanitize:
-            d = jsanitize(d)
-        return d
-
-    @classmethod
-    def from_dict(cls, d: dict):
-        """Load from a dict representation."""
-        d['symbol'] = sympy_parser.parse_expr(d['symbol'])
-        return super(ChemInfo, cls).from_dict(d)
-
-
-class ChemExpression(ChemInfo):
-    """Abstract base class for classes in this module.
-
-    It is essentially a pair of a symbol/species and an expression which
-    conveys information about that species.
-
-    TODO: Say time-dependent
-    """
-
-    _schema = [
-        'expression',
-    ]
-
-    def __init__(self, symbol: sym.Symbol, expression: sym.Expr, **kwargs):
-        super().__init__(symbol=symbol, **kwargs)
-        self.expression: sym.Expr = sym.sympify(expression)
-
-    def get_symbols(self) -> Set[sym.Symbol]:
-        """Get all of the symbols in the ChemExpression (except for time)."""
-        symbols = super().get_symbols()
-        symbols.update(self.expression.free_symbols)
-        symbols.discard(T)  # Time is not a species
-        return symbols
-
-    def rename(self, mapping: Mapping):
-        """Replace sym.Symbols with other sym.Symbols."""
-        super().rename(mapping)
-        self.expression = self.expression.subs(mapping)
-
-    def as_dict(self, sanitize=True) -> dict:
-        """Return a MSON-serializable dict representation."""
-        d = super().as_dict(sanitize=False)
-        d['expression'] = str(d['expression'])
-        if sanitize:
-            d = jsanitize(d, strict=True)
-        return d
-
-    @classmethod
-    def from_dict(cls, d: dict):
-        """Load from a dict representation."""
-        d['expression'] = sympy_parser.parse_expr(d['expression'])
-        return super(ChemExpression, cls).from_dict(d)
-
-    def __repr__(self):
-        return f'{self.__class__.__name__}(symbol={repr(self.symbol)}, ' \
-               f'expression={repr(self.expression)})'
+        pass
+        raise NotImplementedError()

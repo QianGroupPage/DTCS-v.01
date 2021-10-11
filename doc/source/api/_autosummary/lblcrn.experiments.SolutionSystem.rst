@@ -1,9 +1,9 @@
-﻿lblcrn.experiments.SolutionSystem
+﻿lblcrn.experiments.XPSSolutionSystem
 =================================
 
 .. currentmodule:: lblcrn.experiments
 
-.. autoclass:: SolutionSystem
+.. autoclass:: XPSSolutionSystem
 
    
    .. automethod:: __init__
@@ -13,10 +13,10 @@
 
    .. autosummary::
    
-      ~SolutionSystem.__init__
-      ~SolutionSystem.max_scaling_factor
-      ~SolutionSystem.plot
-      ~SolutionSystem.scale
-      ~SolutionSystem.time_series_at
+      ~XPSSolutionSystem.__init__
+      ~XPSSolutionSystem.max_scaling_factor
+      ~XPSSolutionSystem.plot
+      ~XPSSolutionSystem.scale
+      ~XPSSolutionSystem.time_series_at
    
    

@@ -15,14 +15,15 @@ Usage:
     print(sm[x])
 """
 
-import itertools
+from __future__ import annotations
 from typing import List, Union
+
+import itertools
 
 import sympy as sym
 
-from lblcrn.spec import Spec
 from lblcrn.common import util
-
+from lblcrn.spec.spec_abc import Spec, SpecCollection
 
 _COLORS = itertools.cycle(['red', 'green', 'orange', 'blue', 'purple', 'pink',
                            'yellow', 'gray', 'cyan'])
@@ -31,61 +32,113 @@ _COLORS = itertools.cycle(['red', 'green', 'orange', 'blue', 'purple', 'pink',
 class Species(Spec):
     """TODO"""
 
-    _schema = [
-        'name',
-        'structure',
-    ]
-
-    _default = {
-        'color': '',
-    }
-
-    def __init__(self, name, **kwargs):
+    def __init__(self, name, color='', **kwargs):
         """TODO"""
-        super().__init__(**kwargs)
-        self.name: str = name
+        super().__init__(name=name, **kwargs)
+        self.color = color or next(_COLORS)
 
 
-class SpeciesCollection(Spec):
-    """TODO"""
+class SpeciesManager(SpecCollection):
+    """A smart wrapper of a dictionary {sym.Symbol: Species}. TODO(Andrew)
+
+    Exists for the purpose of keeping track of which symbols correspond to
+    which species.
+
+    You can create symbols/species pairs with SpeciesManager.sp and access
+    them with SpeciesManager[], which forward to the more verbosely-named
+    make_species and species_from_symbol.
+
+    If you need to, you can get a symbol which corresponds to a species with
+    SpeciesManager.get, which forwards to symbol_from_name. This is useful if,
+    for example you loaded the SpeciesManager from a file.
+    """
+
+    _species_cls = Species
+
+    def __init__(self, *args, name='', **kwargs):
+        name = name or f'Collection of {self._species_cls.__name__}'
+        super().__init__(*args, name=name, **kwargs)
+
+    # --- Helpful Accessors ---------------------------------------------------
+    @property
+    def names(self) -> List[str]:  # TODO: Move or remove?
+        return [species.name for species in self.elements]
 
     @property
-    def names(self) -> List[str]:
-        return list(self.spec.keys())
-
-    @property
-    def species(self) -> List[Species]:
+    def species(self) -> List[Species]:  # TODO: Move or remove?
         """All of the species."""
-        return list(self.spec.values())
+        return list(self.elements)
 
     @property
-    def symbols(self) -> List[sym.Symbol]:
-        """Symbols for all of the species."""
-        return [sym.Symbol(name) for name in self.spec]
+    def symbols(self) -> List[sym.Symbol]:  # TODO: Move or remove?
+        """Symbols for all of the species. Fixed order."""
+        return [sym.Symbol(name) for name in self.names]
+
+    def species_from_symbol(self, key: sym.Symbol) -> Species:  # TODO: Depreciate
+        return self[key]
+
+    def symbol_in_sm(self, key: sym.Symbol) -> bool:  # TODO: Depreciate
+        return key in self._names
+
+    @property
+    def symbols_ordering(self):  # TODO: Depreciate
+        # TODO: This used to be sorted(self._species, key=lambda s: str(s)),
+        #  check if the alphabetical order was actually used.
+        return list(self.symbols)
+
+    @property
+    def all_species(self):  # TODO: Depreciate
+        return set(self.elements)
+
+    @property
+    def all_symbols(self):  # TODO: Depreciate
+        return self.symbols
+
+    def symbol_from_name(self, name: str) -> sym.Symbol:
+        """Gets the symbol for the given name, if it is a species.
+
+        Args:
+            name: The name of the species you want to get the symbol for.
+
+        Raises:
+            KeyError: If that's not a name for any species.
+
+        Returns:
+            A sym.Symbol corresponding to a species in the species manager.
+            sm.species_from_symbol(sm.symbol_from_name('name') will work
+            unless you are supposed to get a KeyError.
+        """
+        if name in self._names:
+            return sym.Symbol(name)
+        else:
+            raise KeyError(f'Name {name} corresponds to no species.')
 
     def add_species(self, species: Species) -> sym.Symbol:
         """TODO"""
         if not species.name:
             raise ValueError('The species is missing a name.')
-        if species.name in self.spec:
+        if species.name in self._names:
             raise ValueError(f'Species {species.name} is already in this'
                              f'SpeciesCollection.')
 
-        self.spec[species.name] = species
+        self.append(species)
         return sym.Symbol(species.name)
 
-    def make_species(self, **kwargs) -> sym.Symbol:
-        """TODO"""
-        return self.add_species(Species(**kwargs))
+    def make_species(self, *args, **kwargs) -> sym.Symbol:
+        """Makes a sym.Symbol and a corresponding Species.
+        Keeps track of their correspondence.
 
-    # Mapper magic methods take both strings and sym.Symbols
+        TODO(Andrew): Args
+        Returns:
+            The sym.Symbol corresponding to the new Species.
+        """
+        return self.add_species(self._species_cls(*args, **kwargs))
+
+    # --- Override Magic to accept sym.Symbols too ----------------------------
     def __getitem__(self, key: Union[str, sym.Symbol]) -> Species:
         return super().__getitem__(util.symbol_to_name(key))
 
     def __setitem__(self, key: Union[str, sym.Symbol], value: Species):
-        # Ensure that keys and species names match
-        if key != value.name:
-            raise ValueError('Keys and species names must match.')
         return super().__setitem__(util.symbol_to_name(key), value)
 
     def __delitem__(self, key: Union[str, sym.Symbol]):
@@ -95,15 +148,18 @@ class SpeciesCollection(Spec):
         """Convert symbols to strings and then """
         return super().__contains__(util.symbol_to_name(item))
 
-    def __getattr__(self, name):
-        """Don't allow accessing species like attributes."""
-        raise AttributeError(f'\'{self.__class__.__name__}\' object'
-                             f'has no attribute \'{name}\'')
+    # --- Other Magic ---------------------------------------------------------
+    def __str__(self):
+        s = self.__class__.__name__ + ' with species:\n'
+        for species in self.elements:
+            species_lines = str(species).splitlines()
+            s += ''.join([f'\t{line}\n' for line in species_lines])
+        return s
 
-    # Don't allow accessing species like attributes
-    __setattr__ = object.__setattr__
-    __delattr__ = object.__delattr__
+    def __repr__(self):
+        return f'{self.__class__.__name__}(species={repr(self.elements)})'
 
     # Useful shorthand
     add = add_species
+    get = symbol_from_name
     sp = make_species

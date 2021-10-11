@@ -16,7 +16,7 @@ experiments
 
     Experiment
 
-    SolutionSystem
+    XPSSolutionSystem
     XPSInitializationData
     XPSSystemRunner
     XPSTPCorrelator

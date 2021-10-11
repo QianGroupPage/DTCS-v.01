@@ -1,14 +1,40 @@
-"""TODO"""
+"""Classes for defining a chemical reaction system.
+
+Exports:
+    Rxn: A chemical reaction
+    RevRxn: A reversible chemical reaction
+    RxnSystem: A collection of reactions and conditions (e.g. initial
+        concentrations).
+
+Usage:
+    Usage essentially always looks like the following, where you make a
+    reaction system with other classes as inputs.
+
+    RxnSystem(
+        sm,
+
+        Rxn(x, y, k=3.2),
+        RevRxn(x + y, 2z, k1=0.01, k2=100),
+
+        Conc(x, 2),
+        ...
+    )
+
+    It looks like this because it was made to imitate the predecessor
+    mathematica project.
+"""
+
+
 
 from typing import List, Tuple
 
 import sympy as sym
 
-from lblcrn.spec.crn.reaction import Rxn, RevRxn
+from lblcrn.spec.crn.rxn_abc import RxnABC, RevRxnABC
 from lblcrn.spec.crn.bulk.conditions import Term
 
 
-class BulkRxn(Rxn):
+class BulkRxn(RxnABC):
 
     def to_terms(self) -> List[Term]:
         """Create a list of terms from the reaction.
@@ -51,7 +77,7 @@ class BulkRxn(Rxn):
 
         return terms
 
-class BulkRevRxn(BulkRxn, RevRxn):
+class BulkRevRxn(BulkRxn, RevRxnABC):
 
     def to_rxns(self) -> Tuple[BulkRxn, BulkRxn]:
         return BulkRxn(self.reactants, self.products,

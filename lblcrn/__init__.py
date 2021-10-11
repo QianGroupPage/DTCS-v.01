@@ -23,40 +23,12 @@ os.environ['LBLCRN_DO_ECHO'] = 'false'
 _DATA_FILES_PATH = sys.prefix + '/lblcrn/'
 
 # Master version information. Modifying this should update everything else.
-__version__ = 'dev0.1.2.5'
+__version__ = 'dev0.1.3'
 
-# TODO(Andrew): I removed the import *s because importing everything was creating
-#  issues with conflicts and syntax-error-y in-development code. Add it back
-#  when you merge master.
-from lblcrn._echo import lblcrn_echo_on, lblcrn_echo_off
+from lblcrn._logger import lblcrn_echo_on, lblcrn_echo_off
 import lblcrn._resources as lblcrn_resources
 import lblcrn._examples as lblcrn_examples
 from lblcrn._help import *
-
-from lblcrn.bulk_crn import *
-from lblcrn.common import *
-from lblcrn.crn_sym import *
-from lblcrn.experiments import *
-from lblcrn.surface_crn import *
-from lblcrn.surface_crn.connectivity import *
-
-# User input APIs
-from lblcrn.crn_sym.rxn_system import RxnSystem
-# Bulk CRN specific commands
-from lblcrn.crn_sym.rxn_system import Rxn
-from lblcrn.experiments import simulate  # This function returns (XPSExperiment, CRNTimeSeries)
-from lblcrn.experiments.time_series import CRNTimeSeries
-from lblcrn.experiments.xps import XPSExperiment
-# Surface CRN specific commands
-from lblcrn.crn_sym.surface import Surface
-from lblcrn.crn_sym.surface_reaction import SurfaceRxn, SurfaceRevRxn
-from lblcrn.surface_crn.scrn import scrn_simulate  # This function returns Results
-from lblcrn.surface_crn.results import Results
-# General IO helpers
-from lblcrn.crn_io import excel_to_crn
-from lblcrn.tables import read_line_delimited_excel
-from lblcrn.model_input.state_variable import T, P
-
 
 # Make the following names fake so that `from lblcrn import *` doesn't
 # create mysterious (or conflicting) variables.

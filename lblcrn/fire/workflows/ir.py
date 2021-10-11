@@ -14,7 +14,7 @@ from fireworks import Firework, Workflow
 from fireworks.user_objects.firetasks.script_task import ScriptTask, PyTask
 from pymatgen.io.vasp.sets import MPRelaxSet, MPStaticSet
 
-from lblcrn import _echo
+from lblcrn import _logger
 from lblcrn.fire.firetasks.glue_tasks import ForwardCoreEigen, ForwardSimConcs
 from lblcrn.fire.fireworks.xps import XPSSimulateFW
 from lblcrn.fire.fireworks.crn import CRNSimulateFW
@@ -59,7 +59,7 @@ def get_wf_simulate_ir(
         'wf_name': wf_name,
     }
 
-    _echo.echo(f'Creating Workflow "{wf_name}" with uuid {wf_uuid}...')
+    _logger.echo(f'Creating Workflow "{wf_name}" with uuid {wf_uuid}...')
 
     # Make the fireworks
     fws = []
@@ -195,7 +195,7 @@ def _get_fws_ir_species(
                 filenames=['mask.yaml']
             ),
             # TODO: Replace the following task with one that writes to JSON
-            PyTask(func='lblcrn.experiments.ir.wrapper.ir_sim_wrapper'),
+            PyTask(func='lblcrn.sim.ir.wrapper.ir_sim_wrapper'),
             # TODO: Push it to the DB with MSONToDB
         ],
         name='IR Spectrum Calculation' + tracking_id,

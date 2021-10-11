@@ -13,7 +13,7 @@ from fireworks import FiretaskBase, FWAction, explicit_serialize
 from monty.json import MontyDecoder, MontyEncoder
 
 from lblcrn import lblcrn_echo_on
-from lblcrn.experiments.simulate import simulate
+from lblcrn.twin.crn import simulate
 
 __author__ = 'Andrew Bogdan'
 __email__ = 'andrewbogdan@lbl.gov'

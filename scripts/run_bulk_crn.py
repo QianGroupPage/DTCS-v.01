@@ -1,11 +1,8 @@
-import argparse
 import sys
 import os
 
-from lblcrn.crn_sym import *
-from lblcrn.experiments.simulate import simulate
-from lblcrn.experiments.xps_io import read_exp
-from lblcrn.experiments.storage import CRNStorage
+from lblcrn.twin.crn import simulate
+from lblcrn.io.storage import CRNStorage
 
 sm = SpeciesManager()
 

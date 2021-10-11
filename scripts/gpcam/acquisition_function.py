@@ -1,6 +1,3 @@
-import numpy as np
-import matplotlib.pyplot as plt
-
 ###############################
 #README:
 #acquisition functions can be defined here following the templates below
@@ -25,20 +22,12 @@ def upper_confidence_bounds(x,obj):
     mean = obj.posterior_covariance(x)["v(x)"]
     return mean + a * cov
 
-import argparse
-import sys
-import os
-import json
-from datetime import datetime, timedelta
+
 import pandas as pd
 import numpy as np
-import subprocess
-import random
 
-from lblcrn.crn_sym import *
-from lblcrn.experiments.simulate import simulate
-from lblcrn.experiments.xps_io import read_new_data
-from lblcrn.experiments.storage import CRNStorage, CRNData
+from lblcrn.twin.crn import simulate
+from lblcrn.io.xps import read_new_data
 
 sm = SpeciesManager()
 

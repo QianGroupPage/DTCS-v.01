@@ -1,0 +1,25 @@
+# Color definitions for logic gates
+
+### SIGNALS
+{Inert State} I: (255, 255, 255)
+{Blank Wire} B: (191, 191, 191)
+{0 signal} 0, 0x, 0y, 0Xx, 0Xy, 0Xk, 0Xz, 0Rx, 0Ry, 0Rk, 0Rz, 0Ax 0Ay, 0Ax, 0Ay, 0Ak, 0Az, 0Nx, 0Ny, 0Nk, 0f, 0F, 0Fx, 0Fy, 0FF, 0Ff, 0ff, 0Fx3, 0Fy3,0Fz3, 0Cx, 0Cy, 0Cw, 0Cz, 0Py, 0Sx, 0Sy, 0Sz, 0Cyx2, 0Cxw, 0Cyx, 0Czy, 0Pk, 0Px: (215,25,28)
+{1 signal} 1, 1Xx, 1Xy, 1Xk, 1Xz, 1Rx, 1Ry, 1Rk, 1Rz, 1Ay, 1Ax, 1Ak, 1Az, 1Nx, 1Ny, 1Nk, 1f, 1F, 1Fx, 1Fy, 1FF, 1Ff, 1ff, 1Fx3, 1Fy3, 1Fz3, 1Cx, 1Cy, 1Cw, 1Cz, 1Py, 1Sx, 1Sy, 1Sz, 1Cyx, 1Cxw, 1Czy, 1Cyx2, 1Pk, 1Px: (229,223,70)
+
+### GATES
+{Synch Gate} BSx, BSy: (251, 174, 210)
+{XOR Gate} BXx, BXy, BXz: (79, 29, 189)
+{OR Gate} BRx, BRy, BRz: (43,131,186)
+{AND Gate} BAx, BAy, BAz: (98,188,70)
+{NOT Gate} BNx, BNy: (253,174,97)
+{Repeater Gate} BPx, BPy: (200, 200, 200)
+
+### WIRE UTILITIES
+{Fan-Out} BF, BF3, BFx, BFy, BFx3, BFy3, BFz3: (0, 0, 0)
+{Wire Cross} BC, Bx, BCw, BCz, BCx, BCy: (127, 127, 127)
+
+### INTERMEDIATES
+{Reset Signal} RRXz, RXz, RRRz, RRz, RRAz, RAz, RCw, RCz, RCcw, RCcz: (255, 102, 0)
+{Holding Input} HXx, HXy, HRx, HRy, HAx, HAy, HCx, HCy: (200, 200, 100)
+
+

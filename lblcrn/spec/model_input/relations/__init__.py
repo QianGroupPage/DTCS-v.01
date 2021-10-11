@@ -1,0 +1,2 @@
+from lblcrn.spec.model_input.relations.tprate_relation import TPRateRelation
+from lblcrn.spec.model_input.relations.ideal_gas_law import IdealGasLawRelation

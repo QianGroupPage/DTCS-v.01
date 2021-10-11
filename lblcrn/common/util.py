@@ -91,7 +91,7 @@ def anon_names(num):
 
 
 def flat(lst: Union[list, tuple]):
-    """An interator which flattens a list/tuple of list/tuples."""
+    """An iterator which flattens a list/tuple of list/tuples."""
     for item in lst:
         if isinstance(item, (list, tuple)):
             yield from flat(item)
