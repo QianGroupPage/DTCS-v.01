@@ -7,6 +7,3 @@
 # from lblcrn.sim.surface_crn.surface_crns.simulators import *
 # from lblcrn.sim.surface_crn.surface_crns.views import *
 # import lblcrn.sim.surface_crn.surface_crns.SurfaceCRNQueueSimulator
-
-__all__ = ['base', 'models', 'profiling', 'readers', 'simulators', 'views',
-           'SurfaceCRNQueueSimulator']

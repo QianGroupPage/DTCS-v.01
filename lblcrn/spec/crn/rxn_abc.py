@@ -5,7 +5,7 @@ from monty.json import jsanitize, MontyDecoder
 from sympy.parsing import sympy_parser
 
 from lblcrn.common import util
-from lblcrn.spec.spec_abc import SpecCollection, Spec
+from lblcrn.spec.spec_abc import SpecCollection
 from lblcrn.spec.crn.sym_abc import SymSpec, ChemInfo
 
 

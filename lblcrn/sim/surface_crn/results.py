@@ -8,10 +8,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import sympy as sym
 from IPython.display import HTML
 from scipy.stats import norm
 
 import lblcrn.sim.surface_crn.xps as xps
+from lblcrn.common.colors import color_map
 from lblcrn.common import color_to_HEX
 from lblcrn.common.util import resample_by_skipping
 
@@ -42,8 +44,16 @@ class Results:
 
         self.manifest_file = manifest_file
         self.rxns = rxns
-
         self.df = df.copy()
+        self.xps_df = None  # The xps dataframe we have for reference
+        self.species_ordering = None  # The ordering of species as they appear in our figures.
+        self.species_colors = {}  # A dictionary from species names to their colors
+        self.sub_s_list = []
+        self.marker_names_ordering: list = []
+        self.marker_colors: dict = {}
+        self.substances: dict = {}
+        self.sub_species_colors = None
+
         self.df.rename_axis(Results.TIME_COL_NAME, inplace=True)
 
         # Correct the count values for larger species
@@ -62,36 +72,34 @@ class Results:
             # Avoid potential problems for not having a df_raw
             self.df_raw = self.df
 
-        self.xps_df = None  # The xps dataframe we have for reference
-
-        self.species_ordering = None  # The ordering of species as they appear in our figures.
-        self.species_colors = {}  # A dictionary from species names to their colors
-
-        color_index = rxns.get_colors()
-        print(color_index)
-        sub_s_list = []
-        [sub_s_list.extend(l) for l in rxns.species_manager.to_sum_dict.values()]
+        color_index = color_map
+        [self.sub_s_list.extend(l) for l in rxns.species_manager.to_sum_dict.values()]
         primary_s = rxns.species_manager.to_sum_dict.keys()
-        species_tracked = sorted(list(set(list(rxns.get_symbols()) + list(primary_s))), key=lambda s: str(s))
-        self.species_ordering = [s for s in species_tracked if s in primary_s or s not in sub_s_list]
-        self.sub_s_list = sub_s_list
-        self.species_colors = {s: color_index[s] for s in self.species_ordering}
+        # print(primary_s)
+        species_tracked = [str(name) for name in rxns.get_symbols() if str(name) != rxns.surface.name]
+        species_tracked.extend(str(name) for name in primary_s)
+        species_tracked = sorted(set(species_tracked))
+        #species_tracked = sorted(list(set(list(rxns.get_symbols()) + list(primary_s))), key=lambda s: str(s))
+        self.species_ordering = []  # [str(s) for s in species_tracked if s in primary_s or s not in self.sub_s_list]
+        # self.species_colors = {s: color_map[s] for s in self.species_ordering}
 
         marker_names = rxns.species_manager.get_marker_names()
         self.marker_names_ordering = sorted(marker_names)
-        self.marker_colors = {marker_name: ''.join(color_to_HEX(color_index[marker_name], zero_to_one_range=False)) for marker_name in
-                              marker_names}
+        # self.marker_colors = {marker_name: ''.join(color_to_HEX(color_index[marker_name], zero_to_one_range=False)) for marker_name in
+        #                       marker_names}
 
-        self.species_ordering = [str(s) for s in self.species_ordering]
-        self.species_colors = {str(s): ''.join(color_to_HEX(c, zero_to_one_range=False)) for s, c in self.species_colors.items()}
-        self.sub_species_colors = {str(s): ''.join(color_to_HEX(color_index[s], zero_to_one_range=False)) for s in self.sub_s_list}
+        #self.species_ordering = [str(s) for s in self.species_ordering]
+        # self.species_colors = {str(s): ''.join(color_to_HEX(c, zero_to_one_range=False)) for s, c in self.species_colors.items()}
+        # self.sub_species_colors = {str(s): ''.join(color_to_HEX(color_index[s], zero_to_one_range=False)) for s in self.sub_s_list}
 
-        import sympy as sym
-
-        self.substances = {}
-        for s in self.species_ordering:
-            if sym.Symbol(s) in rxns.species_manager:
-                self.substances[s] = rxns.species_manager[sym.Symbol(s)]
+        # TODO(Andrew) I edited this, propagate this and see if it works.
+        for s in rxns.get_symbols():
+            if s in rxns.species_manager:
+                self.species_ordering.append(str(s))
+                self.substances[str(s)] = rxns.species_manager[s]
+        self.species_ordering = sorted(self.species_ordering)
+        # print('so', self.species_ordering, '\n\n')
+        # print('subs', list(self.substances.keys()), '\n\n')
 
         # species_tracked = list(rxns.get_symbols() + list(primary_s))
         # self.species_ordering = [rxns.species_manager.species_from_symbol(s) for s in species_tracked
@@ -110,6 +118,11 @@ class Results:
         # Play the videos
         self.video = None
         self.video_trajectory = None
+
+        # TODO(Andrew): My attempts at refactoring:
+        self.sub_species_colors = None
+        self.species_colors = None
+        self.marker_colors = None
 
     @staticmethod
     def from_csv(path, rxns, compression="infer"):
@@ -465,9 +478,9 @@ class Results:
                 ax.tick_params(axis='both', which='both', labelsize=12)
                 if species not in df:
                     zero_df = pd.DataFrame(0, index=df.index, columns=[species])
-                    ax.plot(zero_df[species], color=self.species_colors[species], label=species, linewidth=2)
+                    ax.plot(zero_df[species], color=color_map[species], label=species, linewidth=2)
                 else:
-                    ax.plot(df[species], color=self.species_colors[species], label=species, linewidth=2)
+                    ax.plot(df[species], color=color_map[species], label=species, linewidth=2)
                 ax.legend(fontsize=12, numpoints=30, loc=legend_loc)
 
             # for sub_species_name in sub_species_in_figure:
@@ -481,9 +494,9 @@ class Results:
                     ax.tick_params(axis='both', which='both', labelsize=12)
                     if marker_name not in df:
                         zero_df = pd.DataFrame(0, index=df.index, columns=[marker_name])
-                        ax.plot(zero_df[marker_name], color=self.marker_colors[marker_name], label=marker_name, linewidth=2)
+                        ax.plot(zero_df[marker_name], color=color_map[marker_name], label=marker_name, linewidth=2)
                     else:
-                        ax.plot(df[marker_name], color=self.marker_colors[marker_name], label=marker_name, linewidth=2)
+                        ax.plot(df[marker_name], color=color_map[marker_name], label=marker_name, linewidth=2)
                     ax.legend(fontsize=12, numpoints=30, loc=legend_loc)
 
 
@@ -519,6 +532,8 @@ class Results:
         # TODO
         # print(s)
         sigma = 0.75 * np.sqrt(2) / (np.sqrt(2 * np.log(2)) * 2)
+        # print(list(self.substances), '\n')
+        # print(self.species_ordering)
         bes = [self.substances[name].orbitals[0].binding_energy for name in self.species_ordering]
         x_axis = np.arange(min(bes) - 5, max(bes) + 5, .1)
         envelope_vals = np.zeros(x_axis.size)
@@ -539,6 +554,9 @@ class Results:
         return res
 
     def bes(self):
+        # TODO(Andrew) Based on this piece of code, Suface should not be in
+        #  self.species_ordering, and substances are all things which have
+        #  orbitals.
         bes = {}
         for name in self.species_ordering:
             for o in self.substances[name].orbitals:
@@ -609,7 +627,7 @@ class Results:
         gaussian_peaks = {}
         for n in sorted([n for n in gaussian.columns if n != "Envelope"],
                         key=lambda x: max(gaussian[x]), reverse=True):
-            color = self.species_colors[n]
+            color = color_map[n]
             peaks = ax.fill(gaussian.index, gaussian[n], label=n, color=color)
             gaussian_peaks[n] = peaks
             # Plot the Peak of the Gaussian

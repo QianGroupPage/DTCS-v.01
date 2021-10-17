@@ -11,13 +11,10 @@ import monty.json
 import sympy as sym
 
 import lblcrn
-from lblcrn.spec.species import Species as SurfaceSpecies
 from lblcrn.spec.crn.surface.surface import Site
 from lblcrn.spec.crn.surface.marker import Marker
-from lblcrn.spec.xps import XPSSpecies, XPSSpeciesManager
-from lblcrn.spec.species import _COLORS  # TODO(Andrew) bad style
+from lblcrn.spec.xps import XPSSpecies, XPSSpeciesManager, XPSOrbital as Orbital
 
-Orbital: TypeAlias = 'Orbital'
 
 class SurfaceSpecies(XPSSpecies):
     """A chemical species with a name and orbitals.
@@ -37,11 +34,14 @@ class SurfaceSpecies(XPSSpecies):
                  include_sub_species: bool=True,
                  size: int = 1,
                  is_gas: bool=False):
+        super().__init__(
+            name=name,
+            orbs_or_struct=orbitals,
+            color=color,
+        )
         self.name = name
         self.name_without_suffix = name
 
-        self.orbitals = orbitals
-        self.color = color or next(_COLORS)
         self.parent = parent   # The parent of the species
         self.sub_species = {}   # The dictionary of sub species from name to the object
 
@@ -106,18 +106,6 @@ class SurfaceSpecies(XPSSpecies):
         """
         return f"{self.name_without_suffix}_{suffix}"
 
-    def as_dict(self) -> dict:
-        d = {
-            '@module': self.__class__.__module__,
-            '@class': self.__class__.__name__,
-            '@version': lblcrn.__version__,  # TODO: Better way to do this?
-            'name': self.name,
-            'orbitals': [orbital.as_dict() for orbital in self.orbitals],
-            'color': self.color,
-        }
-
-        return d
-
     def __str__(self):
         orbitals = [str(orbital) for orbital in self.orbitals]
         if self.color:
@@ -152,10 +140,9 @@ class SurfaceSpeciesManager(XPSSpeciesManager):
 
         self._species = {sym.Symbol(ele): ele for ele in self.elements}
 
-        self.be_name_dict = {}
+        self.be_name_dict = {}  # What was this for ?
         self.default_surface_name = None
-
-        self._markers = {}
+        self._markers = {}  # And what do these do?
 
     def add_species(self, species) -> sym.Symbol:
         s = super().add_species(species)

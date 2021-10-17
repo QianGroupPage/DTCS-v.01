@@ -1,6 +1,6 @@
 import random
 
-from lblcrn.sim.surface_crn.surface_crns.base import TransitionRule
+from lblcrn.sim.surface_crn.surface_crns.base.transition_rule import TransitionRule
 from lblcrn.sim.surface_crn.surface_crns.simulators.event import Event
 
 

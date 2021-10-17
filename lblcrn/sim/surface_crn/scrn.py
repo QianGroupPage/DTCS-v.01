@@ -14,16 +14,16 @@ from lblcrn.sim.surface_crn.api_adapter.api_adapt import (
     HexGridPlusIntersectionDisplay, generate_manifest_stream, generate_surface)
 from lblcrn.sim.surface_crn.ensemble import Ensemble
 from lblcrn.sim.surface_crn.results import Results
-# from lblcrn.sim.surface_crn.surface_crns import SurfaceCRNQueueSimulator
+from lblcrn.sim.surface_crn.surface_crns import SurfaceCRNQueueSimulator
 from lblcrn.sim.surface_crn.surface_crns.models.coord_grid import CoordGrid
 from lblcrn.sim.surface_crn.surface_crns.options.option_processor import \
     SurfaceCRNOptionParser
 from lblcrn.sim.surface_crn.surface_crns.readers.manifest_readers import \
     read_manifest
 from lblcrn.sim.surface_crn.surface_crns.simulators.queue_simulator import QueueSimulator
-# from lblcrn.sim.surface_crn.surface_crns.views.coord_grid_display import \
-#     CoordGridDisplay
-# from lblcrn.common.line_shapes.ir import ir_intensity
+from lblcrn.sim.surface_crn.surface_crns.views.coord_grid_display import \
+    CoordGridDisplay
+from lblcrn.common.line_shapes.ir import ir_intensity
 
 
 def scrn_simulate_single_run(rxns,
@@ -105,57 +105,57 @@ def scrn_simulate_single_run(rxns,
             print(f"trajectory is at " + f"{os.getcwd()}/{trajectory_path}/trajectory.csv")
             r.df_raw.to_csv(f"{os.getcwd()}/{trajectory_path}/trajectory.csv")
 
-    # video_link = None
-    # if video:
-    #     # Generate the file stream again after it's used.
-    #     if not manifest_file:
-    #         manifest = generate_manifest_stream(rxns, time_max, random_seed_scrn=rng_seed, video_path=video_path)
-    #     video_link = get_video_link(manifest)
-    #
-    #     # Generate the file stream again after it's used.
-    #     if not manifest_file:
-    #         manifest = generate_manifest_stream(rxns, time_max, random_seed_scrn=rng_seed, video_path=video_path)
-    #     # TODO: check to not overwrite the video files.
-    #     frames_link = get_frames_link(manifest)
-    #     if os.path.isdir(frames_link):
-    #         rmtree(frames_link)
-    #     # Generate the file stream again after it's used.
-    #     if not manifest_file:
-    #         manifest = generate_manifest_stream(rxns, time_max, random_seed_scrn=rng_seed, video_path=video_path)
-    #     # Provide a grid structure for use in place of the grid structure in the rules manifest.
-    #     if rxns.surface.use_coord_grid and not lattice:
-    #
-    #         # For CoordGrid, generate_surface function updates the surface object in accordance with
-    #         # initial concentration and default species on the sites specified by the rules file.
-    #         generate_surface(rsys=rxns)
-    #         surface = CoordGrid.from_poscar(rxns.surface.poscar_file,
-    #                                         supercell_dimensions=rxns.surface.supercell_dimensions,
-    #                                         ignore_threhold=rxns.surface.surface_depth)
-    #
-    #         # TODO: the following two functions must be called in sequence.
-    #         surface.set_default_species(rxns.surface.default_names)
-    #         surface.set_initial_concentrations(rxns.surface.initial_species)
-    #
-    #     elif not lattice:
-    #         surface = generate_surface(rsys=rxns)
-    #     else:
-    #         surface = lattice
-    #
-    #     # TODO: fix the issue that the video may fail if there is already file in
-    #     # the frames folder.
-    #     # TODO: progress bar for the video
-    #     # TODO: add this as an argument spectra_max_conc=r.df_raw.max()
-    #
-    #     r.video_trajectory = simulate_with_display(manifest,
-    #                                                surface,
-    #                                                group_selection_seed,
-    #                                                rxns=rxns,
-    #                                                spectra_in_video=spectra_in_video,
-    #                                                running_average=spectra_average_duration,
-    #                                                spectra_max_conc=r.df_raw.to_numpy().max(),
-    #                                                outcar_directory=outcar_directory)
-    # r.video = video_link
-    # TODO: warn the user if termination is early.
+    video_link = None
+    if video:
+        # Generate the file stream again after it's used.
+        if not manifest_file:
+            manifest = generate_manifest_stream(rxns, time_max, random_seed_scrn=rng_seed, video_path=video_path)
+        video_link = get_video_link(manifest)
+
+        # Generate the file stream again after it's used.
+        if not manifest_file:
+            manifest = generate_manifest_stream(rxns, time_max, random_seed_scrn=rng_seed, video_path=video_path)
+        # TODO: check to not overwrite the video files.
+        frames_link = get_frames_link(manifest)
+        if os.path.isdir(frames_link):
+            rmtree(frames_link)
+        # Generate the file stream again after it's used.
+        if not manifest_file:
+            manifest = generate_manifest_stream(rxns, time_max, random_seed_scrn=rng_seed, video_path=video_path)
+        # Provide a grid structure for use in place of the grid structure in the rules manifest.
+        if rxns.surface.use_coord_grid and not lattice:
+
+            # For CoordGrid, generate_surface function updates the surface object in accordance with
+            # initial concentration and default species on the sites specified by the rules file.
+            generate_surface(rsys=rxns)
+            surface = CoordGrid.from_poscar(rxns.surface.poscar_file,
+                                            supercell_dimensions=rxns.surface.supercell_dimensions,
+                                            ignore_threhold=rxns.surface.surface_depth)
+
+            # TODO: the following two functions must be called in sequence.
+            surface.set_default_species(rxns.surface.default_names)
+            surface.set_initial_concentrations(rxns.surface.initial_species)
+
+        elif not lattice:
+            surface = generate_surface(rsys=rxns)
+        else:
+            surface = lattice
+
+        # TODO: fix the issue that the video may fail if there is already file in
+        # the frames folder.
+        # TODO: progress bar for the video
+        # TODO: add this as an argument spectra_max_conc=r.df_raw.max()
+
+        r.video_trajectory = simulate_with_display(manifest,
+                                                   surface,
+                                                   group_selection_seed,
+                                                   rxns=rxns,
+                                                   spectra_in_video=spectra_in_video,
+                                                   running_average=spectra_average_duration,
+                                                   spectra_max_conc=r.df_raw.to_numpy().max(),
+                                                   outcar_directory=outcar_directory)
+    r.video = video_link
+    #TODO: warn the user if termination is early.
     return r
 
 
@@ -232,128 +232,131 @@ def scrn_simulate(rxns,
         return Ensemble(ensemble_results)
 
 
-# def resolve_video(video, video_path, default_path="Surface CRN Videos", things_to_store="video frames and videos"):
-#     if not video:
-#         return ""
-#     video_from_argument = True if video_path else False
-#     if video and not video_from_argument:
-#         video_path = input(f"Name a directory to store {things_to_store}: \n{os.getcwd()}/")
-#
-#         if not video_path:
-#             video_path = default_path
-#             print(f"Using the default directory {os.getcwd()}/{video_path}")
-#
-#         # TODO: ask users to press return or enter
-#         # clear_output(wait=False)
-#
-#     if os.path.isdir(video_path):
-#         use_path = False
-#         wrong_decision_word = False
-#
-#         while not use_path:
-#             if wrong_decision_word:
-#
-#                 use_path = input(f"Type \"Yes\" to overwrite the directory, or \"No\" if otherwise: ")
-#                 print('\n')
-#             else:
-#                 use_path = input(f"The directory {os.getcwd()}/{video_path} already exists, would you like to "
-#                                  f"overwrite the directory? \nType \"Yes\" if you do, or \"No\" if otherwise: ")
-#                 # if same_answer:
-#                 print("\n")
-#
-#             if use_path.lower() == "yes":
-#                 use_path = True
-#                 wrong_decision_word = False
-#             elif use_path.lower() == "no":
-#                 if video_from_argument:
-#                     print(f"Please choose a different path for {things_to_store}.")
-#                     print("Program exits")
-#                     return -1
-#
-#                 new_video_path = input(f"Name a directory to store {things_to_store}: \n{os.getcwd()}/")
-#
-#                 if not new_video_path:
-#                     new_video_path = default_path
-#                     print(f"Using default directory name {os.getcwd()}/{new_video_path}")
-#
-#                 if os.path.isdir(new_video_path):
-#                     use_path = False
-#
-#                 # TODO: don't clear if the directory is same as before.
-#                 if new_video_path != video_path:
-#                     clear_output(wait=False)
-#                 else:
-#                     same_answer = True
-#                 wrong_decision_word = False
-#                 video_path = new_video_path
-#             else:
-#                 wrong_decision_word = True
-#                 print(f"\"{use_path}\" is not a valid input.")
-#                 use_path = False
-#     else:
-#         os.mkdir(video_path)
-#     return video_path if video_path else ""
-#
-#
-# def get_opts(manifest):
-#     '''
-#     Process a stream into an options file.
-#     '''
-#     manifest_options = read_manifest(manifest)
-#     return SurfaceCRNOptionParser(manifest_options)
-#
-#
-# def get_video_link(manifest):
-#     """
-#     :param manifest: a stream or file name of manifest file
-#     :return: the link where the video would be stored.
-#     """
-#     opts = get_opts(manifest)
-#     return f"{opts.capture_directory}/{opts.movie_title}.mp4"
-#
-#
-# # TODO: cleanup
-# def get_frames_link(manifest):
-#     opts = get_opts(manifest)
-#     return f"{opts.capture_directory}/frames"
-#
-#
-# def ir_intensities(outcar_directory=""):
-#     """
-#     :param outcar_directory: a directory of OUTCAR files; each file must correspond to one species and be named after
-#                              that species;
-#     :return: a dictionary from species name to its ir intensity.
-#     """
-#     results = {}
-#     for entry in os.scandir(outcar_directory):
-#         if entry.is_file():
-#             results[entry.name] = ir_intensity(entry.path)
-#     return results
-#
-#
-# def simulate_with_display(manifest_file, lattice, group_selection_seed,
-#                           rxns=None,
-#                           spectra_in_video=True,
-#                           running_average=10,
-#                           spectra_max_conc=-1,
-#                           outcar_directory=""):
-#     if rxns.surface.use_coord_grid:
-#         display_class = CoordGridDisplay
-#     elif rxns.surface.structure == "hexagon":
-#         display_class = HexGridPlusIntersectionDisplay
-#     else:
-#         display_class = None
-#     concs, times = SurfaceCRNQueueSimulator.simulate_surface_crn(manifest_file,
-#                                                                  group_selection_seed,
-#                                                                  display_class,
-#                                                                  init_state=lattice, rxns=rxns,
-#                                                                  spectra_in_video=spectra_in_video,
-#                                                                  running_average=running_average,
-#                                                                  spectra_max_conc=spectra_max_conc,
-#                                                                  ir_intensities=ir_intensities(outcar_directory))
-#     return Results.concs_times_df(concs, times)
-#
-#
+def resolve_video(video, video_path, default_path="Surface CRN Videos", things_to_store="video frames and videos"):
+    if not video:
+        return ""
+    video_from_argument = True if video_path else False
+    if video and not video_from_argument:
+        video_path = input(f"Name a directory to store {things_to_store}: \n{os.getcwd()}/")
+
+        if not video_path:
+            video_path = default_path
+            print(f"Using the default directory {os.getcwd()}/{video_path}")
+
+        # TODO: ask users to press return or enter
+        # clear_output(wait=False)
+
+    if os.path.isdir(video_path):
+        use_path = False
+        wrong_decision_word = False
+
+        while not use_path:
+            if wrong_decision_word:
+
+                use_path = input(f"Type \"Yes\" to overwrite the directory, or \"No\" if otherwise: ")
+                print('\n')
+            else:
+                use_path = input(f"The directory {os.getcwd()}/{video_path} already exists, would you like to "
+                                 f"overwrite the directory? \nType \"Yes\" if you do, or \"No\" if otherwise: ")
+                # if same_answer:
+                print("\n")
+
+            if use_path.lower() == "yes":
+                use_path = True
+                wrong_decision_word = False
+            elif use_path.lower() == "no":
+                if video_from_argument:
+                    print(f"Please choose a different path for {things_to_store}.")
+                    print("Program exits")
+                    return -1
+
+                new_video_path = input(f"Name a directory to store {things_to_store}: \n{os.getcwd()}/")
+
+                if not new_video_path:
+                    new_video_path = default_path
+                    print(f"Using default directory name {os.getcwd()}/{new_video_path}")
+
+                if os.path.isdir(new_video_path):
+                    use_path = False
+
+                # TODO: don't clear if the directory is same as before.
+                if new_video_path != video_path:
+                    clear_output(wait=False)
+                else:
+                    same_answer = True
+                wrong_decision_word = False
+                video_path = new_video_path
+            else:
+                wrong_decision_word = True
+                print(f"\"{use_path}\" is not a valid input.")
+                use_path = False
+    else:
+        os.mkdir(video_path)
+    return video_path if video_path else ""
+
+
+def get_opts(manifest):
+    '''
+    Process a stream into an options file.
+    '''
+    manifest_options = read_manifest(manifest)
+    return SurfaceCRNOptionParser(manifest_options)
+
+
+def get_video_link(manifest):
+    """
+    :param manifest: a stream or file name of manifest file
+    :return: the link where the video would be stored.
+    """
+    opts = get_opts(manifest)
+    return f"{opts.capture_directory}/{opts.movie_title}.mp4"
+
+
+# TODO: cleanup
+def get_frames_link(manifest):
+    opts = get_opts(manifest)
+    return f"{opts.capture_directory}/frames"
+
+
+def ir_intensities(outcar_directory=""):
+    """
+    :param outcar_directory: a directory of OUTCAR files; each file must correspond to one species and be named after
+                             that species;
+    :return: a dictionary from species name to its ir intensity.
+    """
+    results = {}
+    for entry in os.scandir(outcar_directory):
+        if entry.is_file():
+            results[entry.name] = ir_intensity(entry.path)
+    return results
+
+
+def simulate_with_display(manifest_file, lattice, group_selection_seed,
+                          rxns=None,
+                          spectra_in_video=True,
+                          running_average=10,
+                          spectra_max_conc=-1,
+                          outcar_directory=""):
+    if rxns.surface.use_coord_grid:
+        display_class = CoordGridDisplay
+    elif rxns.surface.structure == "hexagon":
+        display_class = HexGridPlusIntersectionDisplay
+    else:
+        display_class = None
+    concs, times = SurfaceCRNQueueSimulator.simulate_surface_crn(manifest_file,
+                                                                 group_selection_seed,
+                                                                 display_class,
+                                                                 init_state=lattice, rxns=rxns,
+                                                                 spectra_in_video=spectra_in_video,
+                                                                 running_average=running_average,
+                                                                 spectra_max_conc=spectra_max_conc,
+                                                                 ir_intensities=None)  # ir_intensities(outcar_directory))
+    # TODO: Look into using the ir_intensities feature, it doesn't look like
+    #  Ye got it working, but that he got close and commented it out for some
+    #  reason.
+    return Results.concs_times_df(concs, times)
+
+
 def simulate_without_display(manifest_file, lattice, species_tracked, rxns, group_selection_seed,
                              trajectory_path="", compress_trajectory=True, section_length=-1):
     '''

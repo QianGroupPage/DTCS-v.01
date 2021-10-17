@@ -620,6 +620,8 @@ def simulate_surface_crn(manifest_filename,
                 debug_output_stream = open(os.path.join(opts.capture_directory,
                                                         "debug",
                                                         "ffmpeg_debug.dbg"), 'w')
+                print('command', command, '\n')
+                print('dos', debug_output_stream, '\n')
                 proc = sp.Popen(command,
                                 stdout=debug_output_stream,
                                 stderr=sp.STDOUT)

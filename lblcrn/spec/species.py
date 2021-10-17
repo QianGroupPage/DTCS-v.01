@@ -18,15 +18,11 @@ Usage:
 from __future__ import annotations
 from typing import List, Union
 
-import itertools
-
 import sympy as sym
 
 from lblcrn.common import util
+from lblcrn.common.colors import color_map
 from lblcrn.spec.spec_abc import Spec, SpecCollection
-
-_COLORS = itertools.cycle(['red', 'green', 'orange', 'blue', 'purple', 'pink',
-                           'yellow', 'gray', 'cyan'])
 
 
 class Species(Spec):
@@ -35,7 +31,15 @@ class Species(Spec):
     def __init__(self, name, color='', **kwargs):
         """TODO"""
         super().__init__(name=name, **kwargs)
-        self.color = color or next(_COLORS)
+        if color:
+            # Add color to the spec so it serializes
+            self.spec['color'] = color
+            # Use the global color tracking
+            color_map[self.name] = color
+
+    @property
+    def color(self):
+        return color_map[self.name]
 
 
 class SpeciesManager(SpecCollection):

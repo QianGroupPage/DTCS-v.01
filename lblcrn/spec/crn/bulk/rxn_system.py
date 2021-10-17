@@ -23,7 +23,6 @@ from lblcrn.spec.crn.bulk.conditions import ConcEq, ConcDiffEq, Term, Schedule, 
 from lblcrn.spec.crn.bulk.reaction import BulkRxn, BulkRevRxn
 from lblcrn.spec.crn.rxn_abc import RxnABC, RxnSystemABC
 from lblcrn.spec.spec_abc import SpecCollection
-from lblcrn.spec.species import _COLORS
 from lblcrn.spec.model_input.state_variable import T, P
 from lblcrn.spec.model_input.relations.tprate_relation import TPRateRelation
 from lblcrn.spec.model_input.relations.ideal_gas_law import IdealGasLawRelation
@@ -158,7 +157,9 @@ class BulkRxnSystem(RxnSystemABC):
     def get_colors(self):
         """Assign (if applicable) and return colors for all species.
         """
-        return {sym: next(_COLORS) for sym in self.get_symbols()}
+        raise NotImplementedError()
+
+        # return {sym: next(_COLORS) for sym in self.get_symbols()}
 
         if self.color_index:
             return self.color_index

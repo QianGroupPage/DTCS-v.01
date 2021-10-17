@@ -6,7 +6,8 @@ from lblcrn.spec.crn.surface import Surface, SurfaceRevRxn, SurfaceRxn
 
 from lblcrn.sim.surface_crn.surface_crns.models.grids import *
 from lblcrn.sim.surface_crn.surface_crns.views.grid_display import *
-from lblcrn.spec.species import _COLORS
+from lblcrn.common.colors import color_map
+
 
 def to_str(rule):
     """
@@ -179,15 +180,9 @@ def generate_settings(rsys, max_duration, random_seed=923123122, video_path="Sur
 
 def generate_colors(rsys):
     color_strs = ""
-    #  colors = rsys.get_colors()
     for s in list(rsys.get_symbols()) + [rsys.surface.symbol()] + [s.symbol for s in rsys.surface.sites]:
-        #  color = colors[s]
-        color = next(_COLORS)
-        if isinstance(color, str):
-            color = tuple(c for c in color_to_RGB(color))
-
+        color = color_map.rgb256(s)
         color_strs += s.name + ": " + str(color) + "\n"
-    # print(color_strs)
     return f"""!START_COLORMAP\n{color_strs}!END_COLORMAP\n"""
 
 
