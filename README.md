@@ -5,11 +5,11 @@ A chemical reaction network solver
 if you are using Anaconda:
 
     conda install git pip
-    git clone https://github.com/rithvikp/lbl-crn
+    git clone https://github.com/AndrewBogdan/lbl-crn
 
 if you are using normal Python:
 
-    pip install git+https://github.com/rithvikp/lbl-crn
+    pip install git+https://github.com/AndrewBogdan/lbl-crn
 
 Once it's installed (it might take a while), run
 `python -m lblcrn --version`
@@ -49,7 +49,7 @@ And then to plot the gaussian:
 
     time_series.xps.plot()
 
-You can download this example [here](https://github.com/rithvikp/lbl-crn/blob/master/examples/predator_prey.ipynb)
+You can download this example [here](https://github.com/AndrewBogdan/lbl-crn/blob/master/examples/predator_prey.ipynb)
 (except not right now you can't because we're editing stuff).
 
 ## More Information

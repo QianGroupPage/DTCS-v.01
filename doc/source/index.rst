@@ -27,11 +27,11 @@ If you are using Anaconda::
 
     conda install pip
     conda install git
-    pip install git+https://github.com/rithvikp/lbl-crn
+    pip install git+https://github.com/AndrewBogdan/lbl-crn
 
 If you are using normal Python::
 
-    pip install git+https://github.com/rithvikp/lbl-crn
+    pip install git+https://github.com/AndrewBogdan/lbl-crn
 
 Once it's installed (it might take a while), run ``python -m lblcrn --version``
 to check if everything installed.

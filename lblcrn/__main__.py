@@ -12,7 +12,7 @@ def cmd_help():
 
     help = """
     Basic CLI for lblcrn; for more information, refer to the docs and tutorial 
-    at <https://github.com/rithvikp/lbl-crn> or run lblcrn.lblcrn_help().
+    at <https://github.com/AndrewBogdan/lbl-crn> or run lblcrn.lblcrn_help().
     
     Usage: `python -m lblcrn [options]`
 
