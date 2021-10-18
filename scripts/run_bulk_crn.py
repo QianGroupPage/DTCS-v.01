@@ -1,7 +1,7 @@
 import sys
 import os
 
-from lblcrn.twin.crn import simulate
+from lblcrn.twin.core import simulate
 from lblcrn.io.storage import CRNStorage
 
 sm = SpeciesManager()

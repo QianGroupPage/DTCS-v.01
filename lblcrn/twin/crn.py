@@ -36,13 +36,13 @@ import pandas as pd
 import sympy as sym
 
 from lblcrn.sim import bulk_crn
-from lblcrn.spec.crn.bulk.core import BulkCRNSpec
-from lblcrn.spec.crn.bulk.rxn_system import BulkRxnSystem
-from lblcrn.twin import core
+from lblcrn.twin import twin_abc
 from lblcrn.twin import xps
 
+BulkCRNSpec: TypeAlias = 'BulkCRNSpec'
 
-class CRNTimeSeries(core.Experiment):
+
+class CRNTimeSeries(twin_abc.Experiment):
     """A time series solution of an chemical reaction ODE, with utilities.
 
     Defines a solution to a system of differential equations, providing a
@@ -92,6 +92,9 @@ class CRNTimeSeries(core.Experiment):
     def xps(self) -> xps.XPSExperiment:
         """Gives the xps observable you've calculating, calculating a default
         if you haven't run calc_xps yet."""
+        # TODO(Andrew): I don't think this style of function is transparent
+        #  to the user, I'm going to force them to use xps_with().
+        raise NotImplementedError()
         if self._xps is None:
             self.xps_with()
         return self._xps
@@ -129,8 +132,8 @@ class CRNTimeSeries(core.Experiment):
         Returns:
             An XPSExperiment object with the parameters you specified.
         """
-        species = core._get_species_not_ignored(species, ignore,
-                                                self.species)
+        species = twin_abc._get_species_not_ignored(species, ignore,
+                                                    self.species)
         snapshot = self.at(t)
         species_concs = {}
         for specie, conc in snapshot.items():
@@ -138,6 +141,10 @@ class CRNTimeSeries(core.Experiment):
                 species_concs[specie] = conc
         if not title:
             title = f'time={snapshot.name}'
+        # TODO(Andrew): Is this paradigm better than simulate_xps?
+        #  I should standardize how to do it. I think that the __init__ would
+        #  make more sense to have the bulk of the info and then the simulate
+        #  function just forwards.
         self._xps = xps.XPSExperiment(species_manager=self.species_manager,
                                       title=title,
                                       x_range=x_range,
@@ -229,23 +236,23 @@ class CRNTimeSeries(core.Experiment):
         return cls(**d)
 
 
-def simulate(
-    crn: BulkCRNSpec,
-    #rsys: BulkRxnSystem = None,
-    time: Optional[float] = None,
-    end_when_settled: bool = False,
-    title: str = "",
-    species: List[sym.Symbol] = None,
-    ignore: List[sym.Symbol] = None,
-    x_range: Optional[np.ndarray] = None,
-    scale_factor: float = None,
-    experimental: pd.Series = None,
-    gas_interval: Tuple[float, float] = None,
-    contam_spectra: Optional[Dict[sym.Symbol, pd.Series]] = None,
-    deconv_species: Optional[List[sym.Symbol]] = None,
-    autoresample: bool = True,
-    autoscale: bool = True,
-    **options
+def simulate_bulk_crn(
+        crn: BulkCRNSpec,
+        #rsys: BulkRxnSystem = None,
+        time: Optional[float] = None,
+        end_when_settled: bool = False,
+        #title: str = "",
+        #species: List[sym.Symbol] = None,
+        #ignore: List[sym.Symbol] = None,
+        #x_range: Optional[np.ndarray] = None,
+        #scale_factor: float = None,
+        #experimental: pd.Series = None,
+        #gas_interval: Tuple[float, float] = None,
+        #contam_spectra: Optional[Dict[sym.Symbol, pd.Series]] = None,
+        #deconv_species: Optional[List[sym.Symbol]] = None,
+        #autoresample: bool = True,
+        #autoscale: bool = True,
+        **options
 ):
     """Simulate the given reaction system over time.
 
@@ -266,24 +273,19 @@ def simulate(
     Returns:
         An XPSExperiment with the simulation results as well as a CRNTimeSeries object with the time series data.
     """
+    time = time or crn.time
     end_when_settled = end_when_settled or (time is None)
 
-    sol_t, sol_y = bulk_crn.solve_rsys_ode(crn.rsys, time, end_when_settled, **options)
+    sol_t, sol_y = bulk_crn.solve_rsys_ode(
+        rsys=crn.rsys,
+        time_max=time,
+        end_when_settled=end_when_settled,
+        max_step=crn.max_step,
+        **options)
     cts = CRNTimeSeries(sol_t, sol_y, crn)
 
-    return (
-        cts.xps_with(
-            title=title,
-            species=species,
-            ignore=ignore,
-            x_range=x_range,
-            scale_factor=scale_factor,
-            experimental=experimental,
-            gas_interval=gas_interval,
-            contam_spectra=contam_spectra,
-            deconv_species=deconv_species,
-            autoresample=autoresample,
-            autoscale=autoscale,
-        ),
-        cts,
-    )
+    return cts
+
+
+def simulate_surface_crn(*args, **kwargs):
+    raise NotImplementedError()

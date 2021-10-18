@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from lblcrn.twin.crn import simulate
+from lblcrn.twin.core import simulate
 from lblcrn.io.xps import read_new_data
 
 

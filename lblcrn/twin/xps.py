@@ -40,7 +40,7 @@ import sympy as sym
 import lblcrn
 from lblcrn.io import xps as xps_io
 from lblcrn.spec.model_input.relations import TPRateRelation
-from lblcrn.twin import core
+from lblcrn.twin import twin_abc
 from lblcrn.spec import species
 from lblcrn.common import util
 from lblcrn import _logger
@@ -284,7 +284,7 @@ class XPSObservable(monty.json.MSONable):
         if ax is None:
             ax = plt.gca()
 
-        species = core._get_species_not_ignored(
+        species = twin_abc._get_species_not_ignored(
             species,
             ignore,
             self.species_manager.species,
@@ -593,7 +593,7 @@ class XPSObservable(monty.json.MSONable):
         return integrate.trapz(self.sim_envelope, self.x_range)
 
 
-class XPSExperiment(core.Experiment, XPSObservable):
+class XPSExperiment(twin_abc.Experiment, XPSObservable):
     """A container for a simulated observable of an XPS experiment.
 
     Attributes:
@@ -808,8 +808,8 @@ class XPSExperiment(core.Experiment, XPSObservable):
         """TODO"""
         # --- Parse Arguments ------------------------------------------------
         # Handle: species, ignore
-        species = core._get_species_not_ignored(species, ignore,
-                                                self.species)
+        species = twin_abc._get_species_not_ignored(species, ignore,
+                                                    self.species)
 
         # --- Simulation-Related ---------------------------------------------
         # Handle: sim_concs
@@ -1747,3 +1747,7 @@ class XPSSystemRunner:
             raise AssertionError("All experiments have not yet been simulated.")
         return XPSSolutionSystem(self.solutions, self.time_series, [x.experimental_file for x in self.initializer_data if x.experimental_file],
                                  self.multipliers)
+
+
+def simulate_xps(*args, **kwargs):
+    raise NotImplementedError()

@@ -1,7 +1,7 @@
 import unittest
 import pandas as pd
 
-from lblcrn.twin.crn import simulate
+from lblcrn.twin.core import simulate
 
 
 class TestBulk(unittest.TestCase):
@@ -88,7 +88,7 @@ class TestBulk(unittest.TestCase):
             Conc(c, 1e-9),
             sm
         )
-        _, ts = simulate(rsys, 3600*10, max_step=1)
+        _, ts = simulate(rsys, 3600 * 10, max_step=1)
         want = pd.read_csv("./tests/data/bulk_nanomolar.csv")
 
         for step in want.iterrows():
