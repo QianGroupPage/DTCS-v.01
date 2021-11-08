@@ -68,6 +68,7 @@ def scrn_simulate_single_run(rxns,
     # Dangerous! rng_seed + 1 is used
     group_selection_seed = rng_seed + 1
 
+    # TODO(Andrew)
     if not manifest_file:
         manifest = generate_manifest_stream(rxns, time_max, random_seed_scrn=rng_seed, video_path=video_path)
     else:

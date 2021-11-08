@@ -17,6 +17,7 @@ from lblcrn.common.num_to_word import num2word
 from lblcrn.sim.surface_crn.connectivity.triangulation import grid_size, show_triangulation
 from lblcrn.sim.surface_crn.connectivity.voronoi import fold_numbers, produce_voronoi
 from lblcrn.spec.spec_abc import Spec
+from lblcrn.common.colors import color_map
 
 
 # *** Classes ***
@@ -57,6 +58,8 @@ class Surface(Spec):
         # initial concentration of the species.
         self.initial_species = None
 
+        # TODO(Andrew) Remove the color tracking, use the singleton instead.
+        color_map[self.name] = color
         if color:
             self.color = color_to_RGB(color)
         else:
@@ -149,6 +152,7 @@ class Site:
         self.name = name
         self.surface = surface
 
+        color_map[self.name] = color
         if color:
             self.color = color_to_RGB(color)
         else:

@@ -40,7 +40,7 @@ class _ColorManagerSingleton(collections.abc.Mapping):
 
     def rgb256(self, name: Union[str, sym.Symbol]) -> tuple:
         """Return the color as rgb, a tuple of (R, G, B) in [0, 255]"""
-        return tuple(round(value) for value in self.rgb(name))
+        return tuple(round(value * 255) for value in self.rgb(name))
 
     def rgba(self, name: Union[str, sym.Symbol]) -> tuple:
         """Return the color as rgba, a tuple of (R, G, B, A) in [0, 1]"""
@@ -48,7 +48,7 @@ class _ColorManagerSingleton(collections.abc.Mapping):
 
     def rgba256(self, name: Union[str, sym.Symbol]) -> tuple:
         """Return the color as rgba, a tuple of (R, G, B, A) in [0, 255]"""
-        return tuple(round(value) for value in self.rgba(name))
+        return tuple(round(value * 255) for value in self.rgba(name))
 
     def _get_color(self, name: Union[str, sym.Symbol]) -> str:
         """
@@ -76,6 +76,7 @@ class _ColorManagerSingleton(collections.abc.Mapping):
 
     def _default(self, name: Union[str, sym.Symbol]) -> str:
         """Pick a color for that name and save it."""
+        # TODO(Andrew) Add a warning/info/debug here.
         self._set_color(name, next(_COLORS))
         return self._get_color(name)
 

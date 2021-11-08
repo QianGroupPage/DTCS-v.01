@@ -9,6 +9,8 @@ from lblcrn.sim.surface_crn.surface_crns.models.grids import SquareGrid, HexGrid
 
 class SurfaceCRNOptionParser:
     def __init__(self, options):
+        # TODO(Andrew) Cropshop this to phase out saving and loading a
+        #  manifest for no reason several times each simulation.
         self.movie_title = self.process_movie_title(options)
         self.speedup_factor = self.process_speedup_factor(options)
         self.debug = self.process_debug_flag(options)

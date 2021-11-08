@@ -779,7 +779,7 @@ def update_display(opts, simulation, progress_bar, grid_display, FRAME_DIRECTORY
                 if time_display is not None:
                     title_x, title_y = title_display.x_pos, title_display.y_pos
 
-                    display = TextDisplay(spectrum_width, text="Dynamical XPS Spectrum")
+                    display = TextDisplay(spectrum_width, text="Dynamic XPS Spectrum")
                     display.render(entire_screen, title_x + trajectory_width + h_gap, title_y)
 
                     # TODO: add a text display
@@ -855,22 +855,47 @@ def update_display(opts, simulation, progress_bar, grid_display, FRAME_DIRECTORY
                     # Cascading X positions from the previous display
                     left_x_pos = new_time_display.x_pos + spectrum_width + h_gap
 
-                    display = TextDisplay(spectrum_width, text="Dynamical Concentration Plot")
+                    display = TextDisplay(spectrum_width, text="Dynamic Concentration Plot")
                     display.render(entire_screen, left_x_pos, title_y)
                     time = new_time_display.get_time()
                     time_display = TimeDisplay(spectrum_width)
                     time_display.set_time(time)
                     time_display.render(entire_screen, x_pos=left_x_pos, y_pos=new_time_display.y_pos)
 
+                    # TODO(Andrew): This is what generates that warning about
+                    #  xlim and left == right == 0 and singular tranformation.
                     raw_string_c, size = r.raw_string_evolution(ylim=y_lim,
                                                                 return_fig=True,
                                                                 fig_size=(spectrum_width / dpi, fig_height / dpi),
-                                                                dpi=dpi)
+                                                                dpi=dpi,)
 
                     gaussian = pygame.image.fromstring(raw_string_c, size, "RGB")
 
                     entire_screen.blit(gaussian, (left_x_pos,
                                                   new_time_display.y_pos + new_time_display.display_height + gap))
+
+                    # Plot the rolling mean below the normal one
+                    def rolling_mean(df, window):
+                        def rolled_row(row):
+                            return df[max(0, time - window):row.name].mean()
+                        return rolled_row
+                    # r.df_raw.apply(rolling_mean(r.df_raw, 1), axis=1)
+
+                    raw_string_c, size = r.raw_string_evolution(ylim=y_lim,
+                                                                return_fig=True,
+                                                                fig_size=(spectrum_width / dpi, fig_height / dpi),
+                                                                dpi=dpi,
+                                                                use_raw_data=False)
+
+                    evolution = pygame.image.fromstring(raw_string_c, size, "RGB")
+                    entire_screen.blit(evolution, (left_x_pos, start))
+
+                    running_avg_display = TextDisplay(spectrum_width, font_size=18,
+                                                      text=time_period_string)
+                    running_avg_display.render(entire_screen,
+                                               x_pos=left_x_pos,
+                                               y_pos=(
+                            start - new_time_display.display_height - gap))
 
                 else:
                     raw_data, size = r.raw_string_gaussian(y_upper_limit=simulation.surface.num_nodes,

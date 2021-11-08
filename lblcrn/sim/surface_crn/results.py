@@ -343,6 +343,7 @@ class Results:
     def plot_evolution(self,
                        start_time=0,
                        end_time=-1,
+                       rolling_window=0,
                        names_in_figure=None,
                        names_to_ignore=None,
                        include_markers=True,
@@ -398,7 +399,7 @@ class Results:
         if not legend_loc:
             legend_loc = "best"
 
-        if df:
+        if df is not None:
             df = df
         elif use_raw_data:
             df = self.df_raw
