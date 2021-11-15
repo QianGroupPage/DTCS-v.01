@@ -171,7 +171,7 @@ def generate_settings(rsys, max_duration, random_seed=923123122, video_path="Sur
            "debug               = False\n" + \
            f"rng_seed           = {random_seed}\n" + \
            f"max_duration       = {max_duration}\n" + \
-           "fps                 = 10\n" + \
+           "fps                 = 1\n" + \
            "node_display        = text\n" + \
            "wrap                = false\n" + \
            f"capture_directory  = {video_path}\n" + \

@@ -36,8 +36,12 @@ import pandas as pd
 import sympy as sym
 
 from lblcrn.sim import bulk_crn
+from lblcrn.sim import surface_crn
 from lblcrn.twin import twin_abc
 from lblcrn.twin import xps
+
+from lblcrn.common import util
+from lblcrn.common.colors import color_map
 
 BulkCRNSpec: TypeAlias = 'BulkCRNSpec'
 
@@ -132,8 +136,17 @@ class CRNTimeSeries(twin_abc.Experiment):
         Returns:
             An XPSExperiment object with the parameters you specified.
         """
+        # Ignore species without binding energies
+        ignore = ignore or []
+        for specie in self.species:
+            if specie in self.species_manager and \
+                    hasattr(self.species_manager[specie], 'orbitals'):
+                continue
+            ignore.append(specie)
+
         species = twin_abc._get_species_not_ignored(species, ignore,
                                                     self.species)
+
         snapshot = self.at(t)
         species_concs = {}
         for specie, conc in snapshot.items():
@@ -148,6 +161,7 @@ class CRNTimeSeries(twin_abc.Experiment):
         self._xps = xps.XPSExperiment(species_manager=self.species_manager,
                                       title=title,
                                       x_range=x_range,
+                                      species=species,
                                       scale_factor=scale_factor,
                                       sim_concs=species_concs,
                                       experimental=experimental,
@@ -173,7 +187,7 @@ class CRNTimeSeries(twin_abc.Experiment):
             if isinstance(name, str):
                 species[i] = sym.Symbol(name)
             specie = species[i]
-            self.df[specie].plot(ax=ax, color=self.species_manager[specie].color, **kwargs)
+            self.df[specie].plot(ax=ax, color=color_map[specie], **kwargs)
 
     # --- Utility -------------------------------------------------------------
 
@@ -236,6 +250,79 @@ class CRNTimeSeries(twin_abc.Experiment):
         return cls(**d)
 
 
+class SurfaceCRNTimeSeries(CRNTimeSeries):
+    """
+    TODO
+    It's going to have a dataframe with:
+    - the time series of each run, through a multiindex
+    - the map for each step in the time series (what if it's too big?)
+
+    A property to calculate:
+    - the mean result
+    - the rolling mean for a window
+    - the rolling mean for a run(?)
+    """
+
+    def __init__(self):
+        twin_abc.Experiment.__init__(self)
+
+    @classmethod
+    def from_runs(cls, trajectories, crn):
+        scts = cls()
+
+        scts.trajs = trajectories
+        scts.crn = crn
+        scts.rsys = crn.rsys
+        scts.species_manager = crn.species
+
+        scts.df_full = cls.resample(scts)
+        scts.df = scts.df_full['rolling_mean']
+        scts._xps = None
+
+        return scts
+
+    def resample(self, roll_window=0.5, time_step=0.01, index=None):
+        time_max = self.crn.time
+
+        # Resample:
+        sample_on = index or np.arange(0, time_max, time_step)
+        time_index = set(util.flat([list(df.index) for df in self.trajs]))
+        time_index.update(sample_on)
+
+        self_df = pd.DataFrame(index=sorted(time_index))
+
+        for index in range(len(self.trajs)):
+            for col in self.trajs[index].columns:
+                self_df[f'seed{index}', sym.Symbol(col)] = self.trajs[index][col]
+
+        self_df.columns = pd.MultiIndex.from_tuples(self_df.columns)
+        self_df = self_df.interpolate(method='index')
+        self_df = self_df.loc[sample_on]  # TODO: Make sure to save the raw data, this drops it!
+
+        # Calculate mean
+        for species in self_df.columns.levels[1]:
+            self_df['mean', species] = self_df.xs(species, axis=1, level=1).mean(axis=1)
+
+        # Calculate rolling mean
+        def rolling_mean(df, window):
+            def roll(row):
+                time = row.name
+                return df[max(0, time - window):time].mean()
+            return roll
+
+        rolled = self_df.apply(rolling_mean(self_df['mean'], roll_window), axis=1)
+
+        for species in rolled.columns:
+            self_df['rolling_mean', species] = rolled[species]
+
+        # Sort columns
+        self_df = self_df.sort_index(axis=1)
+
+        return self_df
+
+    def as_dict(self):
+        raise NotImplemented()
+
 def simulate_bulk_crn(
         crn: BulkCRNSpec,
         #rsys: BulkRxnSystem = None,
@@ -287,5 +374,20 @@ def simulate_bulk_crn(
     return cts
 
 
-def simulate_surface_crn(*args, **kwargs):
-    raise NotImplementedError()
+def simulate_surface_crn(scrn, **kwargs):
+    ens = surface_crn.scrn.scrn_simulate(scrn.rsys,
+                                         time_max=scrn.time,
+                                         ensemble_size=scrn.runs,
+
+                                         video=False,
+                                         spectra_in_video=False,
+                                         video_path='output',
+                                         trajectory_path='output',)
+    results = None
+    if scrn.runs == 1:
+        results = [ens]
+    else:
+        results = ens.results
+
+    scts = SurfaceCRNTimeSeries.from_runs([result.df_raw for result in ens.results], scrn)
+    return scts
