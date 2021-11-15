@@ -281,17 +281,17 @@ class RxnSystemABC(SymSpec, SpecCollection):
         """
         rsys = copy.deepcopy(self)
         index = 0
-        for reaction in rsys.elements:
-            if isinstance(reaction, RevRxnABC):
+        for elem in rsys.elements:
+            if isinstance(elem, RevRxnABC):
                 if isinstance(rates[index], tuple):
-                    reaction.rate_constant = rates[index][0]
-                    reaction.rate_constant_reverse = rates[index][1]
+                    elem.rate_constant = rates[index][0]
+                    elem.rate_constant_reverse = rates[index][1]
                 else:
-                    reaction.rate_constant = rates[index]
-                    reaction.rate_constant_reverse = 1 / rates[index]
+                    elem.rate_constant = rates[index]
+                    elem.rate_constant_reverse = 1 / rates[index]
                 index += 1
-            elif isinstance(reaction, RxnABC):
-                reaction.rate_constant = rates[index]
+            elif isinstance(elem, RxnABC):
+                elem.rate_constant = rates[index]
                 index += 1
         return rsys
 

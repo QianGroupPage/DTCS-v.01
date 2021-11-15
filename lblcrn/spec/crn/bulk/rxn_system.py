@@ -62,7 +62,7 @@ class BulkRxnSystem(RxnSystemABC):
     @property
     def terms(self) -> List[Term]:
         terms = self.by_subclass()[Term]
-        terms.extend([rxn.to_terms() for rxn in self.by_type()[BulkRxn]])
+        terms.extend([rxn.to_terms() for rxn in self.by_subclass()[BulkRxn]])
 
         # for component in self.components:
         #     if isinstance(component, RxnABC):

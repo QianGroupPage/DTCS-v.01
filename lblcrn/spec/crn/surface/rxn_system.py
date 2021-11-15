@@ -88,6 +88,16 @@ class SurfaceRxnSystem(BulkRxnSystem):
         """
         return [self.surface.name] + [s.name for s in self.surface.sites]
 
+    def to_bulk(self):
+        """
+        TODO(Andrew)
+        """
+        reactions = []
+        for elem in self.elements:
+            if isinstance(elem, SurfaceRxn):
+                reactions.append(elem.to_bulk())
+
+        return BulkRxnSystem(*reactions)
 
     # def _update_elements(self, components):
     #     """

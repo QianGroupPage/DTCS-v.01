@@ -1,4 +1,4 @@
-from lblcrn.spec.crn.bulk.reaction import BulkRxn
+from lblcrn.spec.crn.bulk.reaction import BulkRxn, BulkRevRxn
 from lblcrn.spec.crn.surface.surface import Surface, Site
 from lblcrn.spec.crn.surface.marker import Marker
 from typing import Set, Tuple
@@ -81,8 +81,11 @@ class SurfaceRxn(BulkRxn):
         symbol.update(self.products)
         return symbol
 
-    def to_terms(self) -> None:
-        raise Exception("SurfaceRxn doesn't support to_terms method.")
+    def to_bulk(self):
+        """TODO(Andrew)"""
+        return BulkRxn(sum(self.reactants),
+                       sum(self.products),
+                       k=self.rate_constant)
 
     # TODO: produce a version that takes in the species manager, replace default sites with top sites on appropriate
     # occasions
@@ -168,7 +171,14 @@ class SurfaceRevRxn(SurfaceRxn):
         self.backward_surface_rxn = SurfaceRxn(self.products, self.reactants, k=self.rate_constant_reverse)
         self.is_reversible = True
 
-    def to_rxns(self) -> Tuple[BulkRxn, BulkRxn]:
+    def to_bulk(self):
+        """TODO(Andrew)"""
+        return BulkRevRxn(sum(self.reactants),
+                          sum(self.products),
+                          k=self.rate_constant,
+                          k2=self.rate_constant_reverse)
+
+    def to_rxns(self) -> Tuple[SurfaceRxn, SurfaceRxn]:
         return self.forward_surface_rxn.surface_engine_str, self.backward_surface_rxn.surface_engine_str
 
     @property

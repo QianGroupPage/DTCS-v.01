@@ -65,7 +65,7 @@ class CRNTimeSeries(twin_abc.Experiment):
 
         self.df = pd.DataFrame(data=np.transpose(y),
                                index=pd.Index(t, name='time'),
-                               columns=pd.Index(crn.rsys.get_symbols(),
+                               columns=pd.Index(crn.rsys.get_symbols_ordered(),
                                                 name='species'))
         self.rsys = crn.rsys
         self.species_manager = crn.species
