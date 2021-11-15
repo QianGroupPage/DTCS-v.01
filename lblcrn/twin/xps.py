@@ -287,7 +287,7 @@ class XPSObservable(monty.json.MSONable):
         species = twin_abc._get_species_not_ignored(
             species,
             ignore,
-            self.species_manager.species,
+            self.species_manager.symbols,
         )
 
         # Some switches count for more than one thing.
@@ -1420,14 +1420,15 @@ class XPSExperiment(twin_abc.Experiment, XPSObservable):
               decontaminate: Optional[bool] = None,  # TODO
               contaminate: Optional[bool] = None,  # TODO
               deconvolute: Optional[bool] = False,
-              # Args passed only to plotter
-              sim_gaussians: bool = True,
-              envelope: bool = True,
-              experimental_raw: bool = True,
-              experimental_clean: bool = True,
-              deconv_gaussians: bool = True,
-              deconv_envelope: bool = True,
               augment: bool = False,
+              # Args passed only to plotter
+              # sim_gaussians: bool = True,
+              # envelope: bool = True,
+              # experimental_raw: bool = True,
+              # experimental_clean: bool = True,
+              # deconv_gaussians: bool = True,
+              # deconv_envelope: bool = True,
+              **kwargs,
     ) -> plt.Axes:
         """Plot the XPS observable.
 
@@ -1470,16 +1471,17 @@ class XPSExperiment(twin_abc.Experiment, XPSObservable):
         # this is an XPSObservable, so this doesn't make an infinite loop.
         return xps_obs.plot(ax=ax,
                             simulated=simulate,
-                            sim_gaussians=sim_gaussians,
-                            sim_envelope=envelope,
+                            # sim_gaussians=sim_gaussians,
+                            # sim_envelope=envelope,
                             experimental=experimental,
-                            exp_raw=experimental_raw,
-                            exp_clean=experimental_clean,
+                            # exp_raw=experimental_raw,
+                            # exp_clean=experimental_clean,
                             gas_phase=gas_phase,
                             deconvoluted=deconvolute,
-                            deconv_gaussians=deconv_gaussians,
-                            deconv_envelope=deconv_envelope,
-                            contaminants=contaminants)
+                            # deconv_gaussians=deconv_gaussians,
+                            # deconv_envelope=deconv_envelope,
+                            contaminants=contaminants,
+                            **kwargs)
 
     # --- Utility -------------------------------------------------------------
 

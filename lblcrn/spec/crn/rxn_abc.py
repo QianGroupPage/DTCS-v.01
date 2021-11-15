@@ -1,4 +1,5 @@
 from typing import Optional, Set, Mapping, Dict, Tuple, List
+import copy
 
 import sympy as sym
 from monty.json import jsanitize, MontyDecoder
@@ -273,6 +274,26 @@ class RxnSystemABC(SymSpec, SpecCollection):
         for symbol in self.get_symbols():
             symbols[self.symbol_index[symbol]] = symbol
         return symbols
+
+    def subs_rates(self, rates):
+        """
+        TODO(Andrew)
+        """
+        rsys = copy.deepcopy(self)
+        index = 0
+        for reaction in rsys.elements:
+            if isinstance(reaction, RevRxnABC):
+                if isinstance(rates[index], tuple):
+                    reaction.rate_constant = rates[index][0]
+                    reaction.rate_constant_reverse = rates[index][1]
+                else:
+                    reaction.rate_constant = rates[index]
+                    reaction.rate_constant_reverse = 1 / rates[index]
+                index += 1
+            elif isinstance(reaction, RxnABC):
+                reaction.rate_constant = rates[index]
+                index += 1
+        return rsys
 
     def rename(self, mapping: Mapping):
         for comp in self.elements:

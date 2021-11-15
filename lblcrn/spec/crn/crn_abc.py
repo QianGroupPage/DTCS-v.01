@@ -1,6 +1,7 @@
 """TODO"""
 
 from typing import Dict, List, Mapping, Set
+import copy
 
 import sympy as sym
 
@@ -56,6 +57,12 @@ class CRNSpecABC(SymSpec):
 
     def get_symbols_ordered(self) -> List[sym.Symbol]:
         return self.rsys.get_symbols_ordered()
+
+    def subs_rates(self, rates):
+        """TODO(Andrew)"""
+        crn = copy.deepcopy(self)
+        crn.rsys = self.rsys.subs_rates(rates)
+        return crn
 
     @property
     def symbol_index(self) -> Dict[sym.Symbol, int]:
