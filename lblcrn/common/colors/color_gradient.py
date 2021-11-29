@@ -3,13 +3,13 @@
 from matplotlib import colors
 
 def hex_to_RGB(hex):
-  ''' "#FFFFFF" -> [255,255,255] '''
+  """ "#FFFFFF" -> [255,255,255] """
   # Pass 16 to the integer function for change of base
   return [int(hex[i:i+2], 16) for i in range(1,6,2)]
 
 
 def RGB_to_hex(RGB):
-  ''' [255,255,255] -> "#FFFFFF" '''
+  """ [255,255,255] -> "#FFFFFF" """
   # Components need to be integers for hex to make sense
   RGB = [int(x) for x in RGB]
   return "#"+"".join(["0{0:x}".format(v) if v < 16 else
@@ -37,9 +37,9 @@ def color_to_HEX(color, zero_to_one_range=True):
 
 
 def color_dict(gradient):
-  ''' Takes in a list of RGB sub-lists and returns dictionary of
+  """ Takes in a list of RGB sub-lists and returns dictionary of
     colors in RGB and hex form for use in a graphing function
-    defined later on '''
+    defined later on """
   return {"hex":[RGB_to_hex(RGB) for RGB in gradient],
       "r":[RGB[0] for RGB in gradient],
       "g":[RGB[1] for RGB in gradient],
@@ -47,10 +47,10 @@ def color_dict(gradient):
 
 
 def linear_gradient(start_hex, finish_hex="#FFFFFF", n=10):
-  ''' returns a gradient list of (n) colors between
+  """ returns a gradient list of (n) colors between
     two hex colors. start_hex and finish_hex
     should be the full six-digit color string,
-    inlcuding the number sign ("#FFFFFF") '''
+    inlcuding the number sign ("#FFFFFF") """
   # Starting and ending colors in RGB form
   s = hex_to_RGB(start_hex)
   f = hex_to_RGB(finish_hex)

@@ -60,13 +60,13 @@ class SpectrumDisplay(object):
 
     def render(self, parent_surface, x_pos=0, y_pos=0, width=-1, height=-1):
         debug = False
-        '''
+        """
         Set up the display and make the first render. This must be called before
         any other updates.
             parent_surface: The surface onto which this grid will be displayed.
             x_pos, y_pos: X and Y coordinates of the upper-left corner of this
                             grid relative to parent_surface.
-        '''
+        """
         self.x_pos = x_pos - 200
         self.y_pos = y_pos
 
@@ -101,14 +101,14 @@ class SpectrumDisplay(object):
 
     # TODO: fix the bug of no rendering
     def update_node(self, node, full_render=False):
-        '''
+        """
         Redraw a specified node, in accordance with standard display node API.
 
         In practice, node is not needed. We use matplotlib to draw everything. When the simulatpr is updating
         a node, don't do anything.
 
         TODO: research on and improve speed.
-        '''
+        """
         if not full_render:
             return
         pic_str, size = self._get_voronoi_pic_string()

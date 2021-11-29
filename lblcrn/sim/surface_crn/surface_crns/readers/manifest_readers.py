@@ -6,13 +6,13 @@ import lblcrn.sim.surface_crn.surface_crns.readers.totalistic_readers as totalis
 import lblcrn.sim.surface_crn.surface_crns.readers.transition_readers as transition_readers
 from lblcrn.sim.surface_crn.surface_crns.readers.statements import *
 
-'''
+"""
 For external use
-'''
+"""
 
 
 def read_manifest(filename):
-    '''
+    """
     Process a manifest file containing options for simulations, and returns a
     dictionary of those options. Options can be:
 
@@ -39,7 +39,7 @@ def read_manifest(filename):
     Lines beginning with "#" or "%" are considered comment lines.
 
     Return value: A dictionary of options.
-    '''
+    """
     # TODO: if filename is only a stream, (not a string), then
     # think of it as if the comments or the include statements aren't present
 
@@ -55,12 +55,12 @@ def read_manifest(filename):
 
 
 def parse_manifest_stream(manifest_stream):
-    '''
+    """
     Process a stream of text containing manifest information with include
     statements already flattened into the text.
     See documentation of read_manifest for information on the manifest file
     format.
-    '''
+    """
     options = dict()
     for line in manifest_stream:
         if line.startswith('#') or line.startswith('%') or line.strip() == "":
@@ -86,13 +86,13 @@ def parse_manifest_stream(manifest_stream):
 
 
 def splice_includes(manifest_stream, file_location):
-    '''
+    """
     Convert a stream of manifest file information that might have include
     statements into a stream with included files spliced in.
 
     See documentation of read_manifest for information on the manifest file
     format.
-    '''
+    """
     for line in manifest_stream:
         if line.startswith(include_mark):
             filename = line[len(include_mark):].strip()
@@ -106,16 +106,16 @@ def splice_includes(manifest_stream, file_location):
 
 
 def remove_comments(manifest_stream):
-    '''
+    """
     Removes all '#'s and everything after a '#' on the same line. 
-    '''
+    """
     for line in manifest_stream:
         yield line.split('#')[0]
 
 
-'''
+"""
 Internal use only
-'''
+"""
 
 
 def parse_option(line, options):

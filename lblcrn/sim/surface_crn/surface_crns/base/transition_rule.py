@@ -1,11 +1,11 @@
 class TransitionRule(object):
-    '''
+    """
     Represents one CRN transition rule of the form
     [inputs] -> [outputs]
     with some rate (1/(average clock ticks between consecutive reactions)).
     Chemical species are represented as strings.
     Transition rules are static.
-    '''
+    """
 
     def __init__(self, inputs=None, outputs=None, rate=1):
         if inputs == None:
@@ -45,12 +45,12 @@ class TransitionRule(object):
         return str_rep
 
     def __eq__(self, other_rule):
-        '''
+        """
         Define two transition rules to be equal if and only if they have the 
         same set of input species and the same set of output species. two
         transition rules do NOT have to have the same rate constants to be 
         equal.
-        '''
+        """
         return self.inputs == other_rule.inputs and \
                self.outputs == other_rule.outputs
 

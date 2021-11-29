@@ -213,7 +213,7 @@ def generate_manifest_stream(rsys, max_duration, random_seed_scrn=923123122, ran
 
 
 class HexGridPlusIntersections(HexGrid):
-    '''
+    """
     Represents a rectangular hex grid (as in HexGrid), plus a site at each
     3-fold intersection site between major sites. Only intersection sites with
     all three node neighbors present are modeled -- intersections along the
@@ -228,7 +228,7 @@ class HexGridPlusIntersections(HexGrid):
     The SquareGrid and HexGrid classes store their nodes in a rectangular numpy
     array. In addition, this class stores a second (also rectangular numpy array
     of the intersection sites.
-    '''
+    """
     def __init__(self, x_size, y_size, wrap = False):
         if not isinstance(x_size, int) or not isinstance(y_size, int):
             # TODO: use TypeException here
@@ -251,10 +251,10 @@ class HexGridPlusIntersections(HexGrid):
         self.populate_grid()
 
     def populate_grid(self):
-        '''
+        """
         Set/reset all nodes to new nodes with no state and populate neighbor
         nodes. Should only be used by initialization and set routines.
-        '''
+        """
         # Initialize both grids with no neighbors (yet).
         for x in range(self.x_size):
             for y in range(self.y_size):
@@ -346,9 +346,9 @@ class HexGridPlusIntersections(HexGrid):
         return ret_str
 
 class HexPlusIntersectionGridIterator:
-    '''
+    """
     Iterate through hex grid, then intersection grid.
-    '''
+    """
     def __init__(self, simgrid):
         self.simgrid = simgrid
         self.x = 0
@@ -386,7 +386,7 @@ class HexPlusIntersectionGridIterator:
         return self.__next__()
 
 class HexGridPlusIntersectionDisplay(HexGridDisplay):
-    '''
+    """
     See documentation in surface_crns.views.grid_display.SurfaceDisplay for
     details on how to make a valid display class. Briefly, a SurfaceDisplay
     needs to override the __init__, render, and update_node functions.
@@ -397,16 +397,16 @@ class HexGridPlusIntersectionDisplay(HexGridDisplay):
     then draws another layer on top of that with the intersection nodes. The
     only change between this class and HexGridDisplay is that this class has
     an extended render function that knows how to handle intersection nodes.
-    '''
+    """
     def update_node(self, node):
-        '''
+        """
         This function should blit a single node, or otherwise do whatever is
         required when a node changes state. This will be called whenever the
         state of a node is changed, passing the node that changed.
 
         params:
             node: The node that just changed state.
-        '''
+        """
         if node.is_intersection:
             center = self.get_center(node)
             center = list(map(int, center))
@@ -429,9 +429,9 @@ class HexGridPlusIntersectionDisplay(HexGridDisplay):
             center = self.get_center(node)
 
     def get_center(self, node):
-        '''
+        """
         Returns the coordinates (in pixesls) of the center of this node.
-        '''
+        """
         if not node.is_intersection:
             return super(HexGridPlusIntersectionDisplay, self).get_center(node)
 

@@ -5,9 +5,9 @@ import numpy as np
 
 
 class EmulatedSimulationGrid(object):
-    '''
+    """
     Representation of a CRN on a 2D finite rectangular mesh grid.
-    '''
+    """
 
     def __init__(self, x_size, y_size):
         if not isinstance(x_size, int) or not isinstance(y_size, int):
@@ -20,10 +20,10 @@ class EmulatedSimulationGrid(object):
         self.populate_grid()
 
     def populate_grid(self):
-        '''
+        """
         Set/reset all nodes to new nodes with no state and populate neighbor
         nodes. Should only be used by initialization and set routines.
-        '''
+        """
         for x in range(self.x_size):
             for y in range(self.y_size):
                 self.grid[x, y] = Node()
@@ -39,18 +39,18 @@ class EmulatedSimulationGrid(object):
                         self.grid[x, y].neighbors.append(self.grid[nx, ny])
 
     def clear_timestamps(self):
-        '''
+        """
         Set the timestamps of all nodes in the grid to 0.
-        '''
+        """
         for x in range(self.x_size):
             for y in range(self.y_size):
                 self.grid[x, y].timestamp = 0
 
     def set_global_state(self, state_grid):
-        '''
+        """
         Set the states of nodes using a 2D array or numpy array of state
         strings. Also resets timestamps.
-        '''
+        """
         if isinstance(state_grid, list):
             state_grid = np.array(state_grid)
         if state_grid.shape != self.grid.shape:
@@ -66,9 +66,9 @@ class EmulatedSimulationGrid(object):
         self.clear_timestamps()
 
     def get_global_state(self):
-        '''
+        """
         Get the global state of nodes as a 2D numpy array of strings.
-        '''
+        """
         state_grid = np.empty([self.x_size, self.y_size], np.dtype(object))
         for x in range(self.x_size):
             for y in range(self.y_size):

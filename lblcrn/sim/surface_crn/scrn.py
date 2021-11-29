@@ -297,9 +297,9 @@ def resolve_video(video, video_path, default_path="Surface CRN Videos", things_t
 
 
 def get_opts(manifest):
-    '''
+    """
     Process a stream into an options file.
-    '''
+    """
     manifest_options = read_manifest(manifest)
     return SurfaceCRNOptionParser(manifest_options)
 
@@ -360,11 +360,11 @@ def simulate_with_display(manifest_file, lattice, group_selection_seed,
 
 def simulate_without_display(manifest_file, lattice, species_tracked, rxns, group_selection_seed,
                              trajectory_path="", compress_trajectory=True, section_length=-1):
-    '''
+    """
     Run until completion or max time, storing an array of species counts at
     the times of each reaction, along with an array of times. At the end,
     display a graph of species concentrations as they change.
-    '''
+    """
     manifest_options = read_manifest(manifest_file)
 
     opts = SurfaceCRNOptionParser(manifest_options)

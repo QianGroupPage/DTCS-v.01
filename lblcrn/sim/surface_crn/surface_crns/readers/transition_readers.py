@@ -4,13 +4,13 @@ from lblcrn.sim.surface_crn.surface_crns.base.transition_rule import TransitionR
 from lblcrn.sim.surface_crn.surface_crns.readers.statements import section_ends
 
 
-'''
+"""
 For external use
-'''
+"""
 
 
 def read_transition_rules(filename):
-    '''
+    """
     Read transition rules from a transition rule file. Transition rules are
     written with one rule on each line, in the following format:
 
@@ -26,18 +26,18 @@ def read_transition_rules(filename):
 
     The file may optionally be terminated by a line of the string
     "!END_TRANSITION_RULES"
-    '''
+    """
     with open(filename, 'rU') as rule_file:
         return parse_transition_rule_stream(rule_file)
 
 
 def parse_transition_rule_stream(rules_stream):
-    '''
+    """
     Parse a stream of strings containing  transition rules, as from a transition
     rule file.
     See documentation for read_transition_rules for a description of the
     transition rule format.
-    '''
+    """
     transition_rules = []
     for line in rules_stream:
         if line.startswith(section_ends['transition_rules']):
@@ -49,9 +49,9 @@ def parse_transition_rule_stream(rules_stream):
     return transition_rules
 
 
-'''
+"""
 Internal use only
-'''
+"""
 
 
 def parse_rule(line):

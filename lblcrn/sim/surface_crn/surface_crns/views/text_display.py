@@ -2,13 +2,13 @@ import pygame
 
 
 class TextDisplay(object):
-    '''
+    """
     Displays text. Encapsulates various formatting decisions for pygame text
     display.
 
     This object is assigned a width on creation. Text is centered within that
     space.
-    '''
+    """
     # TODO: make sure this works across all systems
     FONT_NAME = 'arialboldttf'  # This is good for MacOS
     BLACK = (0, 0, 0)
@@ -47,13 +47,13 @@ class TextDisplay(object):
 
     def render(self, parent_surface, x_pos=0, y_pos=0):
         debug = False
-        '''
+        """
         Set up the display and make the first render. This must be called before
         any other updates.
             parent_surface: The surface onto which this grid will be displayed.
             x_p os, y_pos: X and Y coordinates of the upper-left corner of this
                             grid relative to parent_surface.
-        '''
+        """
         self.x_pos = x_pos
         self.y_pos = y_pos
 

@@ -26,11 +26,11 @@ class OrderedDict(dict):
     # Each link is stored as a list of length three:  [PREV, NEXT, KEY].
 
     def __init__(self, *args, **kwds):
-        '''Initialize an ordered dictionary.  Signature is the same as for
+        """Initialize an ordered dictionary.  Signature is the same as for
         regular dictionaries, but keyword arguments are not recommended
         because their insertion order is arbitrary.
 
-        '''
+        """
         if len(args) > 1:
             raise TypeError('expected at most 1 arguments, got %d' % len(args))
         try:
@@ -89,10 +89,10 @@ class OrderedDict(dict):
         dict.clear(self)
 
     def popitem(self, last=True):
-        '''od.popitem() -> (k, v), return and remove a (key, value) pair.
+        """od.popitem() -> (k, v), return and remove a (key, value) pair.
         Pairs are returned in LIFO order if last is true or FIFO order if false.
 
-        '''
+        """
         if not self:
             raise KeyError('dictionary is empty')
         root = self.__root
@@ -140,14 +140,14 @@ class OrderedDict(dict):
             yield (k, self[k])
 
     def update(*args, **kwds):
-        '''od.update(E, **F) -> None.  Update od from dict/iterable E and F.
+        """od.update(E, **F) -> None.  Update od from dict/iterable E and F.
 
         If E is a dict instance, does:           for k in E: od[k] = E[k]
         If E has a .keys() method, does:         for k in E.keys(): od[k] = E[k]
         Or if E is an iterable of items, does:   for k, v in E: od[k] = v
         In either case, this is followed by:     for k, v in F.items(): od[k] = v
 
-        '''
+        """
         if len(args) > 2:
             raise TypeError('update() takes at most 2 positional '
                             'arguments (%d given)' % (len(args),))
@@ -175,10 +175,10 @@ class OrderedDict(dict):
     __marker = object()
 
     def pop(self, key, default=__marker):
-        '''od.pop(k[,d]) -> v, remove specified key and return the corresponding value.
+        """od.pop(k[,d]) -> v, remove specified key and return the corresponding value.
         If key is not found, d is returned if given, otherwise KeyError is raised.
 
-        '''
+        """
         if key in self:
             result = self[key]
             del self[key]
@@ -223,20 +223,20 @@ class OrderedDict(dict):
 
     @classmethod
     def fromkeys(cls, iterable, value=None):
-        '''OD.fromkeys(S[, v]) -> New ordered dictionary with keys from S
+        """OD.fromkeys(S[, v]) -> New ordered dictionary with keys from S
         and values equal to v (which defaults to None).
 
-        '''
+        """
         d = cls()
         for key in iterable:
             d[key] = value
         return d
 
     def __eq__(self, other):
-        '''od.__eq__(y) <==> od==y.  Comparison to another OD is order-sensitive
+        """od.__eq__(y) <==> od==y.  Comparison to another OD is order-sensitive
         while comparison to a regular mapping is order-insensitive.
 
-        '''
+        """
         if isinstance(other, OrderedDict):
             return len(self) == len(other) and self.items() == other.items()
         return dict.__eq__(self, other)

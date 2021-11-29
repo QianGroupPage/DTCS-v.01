@@ -1,13 +1,13 @@
 import surface_crns.readers.manifest_readers as manifest_readers
 import sys
 
-'''
+"""
 Converts the initial state from a surface CRN manifest file into an equivalent
 initial state for a spinning-arrow synchronous emulation surface CRN.
 
 Intended for use with the Greenberg-Hastings examples. No guarantee of success
 in other examples.
-'''
+"""
 
 def main():
     input_filename = sys.argv[1]

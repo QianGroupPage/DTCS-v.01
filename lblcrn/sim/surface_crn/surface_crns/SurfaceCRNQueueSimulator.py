@@ -953,7 +953,7 @@ def update_display(opts, simulation, progress_bar, grid_display, FRAME_DIRECTORY
 
 if __name__ == '__main__':
     if PROFILE:
-        '''try:
+        """try:
             import statprof
             statprof.start()
             try:
@@ -961,7 +961,7 @@ if __name__ == '__main__':
             finally:
                 statprof.stop()
                 statprof.display()
-        except ImportError:'''
+        except ImportError:"""
         cProfile.run("main()", sort='tottime')
     else:
         main()

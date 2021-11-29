@@ -8,7 +8,7 @@ from lblcrn.sim.surface_crn.surface_crns.simulators.event import Event
 
 
 class QueueSimulator:
-    '''
+    """
     Surface CRN simulator based on Gillespie-like next-reaction determination
     at each node. Upcoming reactions are stored in a priority queue, sorted
     by reaction time. Each time an event occurs, the next reaction time for
@@ -17,7 +17,7 @@ class QueueSimulator:
     time its reaction was issued and the time the reaction would occur.
 
     Uses unimolecular and bimolecular reactions only.
-    '''
+    """
 
     def __init__(self, surface=None, transition_rules=None, seed=None, group_selection_seed=None,
                  simulation_duration=100, rxns=None):
@@ -77,16 +77,16 @@ class QueueSimulator:
             self.initiate_marker_concs()
 
     def reset(self):
-        '''
+        """
         Clear any reactions in the queue and populate with available reactions.
-        '''
+        """
         self.event_queue = PriorityQueue()
         self.initialize_reactions()
 
     def initialize_reactions(self):
-        '''
+        """
         Populate the reaction queue with initial reactions.
-        '''
+        """
         for node in self.surface:
             node.timestamp = self.time
             self.add_next_reactions_with_node(node=node,
@@ -94,10 +94,10 @@ class QueueSimulator:
                                               exclusion_list=[])
 
     def done(self):
-        '''
+        """
         True iff there are no more reactions or the simulation has reached
         final time.
-        '''
+        """
         return self.event_queue.empty() or self.time >= self.simulation_duration
 
     def add_groups(self):
@@ -131,14 +131,14 @@ class QueueSimulator:
 
     def process_next_reaction(self):
         local_debugging = False
-        '''
+        """
         Process and return the next reaction in the queue:
         (1) Make sure the reaction is still valid (if not, try the next one
             instead).
         (2) Update the surface based on the reaction.
         (3) Determine the next reactions for each node involved in the reaction
             and add them to the event queue.
-        '''
+        """
         next_reaction = None
         while next_reaction == None:
             if self.event_queue.empty():
@@ -342,7 +342,7 @@ class QueueSimulator:
 
     def add_next_reactions_with_node(self, node, first_reactant_only=False,
                                      exclusion_list=None):
-        '''
+        """
         Determines whether or not the specified node can react according to any
         known rule and, if it can, returns a new event for the next occurrence
         of that reaction.
@@ -354,7 +354,7 @@ class QueueSimulator:
         surface easier.
 
         Nodes in exclusion_list are not considered eligible for reaction.
-        '''
+        """
         local_debugging = False
         if exclusion_list == None:
             exclusion_list = []

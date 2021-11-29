@@ -7,9 +7,9 @@ import pygame
 
 class CoordGridDisplay(object):
     debug = False
-    '''
+    """
     Displays a HexGrid object as a colored honeycomb.
-    '''
+    """
 
     def __init__(self, grid, colormap, min_x=0, min_y=0, width=-1, height=-1, pixels_per_node=5,
                  display_text=False):
@@ -100,13 +100,13 @@ class CoordGridDisplay(object):
     # TODO: render coord_grid.voronoi_pic
     def render(self, parent_surface, x_pos=0, y_pos=0, width=-1, height=-1):
         debug = False
-        '''
+        """
         Set up the display and make the first render. This must be called before
         any other updates.
             parent_surface: The surface onto which this grid will be displayed.
             x_pos, y_pos: X and Y coordinates of the upper-left corner of this
                             grid relative to parent_surface.
-        '''
+        """
         self.x_pos = x_pos - 200
         self.y_pos = y_pos
 
@@ -179,14 +179,14 @@ class CoordGridDisplay(object):
 
     # TODO: fix the bug of no rendering
     def update_node(self, node, full_render=False):
-        '''
+        """
         Redraw a specified node, in accordance with standard display node API.
 
         In practice, node is not needed. We use matplotlib to draw everything. When the simulatpr is updating
         a node, don't do anything.
 
         TODO: research on and improve speed.
-        '''
+        """
         if not full_render:
             return
         pic_str, size = self._get_voronoi_pic_string()
@@ -197,9 +197,9 @@ class CoordGridDisplay(object):
         self.update_node(None, full_render=True)
 
 # def make_node_hex(self, node):
-#         '''
+#         """
 #         Returns the list of vertices of the hex at the node's position.
-#         '''
+#         """
 #         debug = False
 #
 #         x_pos, y_pos = self.get_center(node)
@@ -220,9 +220,9 @@ class CoordGridDisplay(object):
 #         return vertex_list
 #
 #     def get_center(self, node):
-#         '''
+#         """
 #         Returns the coordinates (in pixesls) of the center of this node.
-#         '''
+#         """
 #         x = node.position[0]
 #         y = node.position[1]
 #         # Grid might be floating in a space required by other UI elements.

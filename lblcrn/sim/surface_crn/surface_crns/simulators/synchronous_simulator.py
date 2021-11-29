@@ -5,12 +5,12 @@ from lblcrn.sim.surface_crn.surface_crns.simulators.event import Event
 
 
 class SynchronousSimulator:
-    '''
+    """
     Simulator for synchronous cellular automata. Updates according to
     update_rule, which is a function taking parameters "neighbor_states" and
     "current_state" and returning the next state for that node, based on the
     neighbors' states and the node's own state.
-    '''
+    """
 
     def __init__(self, surface=None, update_rule=None, seed=None,
                  simulation_duration=100):
@@ -28,24 +28,24 @@ class SynchronousSimulator:
         self.initialize()
 
     def initialize(self):
-        '''
+        """
         Start the simulation from the initial condition.
-        '''
+        """
         self.time = 0
         self.surface.set_global_state(self.init_state)
 
     def done(self):
-        '''
+        """
         True iff the simulation has reached final time.
-        '''
+        """
         return self.time >= self.simulation_duration
 
     def process_next_reaction(self):
         local_debugging = False
-        '''
+        """
         Update the surface one clock tick according to the rule given in
         update_rule
-        '''
+        """
         changed_nodes = []
         for node in self.surface:
             neighbor_states = list(map(lambda tup: tup[0].state, node.neighbors))

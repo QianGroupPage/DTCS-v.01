@@ -2,13 +2,13 @@ import math
 
 import pygame
 
-'''
+"""
 Classes for creating and updating pygame surfaces based on simulation data.
-'''
+"""
 
 
 class SurfaceDisplay(object):
-    '''
+    """
     Interface for displays of surface CRNs. If you want to make your own custom
     surface display for the simulator, inherit from this class and override all
     of its methods.
@@ -28,11 +28,11 @@ class SurfaceDisplay(object):
     least some space to display other elements. These will be given to your
     object as the min_x and min_y parameters in the constructor. Make sure your
     display is at least this big, or you'll get some weird display issues.
-    '''
+    """
 
     def __init__(self, grid, colormap, min_x=0, min_y=0, pixels_per_node=5,
                  display_text=False):
-        '''
+        """
         Params:
             grid: Whatever object represents the nodes on the surface. For a
                     square grid, this would be a SquareGrid object.
@@ -50,12 +50,12 @@ class SurfaceDisplay(object):
                                 in pixels.
             display_text: If true, your display should blit the state of each
                             node xonto that node.
-        '''
+        """
         raise NotImplementedError("You need to override the constructor for " + \
                                   "Surface.")
 
     def render(self, parent_surface, x_pos=0, y_pos=0):
-        '''
+        """
         This function should blit the entire surface onto its parent. This will
         be called once at the beginning of the simulation.
 
@@ -66,7 +66,7 @@ class SurfaceDisplay(object):
                             grid relative to parent_surface. Use these to make
                             sure you aren't blitting onto stuff outside the
                             display region.
-        '''
+        """
         raise NotImplementedError("You need to override the 'render' " + \
                                   "method of Surface.")
 
@@ -74,27 +74,27 @@ class SurfaceDisplay(object):
         return
 
     def update_node(self, node):
-        '''
+        """
         This function should blit a single node, or otherwise do whatever is
         required when a node changes state. This will be called whenever the
         state of a node is changed, passing the node that changed.
 
         params:
             node: The node that just changed state.
-        '''
+        """
         raise NotImplementedError("You need to override the 'update_node' " + \
                                   "method of Surface.")
 
 
 class SquareGridDisplay(object):
     debug = False
-    '''
+    """
     Displays a SquareGrid object as a colored grid.
-    '''
+    """
 
     def __init__(self, grid, colormap, min_x=0, min_y=0, pixels_per_node=5,
                  display_text=False):
-        '''
+        """
          Parameters:
             grid: The SquareGrid object displayed
             colormap: Dictionary defining what colors are assigned to each state
@@ -108,7 +108,7 @@ class SquareGridDisplay(object):
             display_text: If True, will display each node with a text overlay of
                             that node's state. Otherwise, will only display the
                             color of the node.
-        '''
+        """
 
         # Constants
         self.grid_buffer = 5
@@ -160,13 +160,13 @@ class SquareGridDisplay(object):
 
     def render(self, parent_surface, x_pos=0, y_pos=0, width=0, height=0):
         debug = False
-        '''
+        """
         Set up the display and make the first render. This must be called before
         any other updates.
             parent_surface: The surface onto which this grid will be displayed.
             x_p os, y_pos: X and Y coordinates of the upper-left corner of this
                             grid relative to parent_surface.
-        '''
+        """
         self.x_pos = x_pos
         self.y_pos = y_pos
         # Create display surface
@@ -185,9 +185,9 @@ class SquareGridDisplay(object):
         return
 
     def update_node(self, node):
-        '''
+        """
         Redraw a specified node.
-        '''
+        """
         new_rect = self.make_node_rectangle(node)
         node_color = self.colormap[node.state]
         pygame.draw.rect(self.display_surface, node_color, new_rect)
@@ -238,13 +238,13 @@ class SquareGridDisplay(object):
 
 class HexGridDisplay(object):
     debug = False
-    '''
+    """
     Displays a HexGrid object as a colored honeycomb.
-    '''
+    """
 
     def __init__(self, grid, colormap, min_x=0, min_y=0, pixels_per_node=5,
                  display_text=False):
-        '''
+        """
          Parameters:
             grid: The SquareGrid object displayed
             colormap: Dictionary defining what colors are assigned to each state
@@ -258,7 +258,7 @@ class HexGridDisplay(object):
             display_text: If True, will display each node with a text overlay of
                             that node's state. Otherwise, will only display the
                             color of the node.
-        '''
+        """
 
         # Constants
         self.grid_buffer = 5
@@ -319,13 +319,13 @@ class HexGridDisplay(object):
 
     def render(self, parent_surface, x_pos=0, y_pos=0, width=0, height=0):
         debug = False
-        '''
+        """
         Set up the display and make the first render. This must be called before
         any other updates.
             parent_surface: The surface onto which this grid will be displayed.
             x_p os, y_pos: X and Y coordinates of the upper-left corner of this
                             grid relative to parent_surface.
-        '''
+        """
         self.x_pos = x_pos
         self.y_pos = y_pos
         # Create display surface
@@ -341,9 +341,9 @@ class HexGridDisplay(object):
             self.update_node(node)
 
     def update_node(self, node):
-        '''
+        """
         Redraw a specified node.
-        '''
+        """
         new_hex = self.make_node_hex(node)
         node_color = self.colormap[node.state]
         pygame.draw.polygon(self.display_surface, node_color, new_hex)
@@ -359,9 +359,9 @@ class HexGridDisplay(object):
         return
 
     def make_node_hex(self, node):
-        '''
+        """
         Returns the list of vertices of the hex at the node's position.
-        '''
+        """
         debug = False
 
         x_pos, y_pos = self.get_center(node)
@@ -382,9 +382,9 @@ class HexGridDisplay(object):
         return vertex_list
 
     def get_center(self, node):
-        '''
+        """
         Returns the coordinates (in pixesls) of the center of this node.
-        '''
+        """
         x = node.position[0]
         y = node.position[1]
         # Grid might be floating in a space required by other UI elements.
@@ -424,7 +424,7 @@ class HexGridDisplay(object):
 
 class ParallelEmulatedSquareGridDisplay(object):
     debug = False
-    '''
+    """
     Displays an underlying grid and the grid it emulates (i.e., the underlying
     process of a game of life automaton and the automoton it emulates)
     side-by-side.
@@ -434,13 +434,13 @@ class ParallelEmulatedSquareGridDisplay(object):
     representative cell's state gives the emulated cell's state; and that the
     emulated cell's state is constant until the representative cell gains a
     new state beginning with anything other than "B".
-    '''
+    """
 
     def __init__(self, grid, colormap, emulation_colormap, horizontal_buffer,
                  vertical_buffer, cell_height, cell_width,
                  representative_cell_x, representative_cell_y, min_x=0,
                  min_y=0, pixels_per_node=5, display_text=False):
-        '''
+        """
          Parameters:
             grid: The SquareGrid object displayed
             colormap: Dictionary defining what colors are assigned to each state
@@ -465,7 +465,7 @@ class ParallelEmulatedSquareGridDisplay(object):
             display_text: If True, will display each node with a text overlay of
                             that node's state. Otherwise, will only display the
                             color of the node.
-        '''
+        """
         pygame.init()
 
         # Constants
@@ -526,13 +526,13 @@ class ParallelEmulatedSquareGridDisplay(object):
 
     def render(self, parent_surface, x_pos=0, y_pos=0, width=0, height=0):
         debug = False
-        '''
+        """
         Set up the display and make the first render. This must be called before
         any other updates.
             parent_surface: The surface onto which this grid will be displayed.
             x_p os, y_pos: X and Y coordinates of the upper-left corner of this
                             grid relative to parent_surface.
-        '''
+        """
         self.x_pos = x_pos
         self.y_pos = y_pos
         # Create display surface
@@ -555,10 +555,10 @@ class ParallelEmulatedSquareGridDisplay(object):
         self.update_node(self.grid.getnode(x, y))
 
     def update_node(self, node):
-        '''
+        """
         Redraw a specified node, and its emulated node if that emulated node
         changed state
-        '''
+        """
         new_rect = self.make_node_rectangle(node)
         node_color = self.colormap[node.state]
         pygame.draw.rect(self.display_surface, node_color, new_rect)

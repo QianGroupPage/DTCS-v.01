@@ -17,12 +17,12 @@ def state_pairs():
     return itertools.product(all_states, all_states)
 
 def main():
-    '''
+    """
     node state definition:
                 <self_state>_<direction>_<position>_<states_seen>
     edge state definition:
                 Edge_<direction> (Edges are non-activating)
-    '''
+    """
     
     colormap_file = open("GH_spinning_arrow_colormap.txt", 'w')
 

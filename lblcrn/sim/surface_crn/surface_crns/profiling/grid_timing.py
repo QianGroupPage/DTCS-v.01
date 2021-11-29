@@ -9,10 +9,10 @@ from lblcrn.sim.surface_crn.surface_crns.profiling import TimeProfiler
 
 
 class GridSimTimeProfiler():
-    '''
+    """
     Class for profiling grid-like surface CRN simulations. Can profile run times
     and output at specified locations for one or more initial states.
-    '''
+    """
 
     def __init__(self, manifest_filename=None, options=None):
         self.DEBUG = False
@@ -91,7 +91,7 @@ class GridSimTimeProfiler():
                                                     simulation_duration=self.SIMULATION_DURATION)
 
     def timing_test(self, num_runs, stop_criteria, output_file):
-        '''
+        """
         Run the simulation num_runs times, stopping according to user-defined
         stop criteria, and printing simulation times to completion
 
@@ -103,14 +103,14 @@ class GridSimTimeProfiler():
             -output_file: the name of a file to print the output to. Output is a
                             TSV file (readable by gnuplot) with times for each
                             run.
-        '''
+        """
         timer = TimeProfiler(self.simulation)
         timer.run_simulations(num_runs, stop_criteria, output_file)
 
     def correctness_test(self, num_runs, start_states, start_state_labels,
                          stop_criteria, output_function, output_labels,
                          output_file):
-        '''
+        """
         Run the simulation multiple times on different inputs, printing the
         times to completion and the states of any number of output positions at
         the end of each simulation.
@@ -133,7 +133,7 @@ class GridSimTimeProfiler():
             -output_file: the name of a file to print the output to. Output is a
                             TSV file (readable by gnuplot) with times for each
                             run.
-        '''
+        """
         with open(output_file, 'w') as outstream:
             outstream.write("Start State\tRun Number\tTime")
             states_and_labels = itertools.izip(start_states, start_state_labels)

@@ -1,4 +1,4 @@
-''' 
+"""
 Code for generating stochastically random colors with decent distinguishability,
 written by adews. Code taken from https://gist.github.com/adewes/5884820.
 
@@ -13,7 +13,7 @@ to specify the "pasteliness"(?) of the produced colors (please, don't you chose
 0...)
 
 Originally from surface_crns, found by Samuel Clamons
-'''
+"""
 import random
 
 

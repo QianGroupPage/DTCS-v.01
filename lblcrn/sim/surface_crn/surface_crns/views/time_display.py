@@ -2,12 +2,12 @@ from lblcrn.sim.surface_crn.surface_crns.views.text_display import TextDisplay
 
 
 class TimeDisplay(TextDisplay):
-    '''
+    """
     Displays a text description of the time.
 
     This object is assigned a width on creation. Text is centered within that
     space.
-    '''
+    """
 
     def __init__(self, width):
         super(TimeDisplay, self).__init__(width, font_size=18)

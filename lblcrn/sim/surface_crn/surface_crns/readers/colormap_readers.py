@@ -4,7 +4,7 @@ from lblcrn.sim.surface_crn.surface_crns.readers.statements import *
 
 
 def read_colormap(filename):
-    '''
+    """
     Read a file defining colors for state display. Definitions are written with
     one color on each line, in the following format:
 
@@ -19,18 +19,18 @@ def read_colormap(filename):
 
     The colormap file may optionally be ended by a line starting with the string
     "!END_COLORMAP"
-     '''
+     """
     with open(filename, 'rU') as colormap_file:
         return parse_colormap_stream(colormap_file)
 
 
 def parse_colormap_stream(colormap_stream):
-    '''
+    """
     Read a colormap from a stream of strings, as might be contained in a
     colormap definition file.
     See documentation for read_colormap for a description of the colormap file
     format.
-    '''
+    """
     colormap = OrderedDict()
     colormap[COLOR_CLASSES] = OrderedDict()
     for line in colormap_stream:

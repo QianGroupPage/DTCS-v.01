@@ -5,9 +5,9 @@ from lblcrn.sim.surface_crn.surface_crns.ordered_dict import OrderedDict
 
 
 class LegendDisplay:
-    '''
+    """
     Displays a legend of all of the states and colors used in the simulation.
-    '''
+    """
     pygame.font.init()
     LEGEND_FONT = pygame.font.SysFont('menlottc', 16)
     HORIZONTAL_BUFFER = 10  # 5
@@ -87,13 +87,13 @@ class LegendDisplay:
 
     def render(self, parent_surface, x_pos=0, y_pos=0):
         debug = False
-        '''
+        """
         Set up the display and make the first render. This must be called before
         any other updates.
             parent_surface: The surface onto which this grid will be displayed.
             x_p os, y_pos: X and Y coordinates of the upper-left corner of this
                             grid relative to parent_surface.
-        '''
+        """
         self.x_pos = x_pos
         self.y_pos = y_pos
 

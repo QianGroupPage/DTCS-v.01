@@ -1,12 +1,12 @@
 from lblcrn.sim.surface_crn.surface_crns.readers.statements import *
 
-'''
+"""
 For external use
-'''
+"""
 
 
 def read_totalistic_rules(filename):
-    '''
+    """
     Read the update rule for a totalistic cellular automata from a totalistic
     rule file. The rule is written as a series of update options of the form:
 
@@ -16,18 +16,18 @@ def read_totalistic_rules(filename):
 
     The file may optionally be terminated by a line of the string
     "!END_TOTALISTIC_RULE"
-    '''
+    """
     with open(filename, 'rU') as rule_file:
         return parse_totalistic_rule_stream(rule_file)
 
 
 def parse_totalistic_rule_stream(rules_stream):
-    '''
+    """
     Parse a stream of strings containing update options, as from a totalistic
     rule file.
     See documentation for read_totalistic_rules for a description of the
     totalistic update option format.
-    '''
+    """
     update_options = dict()
     for line in rules_stream:
         if line.startswith(section_ends['totalistic_rule']):
@@ -44,9 +44,9 @@ def parse_totalistic_rule_stream(rules_stream):
     return update_rule
 
 
-'''
+"""
 Internal use only
-'''
+"""
 
 
 def parse_option(update_options, line):

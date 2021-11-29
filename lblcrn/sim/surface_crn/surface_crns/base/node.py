@@ -1,5 +1,5 @@
 class Node:
-    '''
+    """
     Represents a spatial location. Has a chemical state represented by a
     string, a list of neighbors with weights on each connection, and a timestamp
     of the last update.
@@ -8,7 +8,7 @@ class Node:
     tuple is a neighboring node and the second element of each tuple is the
     weight of the edge connecting the two (defaults to 1, if no weight is
     given).
-    '''
+    """
 
     def __init__(self, state=None, neighbors=None, timestamp=0, \
                  position=None, group=None, node_id=None):

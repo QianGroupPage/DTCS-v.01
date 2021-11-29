@@ -1,4 +1,4 @@
-''' 
+"""
 Code for generating stochastically random colors with decent distinguishability,
 written by adews. Code taken from https://gist.github.com/adewes/5884820.
 
@@ -11,7 +11,7 @@ function to generate a random color that is (statistically) maximally different
 from all colors in "existing_colors". The "pastel_factor" parameter can be used 
 to specify the "pasteliness"(?) of the produced colors (please, don't you chose 
 0...)
-'''
+"""
 import random
 
 
