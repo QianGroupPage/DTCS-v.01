@@ -73,7 +73,9 @@ class SpecABC(monty.json.MSONable):
     """
 
     def __init__(self, **kwargs):
-        # TODO(Andrew) Check and throw warnings if I get unknown kwargs
+        if kwargs:
+            kws = list(kwargs.keys())
+            warnings.warn(f'Unknown keyword arguments {kws} supplied')
         self.spec.update(kwargs)
 
     def as_dict(self, sanitize=True) -> dict:
@@ -137,10 +139,8 @@ class Spec(SpecABC):
     """TODO(Andrew)"""
     def __init__(self,
                  name: str = '',
-                 description: str = '',
                  **kwargs):
         self.name = name
-        self.description = description
         super().__init__(**kwargs)
 
 
@@ -157,9 +157,8 @@ class SpecCollection(Spec,
     """
     def __init__(self,
                  *elements: List[Spec],
-                 name: str = '',
-                 description: str = '',):
-        super().__init__(name=name, description=description)
+                 name: str = '',):
+        super().__init__(name=name)
 
         self.elements = []
         self._names = {}
