@@ -100,6 +100,11 @@ class SquareGrid(object):
     def getnode(self, x, y):
         return self.grid[x, y]
 
+    def get_node_by_id(self, node_id):
+        for node in self:
+            if node.node_id == node_id:
+                return node
+
     def species_count(self):
         """
         :return: count of each species in the grid

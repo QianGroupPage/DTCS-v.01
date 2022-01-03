@@ -129,12 +129,14 @@ def simulate_surface_crn(manifest_filename,
     # Parse the manifest
     # print("Reading information from manifest file " + manifest_filename + "...",
     #       end="")
+    # TODO(Andrew): Replace this with CRNSpec
     manifest_options = \
         readers.manifest_readers.read_manifest(manifest_filename)
     opts = SurfaceCRNOptionParser(manifest_options)
 
     # print(" Done.")
 
+    # --- Prepare to output video (?) -----------------------------------------
     if opts.capture_directory != None:
         from signal import SIG_DFL, signal
 
@@ -155,7 +157,7 @@ def simulate_surface_crn(manifest_filename,
     else:
         FRAME_DIRECTORY = ""
 
-    # Initialize simulation
+    # --- Initialize Surface State --------------------------------------------
     if init_state:
         grid = init_state
     else:
@@ -163,6 +165,7 @@ def simulate_surface_crn(manifest_filename,
             raise Exception("Initial grid state required.")
         grid = opts.grid
 
+    # --- Setup for either Asynchronous or Synchronous Simulation -------------
     if opts.simulation_type == "asynchronous":
         if opts.debug:
             print("Grid is type " + str(type(grid)))
@@ -193,6 +196,7 @@ def simulate_surface_crn(manifest_filename,
         raise Exception('Unknown simulation type "' + opts.simulation_type + '".')
     time = simulation.time
     event_history = EventHistory()
+    # TODO(Andrew): These next four lines are for integration with our stuff
     simulation.rxns = rxns
 
     # Properties for visualizing the spectra along the grid frames.
@@ -205,6 +209,8 @@ def simulate_surface_crn(manifest_filename,
     ################
     if opts.debug:
         print("Beginning Pygame setup...")
+
+    # --- Get Display Class from Default Grid Types ---------------------------
     if opts.grid_type == 'parallel_emulated':
         grid_display = ParallelEmulatedSquareGridDisplay(grid=grid,
                                                          colormap=opts.COLORMAP,
@@ -235,6 +241,7 @@ def simulate_surface_crn(manifest_filename,
     else:
         raise Exception("Unrecognized grid type '" + opts.grid_type + "'")
 
+    # --- Create Displays for Legend, Title, etc. -----------------------------
     legend_display = LegendDisplay(colormap=opts.COLORMAP)
 
     # Width only requires legend and grid sizes to calculate
@@ -245,10 +252,9 @@ def simulate_surface_crn(manifest_filename,
 
     # Display for the additional title
     title_display = TextDisplay(display_width, text="Surface CRN Trajectory")
-    show_title = False
-    if spectra_in_video:
-        show_title = True
+    show_title = bool(spectra_in_video)
 
+    # --- Create Buttons for Synchronous Simulation ---------------------------
     button_y = time_display.display_height + grid_display.display_height + 1
     # max(legend_display.display_height, grid_display.display_height) + 1
     # (int(display_width/2) - (button_width + button_buffer), button_y,
@@ -286,6 +292,7 @@ def simulate_surface_crn(manifest_filename,
                              2 * legend_display.VERTICAL_BUFFER + time_display.display_height,
                              button_y + button_height + 2 * button_buffer)
 
+    # --- Initialize PyGame Canvas --------------------------------------------
     if opts.debug:
         print("Initializing display of size " + str(display_width) + ", " +
               str(display_height) + ".")
@@ -314,7 +321,7 @@ def simulate_surface_crn(manifest_filename,
     # opts_menu = MainOptionMenu()
     # opts_menu.update()
 
-    # TODO:
+    # --- Blit Static Features (e.g. title) onto the Canvas -------------------
     # these do the rendering on the surface
     if show_title:
         title_display.render(display_surface, x_pos=0,
@@ -368,6 +375,7 @@ def simulate_surface_crn(manifest_filename,
     last_frame = False
     running_backward = False
 
+    # --- Run PyGame Loop, i.e. actually Simulate -----------------------------
     if opts.debug:
         print("Beginning simulation....")
     # Iterate through events

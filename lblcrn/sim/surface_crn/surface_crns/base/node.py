@@ -1,3 +1,5 @@
+import uuid
+
 class Node:
     """
     Represents a spatial location. Has a chemical state represented by a
@@ -43,7 +45,7 @@ class Node:
         else:
             self.group = group
 
-        self.node_id = node_id
+        self.node_id = node_id or str(uuid.uuid4())
 
     def is_empty(self):
         return self.state == ""

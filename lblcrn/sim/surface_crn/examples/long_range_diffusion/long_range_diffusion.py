@@ -7,6 +7,9 @@ import surface_crns.readers as readers
 import pygame, math, random, sys
 import matplotlib.pyplot as plt
 
+import lblcrn.sim.surface_crn.core
+
+
 def main():
     manifest_file = "long_range_diffusion.txt"
     manifest_options = \
@@ -16,8 +19,8 @@ def main():
     lattice = SquareGridWithCornerLeak(init_state.shape[0], init_state.shape[1],
                                        0.25)
     lattice.set_global_state(init_state)
-    SurfaceCRNQueueSimulator.simulate_surface_crn(manifest_file,
-                            init_state = lattice)
+    lblcrn.sim.surface_crn.core._simulate_surface_crn(manifest_file,
+                                                      init_state = lattice)
 
 if __name__ == "__main__":
     main()
