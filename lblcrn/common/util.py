@@ -3,6 +3,7 @@ import re
 import string
 
 from typing import Union
+import warnings
 
 import pandas as pd
 import numpy as np
@@ -97,3 +98,10 @@ def flat(lst: Union[list, tuple]):
             yield from flat(item)
         else:
             yield item
+
+def depreciate(func):
+    def depr_func(*args, **kwargs):
+        warnings.warn('Depreciated', DeprecationWarning)
+        return func(*args, **kwargs)
+    return depr_func
+

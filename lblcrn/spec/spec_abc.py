@@ -132,6 +132,7 @@ class SpecABC(monty.json.MSONable):
         else:
             return f'{self.__class__.__name__}()'
 
+
 class Spec(SpecABC):
     """TODO(Andrew)"""
     def __init__(self,

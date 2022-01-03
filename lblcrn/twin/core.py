@@ -9,7 +9,7 @@ import pandas as pd
 import sympy as sym
 
 from lblcrn.sim import bulk_crn
-from lblcrn.twin.crn import simulate_bulk_crn
+from lblcrn.sim.bulk_crn.core import _simulate_bulk_crn
 
 BulkCRNSpec: TypeAlias = 'BulkCRNSpec'
 
@@ -56,7 +56,7 @@ def simulate(
     Returns:
         An XPSExperiment with the simulation results as well as a CRNTimeSeries object with the time series data.
     """
-    cts = simulate_bulk_crn(
+    cts = _simulate_bulk_crn(
         crn=crn,
         time=time,
         end_when_settled=end_when_settled,

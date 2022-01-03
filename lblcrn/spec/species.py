@@ -78,26 +78,6 @@ class SpeciesManager(SpecCollection):
         """Symbols for all of the species. Fixed order."""
         return [sym.Symbol(name) for name in self.names]
 
-    def species_from_symbol(self, key: sym.Symbol) -> Species:  # TODO: Depreciate
-        return self[key]
-
-    def symbol_in_sm(self, key: sym.Symbol) -> bool:  # TODO: Depreciate
-        return key in self._names
-
-    @property
-    def symbols_ordering(self):  # TODO: Depreciate
-        # TODO: This used to be sorted(self._species, key=lambda s: str(s)),
-        #  check if the alphabetical order was actually used.
-        return list(self.symbols)
-
-    @property
-    def all_species(self):  # TODO: Depreciate
-        return set(self.elements)
-
-    @property
-    def all_symbols(self):  # TODO: Depreciate
-        return self.symbols
-
     def symbol_from_name(self, name: str) -> sym.Symbol:
         """Gets the symbol for the given name, if it is a species.
 
@@ -167,3 +147,28 @@ class SpeciesManager(SpecCollection):
     add = add_species
     get = symbol_from_name
     sp = make_species
+
+    @util.depreciate
+    def species_from_symbol(self, key: sym.Symbol) -> Species:  # TODO: Depreciate
+        return self[key]
+
+    @util.depreciate
+    def symbol_in_sm(self, key: sym.Symbol) -> bool:  # TODO: Depreciate
+        return key in self._names
+
+    @property
+    @util.depreciate
+    def symbols_ordering(self):  # TODO: Depreciate
+        # TODO: This used to be sorted(self._species, key=lambda s: str(s)),
+        #  check if the alphabetical order was actually used.
+        return list(self.symbols)
+
+    @property
+    @util.depreciate
+    def all_species(self):  # TODO: Depreciate
+        return set(self.elements)
+
+    @property
+    @util.depreciate
+    def all_symbols(self):  # TODO: Depreciate
+        return self.symbols

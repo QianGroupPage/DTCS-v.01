@@ -26,8 +26,8 @@ Example:
 
 from __future__ import annotations
 
+from typing import Dict, List, Tuple, Union
 import bisect
-from typing import Dict, List, Tuple, Union, Optional
 
 from matplotlib import pyplot as plt
 import monty.json
@@ -35,12 +35,11 @@ import numpy as np
 import pandas as pd
 import sympy as sym
 
-from lblcrn.sim import bulk_crn
-from lblcrn.sim import surface_crn
 from lblcrn.twin import twin_abc
 from lblcrn.twin import xps
 
 from lblcrn.common import util
+
 from lblcrn.common.colors import color_map
 
 BulkCRNSpec: TypeAlias = 'BulkCRNSpec'
@@ -57,7 +56,7 @@ class CRNTimeSeries(twin_abc.Experiment):
         rsys: The reaction system which the Solution is a solution for.
         species_manager: The SpeciesManager in use.
     """
-    
+
     def __init__(self, t: List[float], y: List[List[float]], crn):
         """Translates a t, y pair from solve_ivp into a df and initializes."""
         # TODO: Doc args
@@ -89,6 +88,11 @@ class CRNTimeSeries(twin_abc.Experiment):
     def t(self) -> np.ndarray:
         """Give the time axis of the timeseries."""
         return np.asarray(self.df.index)
+
+    @property
+    def time_max(self) -> float:
+        """Give the duration of the simulation"""
+        return self.crn.time
 
     # --- Experiment Simulation -----------------------------------------------
 
@@ -281,6 +285,13 @@ class SurfaceCRNTimeSeries(CRNTimeSeries):
 
         return scts
 
+    @classmethod
+    def from_times_and_counts(cls, times, species_counts, crn):
+        dfs = [pd.DataFrame(species_counts[index], times[index])
+               for index in range(len(times))]
+
+        return cls.from_runs(dfs, crn)
+
     def resample(self, roll_window=0.5, time_step=0.01, index=None):
         time_max = self.crn.time
 
@@ -322,72 +333,3 @@ class SurfaceCRNTimeSeries(CRNTimeSeries):
 
     def as_dict(self):
         raise NotImplemented()
-
-def simulate_bulk_crn(
-        crn: BulkCRNSpec,
-        #rsys: BulkRxnSystem = None,
-        time: Optional[float] = None,
-        end_when_settled: bool = False,
-        #title: str = "",
-        #species: List[sym.Symbol] = None,
-        #ignore: List[sym.Symbol] = None,
-        #x_range: Optional[np.ndarray] = None,
-        #scale_factor: float = None,
-        #experimental: pd.Series = None,
-        #gas_interval: Tuple[float, float] = None,
-        #contam_spectra: Optional[Dict[sym.Symbol, pd.Series]] = None,
-        #deconv_species: Optional[List[sym.Symbol]] = None,
-        #autoresample: bool = True,
-        #autoscale: bool = True,
-        **options
-):
-    """Simulate the given reaction system over time.
-
-    Args:
-        TODO: add rest
-        #rsys: ReactionsSystem, the reaction system to simulate
-        time: The time until which to simulate.
-        species: The species to include in the XPS.
-        ignore: The species to not include in the XPS.
-        autoresample: Decides if the XPS resamples on edits.
-        autoscale: Decides if the XPS will automatically scale the gaussians and envelope to match the experimental data.
-        experimental: The experimental value of the XPS.
-        gas_interval: The interval in which the peak of the gas phase is in the XPS.
-        scale_factor: The scale factor by which to scale the simulated gaussians in the XPS.
-        title: The name to give the XPS, used in plotting.
-        options: Forwarded to scipy.integrate.solve_ivp
-
-    Returns:
-        An XPSExperiment with the simulation results as well as a CRNTimeSeries object with the time series data.
-    """
-    time = time or crn.time
-    end_when_settled = end_when_settled or (time is None)
-
-    sol_t, sol_y = bulk_crn.solve_rsys_ode(
-        rsys=crn.rsys,
-        time_max=time,
-        end_when_settled=end_when_settled,
-        max_step=crn.max_step,
-        **options)
-    cts = CRNTimeSeries(sol_t, sol_y, crn)
-
-    return cts
-
-
-def simulate_surface_crn(scrn, **kwargs):
-    ens = surface_crn.scrn.scrn_simulate(scrn.rsys,
-                                         time_max=scrn.time,
-                                         ensemble_size=scrn.runs,
-
-                                         video=False,
-                                         spectra_in_video=False,
-                                         video_path='output',
-                                         trajectory_path='output',)
-    results = None
-    if scrn.runs == 1:
-        results = [ens]
-    else:
-        results = ens.results
-
-    scts = SurfaceCRNTimeSeries.from_runs([result.df_raw for result in ens.results], scrn)
-    return scts

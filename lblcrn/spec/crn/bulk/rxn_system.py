@@ -103,6 +103,7 @@ class BulkRxnSystem(RxnSystemABC):
         """
 
         # Make an emtpy ODE list
+        # TODO: Get symbols ordered???
         odes = [sym.sympify(0)] * len(self.get_symbols())
 
         # Sum all terms for each symbol
