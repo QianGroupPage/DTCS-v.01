@@ -1,8 +1,12 @@
 """TODO"""
 
 from __future__ import annotations
-from typing import Dict, List, Mapping, Set, Optional
+from typing import Dict, List, Mapping, Set, Tuple, Optional
 
+import copy
+
+import numpy as np
+import pandas as pd
 import sympy as sym
 
 from lblcrn.sim.bulk_crn import bulk_crn
@@ -79,7 +83,38 @@ class BulkCRNSpec(CRNSpecABC):
             end_when_settled=end_when_settled,
             max_step=self.max_step,
             **options)
-        cts = CRNTimeSeries(sol_t, sol_y, self)
+        cts = CRNTimeSeries(sol_t, sol_y, copy.deepcopy(self))
 
         return cts
 
+    def simulate_xps(
+            self,
+            title: str = "",
+            species: List[sym.Symbol] = None,
+            ignore: List[sym.Symbol] = None,
+            x_range: Optional[np.ndarray] = None,
+            scale_factor: float = None,
+            experimental: pd.Series = None,
+            gas_interval: Tuple[float, float] = None,
+            contam_spectra: Optional[Dict[sym.Symbol, pd.Series]] = None,
+            deconv_species: Optional[List[sym.Symbol]] = None,
+            autoresample: bool = True,
+            autoscale: bool = True,
+    ):
+        cts = self.simulate()
+        xps = cts.xps_with(
+            t=-1,
+            title='',
+            species=species,
+            ignore=ignore,
+            x_range=x_range,
+            scale_factor=scale_factor,
+            experimental=experimental,
+            gas_interval=gas_interval,
+            contam_spectra=contam_spectra,
+            deconv_species=deconv_species,
+            autoresample=autoresample,
+            autoscale=autoscale
+        )
+
+        return xps
