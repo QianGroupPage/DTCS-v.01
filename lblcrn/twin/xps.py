@@ -1255,7 +1255,14 @@ class XPSExperiment(twin_abc.Experiment, XPSObservable):
                 bind_eng = specie.orbitals[0].binding_energy
                 peaks.append(x_range[(np.abs(bind_eng - x_range)).argmin()])
 
-            scale_factor = max((exp_envelope / sim_envelope).loc[peaks])
+            scale_factor = min((exp_envelope / sim_envelope).loc[peaks])
+            # TODO(Andrew) Maybe add this as a debugging utility, that would
+            #  be cool.
+            # lblcrn._debug_exports = {
+            #     'peaks': peaks,
+            #     'exp_peaks': exp_envelope.loc[peaks],
+            #     'sim_peaks': sim_envelope.loc[peaks],
+            #
         return scale_factor
 
     def _get_contamination(self, x_range: np.ndarray,
