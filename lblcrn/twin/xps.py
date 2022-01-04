@@ -39,6 +39,7 @@ import sympy as sym
 
 import lblcrn
 from lblcrn.io import xps as xps_io
+from lblcrn.spec.xps import XPSSpecies
 from lblcrn.spec.model_input.relations import TPRateRelation
 from lblcrn.twin import twin_abc
 from lblcrn.spec import species
@@ -699,6 +700,16 @@ class XPSExperiment(twin_abc.Experiment, XPSObservable):
         self._scale_factor = scale_factor
 
     @property
+    def peaks(self) -> Optional[List[float]]:
+        peaks = []
+        for specie in self.species:
+            # TODO(Andrew): This doesn't handle splitting
+            bind_eng = self.species_manager[specie].orbitals[0].binding_energy
+            peak_index = np.abs(bind_eng - self.x_range).argmin()
+            peaks.append(self.x_range[peak_index])
+        return peaks
+
+    @property
     def sim_concs(self) -> Optional[Dict[sym.Symbol, float]]:
         """The simulated concentrations of each species."""
         return self._sim_concs
@@ -1126,8 +1137,10 @@ class XPSExperiment(twin_abc.Experiment, XPSObservable):
 
         # Must go after simulate
         if autoscale:
+            species_info = [self.species_manager[specie] for specie in species]
             scale_factor = self._get_autoscale(sim_envelope=envelope,
-                                               exp_envelope=exp_data)
+                                               exp_envelope=exp_data,
+                                               species=species_info)
             _logger.echo(f'Generating auto-scale factor {scale_factor}...')
 
         # Must go after autoscale
@@ -1216,21 +1229,33 @@ class XPSExperiment(twin_abc.Experiment, XPSObservable):
 
     @staticmethod
     def _get_autoscale(sim_envelope: Union[pd.Series, None],
-                       exp_envelope: Union[pd.Series, None]) -> float:
+                       exp_envelope: Union[pd.Series, None],
+                       species: List[XPSSpecies]) -> float:
         """Gets the factor by which to automatically scale.
 
         Currently, gives 1.0 unless there's an experimental and a simulated,
-        in which case it makes the peak experimental equal the peak envelope.
+        in which case it makes the two envelopes match at the location of the
+        highest peak.
 
         Args:
             df: The pd.DataFrame with the gaussians to scale.
             sim_envelope: The simulated data you're going to scale.
             exp_envelope: Experimental data, if any, to autoscale to.
+            species: The species for which the highest peak will be made to
+                match.
         """
         scale_factor = 1.0
         if exp_envelope is not None and sim_envelope is not None:
-            scale_factor = max(exp_envelope) / max(sim_envelope)
+            assert exp_envelope.index.equals(sim_envelope.index), 'Simulated' \
+                    'and experimental indices should be the same by now.'
 
+            x_range = np.asarray(exp_envelope.index)
+            peaks = []
+            for specie in species:
+                bind_eng = specie.orbitals[0].binding_energy
+                peaks.append(x_range[(np.abs(bind_eng - x_range)).argmin()])
+
+            scale_factor = max((exp_envelope / sim_envelope).loc[peaks])
         return scale_factor
 
     def _get_contamination(self, x_range: np.ndarray,
