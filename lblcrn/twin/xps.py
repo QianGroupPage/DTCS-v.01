@@ -578,6 +578,19 @@ class XPSObservable(monty.json.MSONable):
         return metrics.mean_absolute_error(self.exp_raw,
                                            self.sim_envelope)
 
+    def correl(self):
+        # TODO(Andrew): Move the following logic into a function somewhere,
+        #  so you can access the 'best' experimental data with one line.
+        if self.exp_clean is not None:
+            exp_envelope = self.exp_clean
+        elif self.exp_raw is not None:
+            exp_envelope = self.exp_raw
+        else:
+            raise ValueError('Experimental data required!')
+
+        return np.corrcoef(exp_envelope,
+                           self.sim_envelope)[0][1]
+
     def integral_diff_outside_experimental(self):
         return integrate.trapz(self.sim_envelope - self.exp_raw,
                                self.x_range)
@@ -1137,10 +1150,10 @@ class XPSExperiment(twin_abc.Experiment, XPSObservable):
 
         # Must go after simulate
         if autoscale:
-            species_info = [self.species_manager[specie] for specie in species]
+            # Andrew: This line here was used for intelligent autoscaling.
+            #  species_info = [self.species_manager[specie] for specie in species]
             scale_factor = self._get_autoscale(sim_envelope=envelope,
-                                               exp_envelope=exp_data,
-                                               species=species_info)
+                                               exp_envelope=exp_data)
             _logger.echo(f'Generating auto-scale factor {scale_factor}...')
 
         # Must go after autoscale
@@ -1229,8 +1242,7 @@ class XPSExperiment(twin_abc.Experiment, XPSObservable):
 
     @staticmethod
     def _get_autoscale(sim_envelope: Union[pd.Series, None],
-                       exp_envelope: Union[pd.Series, None],
-                       species: List[XPSSpecies]) -> float:
+                       exp_envelope: Union[pd.Series, None]) -> float:
         """Gets the factor by which to automatically scale.
 
         Currently, gives 1.0 unless there's an experimental and a simulated,
@@ -1249,20 +1261,19 @@ class XPSExperiment(twin_abc.Experiment, XPSObservable):
             assert exp_envelope.index.equals(sim_envelope.index), 'Simulated' \
                     'and experimental indices should be the same by now.'
 
-            x_range = np.asarray(exp_envelope.index)
-            peaks = []
-            for specie in species:
-                bind_eng = specie.orbitals[0].binding_energy
-                peaks.append(x_range[(np.abs(bind_eng - x_range)).argmin()])
+            lsq_sol, residuals, _, _ = np.linalg.lstsq(
+                a=np.asarray([sim_envelope]).T,  # coefficient matrix, A
+                b=exp_envelope,  # goal vector, b
+            )  # This should do argmin_x(|Ax-b|^2), which is 1-dimensional least squares (x is a 1-by-1 matrix)
 
-            scale_factor = min((exp_envelope / sim_envelope).loc[peaks])
+            scale_factor = lsq_sol[0]
             # TODO(Andrew) Maybe add this as a debugging utility, that would
             #  be cool.
             # lblcrn._debug_exports = {
             #     'peaks': peaks,
             #     'exp_peaks': exp_envelope.loc[peaks],
             #     'sim_peaks': sim_envelope.loc[peaks],
-            #
+            # }
         return scale_factor
 
     def _get_contamination(self, x_range: np.ndarray,
