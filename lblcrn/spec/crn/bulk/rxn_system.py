@@ -156,6 +156,7 @@ class BulkRxnSystem(RxnSystemABC):
         return conc_eq_funcs
 
     # TODO(Andrew) look at
+    @util.depreciate
     def get_colors(self):
         """Assign (if applicable) and return colors for all species.
         """
@@ -437,6 +438,7 @@ class BulkRxnSystem(RxnSystemABC):
         for eq in eqs:
             display.display(eq)
 
+    @util.depreciate
     def text(self) -> str:
         """Return a text representation of the reaction system, describing the chemical equations in
         natural language."""
@@ -455,6 +457,7 @@ class BulkRxnSystem(RxnSystemABC):
     def __repr__(self):
         return f'{self.__class__.__name__}(components={repr(self.elements)})'
 
+    @util.depreciate
     def id(self):
         """Return a unique identifier for the reactions in this system.
 
@@ -469,7 +472,8 @@ class BulkRxnSystem(RxnSystemABC):
             elif isinstance(c, conditions.Schedule):
                 f.append(repr(c)) # TODO(rithvik): This is a hack
         return "_".join(sorted(f))
-    
+
+    @util.depreciate
     def fingerprint(self):
         """Return a unique fingerprint for the reactions in this system.
 
@@ -484,12 +488,14 @@ class BulkRxnSystem(RxnSystemABC):
         return "_".join(sorted(f))
 
     @property
+    @util.depreciate
     def ode(self):
         """
         Return the list of ODE expressions.
         """
         return self.get_ode_expressions()
 
+    @util.depreciate
     def show_ode(self):
         """
         Print the ODEs line by line.
@@ -497,6 +503,7 @@ class BulkRxnSystem(RxnSystemABC):
         for e in self.ode:
             print(e)
 
+    @util.depreciate
     def tp_enum(self, dft_outputs: Optional[Dict[str, str]] = None):
         """
         Build a new TP relation class based on DFT calculations.
@@ -530,6 +537,7 @@ class BulkRxnSystem(RxnSystemABC):
                                                                      n=s.initial_concentration,
                                                                      t=self.temperature.value)
 
+    @util.depreciate
     def tp_next_rsys(self,
                      t=None,
                      total_p=None,

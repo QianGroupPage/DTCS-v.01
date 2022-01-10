@@ -59,6 +59,10 @@ class RxnABC(SymSpec):
         return self.rate_constant
 
     @property
+    def name(self):
+        return str(self)
+
+    @property
     def reactant_symbols(self):
         """
         A list of free symbols.
@@ -97,6 +101,7 @@ class RxnABC(SymSpec):
         d['k'] = d.pop('rate_constant')
         return super(RxnABC, cls).from_dict(d)
 
+    @util.depreciate
     def text(self) -> str:
         reactants: Dict[str, int] = self.reactants.as_coefficients_dict()
         products: Dict[str, int] = self.products.as_coefficients_dict()
@@ -112,6 +117,7 @@ class RxnABC(SymSpec):
         text += f" at a rate of {self.rate_constant}."
         return text
 
+    @util.depreciate
     def coeff_dict_to_text(self, coeff_dict) -> str:
         """Given a coefficient dictionary, convert it to a string.
         """
@@ -138,15 +144,18 @@ class RxnABC(SymSpec):
                f'products={repr(self.products)}, ' \
                f'k={self.rate_constant})'
 
+    @util.depreciate
     def id(self):
         """Return a unique identifier for this reaction
         """
         return [f'{self.reactants}->{self.products}@{self.rate_constant}']
 
+    @util.depreciate
     def fingerprint(self):
         """Return a unique identifier for this reaction, ignoring the reaction constant."""
         return [f'{self.reactants}->{self.products}']
 
+    @util.depreciate
     def set_rate(self, rate: float) -> None:
         """
         Set or reset the rate constant in this reaction.
@@ -269,11 +278,15 @@ class RxnSystemABC(SymSpec, SpecCollection):
     def get_symbols(self) -> Set[sym.Symbol]:
         return set(self.symbol_index.keys())
 
+    @util.depreciate
     def get_symbols_ordered(self) -> List[sym.Symbol]:
         symbols = [None] * len(self.get_symbols())
         for symbol in self.get_symbols():
             symbols[self.symbol_index[symbol]] = symbol
         return symbols
+
+    def get_rates(self):
+        raise NotImplementedError()
 
     def subs_rates(self, rates):
         """
@@ -303,6 +316,14 @@ class RxnSystemABC(SymSpec, SpecCollection):
         for symbol, index in self.symbol_index.items():
             symbol_index[symbol.subs(mapping)] = index
         self.symbol_index = symbol_index
+
+    def insert(self, index, component):
+
+        start_index = len(self.symbol_index)
+        symbols = list(component.get_symbols())
+
+        for index in range(len(symbols)):
+            self.symbol_index[symbols[index]] = index + start_index
 
     @classmethod
     def from_dict(cls, d: dict):

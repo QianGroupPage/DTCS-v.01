@@ -58,11 +58,17 @@ class CRNSpecABC(SymSpec):
     def get_symbols_ordered(self) -> List[sym.Symbol]:
         return self.rsys.get_symbols_ordered()
 
+    def get_rates(self):
+        return self.rsys.get_rates()
+
     def subs_rates(self, rates):
         """TODO(Andrew)"""
         crn = copy.deepcopy(self)
         crn.rsys = self.rsys.subs_rates(rates)
         return crn
+
+    def calc_rates(self):
+        raise NotImplementedError()
 
     @property
     def symbol_index(self) -> Dict[sym.Symbol, int]:
