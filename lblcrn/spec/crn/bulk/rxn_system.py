@@ -8,6 +8,7 @@ import monty.json
 import networkx as nx
 import sympy as sym
 import numpy as np
+from IPython.core import display
 
 #from jupyter_dash import JupyterDash
 #import dash_cytoscape as cyto
@@ -420,6 +421,21 @@ class BulkRxnSystem(RxnSystemABC):
     #     self._add_to_network_graph(rxn.reactants.free_symbols, rxn.products.free_symbols, rxn.rate_constant)
     #
     #     return True, ""
+
+    def display_ode_expressions(self):
+        """TODO"""
+        time = sym.symbols('t')
+        diffs = self.get_ode_expressions()
+        symbols = self.get_symbols_ordered()
+
+        eq_tuples = list(zip(symbols, diffs))
+        eqs = []
+
+        for symbol, deriv in eq_tuples:
+            eqs.append(sym.Eq(sym.Derivative(symbol, time), deriv,
+                              evaluate=False))
+        for eq in eqs:
+            display.display(eq)
 
     def text(self) -> str:
         """Return a text representation of the reaction system, describing the chemical equations in
