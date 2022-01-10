@@ -23,6 +23,11 @@ class SymSpec(Spec):
         """Replace sym.Symbols with other sym.Symbols."""
         pass
 
+    #@abc.abstractmethod
+    def name(self):
+        """SymSpecs can get generate their names from their data"""
+        return str(self)
+
     def subs(self, mapping: Mapping):
         """Return a copy with substituted symbols."""
         clone = copy.copy(self)

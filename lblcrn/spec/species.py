@@ -59,9 +59,9 @@ class SpeciesManager(SpecCollection):
 
     _species_cls = Species
 
-    def __init__(self, *args, name='', **kwargs):
+    def __init__(self, *species, name=None, **kwargs):
         name = name or f'Collection of {self._species_cls.__name__}'
-        super().__init__(*args, name=name, **kwargs)
+        super().__init__(*species, name=name, **kwargs)
 
     # --- Helpful Accessors ---------------------------------------------------
     @property

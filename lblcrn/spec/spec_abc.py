@@ -138,9 +138,13 @@ class SpecABC(monty.json.MSONable):
 class Spec(SpecABC):
     """TODO(Andrew)"""
     def __init__(self,
-                 name: str = '',
+                 name: Optional[str] = None,
                  **kwargs):
-        self.name = name
+        if name is not None:
+            self.name = name
+            if not name:
+                warnings.warn('DEBUG: Remove empty name in declaration',
+                              DeprecationWarning)
         super().__init__(**kwargs)
 
 
@@ -157,7 +161,7 @@ class SpecCollection(Spec,
     """
     def __init__(self,
                  *elements: List[Spec],
-                 name: str = '',):
+                 name: Optional[str] = None,):
         super().__init__(name=name)
 
         self.elements = []
@@ -189,6 +193,7 @@ class SpecCollection(Spec,
     #  could access it a bunch quickly. I'll re-create this later, but I
     #  removed it for ease of development. I commented out the cache lines.
     #  You'd need to make a _cache variable that didn't auto-serialize.
+    # TODO(Andrew): Make these properties (?)
 
     def by_type(self) -> DefaultDict:
         """Make a dictionary from type of an element to a list of elements with the type.
