@@ -84,6 +84,9 @@ class XPSSpecies(Species):
             self.orbitals = orbs_or_struct
         elif isinstance(orbs_or_struct, XPSOrbital):
             self.orbitals = [orbs_or_struct]
+        elif isinstance(orbs_or_struct, (int, float)):
+            self.orbitals = XPSOrbital(name,
+                                       binding_energy=orbs_or_struct)
 
         if structure:
             self.structure = structure
