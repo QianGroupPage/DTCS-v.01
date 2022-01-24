@@ -80,20 +80,28 @@ class BulkRxnSystem(RxnSystemABC):
     def schedules(self) -> List[Schedule]:
         return self.by_subclass()[Schedule]
 
-    @property
-    def reactions(self) -> List[RxnABC]:
-        return self.by_subclass()[RxnABC]
-
     # @property
     # def color_index(self):
     #     return {index: self.elements[index].color for index in range(len(self))}
 
     @property
+    @util.depreciate
     def scheduler(self) -> List[Schedule]:
-        scheduler = [Conc(symbol, 0) for symbol in self.get_symbols_ordered()]
+        scheduler = [Conc(symbol, 0) for symbol in self.species_symbols]
         for schedule in self.schedules:
             scheduler[self.symbol_index[schedule.symbol]] = schedule
         return scheduler
+
+    @property
+    def schedule(self) -> Dict[float, Dict[str, float]]:
+        scheduler = defaultdict(lambda: defaultdict(float))
+        scheduler[0] = defaultdict(float)
+
+        for schedule in self.schedules:
+            for time, amount in schedule.schedule.items():
+                scheduler[time][schedule.species] = amount
+
+        return dict(scheduler)
 
     def get_ode_expressions(self) -> List[sym.Expr]:
         """Return a list of expressions, corresponding to the derivative of the

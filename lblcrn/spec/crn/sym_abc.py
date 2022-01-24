@@ -45,6 +45,10 @@ class ChemInfo(SymSpec):
     def get_symbols(self) -> Set[sym.Symbol]:
         return {self.symbol}
 
+    @property
+    def species(self):
+        return str(self.symbol)
+
     def rename(self, mapping: Mapping):
         self.symbol.subs(mapping)
 

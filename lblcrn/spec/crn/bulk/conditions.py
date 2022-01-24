@@ -114,9 +114,9 @@ class Schedule(ChemInfo):
                 time += time_diff
                 self.schedule[time] = amount
 
-        # Add the initial if it's not specified.
-        if 0 not in self.schedule:
-            self.schedule[0] = 0
+        # # Add the initial if it's not specified.
+        # if 0 not in self.schedule:
+        #     self.schedule[0] = 0
 
     def unpack(self):
         return self.schedule.items()

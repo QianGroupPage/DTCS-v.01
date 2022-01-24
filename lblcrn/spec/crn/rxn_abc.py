@@ -271,12 +271,24 @@ class RxnSystemABC(SymSpec, SpecCollection):
         symbols = set()
         for component in self.elements:
             symbols.update(component.get_symbols())
+        self._species = sorted([str(symbol) for symbol in symbols])
+
+        # TODO: Remove this when possible
         symbol_index = {symbol: index for index, symbol in
                         enumerate(sorted(list(symbols), key=lambda s: str(s)))}
-        self.symbol_index: Dict[sym.Symbol, int] = symbol_index
+        self._symbol_index: Dict[sym.Symbol, int] = symbol_index
+
+    @property
+    def reactions(self) -> List[RxnABC]:
+        return self.by_subclass()[RxnABC]
 
     def get_symbols(self) -> Set[sym.Symbol]:
         return set(self.symbol_index.keys())
+
+    @property
+    @util.depreciate
+    def symbol_index(self):
+        return self._symbol_index
 
     @util.depreciate
     def get_symbols_ordered(self) -> List[sym.Symbol]:
@@ -285,8 +297,22 @@ class RxnSystemABC(SymSpec, SpecCollection):
             symbols[self.symbol_index[symbol]] = symbol
         return symbols
 
+    @property
+    def species(self) -> List[str]:
+        return self._species
+
+    @property
+    def species_symbols(self):
+        return [sym.Symbol(name) for name in self.species]
+
     def get_rates(self):
-        raise NotImplementedError()
+        rates = []
+        for reaction in self.reactions:
+            if isinstance(reaction, RevRxnABC):
+                rates.append((reaction.rate_constant, reaction.rate_constant_reverse))
+            else:
+                rates.append(reaction.rate_constant)
+        return rates
 
     def subs_rates(self, rates):
         """
