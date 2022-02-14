@@ -35,8 +35,10 @@ import numpy as np
 import pandas as pd
 import sympy as sym
 
+from lblcrn.io import scrn_video
 from lblcrn.twin import twin_abc
 from lblcrn.twin import xps
+
 
 from lblcrn.common import util
 
@@ -331,5 +333,28 @@ class SurfaceCRNTimeSeries(CRNTimeSeries):
 
         return self_df
 
+    def make_video(
+            self,
+            run: int = 0,
+
+            frames_per_timestep=10,
+
+            plot_spectra: bool = False,
+            plot_func=None,  # TODO: An optional function to plot something
+
+            frames_dir: str = 'frames',  # TODO(Andrew) option to delete when done?
+            video_dir: str = 'video',
+    ):
+        scrn_video.make_scrn_video(
+            scrn=self,
+            run=run,
+            frames_per_timestep=frames_per_timestep,
+            show_spectra=plot_spectra,
+            output_dir=frames_dir,
+        )
+
+        # TODO(Andrew): Print "saved @ directory"
+        #  - also embed in iPython
+
     def as_dict(self):
-        raise NotImplemented()
+        raise NotImplementedError()

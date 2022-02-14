@@ -39,7 +39,7 @@ class SurfaceCRNOptionParser:
             self.representative_cell_x = self.process_representative_cell_x(options)
             self.representative_cell_y = self.process_representative_cell_y(options)
         self.capture_directory = self.process_capture_directory(options)
-        self.init_state = self.process_init_state(options)
+        # self.init_state = self.process_init_state(options)  # TODO(Andrew) not using this anyway, right?
 
     def process_movie_title(self, options):
         if 'movie_title' in options:

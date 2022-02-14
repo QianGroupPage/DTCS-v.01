@@ -11,12 +11,13 @@ import monty.json
 import sympy as sym
 
 import lblcrn
-from lblcrn.spec.crn.surface.surface import Site
+from lblcrn.common import util
 from lblcrn.spec.crn.surface.marker import Marker
-from lblcrn.spec.xps import XPSSpecies, XPSSpeciesManager, XPSOrbital as Orbital
+from lblcrn.spec.species import Species, SpeciesManager
+# from lblcrn.spec.xps import XPSSpecies, XPSSpeciesManager, XPSOrbital as Orbital
 
 
-class SurfaceSpecies(XPSSpecies):
+class SurfaceSpecies(Species):
     """A chemical species with a name and orbitals.
 
     Attributes:
@@ -26,32 +27,37 @@ class SurfaceSpecies(XPSSpecies):
 
     def __init__(self,
                  name: str,
-                 orbitals: List[Orbital],
                  color: Union[Tuple[int],
                               List[int], str] = None,
                  parent=None,
-                 site: Site = None,
-                 include_sub_species: bool=True,
+                 site: sym.Symbol = None,
+                 include_sub_species: bool=False,
                  size: int = 1,
-                 is_gas: bool=False):
+                 is_gas: bool=False,
+                 **kwargs,):
         super().__init__(
             name=name,
-            orbs_or_struct=orbitals,
             color=color,
+            **kwargs,
         )
         self.name = name
+        self.is_gas = is_gas
+        if not self.is_gas:
+            if site is None:
+                raise TypeError('Must supply site for non-gaseous species.')
+            self.site = site.name
+            self.size = size
+
+        # TODO(Andrew): Old stuff following
         self.name_without_suffix = name
 
         self.parent = parent   # The parent of the species
         self.sub_species = {}   # The dictionary of sub species from name to the object
 
-        self.site = site
-        self.size = size
         self.include_sub_species = include_sub_species
-        if include_sub_species and self.site and self.site != Site.default:
-            self.create_sub_species(suffix=site.name, color=self.color)
-        self.is_gas = is_gas
+        # if include_sub_species and self.site and self.site != Site.default:
 
+    @util.depreciate
     def create_sub_species(self, suffix: str = "", color: Union[Tuple[int], List[int], str] = "", entire_name: str ="",
                            orbitals: Union[Orbital, List[Orbital]] = None, site: Site = None):
         if not entire_name:
@@ -82,6 +88,7 @@ class SurfaceSpecies(XPSSpecies):
             self.sub_species[entire_name] = sub_species
         return sub_species
 
+    @util.depreciate
     def sub_species_by_name(self, name: str):
         """
         :param name: name of the species
@@ -92,6 +99,7 @@ class SurfaceSpecies(XPSSpecies):
         else:
             raise Exception(f"SurfaceSpecies {self.name} doesn't have a sub-species with name {name}.")
 
+    @util.depreciate
     def sub_species_by_suffix(self, suffix: str):
         """
         :param suffix: the suffix of the species
@@ -99,6 +107,7 @@ class SurfaceSpecies(XPSSpecies):
         """
         return self.sub_species_by_name(self.sub_species_name(suffix))
 
+    @util.depreciate
     def sub_species_name(self, suffix: str):
         """
         :param suffix: suffix of the sub_species
@@ -106,18 +115,18 @@ class SurfaceSpecies(XPSSpecies):
         """
         return f"{self.name_without_suffix}_{suffix}"
 
-    def __str__(self):
-        orbitals = [str(orbital) for orbital in self.orbitals]
-        if self.color:
-            return f'{self.name}, orbitals: {orbitals}, color: {str(self.color)}, size: {str(self.size)}'
-        return f'{self.name}, orbitals: {orbitals}, size: {str(self.size)}'
+    # def __str__(self):
+    #     orbitals = [str(orbital) for orbital in self.orbitals]
+    #     if self.color:
+    #         return f'{self.name}, orbitals: {orbitals}, color: {str(self.color)}, size: {str(self.size)}'
+    #     return f'{self.name}, orbitals: {orbitals}, size: {str(self.size)}'
+    #
+    # def __repr__(self):
+    #     return f'{self.__class__.__name__}(name={repr(self.name)}, ' \
+    #            f'orbitals={repr(self.orbitals)}' + f'color={repr(self.color)}, size={self.size})'
 
-    def __repr__(self):
-        return f'{self.__class__.__name__}(name={repr(self.name)}, ' \
-               f'orbitals={repr(self.orbitals)}' + f'color={repr(self.color)}, size={self.size})'
 
-
-class SurfaceSpeciesManager(XPSSpeciesManager):
+class SurfaceSpeciesManager(SpeciesManager):
     """A smart wrapper of a dictionary {sym.Symbol: Species}.
 
     Exists for the purpose of keeping track of which symbols correspond to
@@ -209,6 +218,7 @@ class SurfaceSpeciesManager(XPSSpeciesManager):
     #     self._species[symbol] = s
     #     return symbol
 
+    @util.depreciate
     def drop_marker(self, species_symbol: Union[sym.Symbol, Site], marker_name: str, color: str=""):
         """
 
@@ -229,18 +239,22 @@ class SurfaceSpeciesManager(XPSSpeciesManager):
             self._markers[marker_name] = [new_marker]
         return new_marker
 
+    @util.depreciate
     def get_markers(self, name):
         return self._markers[name]
 
+    @util.depreciate
     def get_marker_names(self):
         return self._markers.keys()
 
+    @util.depreciate
     def get_all_markers(self):
         all_markers = []
         for markers in self._markers.values():
             all_markers.extend(markers)
         return all_markers
 
+    @util.depreciate
     def name_be(self, name: str, value: float, orbital_name: str = "1S", color="") -> None:
         """
         name: the name for the binding energy
@@ -287,6 +301,7 @@ class SurfaceSpeciesManager(XPSSpeciesManager):
     #     return key in self._species
 
     @property
+    @util.depreciate
     def symbols_ordering(self):
         return sorted(self._species, key=lambda s: str(s))
 

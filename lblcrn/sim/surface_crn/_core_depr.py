@@ -4,7 +4,7 @@ import copy
 import warnings
 
 from lblcrn.sim import surface_crn
-from lblcrn.sim.surface_crn.api_adapter.api_adapt import generate_surface, generate_manifest_stream
+from lblcrn.spec.crn.surface.api_adapt import generate_surface, generate_manifest_stream
 from lblcrn.sim.surface_crn.surface_crns.options.option_processor import SurfaceCRNOptionParser
 from lblcrn.sim.surface_crn.surface_crns.readers.manifest_readers import read_manifest
 from lblcrn.sim.surface_crn.surface_crns.simulators.event_history import EventHistory

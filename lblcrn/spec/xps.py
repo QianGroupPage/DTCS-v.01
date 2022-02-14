@@ -9,6 +9,7 @@ from pymatgen.core.structure import Structure
 
 from lblcrn.spec.spec_abc import Spec
 from lblcrn.spec.species import Species, SpeciesManager
+from lblcrn.spec.crn.surface.species import SurfaceSpecies
 
 __author__ = 'Andrew Bogdan'
 __email__ = 'andrewbogdan@lbl.gov'
@@ -98,7 +99,7 @@ class XPSSpecies(Species):
 
         if relax_vis: self.relax_vis = relax_vis
         if xps_vis: self.xps_vis = xps_vis
-        super().__init__(name=name, **kwargs)
+        Species.__init__(self, name=name, **kwargs)  # TODO(Andrew): Bodge
 
     def __str__(self):
         # TODO: will break if there's a structure, not orbitals
@@ -111,6 +112,41 @@ class XPSSpecies(Species):
         # TODO: will break if there's a structure, not orbitals
         return f'{self.__class__.__name__}(name={repr(self.name)}, ' \
                f'orbitals={repr(self.orbitals)}' + f'color={repr(self.color)}'
+
+
+class XPSSurfaceSpecies(XPSSpecies, SurfaceSpecies):
+    def __init__(self,
+                 name: str,
+                 orbs_or_struct: Union[List, Structure] = None,
+                 *,
+                 orbitals: List[XPSOrbital] = None,
+                 structure: Structure = None,
+                 relax_vis=None,
+                 xps_vis=None,
+
+                 site=None,
+                 size=None,
+                 is_gas=False,
+                 **kwargs):
+
+        SurfaceSpecies.__init__(
+            self,
+            name=name,
+            site=site,
+            size=size,
+            is_gas=is_gas,
+        )
+
+        XPSSpecies.__init__(
+            self,
+            name=name,
+            orbs_or_struct=orbs_or_struct,
+            orbitals=orbitals,
+            structure=structure,
+            relax_vis=relax_vis,
+            xps_vis=xps_vis,
+            **kwargs
+        )
 
 
 class XPSSpeciesManager(SpeciesManager):

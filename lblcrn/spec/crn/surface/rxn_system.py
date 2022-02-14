@@ -16,6 +16,7 @@ from lblcrn.spec.crn.surface.reaction import SurfaceRxn, SurfaceRevRxn
 from lblcrn.spec.crn.surface import surface
 from lblcrn.spec.crn.bulk import conditions
 from lblcrn.spec.model_input.state_variable import T, P
+from lblcrn.spec.crn.surface.conditions import Coverage
 
 class SurfaceRxnSystem(BulkRxnSystem):
 
@@ -50,14 +51,18 @@ class SurfaceRxnSystem(BulkRxnSystem):
         flatten lists and tuples for you.
         """
         clean_comps = []
+        elements = []
         for comp in components:
             if isinstance(comp, SpeciesManager):
                 self.species_manager = comp
             elif isinstance(comp, surface.Surface):
                 self.surface = comp
+            elif isinstance(comp, Coverage):
+                elements.append(comp)
             else:
                 clean_comps.append(comp)
-        super().__init__(*clean_comps, name=name, description=description)
+        super().__init__(*clean_comps, name=name)
+        self.elements.extend(elements)
         # A partial list of all properties, with initial value.
         # Relation to govern (T, P) and the rate for each species.
         self.tprate_relation = None

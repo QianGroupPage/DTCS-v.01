@@ -101,7 +101,6 @@ def flat(lst: Union[list, tuple]):
 
 def depreciate(func):
     def depr_func(*args, **kwargs):
-        warnings.warn('Depreciated', DeprecationWarning)
+        warnings.warn(f'Depreciated function {func.__module__}.{func.__name__}', DeprecationWarning)
         return func(*args, **kwargs)
     return depr_func
-

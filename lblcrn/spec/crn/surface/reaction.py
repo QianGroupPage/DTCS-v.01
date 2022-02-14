@@ -47,6 +47,7 @@ class SurfaceRxn(BulkRxn):
             #     raise Exception(f"{s} is not a of sympy.Symbol class or Surface class. \n" +
             #                     "please create it using the sp method of a species manager")
             if isinstance(s, Surface):
+                # TODO(Andrew): Maybe assume that it's the first site, if you give the whole surface
                 self.reactants.append(s.symbol())
             elif isinstance(s, Site):
                 self.reactants.append(s.symbol)

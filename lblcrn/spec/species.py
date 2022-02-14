@@ -59,7 +59,8 @@ class SpeciesManager(SpecCollection):
 
     _species_cls = Species
 
-    def __init__(self, *species, name=None, **kwargs):
+    def __init__(self, *species, name=None, species_cls=None, **kwargs):
+        if species_cls is not None: self._species_cls = species_cls  # TODO(Andrew): is this a good idea?
         name = name or f'Collection of {self._species_cls.__name__}'
         super().__init__(*species, name=name, **kwargs)
 

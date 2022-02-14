@@ -73,8 +73,8 @@ class QueueSimulator:
         self.initiate_concs()
         if self.surface:
             self.add_concs()
-        if rxns:
-            self.initiate_marker_concs()
+        # if rxns:
+        #     self.initiate_marker_concs()
 
     def reset(self):
         """
@@ -228,7 +228,7 @@ class QueueSimulator:
                   str(next_reaction))
 
         self.add_concs()
-        self.update_markers(next_reaction)
+        # self.update_markers(next_reaction) TODO(Andrew)
         return next_reaction
 
     # end def process_next_reaction
@@ -250,7 +250,7 @@ class QueueSimulator:
         # print("updating node")
         # print(f'{self.time}, from {node.state} at {node.position} to {new_state}')
         output_state = new_state
-        default_state = self.sm.get_site_name(output_state)
+        default_state = self.sm.site_species_map(self.sm, output_state)
         if self.sm and output_state in self.sm.large_species_dict:
             free_neighbors = 0
             for neighbor_node, _ in node.neighbors:
@@ -263,7 +263,7 @@ class QueueSimulator:
                 return
 
         original_state = node.state
-        default_state = self.sm.get_site_name(original_state)
+        default_state = self.sm.site_species_map(self.sm, original_state)
 
         if len(node.group) > 1:
             # print(f"The default state for {original_state} should be {default_state}.")
@@ -480,6 +480,6 @@ class QueueSimulator:
         """
         for m, conc in self.marker_concs.items():
             m.initial_count = conc[-1] if conc else 0
-        self.initiate_marker_concs()
+        # self.initiate_marker_concs() TODO(Andrew)
         self.initiate_concs()
 # end class QueueSimulator

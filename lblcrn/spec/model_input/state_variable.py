@@ -13,7 +13,7 @@ class StateVariable(Spec):
                  description: str = "",
                  unit: str = ""
                  ):
-        super().__init__(name=name, description=description, value=value)
+        super().__init__(name=name, value=value)
         self.unit = unit
 
     def __str__(self):

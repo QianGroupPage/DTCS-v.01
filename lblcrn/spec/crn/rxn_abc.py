@@ -257,7 +257,6 @@ class RxnSystemABC(SymSpec, SpecCollection):
         super().__init__(**kwargs)
         # Flatten so that you can give lists/tuples of components
         components = list(util.flat(components))
-        self.elements = []
 
         for component in components:
             # Don't accept bad types
