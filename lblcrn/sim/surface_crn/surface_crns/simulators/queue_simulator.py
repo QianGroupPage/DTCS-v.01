@@ -62,8 +62,9 @@ class QueueSimulator:
         self.concentration_trajectory = None
 
         self.time = 0
-        self.surface.set_global_state(self.init_state)
+        # self.surface.set_global_state(self.init_state)
 
+        # TODO: Remove this hard-coded option, instead use logger
         if self.debugging:
             print("QueueSimulator initialized with global state:\n" + str(self.init_state))
         self.reset()

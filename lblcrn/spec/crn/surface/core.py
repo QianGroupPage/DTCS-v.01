@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import copy
 
+from lblcrn.common.colors import color_map
 from lblcrn.spec.crn.surface.api_adapt import generate_manifest_stream, \
     _get_opts_via_manifest
 from lblcrn.spec.crn.surface.conditions import Coverage
 from lblcrn.spec.crn.bulk import CRNSpec, Conc
 from lblcrn.spec.crn.crn_abc import CRNSpecABC
 from lblcrn.spec.crn.surface.rxn_system import SurfaceRxnSystem
-
 from lblcrn.sim.surface_crn.surface_crns.readers.manifest_readers import read_manifest
 from lblcrn.sim.surface_crn.surface_crns.options.option_processor import SurfaceCRNOptionParser
 from lblcrn.sim.surface_crn.surface_crns.models.grids import SquareGrid
@@ -72,6 +72,12 @@ class SurfaceCRNSpec(CRNSpecABC):
         )
 
         self.__dict__.update(opts.__dict__)
+
+        # TODO(Andrew) Change the name to not be all caps, jeez
+        self.COLORMAP = {species: color_map.rgb256(species) for species in
+                         self.species.names}
+        self.COLORMAP.update({site: color_map.rgb256(site) for site
+                              in self.surface.sites})
 
         # Ye's
         # self.movie_title = 'SCRN Simulation'
@@ -172,7 +178,7 @@ class SurfaceCRNSpec(CRNSpecABC):
                 init_surface.set_global_state(init_surface_state)
             elif surface.structure == 'hexagon':
                 init_surface = HexGridPlusIntersections(*self.size)
-                # init_surface.set_global_state(init_surface_state)
+                init_surface.set_global_state(*init_surface_state)
             else:
                 assert False, 'We need an initial surface'
 

@@ -117,7 +117,7 @@ class Surface(Spec):
         assert False, 'Unreachable'
 
     def _make_state_rectangle(self, coverages, size):
-        assert hasattr(self, 'top')
+        assert hasattr(self, 'top'), 'Rectangle should have a top site'
 
         rows = size[0]
         cols = size[1]
@@ -133,49 +133,78 @@ class Surface(Spec):
         # grid = SquareGrid(rows, cols)
         # grid.set_global_state(state)
 
-        return state
+        return np.asarray(state)
 
     def _make_state_hexagon(self, coverages, size):
-        species = {"threefold": [], "top": []}
-        for c in rsys.schedules:
-            # TODO
-            if isinstance(c, Schedule) and not isinstance(c, Conc):
-                raise Exception(f"{c} is a schedule, not an initial concentration." +
-                                f" This is not currently supported in the Surface CRN.")
+        assert hasattr(self, 'top'), 'Hex should have a top site'
+        assert hasattr(self, 'threefold'), 'Hex should have a threefold site'
 
-            if not rsys.species_manager.species_from_symbol(c.symbol).site or \
-                    rsys.species_manager.species_from_symbol(c.symbol).site.name == "top":
-                species["top"].extend([str(c.symbol) for _ in range(int(str(c.concentration)))])
-            elif rsys.species_manager.species_from_symbol(c.symbol).site.name == "threefold":
-                species["threefold"].extend([str(c.symbol) for _ in range(int(str(c.concentration)))])
+        rows = size[0]
+        cols = size[1]
 
-        # Initiate the hexagonal grid
-        rows = rsys.surface.size[0]
-        cols = rsys.surface.size[1]
-        surface = HexGridPlusIntersections(rows, cols)
-        for n in surface:
-            if n.is_intersection:
-                n.state = "threefold"
-            else:
-                n.state = rsys.surface.name
+        state = [[self.top.name for _ in range(cols)] for _ in range(rows)]
+        for row in range(rows):
+            for col in range(cols):
+                for coverage in coverages:
+                    if coverage.site != self.top.name:
+                        continue
+                    # TODO(Andrew): this doesn't actually give correct coverage, due to over-writing
+                    if coverage.coverage < random.random():
+                        state[row][col] = coverage.species
 
-        # Popultate the structure with initial atoms.
-        initial_nodes = {"threefold": [], "top": []}
-        for n in surface:
-            if n.is_intersection:
-                initial_nodes["threefold"].append(n)
-            else:
-                initial_nodes["top"].append(n)
+        state_3f = [[self.threefold.name for _ in range(rows - 1)]
+                    for _ in range((rows - 1) * 2)]
+        for row in range(rows):
+            for col in range(cols):
+                for coverage in coverages:
+                    if coverage.site != self.threefold.name:
+                        continue
+                    # TODO(Andrew): this doesn't actually give correct coverage, due to over-writing
+                    if coverage.coverage < random.random():
+                        state[row][col] = coverage.species
 
-        random.seed(random_seed)
-        for k, v in species.items():
-            nodes = initial_nodes[k]
-            indices = random.sample(range(len(nodes)), len(v))
-            chosen = [nodes[i] for i in indices]
-            for i, n in enumerate(chosen):
-                n.state = species[k][i]
+        return np.asarray(state), np.asarray(state_3f)
 
-        return surface
+        # species = {"threefold": [], "top": []}
+        # for c in rsys.schedules:
+        #     # TODO
+        #     if isinstance(c, Schedule) and not isinstance(c, Conc):
+        #         raise Exception(f"{c} is a schedule, not an initial concentration." +
+        #                         f" This is not currently supported in the Surface CRN.")
+        #
+        #     if not rsys.species_manager.species_from_symbol(c.symbol).site or \
+        #             rsys.species_manager.species_from_symbol(c.symbol).site.name == "top":
+        #         species["top"].extend([str(c.symbol) for _ in range(int(str(c.concentration)))])
+        #     elif rsys.species_manager.species_from_symbol(c.symbol).site.name == "threefold":
+        #         species["threefold"].extend([str(c.symbol) for _ in range(int(str(c.concentration)))])
+        #
+        # # Initiate the hexagonal grid
+        # rows = rsys.surface.size[0]
+        # cols = rsys.surface.size[1]
+        # surface = HexGridPlusIntersections(rows, cols)
+        # for n in surface:
+        #     if n.is_intersection:
+        #         n.state = "threefold"
+        #     else:
+        #         n.state = rsys.surface.name
+        #
+        # # Popultate the structure with initial atoms.
+        # initial_nodes = {"threefold": [], "top": []}
+        # for n in surface:
+        #     if n.is_intersection:
+        #         initial_nodes["threefold"].append(n)
+        #     else:
+        #         initial_nodes["top"].append(n)
+        #
+        # random.seed(random_seed)
+        # for k, v in species.items():
+        #     nodes = initial_nodes[k]
+        #     indices = random.sample(range(len(nodes)), len(v))
+        #     chosen = [nodes[i] for i in indices]
+        #     for i, n in enumerate(chosen):
+        #         n.state = species[k][i]
+        #
+        # return surface
 
     # @property
     # def sites(self):

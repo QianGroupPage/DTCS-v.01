@@ -1,6 +1,7 @@
 import math
+import warnings
 
-import numpy
+import numpy as np
 import pygame
 
 from lblcrn.sim.surface_crn.surface_crns.base.node import Node
@@ -118,6 +119,32 @@ class HexGridPlusIntersections(HexGrid):
 
     def get_intersection_node(self, x, y):
         return self.int_grid[x,y]
+
+    def set_global_state(self, state_grid, state_grid_3f=None):
+        """
+        Set the states of nodes using a 2D array or numpy array of state
+        strings. Also resets timestamps.
+        """
+        state_grid = np.asarray(state_grid)
+        state_grid_3f = np.asarray(state_grid_3f)
+
+        if state_grid.shape != self.grid.shape:
+            raise ValueError(f'Incorrect top site state grid size '
+                             f'{state_grid.shape}, should '
+                             f'match .grid.shape ({self.grid.shape})')
+        elif state_grid_3f.shape != self.int_grid.shape:
+            raise ValueError('Incorrect threefold site state grid size  '
+                             f'{state_grid_3f.shape}, should '
+                             f'match .grid.shape ({self.int_grid.shape})')
+
+        for x in range(self.x_size):
+            for y in range(self.y_size):
+                self.grid[x, y].state = state_grid[x, y]
+        for x in range(self.int_x_size):
+            for y in range(self.int_y_size):
+                self.int_grid[x, y].state = state_grid_3f[x, y]
+
+        self.clear_timestamps()
 
     def __iter__(self):
         return HexPlusIntersectionGridIterator(self)
