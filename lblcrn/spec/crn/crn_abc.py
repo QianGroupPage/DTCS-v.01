@@ -24,6 +24,8 @@ class CRNSpecABC(SymSpec):
         super().__init__(**kwargs)
 
         self.rsys: RxnSystemABC = rsys
+        # TODO(Andrew) This is really confusing honestly, I expect it to be a
+        #  list of species names, not a SpeciesManager. Change it to sm.
         self.species: SpeciesManager = species
         if sim_type:  # So as to not override any default
             self.sim_type = sim_type

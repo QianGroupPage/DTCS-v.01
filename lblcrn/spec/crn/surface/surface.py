@@ -10,9 +10,11 @@ Dr. Jin Qian, Domas Buracas, Andrew Bogdan, Rithvik Panchapakesan, Ye Wang
 # *** Libraries ***
 from __future__ import annotations
 
-from typing import List, Tuple, Union
+from typing import List, Tuple, Union, Dict
+from lblcrn.common.type_alias import SpeciesName, SiteName
 
 import random
+import itertools
 
 import sympy as sym
 
@@ -109,61 +111,63 @@ class Surface(Spec):
             setattr(self, site, sym.Symbol(site_name))
             color_map[site_name] = color_map[self.name]  # TODO(Andrew): Give more options for this
 
-    def make_state(self, *coverages, size=(10, 10)):
+    def make_state(self,
+                   coverage_info: Dict[SiteName, (SpeciesName, float)],
+                   size: Tuple[int, int] = (10, 10)):
         if self.structure == 'rectangle':
-            return self._make_state_rectangle(coverages, size)
+            return self._make_state_rectangle(coverage_info, size)
         elif self.structure == 'hexagon':
-            return self._make_state_hexagon(coverages, size)
+            return self._make_state_hexagon(coverage_info, size)
         assert False, 'Unreachable'
 
-    def _make_state_rectangle(self, coverages, size):
+    def _make_state_rectangle(self, coverage_info, size):
         assert hasattr(self, 'top'), 'Rectangle should have a top site'
 
-        rows = size[0]
-        cols = size[1]
+        rows, cols = size
+        sites = list(itertools.product(range(rows), range(cols)))
 
-        state = [[self.top.name for _ in range(cols)] for _ in range(rows)]
-        for row in range(rows):
-            for col in range(cols):
-                for coverage in coverages:
-                    # TODO(Andrew): this doesn't actually give correct coverage, due to over-writing
-                    if coverage.coverage < random.random():
-                        state[row][col] = coverage.species
+        sites_map = self._cover_sites(
+            sites=sites,
+            default=self.top.name,
+            coverages=coverage_info[self.top.name]
+        )
 
-        # grid = SquareGrid(rows, cols)
-        # grid.set_global_state(state)
+        state = np.empty(size, np.dtype(object))
+        for (row, col), specie in sites_map.items():
+            state[row, col] = specie
 
-        return np.asarray(state)
+        return state
 
-    def _make_state_hexagon(self, coverages, size):
+    def _make_state_hexagon(self, coverage_info, size):
         assert hasattr(self, 'top'), 'Hex should have a top site'
         assert hasattr(self, 'threefold'), 'Hex should have a threefold site'
 
-        rows = size[0]
-        cols = size[1]
+        rows_top, cols_top = size
+        rows_3f, cols_3f = (rows_top - 1) * 2, cols_top - 1
 
-        state = [[self.top.name for _ in range(cols)] for _ in range(rows)]
-        for row in range(rows):
-            for col in range(cols):
-                for coverage in coverages:
-                    if coverage.site != self.top.name:
-                        continue
-                    # TODO(Andrew): this doesn't actually give correct coverage, due to over-writing
-                    if coverage.coverage < random.random():
-                        state[row][col] = coverage.species
+        sites_top = list(itertools.product(range(rows_top), range(cols_top)))
+        sites_3f = list(itertools.product(range(rows_3f), range(cols_3f)))
 
-        state_3f = [[self.threefold.name for _ in range(rows - 1)]
-                    for _ in range((rows - 1) * 2)]
-        for row in range(rows):
-            for col in range(cols):
-                for coverage in coverages:
-                    if coverage.site != self.threefold.name:
-                        continue
-                    # TODO(Andrew): this doesn't actually give correct coverage, due to over-writing
-                    if coverage.coverage < random.random():
-                        state[row][col] = coverage.species
+        sites_map_top = self._cover_sites(
+            sites=sites_top,
+            default=self.top.name,
+            coverages=coverage_info[self.top.name]
+        )
+        sites_map_3f = self._cover_sites(
+            sites=sites_3f,
+            default=self.threefold.name,
+            coverages=coverage_info[self.threefold.name]
+        )
 
-        return np.asarray(state), np.asarray(state_3f)
+        state_top = np.empty(size, np.dtype(object))
+        state_3f = np.empty((rows_3f, cols_3f), np.dtype(object))
+
+        for (row, col), specie in sites_map_top.items():
+            state_top[row, col] = specie
+        for (row, col), specie in sites_map_3f.items():
+            state_3f[row, col] = specie
+
+        return state_top, state_3f
 
         # species = {"threefold": [], "top": []}
         # for c in rsys.schedules:
@@ -205,6 +209,41 @@ class Surface(Spec):
         #         n.state = species[k][i]
         #
         # return surface
+
+    @staticmethod
+    def _cover_sites(sites: List,
+                     default: SiteName,
+                     coverages: List[(SpeciesName, float)]):
+        """Cover the given sites according to coverages.
+
+        Args:
+            sites: Iterable of any hashable type
+            default: str, the un-covered site
+            coverages: list of (species, % coverage)
+
+        Returns:
+            A dictionary of site: species, where site is pulled from sites,
+            and the proportion of each species should roughly match coverages.
+        """
+        # TODO(Andrew): Raise an error if you exceed 100%?
+
+        sites = list(sites)
+        num_sites = len(sites)
+        random.shuffle(sites)
+
+        sites_map = {}
+        lower = 0
+        upper = 0
+        for species, coverage in coverages:
+            upper = (coverage * num_sites) + lower
+            for index in range(math.ceil(lower), math.ceil(upper)):
+                sites_map[sites[index]] = species
+            lower = upper
+
+        for index in range(math.ceil(upper), num_sites):
+            sites_map[sites[index]] = default
+
+        return sites_map
 
     # @property
     # def sites(self):

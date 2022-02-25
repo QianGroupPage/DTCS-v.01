@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import collections
 import copy
 
 from lblcrn.common.colors import color_map
@@ -166,10 +167,18 @@ class SurfaceCRNSpec(CRNSpecABC):
         for run_number in range(num_runs):
             run_rng_seed = simulation_rng_seed + run_number  # TODO(Andrew) this might be bad if someone runs several scrns
 
-            # Generate an initial surface randomly if one isn't supplied
+            # TODO(Andrew): Allow them to supply an init surface too
+            # This makes a dictionary of the structure
+            #  SiteName: [list of (species, coverage) pairs]
+            coverage_info = collections.defaultdict(list)
+            for cov in rsys.by_subclass()[Coverage]:
+                coverage_info[self.species[cov.species].site].append(
+                    (cov.species, cov.coverage))
+
             init_surface_state = surface.make_state(
-                *rsys.by_subclass()[Coverage],
+                coverage_info=coverage_info,
                 size=self.size,
+                # TODO(Andrew): Add seeded RNG
             )
 
             # TODO(Andrew): bodge

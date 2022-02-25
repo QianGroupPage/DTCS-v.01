@@ -37,7 +37,7 @@ class HexGridPlusIntersections(HexGrid):
         self.x_size     = x_size
         self.y_size     = y_size
         self.int_x_size = (self.x_size - 1)*2  # #columns of intersection sites
-        self.int_y_size = self.x_size - 1  # #rows of intersection sites
+        self.int_y_size = self.y_size - 1  # #rows of intersection sites
         self.wrap       = wrap
         self.grid       = np.empty([x_size, y_size], np.dtype(object))
         self.grid       = np.array(self.grid)
