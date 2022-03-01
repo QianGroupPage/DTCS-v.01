@@ -1,7 +1,9 @@
 """TODO(Andrew)"""
 
 import copy
+import math
 
+import matplotlib.pyplot as plt
 import pygame
 
 from lblcrn.sim.surface_crn.surface_crns.views.grid_display import (
@@ -81,23 +83,48 @@ def _get_surface_display(surface, init_surface, opts, display_class=None):
     else:
         raise Exception("Unrecognized grid type '" + opts.grid_type + "'")
 
+def _make_imgbuf_from_plot(
+        plot_func,
+        args=None,
+        kwargs=None
+):
+    args = args or []
+    kwars = kwargs = {}
+
+    fig = plot_func(*args, **kwargs)
+
+    fig.canvas.draw()
+    plt.close()
+
+    image_rgb256 = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+    image_rgb256 = image_rgb256.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+
+    return image_rgb256, (image_rgb256.shape[1], image_rgb256.shape[0])
+
 def _make_video(frames, display_size, fps):
 
-    out = cv2.VideoWriter('output.avi',cv2.VideoWriter_fourcc(*'DIVX'), fps, display_size)
+    out = cv2.VideoWriter(
+        filename='output.avi',
+        fourcc=cv2.VideoWriter_fourcc(*'MJPG'),
+        fps=fps,
+        frameSize=display_size,
+    )
 
     for filename in frames:
         img = cv2.imread(filename)
         out.write(img)
 
-    print(f'Video saved')
+    print(f'Saved Video: output.mp4')
 
     out.release()
+
 
 def make_scrn_video(
         scrn,
         run=0,
+        plot=False,
+
         frames_per_timestep=10,
-        show_spectra=False,
         output_dir='output',
 ):
     # --- Prepare to save output ------------------------------------
@@ -145,7 +172,7 @@ def make_scrn_video(
 
     # Display for the additional title
     title_display = TextDisplay(display_width, text="Surface CRN Trajectory")
-    show_title = bool(show_spectra)
+    show_title = bool(plot)
 
     display_height = max(
         legend_display.display_height + 2 * legend_display.VERTICAL_BUFFER,
@@ -154,6 +181,19 @@ def make_scrn_video(
     display_height += time_display.display_height
     if show_title:
         display_height += title_display.display_height
+
+    # Adjust display for additional plot
+    if callable(plot):
+        plot_buf, (plot_width, plot_height) = _make_imgbuf_from_plot(
+            plot_func=plot,
+            args=[scrn, run, 0],
+        )
+
+        plot_xpos = display_width
+        plot_ypos = 0
+
+        display_width = plot_xpos + plot_width
+        display_height = max(display_height, plot_ypos + plot_height)
 
     # --- Initialize PyGame Canvas --------------------------------------------
     display_surface = pygame.display.set_mode((display_width, display_height), 0, 32)
@@ -195,11 +235,28 @@ def make_scrn_video(
         # If the current reaction time is after the next frame, make a frame
         #  and remove that frame time from the queue.
         if reaction.time >= frame_time_queue[0]:
-            frame_time = frame_time_queue.pop(0)
+            frame_time = round(frame_time_queue.pop(0),
+                               round(math.log(frames_per_timestep, 10) + 1))
 
             # Update the time display
             time_display.time = frame_time
             time_display.render(display_surface, x_pos=time_display.x_pos, y_pos=time_display.y_pos)
+
+            # Render the plotting function
+            if plot:
+                plot_buf, _ = _make_imgbuf_from_plot(
+                    plot_func=plot,
+                    args=[scrn, run, frame_time],
+                )
+                plot_image = pygame.image.frombuffer(
+                    plot_buf,
+                    (plot_width, plot_height),
+                    'RGB'
+                )
+                display_surface.blit(
+                    plot_image,
+                    (plot_xpos, plot_ypos),
+                )
 
             # Re-render the whole frame
             #  It seems like this would take more time, but it actually might not

@@ -24,7 +24,7 @@ os.environ['LBLCRN_DO_ECHO'] = 'false'
 _DATA_FILES_PATH = sys.prefix + '/lblcrn/'
 
 # Master version information. Modifying this should update everything else.
-__version__ = 'dev0.1.4/2022-02-14'
+__version__ = 'dev0.1.4/2022-02-26'
 
 # Enable depreciation warnings
 warnings.filterwarnings('default', category=DeprecationWarning,

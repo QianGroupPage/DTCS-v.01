@@ -26,7 +26,7 @@ Example:
 
 from __future__ import annotations
 
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Tuple, Union, Optional
 import bisect
 
 from matplotlib import pyplot as plt
@@ -294,6 +294,92 @@ class SurfaceCRNTimeSeries(CRNTimeSeries):
 
         return cls.from_runs(dfs, crn)
 
+    def at(self, t: float, run: Optional[int] = None):
+        """Gives the state of the system at time <= t, or at end if t < 0.
+
+        If you supply a run number, it will give you information from just
+        that run. Otherwise, it will give you the averaged data.
+        """
+        if run is not None:
+            df = self.df_full[f'seed{run}']
+        else:
+            df = self.df
+
+        if t < 0:
+            t = self.t[-1]
+        return df.iloc[self._time_to_index(t)]
+
+    def xps_with(self, t: float = -1, run: Optional[int] = None,
+                 title: str = '',
+                 species: List[sym.Symbol] = None,
+                 ignore: List[sym.Symbol] = None,
+                 x_range: np.ndarray = None,
+                 scale_factor: float = None,
+                 experimental: pd.Series = None,
+                 gas_interval: Tuple[float, float] = None,
+                 contam_spectra: Dict[sym.Symbol, pd.Series] = None,
+                 deconv_species: List[sym.Symbol] = None,
+                 autoresample: bool = True,
+                 autoscale: bool = True,):
+        """Calculates a simulated XPS observable at time t.
+
+        In addition to returning, saves the information into self.xps.
+
+        Args:
+            t: The time at which to take a snapshot. Defaults to the max time.
+            run: Which run you want to get an XPS of, or None, for averaged
+                data.
+            species: The species to include in the XPS.
+            ignore: The species to not include in the XPS.
+            autoresample: Decides if the XPS resamples on edits.
+            autoscale: Decides if the XPS will automatically scale
+                the gaussians and envelope to match the experimental data.
+            experimental: The experimental value of the XPS.
+            gas_interval: The interval in which the peak of the gas phase is
+                in the XPS.
+            scale_factor: The scale factor by which to scale the simulated
+                gaussians in the XPS.
+            title: The name to give the XPS, used in plotting.
+
+        Returns:
+            An XPSExperiment object with the parameters you specified.
+        """
+        # Ignore species without binding energies
+        ignore = ignore or []
+        for specie in self.species:
+            if specie in self.species_manager and \
+                    hasattr(self.species_manager[specie], 'orbitals'):
+                continue
+            ignore.append(specie)
+
+        species = twin_abc._get_species_not_ignored(species, ignore,
+                                                    self.species)
+
+        snapshot = self.at(t, run=run)
+        species_concs = {}
+        for specie, conc in snapshot.items():
+            if specie in species:
+                species_concs[specie] = conc
+        if not title:
+            title = f'time={snapshot.name}'
+        # TODO(Andrew): Is this paradigm better than simulate_xps?
+        #  I should standardize how to do it. I think that the __init__ would
+        #  make more sense to have the bulk of the info and then the simulate
+        #  function just forwards.
+        self._xps = xps.XPSExperiment(species_manager=self.species_manager,
+                                      title=title,
+                                      x_range=x_range,
+                                      species=species,
+                                      scale_factor=scale_factor,
+                                      sim_concs=species_concs,
+                                      experimental=experimental,
+                                      gas_interval=gas_interval,
+                                      contam_spectra=contam_spectra,
+                                      deconv_species=deconv_species,
+                                      autoresample=autoresample,
+                                      autoscale=autoscale,)
+        return self._xps
+
     def resample(self, roll_window=0.5, time_step=0.01, index=None):
         time_max = self.crn.time
 
@@ -339,7 +425,7 @@ class SurfaceCRNTimeSeries(CRNTimeSeries):
 
             frames_per_timestep=10,
 
-            plot_spectra: bool = False,
+            plot: Union[bool, callable] = False,
             plot_func=None,  # TODO: An optional function to plot something
 
             frames_dir: str = 'frames',  # TODO(Andrew) option to delete when done?
@@ -349,7 +435,7 @@ class SurfaceCRNTimeSeries(CRNTimeSeries):
             scrn=self,
             run=run,
             frames_per_timestep=frames_per_timestep,
-            show_spectra=plot_spectra,
+            plot=plot,
             output_dir=frames_dir,
         )
 

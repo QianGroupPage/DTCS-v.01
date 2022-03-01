@@ -143,6 +143,7 @@ class SurfaceSpeciesManager(SpeciesManager):
 
     _species_cls = SurfaceSpecies
 
+    @util.depreciate
     def __init__(self, *args, name='', **kwargs):
         name = name or f'Collection of {self._species_cls.__name__}'
         super().__init__(*args, name=name, **kwargs)
