@@ -23,6 +23,8 @@ __author__ = 'Andrew Bogdan'
 __email__ = 'andrewbogdan@lbl.gov'
 
 
+# TODO(Andrew): Note!! This is not the updated version, the one on NERSC is
+#  more updated!
 def get_wf_simulate_ir(
         species,
         vasp_cmd=VASP_CMD,
