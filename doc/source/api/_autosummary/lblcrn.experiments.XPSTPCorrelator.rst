@@ -1,7 +1,7 @@
-﻿lblcrn.experiments.XPSTPCorrelator
+﻿dtcs.experiments.XPSTPCorrelator
 ==================================
 
-.. currentmodule:: lblcrn.experiments
+.. currentmodule:: dtcs.experiments
 
 .. autoclass:: XPSTPCorrelator
 

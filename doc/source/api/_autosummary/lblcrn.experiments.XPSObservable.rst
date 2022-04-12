@@ -1,7 +1,7 @@
-﻿lblcrn.experiments.XPSObservable
+﻿dtcs.experiments.XPSObservable
 ================================
 
-.. currentmodule:: lblcrn.experiments
+.. currentmodule:: dtcs.experiments
 
 .. autoclass:: XPSObservable
 

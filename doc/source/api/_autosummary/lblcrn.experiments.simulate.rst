@@ -1,7 +1,7 @@
-﻿lblcrn.experiments.simulate
+﻿dtcs.experiments.simulate
 ===========================
 
-.. currentmodule:: lblcrn.experiments
+.. currentmodule:: dtcs.experiments
 
 .. autoclass:: simulate
 

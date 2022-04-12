@@ -1,7 +1,7 @@
 experiments
 ==================
 
-.. automodule:: lblcrn.experiments
+.. automodule:: dtcs.experiments
 
 .. autosummary::
     :toctree: _autosummary

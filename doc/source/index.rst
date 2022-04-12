@@ -33,7 +33,7 @@ If you are using normal Python::
 
     pip install git+https://github.com/AndrewBogdan/lbl-crn
 
-Once it's installed (it might take a while), run ``python -m lblcrn --version``
+Once it's installed (it might take a while), run ``python -m dtcs --version``
 to check if everything installed.
 
 API Rundown

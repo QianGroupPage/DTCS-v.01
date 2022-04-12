@@ -1,7 +1,7 @@
-﻿lblcrn.experiments.Experiment
+﻿dtcs.experiments.Experiment
 =============================
 
-.. currentmodule:: lblcrn.experiments
+.. currentmodule:: dtcs.experiments
 
 .. autoclass:: Experiment
 

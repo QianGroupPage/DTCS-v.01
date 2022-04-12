@@ -1,7 +1,7 @@
-﻿lblcrn.experiments.XPSInitializationData
+﻿dtcs.experiments.XPSInitializationData
 ========================================
 
-.. currentmodule:: lblcrn.experiments
+.. currentmodule:: dtcs.experiments
 
 .. autoclass:: XPSInitializationData
 

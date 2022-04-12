@@ -1,7 +1,7 @@
-﻿lblcrn.crn\_sym.Marker
+﻿dtcs.crn\_sym.Marker
 ======================
 
-.. currentmodule:: lblcrn.spec.crn
+.. currentmodule:: dtcs.spec.crn
 
 .. autoclass:: Marker
 

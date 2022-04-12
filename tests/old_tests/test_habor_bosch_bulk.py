@@ -4,8 +4,8 @@ Test Habor Bosch system using all stiff-oriented methods.
 Credits: Habor Bosch originally designed by Rithvik. Testing script by Ye.
 """
 
-from lblcrn.twin import XPSInitializationData
-from lblcrn.sim.surface_crn import Results
+from dtcs.twin import XPSInitializationData
+from dtcs.sim.surface_crn import Results
 import datetime
 
 TEST_FIGURES_DIRECTORY = "test/figures/"

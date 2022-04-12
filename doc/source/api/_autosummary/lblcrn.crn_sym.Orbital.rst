@@ -1,7 +1,7 @@
-﻿lblcrn.crn\_sym.Orbital
+﻿dtcs.crn\_sym.Orbital
 =======================
 
-.. currentmodule:: lblcrn.spec.crn
+.. currentmodule:: dtcs.spec.crn
 
 .. autoclass:: Orbital
 

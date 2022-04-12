@@ -4,7 +4,7 @@ A fast integration test for Surface CRN.
 Save the resulting trajectory with month/date/year in the title into test/figures directory.
 """
 import datetime
-from lblcrn import *
+from dtcs import *
 
 TEST_FIGURES_DIRECTORY = "test/figures/"
 date = datetime.datetime.now()
@@ -13,7 +13,7 @@ date_str = f"{date.strftime('%b').lower()}_{date.day}_{date.year}"
 sm = SpeciesManager()
 s = Surface("Ag",
             color="#e1e1e1",
-            poscar_file="lblcrn/surface_crn/connectivity/poscar_files/POSCAR_Ni_111",
+            poscar_file="dtcs/surface_crn/connectivity/poscar_files/POSCAR_Ni_111",
             supercell_dimensions=3,
             surface_depth=1)
 

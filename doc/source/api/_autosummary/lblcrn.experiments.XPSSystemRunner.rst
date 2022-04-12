@@ -1,7 +1,7 @@
-﻿lblcrn.experiments.XPSSystemRunner
+﻿dtcs.experiments.XPSSystemRunner
 ==================================
 
-.. currentmodule:: lblcrn.experiments
+.. currentmodule:: dtcs.experiments
 
 .. autoclass:: XPSSystemRunner
 

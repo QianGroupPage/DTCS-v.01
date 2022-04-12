@@ -1,7 +1,7 @@
-﻿lblcrn.crn\_sym.RevRxn
+﻿dtcs.crn\_sym.RevRxn
 ======================
 
-.. currentmodule:: lblcrn.spec.crn
+.. currentmodule:: dtcs.spec.crn
 
 .. autoclass:: RevRxn
 

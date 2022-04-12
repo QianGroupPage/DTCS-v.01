@@ -1,8 +1,8 @@
-# Package data for package lblcrn
+# Package data for package dtcs
 
 include README.md
 include docs/*
 include examples/*
-include lblcrn/resources/*.csv
-include lblcrn/tables/data
-include lblcrn/tables/mechanisms/data
+include dtcs/resources/*.csv
+include dtcs/tables/data
+include dtcs/tables/mechanisms/data

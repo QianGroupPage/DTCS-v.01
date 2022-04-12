@@ -1,7 +1,7 @@
 crn_sym
 ==================
 
-.. automodule:: lblcrn.spec.crn
+.. automodule:: dtcs.spec.crn
 
 .. autosummary::
     :toctree: _autosummary

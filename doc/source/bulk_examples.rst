@@ -8,9 +8,9 @@ Predator Prey
 This will be a step-by step explanation of setting up a basic predator-prey scenario.
 First, import the library::
 
-    from lblcrn.spec.crn import *
-    from lblcrn.experiments.simulate import simulate
-    from lblcrn.experiments.xps_io import read_exp
+    from dtcs.spec.crn import *
+    from dtcs.experiments.simulate import simulate
+    from dtcs.experiments.xps_io import read_exp
 
 Then make your species manager. This is the object that keeps track of all
 the information relating to species. See the docs here (TODO)::

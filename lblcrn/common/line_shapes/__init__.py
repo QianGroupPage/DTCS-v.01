@@ -1,1 +1,0 @@
-from lblcrn.common.line_shapes.ir import ir_intensity

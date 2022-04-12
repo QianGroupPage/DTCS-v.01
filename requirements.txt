@@ -1,5 +1,5 @@
 #atomate
-git+ssh://github.com/AndrewBogdan/lbl-crn.git#egg=lblcrn
+git+ssh://github.com/AndrewBogdan/lbl-crn.git#egg=dtcs
 
 sympy
 numpy

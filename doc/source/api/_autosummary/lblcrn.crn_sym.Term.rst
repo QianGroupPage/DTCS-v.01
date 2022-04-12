@@ -1,7 +1,7 @@
-﻿lblcrn.crn\_sym.Term
+﻿dtcs.crn\_sym.Term
 ====================
 
-.. currentmodule:: lblcrn.spec.crn
+.. currentmodule:: dtcs.spec.crn
 
 .. autoclass:: Term
 

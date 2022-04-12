@@ -1,7 +1,7 @@
-﻿lblcrn.crn\_sym.SpeciesManager
+﻿dtcs.crn\_sym.SpeciesManager
 ==============================
 
-.. currentmodule:: lblcrn.spec.crn
+.. currentmodule:: dtcs.spec.crn
 
 .. autoclass:: SpeciesManager
 

@@ -1,7 +1,7 @@
-﻿lblcrn.crn\_sym.ChemExpression
+﻿dtcs.crn\_sym.ChemExpression
 ==============================
 
-.. currentmodule:: lblcrn.spec.crn
+.. currentmodule:: dtcs.spec.crn
 
 .. autoclass:: ChemExpression
 

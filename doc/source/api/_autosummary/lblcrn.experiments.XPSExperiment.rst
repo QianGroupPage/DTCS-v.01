@@ -1,7 +1,7 @@
-﻿lblcrn.experiments.XPSExperiment
+﻿dtcs.experiments.XPSExperiment
 ================================
 
-.. currentmodule:: lblcrn.experiments
+.. currentmodule:: dtcs.experiments
 
 .. autoclass:: XPSExperiment
 

@@ -1,7 +1,7 @@
-﻿lblcrn.crn\_sym.ConcDiffEq
+﻿dtcs.crn\_sym.ConcDiffEq
 ==========================
 
-.. currentmodule:: lblcrn.spec.crn
+.. currentmodule:: dtcs.spec.crn
 
 .. autoclass:: ConcDiffEq
 

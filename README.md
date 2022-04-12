@@ -12,13 +12,13 @@ if you are using normal Python:
     pip install git+https://github.com/AndrewBogdan/lbl-crn
 
 Once it's installed (it might take a while), run
-`python -m lblcrn --version`
+`python -m dtcs --version`
 to check if everything installed.
 
 ## Walkthrough
 This will walk you through the workflow of a predator-prey system.
 
-    from lblcrn import *
+    from dtcs import *
     
 First, you need to make a SpeciesManager to keep track of all your species.
 Then, you can create some species.

@@ -1,7 +1,7 @@
-﻿lblcrn.crn\_sym.Schedule
+﻿dtcs.crn\_sym.Schedule
 ========================
 
-.. currentmodule:: lblcrn.spec.crn
+.. currentmodule:: dtcs.spec.crn
 
 .. autoclass:: Schedule
 

@@ -6,9 +6,9 @@ This test case uses the exact same set of species, and rules, as originally crea
 Save the resulting trajectory with month/date/year in the title into test/figures directory.
 """
 import datetime
-from lblcrn.spec.crn import *
-from lblcrn.sim.surface_crn import Results
-from lblcrn.twin.solution_system import xps
+from dtcs.spec.crn import *
+from dtcs.sim.surface_crn import Results
+from dtcs.twin.solution_system import xps
 
 TEST_FIGURES_DIRECTORY = "test/figures/"
 date = datetime.datetime.now()

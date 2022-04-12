@@ -1,7 +1,7 @@
 import unittest
 import pandas as pd
 
-from lblcrn.twin.core import simulate
+from dtcs.twin.core import simulate
 
 
 class TestBulk(unittest.TestCase):

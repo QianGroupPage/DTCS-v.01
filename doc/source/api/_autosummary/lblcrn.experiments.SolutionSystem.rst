@@ -1,7 +1,7 @@
-﻿lblcrn.experiments.XPSSolutionSystem
+﻿dtcs.experiments.XPSSolutionSystem
 =================================
 
-.. currentmodule:: lblcrn.experiments
+.. currentmodule:: dtcs.experiments
 
 .. autoclass:: XPSSolutionSystem
 

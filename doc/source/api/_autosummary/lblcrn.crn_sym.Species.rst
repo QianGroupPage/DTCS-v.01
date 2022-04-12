@@ -1,7 +1,7 @@
-﻿lblcrn.crn\_sym.Species
+﻿dtcs.crn\_sym.Species
 =======================
 
-.. currentmodule:: lblcrn.spec.crn
+.. currentmodule:: dtcs.spec.crn
 
 .. autoclass:: Species
 

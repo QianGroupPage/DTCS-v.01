@@ -1,7 +1,7 @@
-﻿lblcrn.crn\_sym.Conc
+﻿dtcs.crn\_sym.Conc
 ====================
 
-.. currentmodule:: lblcrn.spec.crn
+.. currentmodule:: dtcs.spec.crn
 
 .. autoclass:: Conc
 

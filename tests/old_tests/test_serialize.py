@@ -7,7 +7,7 @@ import copy
 import json
 import unittest
 
-from lblcrn import *
+from dtcs import *
 
 
 TEST_DIR = 'TEMP' + os.sep

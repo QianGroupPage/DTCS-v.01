@@ -1,4 +1,4 @@
-"""Setup package lblcrn.
+"""Setup package dtcs.
 
 This:
 - Gets version information (__version__)
@@ -15,7 +15,7 @@ import re
 import setuptools
 
 # --- Collect version information --------------------------------------------
-version_info = open('lblcrn/__init__.py').read()
+version_info = open('dtcs/__init__.py').read()
 
 pattern = r'__version__\s?=\s?[\'\"](.*)[\'"]'
 match = re.search(pattern, version_info)
@@ -30,7 +30,7 @@ with open('README.md', 'r') as readme_file:
 
 # --- Get data files ---------------------------------------------------------
 # The directory under venv/ to store datafiles.
-DATA_FP = 'etc/lblcrn/'
+DATA_FP = 'etc/dtcs/'
 
 # The files to include. These are triples of the form
 # (destination path, path to search, [file patterns])
@@ -53,10 +53,10 @@ data_files = [(dir_name, files) for dir_name, files in mapping.items()]
 
 # --- Setup ------------------------------------------------------------------
 if __name__ == '__main__':
-    setuptools.setup(name='lblcrn',
+    setuptools.setup(name='dtcs',
                      version=__version__,
                      packages=setuptools.find_packages(),
-                     package_data={'lblcrn': ['resources/*.csv',
+                     package_data={'dtcs': ['resources/*.csv',
                                               'tables/data',
                                               'tables/mechanisms/data']},
                      data_files=data_files,
@@ -70,20 +70,23 @@ if __name__ == '__main__':
                          # 'seaborn',
                          'scipy',
                          'sklearn',
-                         # Materials Project
-                         'pymatgen',
-                         'atomate',
-                         'fireworks',
-                         'gpcam',
-                         # Other Chemistry
-                         'ase',
                          # Utilities
                          'click',
-                         'ffmpeg',
-                         'pygame',
                      ],
                      requires=[
+                         # Misc.
                          'jupyter',
+
+                         # Materials Project
+                         'atomate',
+                         'gpcam',
+
+                         # Other Chemistry
+                         'ase',
+
+                         # Utilities
+                         'pygame',
+                         'ffmpeg',
                      ],
                      long_description=readme,
                      )

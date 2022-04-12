@@ -1,7 +1,7 @@
-﻿lblcrn.experiments.CRNTimeSeries
+﻿dtcs.experiments.CRNTimeSeries
 ================================
 
-.. currentmodule:: lblcrn.experiments
+.. currentmodule:: dtcs.experiments
 
 .. autoclass:: CRNTimeSeries
 

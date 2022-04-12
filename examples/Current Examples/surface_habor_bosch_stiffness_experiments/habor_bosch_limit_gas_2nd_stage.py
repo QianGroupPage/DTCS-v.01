@@ -7,10 +7,10 @@ Assume the system has achieved relative stability after 1E-5s. Fast diffusion ra
 magnitudes.
 """
 
-from lblcrn import *
+from dtcs import *
 
 sm = SpeciesManager()
-s = Surface("Fe", color="#e1e1e1", poscar_file="lblcrn/surface_crn/connectivity/poscar_files/POSCAR_Fe_111",
+s = Surface("Fe", color="#e1e1e1", poscar_file="dtcs/surface_crn/connectivity/poscar_files/POSCAR_Fe_111",
             supercell_dimensions=1,
             surface_depth=1.7)
 

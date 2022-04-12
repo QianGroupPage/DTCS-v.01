@@ -29,7 +29,7 @@ with open("H2O_CRN_output_results.csv","w+") as my_csv:
 """
 
 import re, sys, os
-from lblcrn.common.util import multiple_replace
+from dtcs.common.util import multiple_replace
 
 
 def transform_to_mathematica(filename):

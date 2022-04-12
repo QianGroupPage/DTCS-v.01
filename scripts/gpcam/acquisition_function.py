@@ -26,8 +26,8 @@ def upper_confidence_bounds(x,obj):
 import pandas as pd
 import numpy as np
 
-from lblcrn.twin.core import simulate
-from lblcrn.io.xps import read_new_data
+from dtcs.twin.core import simulate
+from dtcs.io.xps import read_new_data
 
 sm = SpeciesManager()
 
