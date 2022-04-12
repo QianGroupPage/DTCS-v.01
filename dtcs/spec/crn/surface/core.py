@@ -52,8 +52,8 @@ class SurfaceCRNSpec(CRNSpecABC):
         self.simulation_rng_seed = 20
 
         # TODO(Andrew): Bodges
-        rsys.surface = surface
-        surface.size = size
+        self.rsys.surface = surface
+        self.surface.size = size
 
         # TODO(Andrew): Use _get_opts_via_manifest?
         manifest = generate_manifest_stream(

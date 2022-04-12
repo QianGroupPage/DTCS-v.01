@@ -49,12 +49,12 @@ class SurfaceSpecies(Species):
             self.size = size
 
         # TODO(Andrew): Old stuff following
-        self.name_without_suffix = name
+        # self.name_without_suffix = name
 
-        self.parent = parent   # The parent of the species
-        self.sub_species = {}   # The dictionary of sub species from name to the object
+        # self.parent = parent   # The parent of the species
+        # self.sub_species = {}   # The dictionary of sub species from name to the object
 
-        self.include_sub_species = include_sub_species
+        # self.include_sub_species = include_sub_species
         # if include_sub_species and self.site and self.site != Site.default:
 
     @util.depreciate
@@ -126,7 +126,7 @@ class SurfaceSpecies(Species):
     #            f'orbitals={repr(self.orbitals)}' + f'color={repr(self.color)}, size={self.size})'
 
 
-class SurfaceSpeciesManager(SpeciesManager):
+class LegacySurfaceSpeciesManager(SpeciesManager):
     """A smart wrapper of a dictionary {sym.Symbol: Species}.
 
     Exists for the purpose of keeping track of which symbols correspond to
@@ -486,3 +486,8 @@ class SurfaceSpeciesManager(SpeciesManager):
     # sp = make_species
     # get = symbol_from_name
     # __getitem__ = species_from_symbol
+
+
+class SurfaceSpeciesManager(SpeciesManager):
+
+    _species_cls = SurfaceSpecies
