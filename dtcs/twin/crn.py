@@ -27,8 +27,11 @@ Example:
 from __future__ import annotations
 
 from typing import Dict, List, Tuple, Union, Optional
-import bisect
 
+import bisect
+import os
+
+from IPython import display
 from matplotlib import pyplot as plt
 import monty.json
 import numpy as np
@@ -431,7 +434,7 @@ class SurfaceCRNTimeSeries(CRNTimeSeries):
             frames_dir: str = 'frames',  # TODO(Andrew) option to delete when done?
             video_dir: str = 'video',
     ):
-        scrn_video.make_scrn_video(
+        output_path = scrn_video.make_scrn_video(
             scrn=self,
             run=run,
             frames_per_timestep=frames_per_timestep,
@@ -439,6 +442,13 @@ class SurfaceCRNTimeSeries(CRNTimeSeries):
             output_dir=frames_dir,
         )
 
+        print(f'Wrote to {os.path.relpath(output_path)}')
+        return display.HTML(
+            f'<div align="middle">' +
+            f'<video width="80%" controls>' +
+            f'<source src="{os.path.relpath(output_path)}" type="video/mp4">' +
+            f'</video></div>'
+        )
         # TODO(Andrew): Print "saved @ directory"
         #  - also embed in iPython
 

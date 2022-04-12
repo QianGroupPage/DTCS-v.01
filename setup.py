@@ -53,40 +53,41 @@ data_files = [(dir_name, files) for dir_name, files in mapping.items()]
 
 # --- Setup ------------------------------------------------------------------
 if __name__ == '__main__':
-    setuptools.setup(name='dtcs',
-                     version=__version__,
-                     packages=setuptools.find_packages(),
-                     package_data={'dtcs': ['resources/*.csv',
-                                              'tables/data',
-                                              'tables/mechanisms/data']},
-                     data_files=data_files,
-                     install_requires=[
-                         # Misc.
-                         'sympy',
-                         # Data Science
-                         'numpy',
-                         'pandas',
-                         'matplotlib',
-                         # 'seaborn',
-                         'scipy',
-                         'sklearn',
-                         # Utilities
-                         'click',
-                     ],
-                     requires=[
-                         # Misc.
-                         'jupyter',
+    setuptools.setup(
+        name='dtcs',
+        version=__version__,
+        packages=setuptools.find_packages(),
+        package_data={'dtcs': ['resources/*.csv',
+                               'tables/data',
+                               'tables/mechanisms/data']},
+        data_files=data_files,
+        install_requires=[
+         # Misc.
+         'sympy',
+         # Data Science
+         'numpy',
+         'pandas',
+         'matplotlib',
+         # 'seaborn',
+         'scipy',
+         'sklearn',
+         # Utilities
+         'click',
+        ],
+        requires=[
+         # Misc.
+         'jupyter',
 
-                         # Materials Project
-                         'atomate',
-                         'gpcam',
+         # Materials Project
+         'atomate',
+         'gpcam',
 
-                         # Other Chemistry
-                         'ase',
+         # Other Chemistry
+         'ase',
 
-                         # Utilities
-                         'pygame',
-                         'ffmpeg',
-                     ],
-                     long_description=readme,
-                     )
+         # Utilities
+         'pygame',
+         'opencv-python',
+        ],
+        long_description=readme,
+    )

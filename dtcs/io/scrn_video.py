@@ -22,9 +22,10 @@ import logging
 _logger = logging.getLogger(__name__)
 
 import os
-import numpy as np
 
 import cv2
+import numpy as np
+
 
 MOVIE_SUBDIRECTORY = 'movies'
 FRAME_SUBDIRECTORY = 'frames'
@@ -103,20 +104,21 @@ def _make_imgbuf_from_plot(
 
 def _make_video(frames, display_size, fps):
 
-    out = cv2.VideoWriter(
-        filename='output.avi',
-        fourcc=cv2.VideoWriter_fourcc(*'MJPG'),
-        fps=fps,
-        frameSize=display_size,
-    )
+    try:
+        out = cv2.VideoWriter(
+            filename='output.mp4',
+            fourcc=cv2.VideoWriter_fourcc(*'LMP4'),
+            fps=fps,
+            frameSize=display_size,
+        )
 
-    for filename in frames:
-        img = cv2.imread(filename)
-        out.write(img)
+        for filename in frames:
+            img = cv2.imread(filename)
+            out.write(img)
+    finally:
+        out.release()
 
-    print(f'Saved Video: output.mp4')
-
-    out.release()
+    return os.path.abspath('output.mp4')
 
 
 def make_scrn_video(
@@ -286,7 +288,7 @@ def make_scrn_video(
             state = reaction.rule.outputs[index]
             cell.state = state
 
-    _make_video(frame_filepaths, (display_width, display_height), 2)
+    return _make_video(frame_filepaths, (display_width, display_height), 2)
 
 
 # from dtcs.sim.surface_crn.surface_crns.SurfaceCRNQueueSimulator import display_next_event
