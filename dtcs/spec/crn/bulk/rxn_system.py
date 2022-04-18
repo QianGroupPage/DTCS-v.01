@@ -5,10 +5,9 @@ from collections import defaultdict
 from typing import Tuple, List, Dict, Optional, Callable
 
 import monty.json
-import networkx as nx
+# import networkx as nx
 import sympy as sym
 import numpy as np
-from IPython.core import display
 
 #from jupyter_dash import JupyterDash
 #import dash_cytoscape as cyto
@@ -18,7 +17,7 @@ from IPython.core import display
 
 import dtcs
 from dtcs.common import util
-from dtcs.common import color_to_RGB, generate_new_color
+from dtcs.common.colors.color_gradient import color_to_HEX, color_to_RGB
 from dtcs.spec.crn.bulk import conditions
 from dtcs.spec.crn.bulk.conditions import ConcEq, ConcDiffEq, Term, Schedule, Conc
 from dtcs.spec.crn.bulk.reaction import BulkRxn, BulkRevRxn
@@ -433,6 +432,13 @@ class BulkRxnSystem(RxnSystemABC):
 
     def display_ode_expressions(self):
         """TODO"""
+        try:
+            from IPython.core import display
+        except ModuleNotFoundError:
+            warnings.warn('BulkRxnSystem.display_ode_expressions requires '
+                          'IPython.')
+            return
+
         time = sym.symbols('t')
         diffs = self.get_ode_expressions()
         symbols = self.get_symbols_ordered()

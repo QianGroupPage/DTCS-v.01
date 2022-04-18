@@ -31,7 +31,6 @@ from typing import Dict, List, Tuple, Union, Optional
 import bisect
 import os
 
-from IPython import display
 from matplotlib import pyplot as plt
 import monty.json
 import numpy as np
@@ -443,14 +442,17 @@ class SurfaceCRNTimeSeries(CRNTimeSeries):
         )
 
         print(f'Wrote to {os.path.relpath(output_path)}')
-        return display.HTML(
-            f'<div align="middle">' +
-            f'<video width="80%" controls>' +
-            f'<source src="{os.path.relpath(output_path)}" type="video/mp4">' +
-            f'</video></div>'
-        )
-        # TODO(Andrew): Print "saved @ directory"
-        #  - also embed in iPython
+        try:
+            from IPython import display
+
+            return display.HTML(
+                f'<div align="middle">' +
+                f'<video width="80%" controls>' +
+                f'<source src="{os.path.relpath(output_path)}" type="video/mp4">' +
+                f'</video></div>'
+            )
+        except ModuleNotFoundError:
+            return
 
     def as_dict(self):
         raise NotImplementedError()

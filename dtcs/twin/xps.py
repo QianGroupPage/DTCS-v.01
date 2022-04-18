@@ -34,12 +34,10 @@ import pandas as pd
 from scipy import integrate
 from scipy import optimize
 from scipy import stats
-from sklearn import metrics
 import sympy as sym
 
 import dtcs
 from dtcs.io import xps as xps_io
-from dtcs.spec.xps import XPSSpecies
 from dtcs.spec.model_input.relations import TPRateRelation
 from dtcs.twin import twin_abc
 from dtcs.spec import species
@@ -571,12 +569,10 @@ class XPSObservable(monty.json.MSONable):
     # --- Data Analysis ------------------------------------------------------
 
     def rmse(self):
-        return np.sqrt(metrics.mean_squared_error(self.exp_raw,
-                                                  self.sim_envelope))
+        return np.sqrt(((self.exp_raw - self.sim_envelope) ** 2).mean())
 
     def mae(self):
-        return metrics.mean_absolute_error(self.exp_raw,
-                                           self.sim_envelope)
+        return np.sqrt((np.abs(self.exp_raw - self.sim_envelope)).mean())
 
     def correl(self):
         # TODO(Andrew): Move the following logic into a function somewhere,

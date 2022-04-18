@@ -1,6 +1,14 @@
-from IPython.display import clear_output
+
 import os
 import sys
+import warnings
+
+try:
+    from IPython.display import clear_output
+except ModuleNotFoundError:
+    raise ModuleNotFoundError('IPython required to use '
+                              'dtcs.common.ipython_visuals, use'
+                              '`pip install ipython`')
 
 def update_progress(progress, header="Progress", beginning=False, terminating=False):
     # https://www.mikulskibartosz.name/how-to-display-a-progress-bar-in-jupyter-notebook/

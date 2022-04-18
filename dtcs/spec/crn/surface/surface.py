@@ -18,7 +18,8 @@ import itertools
 
 import sympy as sym
 
-from dtcs.common import color_to_RGB, util
+from dtcs.common import util
+from dtcs.common.colors.color_gradient import color_to_RGB
 from dtcs.common.num_to_word import num2word
 from dtcs.sim.surface_crn.connectivity.triangulation import grid_size, show_triangulation
 from dtcs.sim.surface_crn.connectivity.voronoi import fold_numbers, produce_voronoi

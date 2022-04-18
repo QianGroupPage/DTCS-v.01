@@ -62,32 +62,31 @@ if __name__ == '__main__':
                                'tables/mechanisms/data']},
         data_files=data_files,
         install_requires=[
-         # Misc.
-         'sympy',
-         # Data Science
-         'numpy',
-         'pandas',
-         'matplotlib',
-         # 'seaborn',
-         'scipy',
-         'sklearn',
-         # Utilities
-         'click',
+            # Misc.
+            'sympy',
+            # Data Science
+            'numpy',
+            'pandas',
+            'matplotlib',
+            'scipy',
+            # Chemistry
+            'ase',
+            # Utilities
+            'click',
+            'monty',
         ],
-        requires=[
-         # Misc.
-         'jupyter',
-
-         # Materials Project
-         'atomate',
-         'gpcam',
-
-         # Other Chemistry
-         'ase',
-
-         # Utilities
-         'pygame',
-         'opencv-python',
-        ],
+        extras_require={
+            # Jupyter Notebook integration
+            'jupyter': [
+                'jupyter',
+            ],
+            # Materials Project-Adjacent
+            'matproj': ['atomate', 'gpcam'],
+            # Dependencies for making the Surface CRN video
+            'scrn-video': [
+                'pygame',
+                'opencv-python',
+            ],
+        },
         long_description=readme,
     )
