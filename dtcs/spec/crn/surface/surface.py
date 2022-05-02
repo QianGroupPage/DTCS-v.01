@@ -86,6 +86,7 @@ class Surface(Spec):
     def from_poscar(
             cls,
             poscar_file: str,
+            depth=1,
 
             name: Optional[str] = None,
             color: Color = None,
@@ -93,7 +94,10 @@ class Surface(Spec):
         if name is None:
             name = os.path.basename(poscar_file)
 
-        cg = CoordGrid.from_poscar(poscar_file)
+        cg = CoordGrid.from_poscar(
+            poscar_file,
+            ignore_threhold=depth,
+        )
 
         self = cls(
             name=name,
