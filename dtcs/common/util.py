@@ -1,8 +1,10 @@
+from typing import Union
+
+import functools
 import itertools
+import importlib
 import re
 import string
-
-from typing import Union
 import warnings
 
 import pandas as pd
@@ -99,8 +101,54 @@ def flat(lst: Union[list, tuple]):
         else:
             yield item
 
+# --- Function Decorators -----------------------------------------------------
 def depreciate(func):
+    @functools.wraps(func)
     def depr_func(*args, **kwargs):
         warnings.warn(f'Depreciated function {func.__module__}.{func.__name__}', DeprecationWarning)
         return func(*args, **kwargs)
     return depr_func
+
+
+EXTRAS = {
+    'jupyter': [
+        'jupyter',
+    ],
+
+    'matproj': ['atomate', 'gpcam', 'tesfew'],
+
+    'scrn-video': [
+        'pygame',
+        'opencv-python',
+    ],
+}
+
+@functools.lru_cache(maxsize=128)
+def _missing_dependency(extra):
+    for module in EXTRAS[extra]:
+        try:
+            importlib.import_module(module)
+        except ModuleNotFoundError:
+            return module
+    return False
+
+
+def feature(extra, error=False):
+    if extra not in EXTRAS:
+        raise ValueError(f'{extra} is not a dtcs extra feature.')
+
+    def requires_decorator(func):
+        @functools.wraps(func)
+        def decorated_func(*args, **kwargs):
+            module = _missing_dependency(extra)
+            if module:
+                msg = f'Missing module \'{module}\'; '
+                f'this function requires extra dependency \'{extra}\', '
+                f'try `pip install dtcs[{extra}]`.'
+                if error: raise ModuleNotFoundError(msg)
+                else: warnings.warn(msg)
+                return
+
+            return func(*args, **kwargs)
+        return decorated_func
+    return requires_decorator

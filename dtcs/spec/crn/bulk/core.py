@@ -118,3 +118,8 @@ class BulkCRNSpec(CRNSpecABC):
         )
 
         return xps
+
+    def compute_kvals(self, exp_data, **options):
+        pass
+        # self.rsys.subs_rates
+        # "111O1S100mTorr.TXT"

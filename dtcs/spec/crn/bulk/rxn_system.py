@@ -9,6 +9,10 @@ import monty.json
 import sympy as sym
 import numpy as np
 
+# Optional Imports
+try: from IPython.core import display
+except ModuleNotFoundError: display = None
+
 #from jupyter_dash import JupyterDash
 #import dash_cytoscape as cyto
 #import dash_html_components as html
@@ -17,6 +21,7 @@ import numpy as np
 
 import dtcs
 from dtcs.common import util
+from dtcs.common.util import feature
 from dtcs.common.colors.color_gradient import color_to_HEX, color_to_RGB
 from dtcs.spec.crn.bulk import conditions
 from dtcs.spec.crn.bulk.conditions import ConcEq, ConcDiffEq, Term, Schedule, Conc
@@ -430,14 +435,9 @@ class BulkRxnSystem(RxnSystemABC):
     #
     #     return True, ""
 
+    @feature('jupyter')
     def display_ode_expressions(self):
         """TODO"""
-        try:
-            from IPython.core import display
-        except ModuleNotFoundError:
-            warnings.warn('BulkRxnSystem.display_ode_expressions requires '
-                          'IPython.')
-            return
 
         time = sym.symbols('t')
         diffs = self.get_ode_expressions()
