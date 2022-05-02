@@ -16,6 +16,7 @@ from dtcs.sim.surface_crn.surface_crns.readers.manifest_readers import read_mani
 from dtcs.sim.surface_crn.surface_crns.options.option_processor import SurfaceCRNOptionParser
 from dtcs.sim.surface_crn.surface_crns.models.grids import SquareGrid
 from dtcs.sim.surface_crn.hex_grid_with_intersect import HexGridPlusIntersections
+from dtcs.sim.surface_crn.surface_crns.models.coord_grid import CoordGrid
 from dtcs.sim.surface_crn.scrn import simulate_scrn_single_nodisplay
 
 from dtcs.twin.crn import SurfaceCRNTimeSeries
@@ -32,7 +33,7 @@ class SurfaceCRNSpec(CRNSpecABC):
                  rsys: SurfaceRxnSystem = None,
                  species: SpeciesManager = None,
                  surface: Surface = None,
-                 size=(10, 10),
+                 size=None,
                  time: int = 10,
                  runs: int = 1,
                  #rng_seed: Optional[int] = None,
@@ -53,7 +54,7 @@ class SurfaceCRNSpec(CRNSpecABC):
 
         # TODO(Andrew): Bodges
         self.rsys.surface = surface
-        self.surface.size = size
+        self.surface.size = size or (10, 10)
 
         # TODO(Andrew): Use _get_opts_via_manifest?
         manifest = generate_manifest_stream(
@@ -188,6 +189,9 @@ class SurfaceCRNSpec(CRNSpecABC):
             elif surface.structure == 'hexagon':
                 init_surface = HexGridPlusIntersections(*self.size)
                 init_surface.set_global_state(*init_surface_state)
+            elif surface.structure == 'voronoi':
+                init_surface = copy.copy(self.surface._cg)
+                init_surface.set_global_state(init_surface_state)
             else:
                 assert False, 'We need an initial surface'
 

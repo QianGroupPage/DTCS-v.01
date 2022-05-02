@@ -48,7 +48,7 @@ class CoordGridDisplay(object):
         self.fig_dpi = 100
 
         self.recalculate_display_sizes()
-        print(self.display_width, self.display_height)
+        # print(self.display_width, self.display_height)
 
     def recalculate_display_sizes(self):
 

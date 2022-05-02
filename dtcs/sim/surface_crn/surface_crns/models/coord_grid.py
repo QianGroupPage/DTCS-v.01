@@ -318,6 +318,9 @@ class CoordGrid(object):
             self._number_grid()
         return self.id_to_node[node_id]
 
+    # TODO(Andrew): Needed for compatibility
+    get_node_by_id = _get_node
+
     def clear_timestamps(self):
         """
         Set the timestamps of all nodes in the grid to 0.

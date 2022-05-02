@@ -10,11 +10,13 @@ Dr. Jin Qian, Domas Buracas, Andrew Bogdan, Rithvik Panchapakesan, Ye Wang
 # *** Libraries ***
 from __future__ import annotations
 
-from typing import List, Tuple, Union, Dict
+from typing import List, Tuple, Union, Dict, Optional
 from dtcs.common.type_alias import SpeciesName, SiteName
 
-import random
+import collections
 import itertools
+import os
+import random
 
 import sympy as sym
 
@@ -23,6 +25,7 @@ from dtcs.common.colors.color_gradient import color_to_RGB
 from dtcs.common.num_to_word import num2word
 from dtcs.sim.surface_crn.connectivity.triangulation import grid_size, show_triangulation
 from dtcs.sim.surface_crn.connectivity.voronoi import fold_numbers, produce_voronoi
+from dtcs.sim.surface_crn.surface_crns.models.coord_grid import CoordGrid
 from dtcs.spec.spec_abc import Spec
 from dtcs.common.colors import color_map
 
@@ -38,17 +41,22 @@ class Surface(Spec):
     A surface structure, by default, it is square with only top sites.
     """
 
-    valid_structures = ['rectangle', 'hexagon']
+    valid_structures = ['rectangle', 'hexagon', 'voronoi']
 
     def __init__(self,
                  name: str,
-                 # size: Tuple[int] = (10, 10), TODO(Andrew) you _should_ be able to supply this, just preffered later
+                 # size: Tuple[int] = (10, 10), TODO(Andrew) you _should_ be able to supply this, just preferred later
                  structure: str = 'rectangle',
                  color: Color = None,
-                 poscar_file: str = '',
+                 _cg: Optional[CoordGrid] = None,
+                 # poscar_file: str = '',
                  # supercell_dimensions=1,
                  # surface_depth=1,
-                 description=''):
+                 # description=''
+                 ):
+        assert (_cg is None) == (structure != 'voronoi'), \
+            '_voronoi should only be specified with voronoi structure.'
+
         self.name = name
         # self.size = size
         self.structure = structure
@@ -62,9 +70,12 @@ class Surface(Spec):
             self.color = color
 
         if self.structure not in self.valid_structures:
-            raise Exception(f'Structure {structure} is not allowed.\n\n' +
-                            f'The only allowed sites are ' +
-                            ' '.join(self.valid_structures))
+            raise ValueError(f'Structure {structure} is not allowed.\n\n' +
+                             f'The only allowed sites are ' +
+                             ' '.join(self.valid_structures))
+        elif self.structure == 'voronoi':
+            assert _cg is not None, 'It should be non-None by now.'
+            self._cg = _cg
 
         self._make_sites()
 
@@ -72,22 +83,33 @@ class Surface(Spec):
         super().__init__(name)
 
     @classmethod
-    def from_poscar(cls, poscar):
-        raise NotImplementedError()
-        # This surface is based on a POSCAR file.
-        self.structure = 'poscar'
-        if poscar:
-            self.use_coord_grid = True
-            self.poscar = poscar
-            self.supercell_dimensions = supercell_dimensions
-            self.surface_depth = surface_depth
-            self.default_names = {}
+    def from_poscar(
+            cls,
+            poscar_file: str,
 
-            _, points = show_triangulation(poscar_file)
-            self.vor = produce_voronoi(points)
+            name: Optional[str] = None,
+            color: Color = None,
+    ):
+        if name is None:
+            name = os.path.basename(poscar_file)
 
-            # a dummy variable for coord_grid's 2-d size
-            size = grid_size(points)
+        cg = CoordGrid.from_poscar(poscar_file)
+
+        self = cls(
+            name=name,
+            structure='voronoi',
+            color=color,
+            _cg=cg,
+        )
+
+        return self
+        # self.use_coord_grid = True
+        # self.poscar = poscar
+        # self.supercell_dimensions = supercell_dimensions
+        # self.surface_depth = surface_depth
+        # self.default_names = {}
+
+        # a dummy variable for coord_grid's 2-d size
 
     # def set_initial_concentrations(self, species):
     #     self.initial_species = species
@@ -96,10 +118,8 @@ class Surface(Spec):
     #     self.default_names[site_name] = species_name
 
     def _make_sites(self):
-        if self.structure == 'poscar':
-            # TODO: do we always have two fold sites?
-            sites = ['top', 'twofold'] + [f'{num2word(num)}fold' for num in fold_numbers(self.vor)]
-            # return self.coord_grid.fold_names
+        if self.structure == 'voronoi':
+            sites = self._cg.fold_names
         elif self.structure == 'rectangle':
             sites = ['top']
         elif self.structure == 'hexagon':
@@ -114,11 +134,18 @@ class Surface(Spec):
 
     def make_state(self,
                    coverage_info: Dict[SiteName, (SpeciesName, float)],
-                   size: Tuple[int, int] = (10, 10)):
+                   size: Tuple[int, int] = None):
         if self.structure == 'rectangle':
+            if size is None: size = (10, 10)
             return self._make_state_rectangle(coverage_info, size)
         elif self.structure == 'hexagon':
+            if size is None: size = (10, 10)
             return self._make_state_hexagon(coverage_info, size)
+        elif self.structure == 'voronoi':
+            if size is not None:
+                raise ValueError('You can\'t supply a size and use voronoi '
+                                 'structure.')
+            return self._make_state_voronoi(coverage_info)
         assert False, 'Unreachable'
 
     def _make_state_rectangle(self, coverage_info, size):
@@ -210,6 +237,21 @@ class Surface(Spec):
         #         n.state = species[k][i]
         #
         # return surface
+
+    def _make_state_voronoi(self, coverage_info):
+        sites = {
+            getattr(self, fold_name).name: [node.node_id for node in nodes]
+            for fold_name, nodes in self._cg.nodes_by_fold_name.items()
+        }
+
+        sites_map = {}
+        for site_name, site_list in sites.items():
+            sites_map.update(self._cover_sites(
+                sites=site_list,
+                default=site_name,
+                coverages=coverage_info[site_name]
+            ))
+        return sites_map
 
     @staticmethod
     def _cover_sites(sites: List,

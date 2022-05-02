@@ -7,6 +7,7 @@ venv
 dist/
 .DS_Store
 doc/build
+TODO.md
 
 # Credit to https://github.com/github/gitignore
 

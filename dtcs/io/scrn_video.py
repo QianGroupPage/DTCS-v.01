@@ -65,7 +65,7 @@ def _get_surface_display(surface, init_surface, opts, display_class=None):
     elif opts.grid_type == 'standard':
         if display_class:
             DisplayClass = display_class
-        elif surface.structure == 'voroni':
+        elif surface.structure == 'voronoi':
             DisplayClass = CoordGridDisplay
         elif surface.structure == 'hexagon':
             DisplayClass = HexGridPlusIntersectionDisplay
