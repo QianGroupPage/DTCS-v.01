@@ -196,8 +196,9 @@ class CRNTimeSeries(twin_abc.Experiment):
                 species[i] = sym.Symbol(name)
             specie = species[i]
             self.df[specie].plot(ax=ax, color=color_map[specie], **kwargs)
+            ax.legend()
 
-    # --- Utility -------------------------------------------------------------
+# --- Utility -------------------------------------------------------------
 
     def _time_to_index(self, time):
         """Takes a time and returns the highest index <= that time.
