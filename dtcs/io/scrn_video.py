@@ -198,7 +198,12 @@ def make_scrn_video(
         display_height = max(display_height, plot_ypos + plot_height)
 
     # --- Initialize PyGame Canvas --------------------------------------------
-    display_surface = pygame.display.set_mode((display_width, display_height), 0, 32)
+    display_surface = pygame.Surface(
+        (display_width, display_height),
+        flags=0,
+        depth=32,
+    )
+    # display_surface = pygame.display.set_mode((display_width, display_height), 0, 32)
     simulator.display_surface = display_surface
 
     display_surface.fill(WHITE)
@@ -272,8 +277,8 @@ def make_scrn_video(
             )
 
             # Do all the updating before outputting
-            pygame.display.update()
-            pygame.display.flip()
+            # pygame.display.update()
+            # pygame.display.flip()
 
             # Save the frame
             filepath = os.path.join(frames_dir, f'frame_t{frame_time}.png')
