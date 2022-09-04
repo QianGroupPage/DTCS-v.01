@@ -1093,9 +1093,9 @@ class XPSExperiment(twin_abc.Experiment, XPSObservable):
             columns.extend(sim_cols)
         if experimental:
             columns.append(self._EXP_RAW)
-            # Gas phase and decontaminate will clean up the raw experimental.
-        if gas_interval or decontaminate:
             columns.append(self._EXP_CLEAN)
+        # # Gas phase and decontaminate will clean up the raw experimental.
+        # if gas_interval or decontaminate:
         if gas_phase:
             columns.append(self._GAS_PHASE)
         if decontaminate or contaminate:
@@ -1116,7 +1116,7 @@ class XPSExperiment(twin_abc.Experiment, XPSObservable):
                 sim_concs_used = {specie: conc for specie, conc in
                                   sim_concs.items() if specie in sim_species}
                 _logger.echo(f'Simulating XPS experiment for species with '
-                           f'concentrations {sim_concs_used}...')
+                             f'concentrations {sim_concs_used}...')
             for sim_col in sim_cols:
                 # sim_col is a tuple (self._SIMULATED, specie)
                 sim_specie = sim_col[1]
@@ -1131,7 +1131,7 @@ class XPSExperiment(twin_abc.Experiment, XPSObservable):
 
         if experimental:
             _logger.echo(f'Processing experimental data...')
-            df[self._EXP_RAW] = exp_data
+            df[self._EXP_CLEAN] = exp_data
             if self._EXP_CLEAN in df:
                 df[self._EXP_CLEAN] = exp_data.copy()
 
@@ -1260,6 +1260,7 @@ class XPSExperiment(twin_abc.Experiment, XPSObservable):
             lsq_sol, residuals, _, _ = np.linalg.lstsq(
                 a=np.asarray([sim_envelope]).T,  # coefficient matrix, A
                 b=exp_envelope,  # goal vector, b
+                rcond=-1,
             )  # This should do argmin_x(|Ax-b|^2), which is 1-dimensional least squares (x is a 1-by-1 matrix)
 
             scale_factor = lsq_sol[0]

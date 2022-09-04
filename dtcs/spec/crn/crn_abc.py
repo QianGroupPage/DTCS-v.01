@@ -8,6 +8,7 @@ import sympy as sym
 from dtcs.spec.crn.sym_abc import SymSpec
 from dtcs.spec.crn.rxn_abc import RxnSystemABC
 from dtcs.spec.species import SpeciesManager
+from dtcs.gp import evaluate
 
 
 # TODO(Andrew) move this to abc
@@ -68,6 +69,16 @@ class CRNSpecABC(SymSpec):
         crn = copy.deepcopy(self)
         crn.rsys = self.rsys.subs_rates(rates)
         return crn
+
+    def fit_rates(self, iterations, experimental, ignore):
+        """TODO(Andrew)"""
+        instrumentation = evaluate(
+            crn=self,
+            experimental=experimental,
+            iterations=iterations,
+            ignore=ignore,
+        )
+        return self.subs_rates(instrumentation.constants)
 
     def calc_rates(self):
         raise NotImplementedError()
