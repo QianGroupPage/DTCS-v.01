@@ -27,7 +27,7 @@ _DATA_FILES_PATH = sys.prefix + '/dtcs/'
 __version__ = '0.1.4/2022-05-02'
 
 # Enable depreciation warnings
-warnings.filterwarnings('ignore', category=DeprecationWarning,
+warnings.filterwarnings('default', category=DeprecationWarning,
                         module='dtcs')
 
 from dtcs._logger import dtcs_echo_on, dtcs_echo_off
