@@ -38,6 +38,7 @@ import sympy as sym
 
 import dtcs
 from dtcs.io import xps as xps_io
+from dtcs.sim.xps import _PLOT_MARGIN, _PLOT_RESOLUTION, _SIGMA, _NOISE_MAX
 from dtcs.spec.model_input.relations import TPRateRelation
 from dtcs.twin import twin_abc
 from dtcs.spec import species
@@ -45,10 +46,6 @@ from dtcs.common import util
 from dtcs import _logger
 CRNTimeSeries: TypeAlias = 'CRNTimeSeries'
 
-_PLOT_MARGIN = 5
-_PLOT_RESOLUTION = 0.001
-_SIGMA = 0.75 * np.sqrt(2) / (np.sqrt(2 * np.log(2)) * 2)
-_NOISE_MAX = 0.005 # A proportion of the maximum value that will form the upper bound for added noise.
 
 _REQUIRED = 'required'
 _OPTIONAL = 'optional'
@@ -1221,7 +1218,7 @@ class XPSExperiment(twin_abc.Experiment, XPSObservable):
 
         if augment:
             m = max(df[self._SIM_ENV])
-            df[self._SIM_ENV] += (_NOISE_MAX*m)*np.random.normal(0,1,len(df[self._SIM_ENV]))
+            df[self._SIM_ENV] += (_NOISE_MAX * m) * np.random.normal(0, 1, len(df[self._SIM_ENV]))
 
         return df, scale_factor, deconv_concs, contam_concs
 
