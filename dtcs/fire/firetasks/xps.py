@@ -15,7 +15,7 @@ import numpy as np
 from sympy import Symbol
 
 from dtcs import dtcs_echo_on
-from dtcs.spec.crn.species import SpeciesManager, Orbital
+from dtcs.spec.xps import XPSSpeciesManager, XPSOrbital
 from dtcs.twin.xps import XPSExperiment
 
 __author__ = 'Andrew Bogdan'
@@ -48,11 +48,11 @@ class SimulateXPS(FiretaskBase):
 
         # TODO: This part is a bodge as there's a formatting discrepancy
         # species
-        sm = SpeciesManager()
+        sm = XPSSpeciesManager()
         for name, species in species_raw.items():
             orbitals = []
             for orbital in species['orbitals']:
-                orbitals.append(Orbital(
+                orbitals.append(XPSOrbital(
                     name=orbital['name'],
                     binding_energy=orbital['binding_energy'],
                     splitting=orbital.get('splitting', 1.0)

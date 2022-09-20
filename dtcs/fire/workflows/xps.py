@@ -23,8 +23,8 @@ __email__ = 'andrewbogdan@lbl.gov'
 
 def get_wf_simulate_xps(  # TODO(Andrew) Typehints
         surface_species,
-        xps_spec=None,
         crn_spec=None,
+        xps_spec=None,
         vasp_cmd=VASP_CMD,
         db_file=DB_FILE,
 ):
@@ -49,16 +49,17 @@ def get_wf_simulate_xps(  # TODO(Andrew) Typehints
      interpret. I'm going to KISS this for now, though.
 
     Specification Schema:
+        TODO: surface_species should be a SpeciesManager, no ?
         surface_species: a list of dicts as with keys:
             name (str): Used for identification.
             orbitals (dict): A dict of '<orbital name>': <binding energy>. Either
                 give this or give a structure and incar to have VASP generate it.
             structure: TODO
             incar: TODO
-        xps_spec:
-            TODO: see XPSExperiment
         crn_spec:
             TODO
+        xps_spec:
+            TODO: see XPSExperiment
 
     The dependency structure is:
     A -> B -> D <- C

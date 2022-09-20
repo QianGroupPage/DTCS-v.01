@@ -9,7 +9,7 @@ from atomate.common.firetasks.glue_tasks import PassCalcLocs
 from atomate.utils.utils import get_logger
 from fireworks import Firework
 
-from dtcs.spec.crn.crn_eni import RxnSystem
+from dtcs.spec.crn.rxn_abc import RxnSystemABC
 from dtcs.fire.firetasks.crn import BulkCRNSim
 from dtcs.fire.firetasks.parse_outputs import MsonToDb
 
@@ -26,7 +26,7 @@ class CRNSimulateFW(Firework):  # TODO: Move this out of the vasp subpackage.
 
     def __init__(
             self,
-            reaction_system: RxnSystem,
+            reaction_system: RxnSystemABC,
             sim_type: str = 'bulk',
             sim_options: Optional[dict] = None,
             name: Optional[str] = None,
