@@ -422,23 +422,82 @@ class SurfaceCRNTimeSeries(CRNTimeSeries):
 
         return self_df
 
+    @staticmethod
+    def _video_plot(scts, run, time,
+                    res_x=400, figsize=(8, 12)):
+
+        fig, (ax1, ax2) = plt.subplots(
+            2, 1,
+            figsize=figsize,
+            dpi=res_x // figsize[0],
+        )
+
+        scts.xps_with(
+            run=run,
+            t=time,
+        ).plot(ax=ax1)
+
+        scts.plot(ax=ax2)
+
+        return fig
+
+    def make_image(
+            self,
+            run: int = 0,
+            time: int = -1,
+
+            plot: Union[bool, callable] = True,
+            plot_kwargs: Optional[dict] = None,
+
+            img_dir: str = '.',
+    ):
+        # Default plotting function
+        if plot and not callable(plot):
+            plot = self._video_plot
+
+        # Make the image
+        output_path = scrn_video.make_scrn_image(
+            scrn=self,
+            run=run,
+            time=time,
+
+            plot=plot,
+            plot_kwargs=plot_kwargs,
+
+            output_dir=img_dir,
+        )
+
+        print(f'Wrote to {os.path.relpath(output_path)}')
+        try:
+            from IPython.display import Image
+
+            return Image(filename=output_path)
+        except ModuleNotFoundError:
+            return
+
+
     def make_video(
             self,
             run: int = 0,
 
             frames_per_timestep=10,
 
-            plot: Union[bool, callable] = False,
-            plot_func=None,  # TODO: An optional function to plot something
+            plot: Union[bool, callable] = True,
+            plot_kwargs: Optional[dict] = None,
 
             frames_dir: str = 'frames',  # TODO(Andrew) option to delete when done?
             video_dir: str = 'video',
     ):
+        # Default plotting function
+        if plot and not callable(plot):
+            plot = self._video_plot
+
         output_path = scrn_video.make_scrn_video(
             scrn=self,
             run=run,
             frames_per_timestep=frames_per_timestep,
             plot=plot,
+            plot_kwargs=plot_kwargs,
             output_dir=frames_dir,
         )
 
