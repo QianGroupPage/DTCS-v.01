@@ -1,137 +1,158 @@
 """TODO"""
+from typing import Iterable
 
-#GENERAL IMPORTS
-# from dtcs import *
-# from gpcam import *
+import abc
+import logging
 
-#INSTRUMENTATION FUNCTION IMPORTS
-# import argparse
-# from datetime import datetime, timedelta
-# import json
-# import os
-# import random
-# import subprocess
-# import sys
-import scipy
-
-# from dtcs.io.xps import read_new_data
-# from dtcs.io.xps import read_new_data
-# from dtcs.io.storage import CRNStorage, CRNData
-
-#EVALUATION FUNCTION
-from gpcam.autonomous_experimenter import AutonomousExperimenterGP
-
-# import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import scipy
+
+from gpcam.autonomous_experimenter import AutonomousExperimenterGP
+
+from dtcs.spec.crn.rxn_abc import RevRxnABC
 
 
-#MAIN TEST IMPORTS
-# from dtcs.spec.crn.rxn_abc import *
-# from dtcs.spec.crn.bulk.rxn_system import *
-# from dtcs.spec.species import *
-# from dtcs.spec.xps import *
-# from dtcs.sim.bulk_crn.bulk_crn import *
-# from dtcs.spec.crn.bulk.reaction import BulkRxn as Rxn
-# from dtcs.spec.crn.bulk.core import BulkCRNSpec
+_logger = logging.getLogger(__name__)
 
 
-class CRNInstrumentation:
-    def __init__(self, crn, experimental, ignore):
-        # data = read_new_data(experimental_file_path)[0]
-        #
-        # intensities, bes = np.array([]), np.array([])
-        # for i, be in enumerate(data.binding_energies):
-        #     if be <= 540:
-        #         intensities = np.append(intensities, data.intensities[i])
-        #         bes = np.append(bes, be)
-        #
-        # series = pd.Series(data=intensities, index=bes)
+# --- Classes -----------------------------------------------------------------
+class GetRateInstrument:
 
+    def __init__(self, crn, fix_first=False, separate_revrxns=False):
+        """Initialize the virtual CRN instrument.
+
+        Args:
+            crn: The chemical reaction network.
+            fix_first: If True, the first rate will be fixed at the initial
+                value. Requires that you call get_init_position at some point.
+            separate_revrxns: True, False, or a list of True/False, describing
+                which reversible reactions should be considered to have two
+                independent rates, or just one rate.
+        """
+        self.crn = crn
+
+        # Record the first rate to keep it fixed.
+        self._fix_first = fix_first
+        self._fixed_rate = None
+
+        # Track which reversible reactions should be considered as two separate
+        #  rates to gpCAM (alternative to k, 1/k)
+        if separate_revrxns is True:
+            self._separate_revrxns = [isinstance(rxn, RevRxnABC)
+                                      for rxn in crn.rsys.reactions]
+        elif separate_revrxns is False:
+            self._separate_revrxns = [False] * len(crn.rsys.reactions)
+        elif isinstance(separate_revrxns, Iterable):
+            if any([separate and not isinstance(rxn, RevRxnABC)
+                    for rxn, separate in
+                    zip(crn.rsys.reactions, separate_revrxns)]):
+                raise ValueError('You specified to separate the rates of a '
+                                 'non-reversible reaction.')
+            self._separate_revrxns = separate_revrxns
+        else:
+            raise TypeError(f'Invalid value for separate_revrxns, '
+                            f'{separate_revrxns}, please supply a boolean or '
+                            f'list of booleans')
+
+        # Debug information
+        self._iter_count = 1
+
+        # Score tracking
+        self.best_score = float('-inf')
+        self.best_rates = None
+
+    def get_init_position(self):
+        """Get the initial position (rates) for gpCAM, in a flattened list."""
+        rates = self.crn.get_rates()
+        flat_rates = []
+        for rate, separate in zip(rates, self._separate_revrxns):
+            if isinstance(rate, Iterable):
+                if separate:
+                    flat_rates.extend(rate)
+                else:
+                    flat_rates.append(rate[0])
+            else:
+                flat_rates.append(rate)
+
+        # Set the fixed rate
+        if self._fix_first:
+            self._fixed_rate = flat_rates.pop(0)
+
+        return flat_rates
+
+    def inst_func(self, to_score_list):
+        """Evaluate possible rates, using our scoring method.
+
+        Args:
+            to_score_list: A list of dicts. The 'position' key is the rates
+                that gpCAM wants us to test, and we set the 'value' key with
+                our scoring.
+
+        Returns:
+            A dictionary matching the structure of rates_to_score, with the
+            'value' keys filled in.
+        """
+        _logger.info(f'Iteration #{self._iter_count}')
+        self._iter_count += 1
+
+        for to_score in to_score_list:
+            rates = self._pack(to_score['position'])
+            _logger.info(f'Rates: {rates}')
+
+            # Score the supplied rates
+            score = self.score(rates)
+            to_score['value'] = score
+            _logger.info(f'Score: {score}')
+
+            # Track if those rates are the best
+            if score > self.best_score:
+                self.best_score = score
+                self.best_rates = rates
+                _logger.info(f'Found new best!')
+
+        return to_score_list
+
+    @abc.abstractmethod
+    def score(self, rates) -> float:
+        """Assign the given rates a score, where positive is better."""
+        raise NotImplementedError()
+
+    def _pack(self, position: np.ndarray):
+        rates = list(position)
+        packed_rates = []
+
+        # Add the first fixed rate manually
+        if self._fix_first:
+            rates.insert(0, self._fixed_rate)
+
+        for rxn in self._separate_revrxns:
+            if rxn:
+                packed_rates.append((rates.pop(0), rates.pop(0)))
+            else:
+                packed_rates.append(rates.pop(0))
+        return packed_rates
+
+
+class DefaultInstrument(GetRateInstrument):
+    def __init__(self, crn, experimental, ignore,
+                 fix_first=False, separate_revrxns=False):
+        super().__init__(crn,
+                         fix_first=fix_first,
+                         separate_revrxns=separate_revrxns)
         self.exp_env = experimental.to_numpy()
         self.exp_be = experimental.index.to_numpy().astype(float)
-        self.crn = crn
-        self.rsys_generator = crn.subs_rates
         self.ignore = ignore
 
-        self.rmse_evolution = []
-        # Contains tuples of (constants, rmse).
-        # This list will be ordered in ascending order of rmse.
-        self.best_constants = []
-        # good constants
-        self.constants = []
-        # bulk list of simulated xps's I think
-        self.xpss = []
-
-        # user information
-        self.bestr2 = -1
-        self.bestxps = None
-        self.location = 0
-
-    def func(self):
-        def instrumentation(data):
-            calculated_rmses = []
-            c=0
-            if(len(data) < 15):
-                for instance in data:
-                    vals = instance['position']
-
-                    # scaled = [vals[0], vals[1], vals[2], 1/vals[2], vals[3], vals[4], vals[5], 1/vals[5], 1/vals[1], 1/vals[0], vals[6], 1/vals[6], vals[7], 1/vals[7]]
-                    scaled = vals
-
-                    xps, r_squared, rmse = simulate_and_compare(
-                        crn=self.crn,
-                        scaled=scaled,
-                        exp_env=self.exp_env,
-                        exp_be=self.exp_be,
-                        ignore=self.ignore
-                    )
-                    instance['value'] = r_squared
-
-                    if(r_squared > self.bestr2):
-                        self.bestr2 = r_squared
-                        self.bestxps = xps
-                        self.constants = scaled
-                        self.location=c
-
-                xps, r_squared, rmse = simulate_and_compare(
-                    crn=self.crn,
-                    scaled=scaled,
-                    exp_env=self.exp_env,
-                    exp_be=self.exp_be,
-                    ignore=self.ignore
-                )
-
-                print('RMSE: ' + str(rmse) + ', ' + 'r^2: ' + str(r_squared))
-                # self.rmse_evolution.append(min(calculated_rmses))
-            else:
-                instance = data[len(data)-1]
-                vals = instance['position']
-                #           0         1        2        3          4        5        6       7          8            9       10          11         12        13
-                # scaled = [vals[0], vals[1], vals[2], 1/vals[2], vals[3], vals[4], vals[5], 1/vals[5], 1/vals[1], 1/vals[0], vals[6], 1/vals[6], vals[7], 1/vals[7]]
-                scaled = vals
-
-                xps, r_squared, rmse = simulate_and_compare(
-                    crn=self.crn,
-                    scaled=scaled,
-                    exp_env=self.exp_env,
-                    exp_be=self.exp_be,
-                    ignore=self.ignore
-                )
-                instance['value'] = r_squared
-
-                if(r_squared > self.bestr2):
-                    self.bestr2 = r_squared
-                    self.bestxps = xps
-                    self.constants = scaled
-                    self.location = c
-
-                print('RMSE: ' + str(rmse) + ', ' + 'r^2: ' + str(r_squared))
-                # self.rmse_evolution.append(min(calculated_rmses))
-
-
-            return data
-        return instrumentation
+    def score(self, rates):
+        xps, r_squared, rmse = simulate_and_compare(
+            crn=self.crn,
+            scaled=rates,
+            exp_env=self.exp_env,
+            exp_be=self.exp_be,
+            ignore=self.ignore
+        )
+        return r_squared
 
 
 def kernel_l2_single_task(x1, x2, hyperparameters, obj):
@@ -212,23 +233,24 @@ def simulate_and_compare(crn, scaled, exp_env, exp_be, ignore):
     return xps, r_squared, rmse
 
 
-def evaluate(crn, experimental, iterations, ignore):
-    num_rates = len(crn.get_rates())
-    instrumentation = CRNInstrumentation(
+def evaluate(crn, inst_cls=DefaultInstrument, inst_args=None, iterations=100):
+    instrument = inst_cls(
         crn=crn,
-        experimental=experimental,
-        ignore=ignore,
+        **inst_args
     )
+    init_position = instrument.get_init_position()
 
-    hpbounds = [[0.001, 1000]] + [[0.1, 5000] for _ in range(num_rates)]
+    hpbounds = [[0.001, 1000]] + [[0.1, 5000] for _ in init_position]
     exp = AutonomousExperimenterGP(
-        parameter_bounds=np.array([[0.01, 100] for _ in range(num_rates)]),
-        instrument_func=instrumentation.func(),
-        hyperparameters=np.ones(num_rates + 1),
+        parameter_bounds=np.array([(val / 100, val * 100)
+                                   for val in init_position]),
+        instrument_func=instrument.inst_func,
+        hyperparameters=np.ones(len(init_position) + 1),
         hyperparameter_bounds=hpbounds,
         acq_func='ucb',
-        init_dataset_size=num_rates,
-        kernel_func=kernel_l2_single_task
+        x=np.asarray([init_position]),
+        #init_dataset_size=num_rates,
+        kernel_func=kernel_l2_single_task,
     )
 
     exp.train()
@@ -237,4 +259,4 @@ def evaluate(crn, experimental, iterations, ignore):
         acq_func_opt_setting=lambda number: 'global' if number % 2 == 0 else 'global',
    )
 
-    return instrumentation
+    return instrument

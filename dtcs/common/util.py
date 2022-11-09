@@ -101,6 +101,10 @@ def flat(lst: Union[list, tuple]):
         else:
             yield item
 
+def flatten(lst: Union[list, tuple]):
+    """Flatten a list/tuple of list/tuples."""
+    return list(flat(lst))
+
 # --- Function Decorators -----------------------------------------------------
 def depreciate(func):
     @functools.wraps(func)

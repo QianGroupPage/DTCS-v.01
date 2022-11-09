@@ -71,16 +71,15 @@ class CRNSpecABC(SymSpec):
 
     def fit_rates(self, iterations, experimental, ignore):
         """TODO(Andrew)"""
-        instrumentation = evaluate(
+        instrument = evaluate(
             crn=self,
-            experimental=experimental,
+            inst_args=dict(
+                experimental=experimental,
+                ignore=ignore,
+            ),
             iterations=iterations,
-            ignore=ignore,
         )
-        return self.subs_rates(instrumentation.constants)
-
-    def calc_rates(self):
-        raise NotImplementedError()
+        return self.subs_rates(instrument.best_rates)
 
     @property
     def symbol_index(self) -> Dict[sym.Symbol, int]:
