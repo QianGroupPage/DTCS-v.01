@@ -44,7 +44,7 @@ from dtcs.twin import xps
 
 from dtcs.common import util
 
-from dtcs.common.colors import color_map
+from dtcs.common.display import color_map
 
 BulkCRNSpec: TypeAlias = 'BulkCRNSpec'
 

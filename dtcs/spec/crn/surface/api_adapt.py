@@ -6,7 +6,7 @@ from dtcs.sim.surface_crn.surface_crns.readers.manifest_readers import read_mani
 from dtcs.spec.crn.bulk import Conc, RevRxn, Rxn, Schedule
 from dtcs.spec.crn.surface.reaction import SurfaceRevRxn, SurfaceRxn
 
-from dtcs.common.colors import color_map
+from dtcs.common.display import color_map
 
 
 def to_str(rule):

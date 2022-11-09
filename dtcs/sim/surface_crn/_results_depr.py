@@ -13,7 +13,7 @@ from IPython.display import HTML
 from scipy.stats import norm
 
 import dtcs.sim.surface_crn.xps as xps
-from dtcs.common.colors import color_map
+from dtcs.common.display import color_map
 from dtcs.common import color_to_HEX
 from dtcs.common.util import resample_by_skipping
 

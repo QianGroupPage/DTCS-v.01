@@ -50,10 +50,9 @@ class CRNSpecABC(SymSpec):
 
         if rsys_components:
             if self.rsys:
-                # They gave a rsys, so we can't create another
-                raise TypeError('Attempting to create a RxnSystem given these '
-                                'inputs, but you already supplied one.')
-            self.rsys = self._rxn_sys_cls(*rsys_components)
+                self.rsys.extend(rsys_components)
+            else:
+                self.rsys = self._rxn_sys_cls(*rsys_components)
 
     def get_symbols(self) -> Set[sym.Symbol]:
         return self.rsys.get_symbols()
