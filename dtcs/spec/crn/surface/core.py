@@ -5,7 +5,7 @@ from __future__ import annotations
 import collections
 import copy
 
-from dtcs.common.colors import color_map
+from dtcs.common.display import color_map
 from dtcs.spec.crn.surface.api_adapt import generate_manifest_stream, \
     _get_opts_via_manifest
 from dtcs.spec.crn.surface.conditions import Coverage

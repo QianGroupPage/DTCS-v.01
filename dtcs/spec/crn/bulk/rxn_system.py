@@ -22,7 +22,8 @@ except ModuleNotFoundError: display = None
 import dtcs
 from dtcs.common import util
 from dtcs.common.util import feature
-from dtcs.common.colors.color_gradient import color_to_HEX, color_to_RGB
+from dtcs.common.display import latex_map
+from dtcs.common.display.color_gradient import color_to_HEX, color_to_RGB
 from dtcs.spec.crn.bulk import conditions
 from dtcs.spec.crn.bulk.conditions import ConcEq, ConcDiffEq, Term, Schedule, Conc
 from dtcs.spec.crn.bulk.reaction import BulkRxn, BulkRevRxn
@@ -132,7 +133,7 @@ class BulkRxnSystem(RxnSystemABC):
     def get_ode_functions(self) -> Callable:
         """Return the ODE function with signature func(t, y) of the system."""
 
-        symbols = self.get_symbols_ordered()
+        symbols = self.species_symbols
         odes = self.get_ode_expressions()
         time = sym.symbols('t')
         conc_eq_funcs = self.get_conc_functions()
@@ -441,7 +442,7 @@ class BulkRxnSystem(RxnSystemABC):
 
         time = sym.symbols('t')
         diffs = self.get_ode_expressions()
-        symbols = self.get_symbols_ordered()
+        symbols = self.species_symbols
 
         eq_tuples = list(zip(symbols, diffs))
         eqs = []
@@ -449,8 +450,12 @@ class BulkRxnSystem(RxnSystemABC):
         for symbol, deriv in eq_tuples:
             eqs.append(sym.Eq(sym.Derivative(symbol, time), deriv,
                               evaluate=False))
+
+        # Display as concentrations
+        conc_subs = {symbol: sym.Symbol(f'[{latex_map[symbol]}]')
+                     for symbol in self.species_symbols}
         for eq in eqs:
-            display.display(eq)
+            display.display(eq.subs(conc_subs))
 
     @util.depreciate
     def text(self) -> str:

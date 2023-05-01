@@ -21,13 +21,13 @@ import random
 import sympy as sym
 
 from dtcs.common import util
-from dtcs.common.colors.color_gradient import color_to_RGB
+from dtcs.common.display.color_gradient import color_to_RGB
 from dtcs.common.num_to_word import num2word
 from dtcs.sim.surface_crn.connectivity.triangulation import grid_size, show_triangulation
 from dtcs.sim.surface_crn.connectivity.voronoi import fold_numbers, produce_voronoi
 from dtcs.sim.surface_crn.surface_crns.models.coord_grid import CoordGrid
 from dtcs.spec.spec_abc import Spec
-from dtcs.common.colors import color_map
+from dtcs.common.display import color_map
 
 from dtcs.sim.surface_crn.surface_crns.models.grids import *
 from dtcs.sim.surface_crn.surface_crns.views.grid_display import *

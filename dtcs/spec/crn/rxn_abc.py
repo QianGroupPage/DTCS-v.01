@@ -1,4 +1,8 @@
+""""""
+import math
 from typing import Optional, Set, Mapping, Dict, Tuple, List
+
+import logging
 import copy
 
 import sympy as sym
@@ -6,8 +10,12 @@ from monty.json import jsanitize, MontyDecoder
 from sympy.parsing import sympy_parser
 
 from dtcs.common import util
+from dtcs.common.display import latex_map
 from dtcs.spec.spec_abc import SpecCollection
 from dtcs.spec.crn.sym_abc import SymSpec, ChemInfo
+
+
+_logger = logging.getLogger(__name__)
 
 
 class RxnABC(SymSpec):
@@ -135,6 +143,13 @@ class RxnABC(SymSpec):
 
         return text[:-1]
 
+    def _repr_latex_(self) -> Optional[str]:
+        return '$' + latex_map.sym_subs(self.reactants) \
+               + r' \longrightarrow ' \
+               + latex_map.sym_subs(self.products) \
+               + r'\ \ @ k\! = \! ' + f'{self.rate_constant:.3f}' \
+               + '$'
+
     def __str__(self):
         return f'{self.reactants} -> {self.products} @ k={self.rate_constant}'
 
@@ -199,6 +214,22 @@ class RevRxnABC(RxnABC):
     def from_dict(cls, d: dict):
         d['k2'] = d.pop('rate_constant_reverse')
         return super(RevRxnABC, cls).from_dict(d)
+
+    def _repr_latex_(self) -> Optional[str]:
+        latex = '$' + latex_map.sym_subs(self.reactants) \
+               + r' \longleftrightarrow ' \
+               + latex_map.sym_subs(self.products) \
+               + r'\ \ @ k\! = \! ' + f'{self.rate_constant:.3f}' \
+
+        if not math.isclose(
+                self.rate_constant,
+                1 / self.rate_constant_reverse,
+                rel_tol=1e-3
+        ):
+            latex += r', k_-\! = \! ' + f'{self.rate_constant_reverse:.3f}' \
+
+        latex += '$'
+        return latex
 
     def __str__(self):
         return f'{self.reactants} <-> {self.products} ' \
@@ -344,11 +375,27 @@ class RxnSystemABC(SymSpec, SpecCollection):
 
     def insert(self, index, component):
 
-        start_index = len(self.symbol_index)
-        symbols = list(component.get_symbols())
+        if not isinstance(component, (RxnABC, ChemInfo)):
+            raise TypeError(f'Invalid component (positional argument) '
+                            f'type {component.__class__.__name__} for '
+                            f'{self.__class__.__name__}.')
+        if index != len(self.elements):
+            raise NotImplementedError('RxnSystem currently does not support'
+                                      'insertion.')
+        self.elements.append(component)
 
-        for index in range(len(symbols)):
-            self.symbol_index[symbols[index]] = index + start_index
+        # Remake self._species and the symbol index.
+        _logger.warning('Remaking _species and _symbol_index, this is unstable '
+                        'code.')
+        symbols = set()
+        for component in self.elements:
+            symbols.update(component.get_symbols())
+        self._species = sorted([str(symbol) for symbol in symbols])
+
+        # TODO: Remove this when possible
+        symbol_index = {symbol: index for index, symbol in
+                        enumerate(sorted(list(symbols), key=lambda s: str(s)))}
+        self._symbol_index: Dict[sym.Symbol, int] = symbol_index
 
     @classmethod
     def from_dict(cls, d: dict):
@@ -357,6 +404,15 @@ class RxnSystemABC(SymSpec, SpecCollection):
         d['symbol_index'] = {sym.Symbol(name): index for name, index in
                              d['symbol_index'].items()}
         return super(RxnSystemABC, cls).from_dict(d)
+
+    def _repr_latex_(self) -> Optional[str]:
+        latex = r'$ \text{Reaction System: } \newline \begin{gathered}'
+        for index, rxn in enumerate(self.reactions):
+            latex += f'({index + 1}) & ' \
+                     + rxn._repr_latex_()[1:-1] \
+                     + r' \newline '
+        latex += r' \end{gathered} $'
+        return latex
 
     def __str__(self):
         s = self.__class__.__name__ + ' with components:\n'

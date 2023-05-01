@@ -21,7 +21,7 @@ from typing import List, Union
 import sympy as sym
 
 from dtcs.common import util
-from dtcs.common.colors import color_map
+from dtcs.common.display import color_map, latex_map
 from dtcs.spec.spec_abc import Spec, SpecCollection
 
 
@@ -134,6 +134,13 @@ class SpeciesManager(SpecCollection):
         return super().__contains__(util.symbol_to_name(item))
 
     # --- Other Magic ---------------------------------------------------------
+    def _repr_latex_(self):
+        latex = r'$$ \text{Species Manager: } '
+        for species in self:
+            latex += latex_map[species.name] + ', '
+        latex = f'{latex[:-2]}$$'
+        return latex
+
     def __str__(self):
         s = self.__class__.__name__ + ' with species:\n'
         for species in self.elements:

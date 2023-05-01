@@ -49,19 +49,21 @@ MIN_GRID_WIDTH = 6 * button_width + 10 * button_buffer
 
 def _get_surface_display(surface, init_surface, opts, display_class=None):
     if opts.grid_type == 'parallel_emulated':
-        return ParallelEmulatedSquareGridDisplay(grid=init_surface,
-                                                      colormap=opts.COLORMAP,
-                                                      emulation_colormap=opts.emulation_colormap,
-                                                      horizontal_buffer=opts.horizontal_buffer,
-                                                      vertical_buffer=opts.vertical_buffer,
-                                                      cell_height=opts.cell_height,
-                                                      cell_width=opts.cell_width,
-                                                      representative_cell_x=opts.representative_cell_x,
-                                                      representative_cell_y=opts.representative_cell_y,
-                                                      min_x=MIN_GRID_WIDTH,
-                                                      min_y=0,
-                                                      pixels_per_node=opts.pixels_per_node,
-                                                      display_text=opts.display_text)
+        return ParallelEmulatedSquareGridDisplay(
+            grid=init_surface,
+            colormap=opts.COLORMAP,
+            emulation_colormap=opts.emulation_colormap,
+            horizontal_buffer=opts.horizontal_buffer,
+            vertical_buffer=opts.vertical_buffer,
+            cell_height=opts.cell_height,
+            cell_width=opts.cell_width,
+            representative_cell_x=opts.representative_cell_x,
+            representative_cell_y=opts.representative_cell_y,
+            min_x=MIN_GRID_WIDTH,
+            min_y=0,
+            pixels_per_node=opts.pixels_per_node,
+            display_text=opts.display_text
+        )
     elif opts.grid_type == 'standard':
         if display_class:
             DisplayClass = display_class
@@ -90,7 +92,7 @@ def _make_imgbuf_from_plot(
         kwargs=None
 ):
     args = args or []
-    kwars = kwargs = {}
+    kwargs = kwargs or {}
 
     fig = plot_func(*args, **kwargs)
 
@@ -121,27 +123,32 @@ def _make_video(frames, display_size, fps):
     return os.path.abspath('output.mp4')
 
 
-def make_scrn_video(
+def _make_scrn_frames(
         scrn,
         run=0,
-        plot=False,
 
-        frames_per_timestep=10,
-        output_dir='output',
+        plot=False,
+        plot_kwargs=None,
+
+        frame_times=(0, ),
+        frames_dir='.',
 ):
+    plot_kwargs = plot_kwargs or {}
+    frame_time_queue = list(frame_times)
+
     # --- Prepare to save output ------------------------------------
-    movie_dir = output_dir
-    frames_dir = os.path.join(output_dir)
-    for directory in [output_dir, movie_dir, frames_dir]:
+    for directory in [frames_dir]:
         if not os.path.isdir(directory):
             os.mkdir(directory)
 
     # --- Prepare movie settings --------------------------------------
-    frame_time_queue = list(np.arange(0, scrn.time_max, 1 / frames_per_timestep))
+    # TODO(Andrew): move to make_movie
+    # frame_time_queue = list(np.arange(0, scrn.time_max, 1 / frames_per_timestep))
 
     # --- Retreive run information -----------------------------------------
     # Retreive information about that run
     event_history = scrn._event_histories[run]
+    last_event = event_history[-1]
     surface = copy.deepcopy(scrn._init_surfaces[run])
 
     # Make a dummy simulation
@@ -188,7 +195,12 @@ def make_scrn_video(
     if callable(plot):
         plot_buf, (plot_width, plot_height) = _make_imgbuf_from_plot(
             plot_func=plot,
-            args=[scrn, run, 0],
+            kwargs=dict(
+                scts=scrn,
+                run=run,
+                time=0,
+                **plot_kwargs,
+            )
         )
 
         plot_xpos = display_width
@@ -230,7 +242,7 @@ def make_scrn_video(
         width=time_display.display_width - legend_display.display_width,
         height=legend_display.display_height * 4
     )
-    # #############################################################################
+    # ##########################################################################
 
     # --- Iterate through the simulation and make frames ----------------------
     frame_filepaths = []
@@ -241,19 +253,29 @@ def make_scrn_video(
 
         # If the current reaction time is after the next frame, make a frame
         #  and remove that frame time from the queue.
-        if reaction.time >= frame_time_queue[0]:
-            frame_time = round(frame_time_queue.pop(0),
-                               round(math.log(frames_per_timestep, 10) + 1))
+        # Also make a frame if this is the last event, and there's still frames
+        #  remaining.
+        if reaction.time >= frame_time_queue[0] or reaction == last_event:
+            frame_time = frame_time_queue.pop(0)
 
             # Update the time display
             time_display.time = frame_time
-            time_display.render(display_surface, x_pos=time_display.x_pos, y_pos=time_display.y_pos)
+            time_display.render(
+                display_surface,
+                x_pos=time_display.x_pos,
+                y_pos=time_display.y_pos
+            )
 
             # Render the plotting function
             if plot:
                 plot_buf, _ = _make_imgbuf_from_plot(
                     plot_func=plot,
-                    args=[scrn, run, frame_time],
+                    kwargs=dict(
+                        scts=scrn,
+                        run=run,
+                        time=frame_time,
+                        **plot_kwargs,
+                    )
                 )
                 plot_image = pygame.image.frombuffer(
                     plot_buf,
@@ -293,7 +315,82 @@ def make_scrn_video(
             state = reaction.rule.outputs[index]
             cell.state = state
 
-    return _make_video(frame_filepaths, (display_width, display_height), 2)
+    return frame_filepaths, display_width, display_height
+
+
+def make_scrn_image(
+        scrn,
+        run=0,
+        time=-1,
+
+        plot=False,
+        plot_kwargs=None,
+
+        output_dir='.',
+):
+    # --- Prepare to save output ------------------------------------
+    if not os.path.isdir(output_dir):
+        os.mkdir(output_dir)
+
+    # --- Sanitize frame time ---------------------------------------
+    if time < 0:
+        time = scrn.time_max
+
+    # --- Make the image -------------------------------------------
+    frame_filepaths, frame_width, frame_height = _make_scrn_frames(
+        scrn=scrn,
+        run=run,
+
+        plot=plot,
+        plot_kwargs=plot_kwargs,
+
+        frame_times=[time],
+        frames_dir=output_dir,
+    )
+
+    return frame_filepaths[0]
+
+
+def make_scrn_video(
+        scrn,
+        run=0,
+        plot=False,
+        plot_kwargs=None,
+
+        frames_per_timestep=10,
+        output_dir='output',
+):
+    # --- Prepare to save output ----------------------------------------------
+    movie_dir = output_dir
+    frames_dir = os.path.join(output_dir)
+    for directory in [output_dir, movie_dir, frames_dir]:
+        if not os.path.isdir(directory):
+            os.mkdir(directory)
+
+    # --- Prepare frame times -------------------------------------------------
+    time_precision = round(math.log(frames_per_timestep, 10) + 1)
+    frame_times = list(np.arange(0, scrn.time_max, 1 / frames_per_timestep))
+    frame_times = list(map(
+        lambda t: round(t, time_precision),
+        frame_times,
+    ))
+
+    frame_filepaths, frame_width, frame_height = _make_scrn_frames(
+        scrn=scrn,
+        run=run,
+
+        plot=plot,
+        plot_kwargs=plot_kwargs,
+
+        frame_times=frame_times,
+        frames_dir=frames_dir,
+    )
+
+    return _make_video(
+        frame_filepaths,
+        (frame_width, frame_height),
+        fps=2,
+    )
 
 
 # from dtcs.sim.surface_crn.surface_crns.SurfaceCRNQueueSimulator import display_next_event

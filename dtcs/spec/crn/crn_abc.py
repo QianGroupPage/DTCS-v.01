@@ -50,10 +50,9 @@ class CRNSpecABC(SymSpec):
 
         if rsys_components:
             if self.rsys:
-                # They gave a rsys, so we can't create another
-                raise TypeError('Attempting to create a RxnSystem given these '
-                                'inputs, but you already supplied one.')
-            self.rsys = self._rxn_sys_cls(*rsys_components)
+                self.rsys.extend(rsys_components)
+            else:
+                self.rsys = self._rxn_sys_cls(*rsys_components)
 
     def get_symbols(self) -> Set[sym.Symbol]:
         return self.rsys.get_symbols()
@@ -72,16 +71,15 @@ class CRNSpecABC(SymSpec):
 
     def fit_rates(self, iterations, experimental, ignore):
         """TODO(Andrew)"""
-        instrumentation = evaluate(
+        instrument = evaluate(
             crn=self,
-            experimental=experimental,
+            inst_args=dict(
+                experimental=experimental,
+                ignore=ignore,
+            ),
             iterations=iterations,
-            ignore=ignore,
         )
-        return self.subs_rates(instrumentation.constants)
-
-    def calc_rates(self):
-        raise NotImplementedError()
+        return self.subs_rates(instrument.best_rates)
 
     @property
     def symbol_index(self) -> Dict[sym.Symbol, int]:
