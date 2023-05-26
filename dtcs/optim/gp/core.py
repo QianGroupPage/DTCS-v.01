@@ -4,16 +4,19 @@ from typing import Iterable
 import abc
 import logging
 
+_logger = logging.getLogger(__name__)
+
 import numpy as np
 import pandas as pd
 import scipy
 
-from gpcam.autonomous_experimenter import AutonomousExperimenterGP
+try:
+    from gpcam.autonomous_experimenter import AutonomousExperimenterGP
+except ModuleNotFoundError:
+    _logger.info('Didn\'t load module gpcam')
 
 from dtcs.spec.crn.rxn_abc import RevRxnABC
-
-
-_logger = logging.getLogger(__name__)
+from dtcs.common.util import feature
 
 
 # --- Classes -----------------------------------------------------------------
@@ -233,6 +236,7 @@ def simulate_and_compare(crn, scaled, exp_env, exp_be, ignore):
     return xps, r_squared, rmse
 
 
+@feature('matproj')
 def evaluate(crn, inst_cls=DefaultInstrument, inst_args=None, iterations=100):
     instrument = inst_cls(
         crn=crn,

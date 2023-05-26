@@ -3,14 +3,21 @@
 
 from __future__ import annotations
 
+import logging
 import warnings
-from typing import Optional, List, Union, Tuple, Dict
+from typing import Optional, List, Union, Tuple, Dict, TypeVar
+
+_logger = logging.getLogger(__name__)
 
 import monty.json
 import numpy as np
 import pandas as pd
 import sympy as sym
-from pymatgen.core.structure import Structure
+try:
+    from pymatgen.core.structure import Structure
+except ModuleNotFoundError:
+    Structure = TypeVar('Structure')
+    _logger.info('Didn\'t load module pymatgen')
 
 from dtcs import _logger
 from dtcs.sim.xps import simulate_xps
@@ -18,13 +25,13 @@ from dtcs.sim.xps import simulate_xps
 from dtcs.spec.spec_abc import Spec
 from dtcs.spec.species import Species, SpeciesManager
 from dtcs.spec.crn.surface.species import SurfaceSpecies
+from dtcs.common import util
+from dtcs.twin import twin_abc
+from dtcs.twin.xps import XPSObservable
 
 __author__ = 'Andrew Bogdan'
 __email__ = 'andrewbogdan@lbl.gov'
 
-from dtcs.twin import twin_abc
-
-from dtcs.twin.xps import XPSObservable
 
 
 class XPSOrbital(Spec):
@@ -104,7 +111,7 @@ class XPSSpecies(Species):
 
         if structure:
             self.structure = structure
-        elif isinstance(orbs_or_struct, Structure):
+        elif util.feature_loaded('matproj') and isinstance(orbs_or_struct, Structure):
             self.structure = orbs_or_struct
 
         if not (hasattr(self, 'orbitals') or hasattr(self, 'structure')):

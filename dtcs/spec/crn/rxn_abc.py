@@ -28,7 +28,7 @@ class RxnABC(SymSpec):
     """
 
     def __init__(self, reactants: Optional[sym.Expr],
-                 products: Optional[sym.Expr], k: float, **kwargs):
+                 products: Optional[sym.Expr], k: float = 1, **kwargs):
         """Create a new reaction by giving equation of the reactants.
 
         This is intended to look like reactants -> products @ rate k. That is,
@@ -188,7 +188,7 @@ class RevRxnABC(RxnABC):
     """
 
     def __init__(self, reactants: Optional[sym.Expr],
-                 products: Optional[sym.Expr], k: float,
+                 products: Optional[sym.Expr], k: float = 1,
                  k2: Optional[float] = None, **kwargs):
         """Create a reversible reaction by giving equation.
 
@@ -261,6 +261,7 @@ class RevRxnABC(RxnABC):
         """
         return [f'{self.reactants}->{self.products}@{self.rate_constant}',f'{self.products}->{self.reactants}@{self.rate_constant_reverse}']
 
+    @util.depreciate
     def fingerprint(self):
         """Return a unique identifier for this reaction, ignoring the reaction constants.
 

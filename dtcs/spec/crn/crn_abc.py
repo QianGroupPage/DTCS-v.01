@@ -8,7 +8,7 @@ import sympy as sym
 from dtcs.spec.crn.sym_abc import SymSpec
 from dtcs.spec.crn.rxn_abc import RxnSystemABC
 from dtcs.spec.species import SpeciesManager
-from dtcs.gp import evaluate
+from dtcs.optim.gp import evaluate
 
 
 # TODO(Andrew) move this to abc

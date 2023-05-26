@@ -74,27 +74,19 @@ if __name__ == '__main__':
             # Utilities
             'click',
             'monty',
-
-            # Extra Features
-            # TODO(Andrew): Later come back and get extras working,
-            #  also make sure code works without all the extras.
-            'pymongo',
-            'pygame',
-            'opencv-python',
-            'pymatgen',
         ],
-        # extras_require={
-        #     # Jupyter Notebook integration
-        #     'jupyter': [
-        #         'jupyter',
-        #     ],
-        #     # Materials Project-Adjacent
-        #     'matproj': ['atomate', 'gpcam'],
-        #     # Dependencies for making the Surface CRN video
-        #     'scrn-video': [
-        #         'pygame',
-        #         'opencv-python',
-        #     ],
-        # },
+        extras_require={
+            # Jupyter Notebook integration
+            'jupyter': [
+                'jupyter',
+            ],
+            # Materials Project-Adjacent
+            'matproj': ['atomate', 'gpcam', 'pymongo'],
+            # Dependencies for making the Surface CRN video
+            'scrn-video': [
+                'pygame',
+                'opencv-python',
+            ],
+        },
         long_description=readme,
     )

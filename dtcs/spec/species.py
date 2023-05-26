@@ -28,7 +28,7 @@ from dtcs.spec.spec_abc import Spec, SpecCollection
 class Species(Spec):
     """TODO"""
 
-    def __init__(self, name, color='', **kwargs):
+    def __init__(self, name, color='', latex='', **kwargs):
         """TODO"""
         super().__init__(name=name, **kwargs)
         if color:
@@ -36,10 +36,19 @@ class Species(Spec):
             self.spec['color'] = color
             # Use the global color tracking
             color_map[self.name] = color
+        if latex:
+            # Add latex to the spec so it serializes
+            self.spec['latex'] = latex
+            # Use the global latex tracking
+            latex_map[self.name] = latex
 
     @property
     def color(self):
         return color_map[self.name]
+
+    @property
+    def latex(self):
+        return latex_map[self.name]
 
 
 class SpeciesManager(SpecCollection):
