@@ -8,7 +8,10 @@ import sympy as sym
 from dtcs.spec.crn.sym_abc import SymSpec
 from dtcs.spec.crn.rxn_abc import RxnSystemABC
 from dtcs.spec.species import SpeciesManager
-from dtcs.gp import evaluate
+from dtcs.optim.gp import evaluate
+
+from dtcs.optim.gibbs import CRNGibbsDataset
+from dtcs.optim.sys_gen import system_generator
 
 
 # TODO(Andrew) move this to abc
@@ -80,6 +83,28 @@ class CRNSpecABC(SymSpec):
             iterations=iterations,
         )
         return self.subs_rates(instrument.best_rates)
+
+    def fit_gibbs(
+            self,
+            goal_concs,
+            gibbs_to_rates,
+            num_energies,
+            **system_kwargs
+    ):
+        sys = system_generator(
+            self,
+            self.species,
+            gibbs_to_rates,
+            **system_kwargs,
+        )
+
+        dsg = CRNGibbsDataset.from_sim(
+            sim=sys,
+            num_energies=num_energies,
+            goal_concs=goal_concs,
+        )
+
+        return dsg
 
     @property
     def symbol_index(self) -> Dict[sym.Symbol, int]:

@@ -1,0 +1,92 @@
+"""TODO"""
+
+from collections import defaultdict
+
+# A utilty function to remove unnecessary information
+def prune_row_dict(dic):
+    first_value = dic[next(iter(dic))]
+
+    # Base case: actual data can have just one column
+    if not isinstance(first_value, dict):
+        return dic
+
+    # If the dictionary is one-element, drop that row.
+    if len(dic) == 1:
+        return prune_row_dict(first_value)
+
+    # Otherwise, recurse
+    return {key: prune_row_dict(value) for key, value in dic.items()}
+
+
+from itertools import product
+from itertools import groupby
+
+
+def system_generator(
+        crn,
+        sm,
+        gibbs_to_rates,
+        temperatures=(298,),  # K
+        pressures=(0.1,),  # Torr
+        times=(-1,),
+        conds=None,  # This is of the format (temp, pressure, time) if you don't want the Cartesian product
+        prune=True,
+):
+    # Sanitize times
+    times = tuple(time if time > 0 else crn.time for time in times)
+    # If conditions are supplied exactly, don't prune.
+    if conds:
+        prune = False
+    # Create combintions
+    conds = conds or tuple(product(temperatures, pressures, times))
+
+    def rescale_concs(raw):
+        peak_dict = defaultdict(float)
+        for specie, conc in raw.items():
+            if specie.name == 'H2Og':
+                continue
+            for orbital in sm[specie].orbitals:
+                peak_dict[orbital.binding_energy] += conc * orbital.splitting
+        return raw / max(peak_dict.values())
+
+    def _sim_at_conds(crn, gibbs, temp, pressure, times: tuple):
+        rates = gibbs_to_rates(
+            gibbs=gibbs,
+            temp=temp,
+            pressure=pressure,
+        )
+
+        cts_g = crn.subs_rates(rates=rates).simulate(
+            time=max(times + (crn.time,))
+        )
+        # TODO: This rescaling is not well-integrated
+        scaled_concs = dict()
+        for time in times:
+            scaled_concs[time] = rescale_concs(cts_g.at(time))
+        return scaled_concs
+
+    def system(gibbs):
+        # Simulate the CRN
+        out_dict = defaultdict(lambda: defaultdict(dict))
+        for (temp, pressure), group in groupby(conds, key=lambda cond: (cond[0], cond[1])):
+            times = tuple(time for _, _, time in group)
+            concs_raw = _sim_at_conds(
+                crn=crn,
+                gibbs=gibbs,
+                temp=temp,
+                pressure=pressure,
+                times=times,
+            )
+
+            # Sanitize the output data
+            for time in times:
+                concs = {symbol.name: conc for symbol, conc in concs_raw[time].items()}
+                # concs['O(H)-H2O'] = concs['OH-H2O'] + concs['O-H2O']
+                out_dict[f'{temp} K'][f'{pressure} Torr'][f'{time} s'] = concs
+
+        if prune:
+            return prune_row_dict(out_dict)
+        else:
+            return out_dict
+
+    return system
