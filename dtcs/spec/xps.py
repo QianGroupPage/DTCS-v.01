@@ -496,6 +496,11 @@ class XPSSpec(Spec):
         return XPSObservable(species_manager=self.species_manager,
                              df=df)
 
+    # TODO(Andrew)
+    @classmethod
+    def from_cts(cls, cts):
+        pass
+
     # --- Accessors ----------------------------------------------------------
 
     @property

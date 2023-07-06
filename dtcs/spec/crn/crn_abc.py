@@ -2,6 +2,7 @@
 
 from typing import Dict, List, Mapping, Set
 import copy
+import warnings
 
 import sympy as sym
 
@@ -27,10 +28,9 @@ class CRNSpecABC(SymSpec):
         super().__init__(**kwargs)
 
         self.rsys: RxnSystemABC = rsys
-        # TODO(Andrew) This is really confusing honestly, I expect it to be a
-        #  list of species names, not a SpeciesManager. Change it to sm.
-        self.species: SpeciesManager = species
+        self.sm: SpeciesManager = species
         if sim_type:  # So as to not override any default
+            warnings.warn('sim_type parameter is depreciated.', DeprecationWarning)
             self.sim_type = sim_type
 
         # If they give it components like it's a RxnSystem, deal with it
@@ -38,9 +38,9 @@ class CRNSpecABC(SymSpec):
         for component in components:
             if isinstance(component, SpeciesManager):
                 # If self.species, then they gave two SpeciesCollections.
-                if self.species:
+                if self.sm:
                     raise TypeError('You cannot give two SpeciesCollections.')
-                self.species = component
+                self.sm = component
             elif isinstance(component, self._rxn_sys_cls):
                 # If self.rsys, then they gave two RxnSystems.
                 if self.rsys:

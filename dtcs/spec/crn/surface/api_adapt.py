@@ -184,7 +184,7 @@ def generate_settings(rsys, max_duration, random_seed=923123122, video_path="Sur
 
 def generate_colors(rsys):
     color_strs = ""
-    for s in rsys.species:
+    for s in rsys.sm:
         color = color_map.rgb256(s)
         color_strs += s + ": " + str(color) + "\n"
     return f"""!START_COLORMAP\n{color_strs}!END_COLORMAP\n"""

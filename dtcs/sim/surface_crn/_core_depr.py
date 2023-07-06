@@ -49,13 +49,13 @@ def _simulate_surface_crn(
 
     # --- Extract input from Spec -----------------------------------------
     rsys = rsys or scrn.rsys
-    species = species or scrn.species
+    species = species or scrn.sm
     surface = surface or scrn.surface
     # TODO(Andrew) Allow for initial surface state (see if it's in the Surface class)
 
     # Collect the names of all the species
     # TODO(Andrew): the SurfaceSpeciesManager should be know about the surface
-    species_names = copy.copy(scrn.species.names)
+    species_names = copy.copy(scrn.sm.names)
     species_names.append(surface.name)
     species_names.extend([site.name for site in surface.sites])
 

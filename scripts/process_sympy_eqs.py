@@ -121,7 +121,7 @@ def rxns_to_initial_values(rxns):
      symbol_index = rxns.symbol_index
      init_vals = [0.0 for _ in range(len(symbol_index))]
      for conc_eq in rxns.conc_eqs:
-         init_vals[symbol_index[conc_eq.species]] = sym.sympify(conc_eq.expression).evalf()
+         init_vals[symbol_index[conc_eq.sm]] = sym.sympify(conc_eq.expression).evalf()
      return init_vals
 
 # def rxns_to_schedule(rxns):

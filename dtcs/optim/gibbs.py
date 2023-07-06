@@ -166,7 +166,7 @@ class CRNGibbsDataset:
 
     @property
     def sm(self):
-        return self.crn.species
+        return self.crn.sm
 
     @property
     def scores(self):

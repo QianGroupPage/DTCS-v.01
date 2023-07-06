@@ -230,7 +230,7 @@ class LegacySurfaceSpeciesManager(SpeciesManager):
         """
         if marker_name in self._markers:
             for marker in self._markers[marker_name]:
-                if marker.species.name == str(species_symbol):
+                if marker.sm.name == str(species_symbol):
                     return marker
         new_marker = Marker(species_symbol.name, marker_name, species_symbol=sym.Symbol(species_symbol.name),
                             color=color)

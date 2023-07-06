@@ -104,7 +104,7 @@ class BulkRxnSystem(RxnSystemABC):
 
         for schedule in self.schedules:
             for time, amount in schedule.schedule.items():
-                scheduler[time][schedule.species] = amount
+                scheduler[time][schedule.species] += amount
 
         return dict(scheduler)
 

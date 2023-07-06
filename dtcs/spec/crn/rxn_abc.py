@@ -279,7 +279,7 @@ class RxnSystemABC(SymSpec, SpecCollection):
         Create a new reaction system. Requires a SpeciesManager.
 
         Accepts Rxns, Revrxns, Concs, Schedules, Terms, ConcEqs,
-        ConcDiffEqs, and (one) SpeciesManager in any order.
+        ConcDiffEq.
 
         If you have a function returning a collection of the above, you do
         not have to worry about unpacking the collection: it will unpack and

@@ -71,7 +71,7 @@ class CRNTimeSeries(twin_abc.Experiment):
                                columns=pd.Index(crn.rsys.get_symbols_ordered(),
                                                 name='species'))
         self.rsys = crn.rsys
-        self.species_manager = crn.species
+        self.species_manager = crn.sm
 
         self._xps = None
 
@@ -282,7 +282,7 @@ class SurfaceCRNTimeSeries(CRNTimeSeries):
         scts.trajs = trajectories
         scts.crn = crn
         scts.rsys = crn.rsys
-        scts.species_manager = crn.species
+        scts.species_manager = crn.sm
 
         scts.df_full = cls.resample(scts)
         scts.df = scts.df_full['rolling_mean']

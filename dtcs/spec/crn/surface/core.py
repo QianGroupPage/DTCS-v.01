@@ -77,7 +77,7 @@ class SurfaceCRNSpec(CRNSpecABC):
 
         # TODO(Andrew) Change the name to not be all caps, jeez
         self.COLORMAP = {species: color_map.rgb256(species) for species in
-                         self.species.names}
+                         self.sm.names}
         self.COLORMAP.update({site: color_map.rgb256(site) for site
                               in self.surface.sites})
 
@@ -129,7 +129,7 @@ class SurfaceCRNSpec(CRNSpecABC):
     ):
         # --- Extract input from Spec -----------------------------------------
         rsys = rsys or self.rsys
-        species = species or self.species
+        species = species or self.sm
         surface = surface or self.surface
         # TODO(Andrew) Allow for initial surface state (see if it's in the Surface class)
 
@@ -150,20 +150,20 @@ class SurfaceCRNSpec(CRNSpecABC):
         event_histories = []
 
         # TODO(Andrew): Some bodges
-        rsys.species_manager = self.species
-        self.species.large_species_dict = {}
+        rsys.species_manager = self.sm
+        self.sm.large_species_dict = {}
 
         # TODO(Andrew): Replace with a simple dict which I supply
         def site_species_map(sm, specie_name):
             site_species_map = {}
-            for species in sm.species:
+            for species in sm.sm:
                 site_species_map[species.name] = species.site
 
             if specie_name in site_species_map:
                 return site_species_map[specie_name]
             else:
                 return specie_name
-        self.species.site_species_map = site_species_map
+        self.sm.site_species_map = site_species_map
 
         for run_number in range(num_runs):
             run_rng_seed = simulation_rng_seed + run_number  # TODO(Andrew) this might be bad if someone runs several scrns
@@ -173,8 +173,8 @@ class SurfaceCRNSpec(CRNSpecABC):
             #  SiteName: [list of (species, coverage) pairs]
             coverage_info = collections.defaultdict(list)
             for cov in rsys.by_subclass()[Coverage]:
-                coverage_info[self.species[cov.species].site].append(
-                    (cov.species, cov.coverage))
+                coverage_info[self.sm[cov.sm].site].append(
+                    (cov.sm, cov.coverage))
 
             init_surface_state = surface.make_state(
                 coverage_info=coverage_info,
@@ -237,7 +237,7 @@ class SurfaceCRNSpec(CRNSpecABC):
         crn = CRNSpec(
             *self.rsys.to_bulk().elements,
             *concs,
-            species=self.species,
+            species=self.sm,
             time=self.time,
         )
 

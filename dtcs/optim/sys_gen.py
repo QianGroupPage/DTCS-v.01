@@ -101,7 +101,7 @@ def system_generator(
         prune=True,
 ):
     sample_at_ev = np.array(sample_at_ev)
-    sm = crn.species
+    sm = crn.sm
 
     # Sanitize times
     times = tuple(time if time > 0 else crn.time for time in times)
