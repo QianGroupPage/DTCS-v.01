@@ -28,9 +28,10 @@ def flatten_dictionary(dic, prefix=tuple()):
 
 class CRNGibbsDataset:
 
-    def __init__(self, sim, goal_concs=None, file_path=None, df=None):
-        self.sim = sim
-        self.goal_concs = {}
+    def __init__(self, sim, crn, goal=None, file_path=None, df=None):
+        self.sim = sim  # This should be a property of crn
+        self.crn = crn
+        self.goal = {}
         self.df = None
         self.printer = self._default_printer
         self._fake_goal = None
@@ -50,10 +51,10 @@ class CRNGibbsDataset:
 
         # self.species = list(self.df['concs'].columns)
         # self.gibbs_cols = list(ds.gibbs.columns.droplevel(1).droplevel(1))
-        self.set_goal(goal_concs if goal_concs is not None else {})
+        self.set_goal(goal if goal is not None else {})
 
     def optimize_bh(
-            dsg,
+            self,
             fit: float = 1e-2,
             find: int = 1,
     ):
@@ -70,7 +71,7 @@ class CRNGibbsDataset:
         # Optimize
         try:
             scipy.optimize.basinhopping(
-                func=lambda x: dsg.score(*x),
+                func=lambda x: self.score(*x),
                 x0=[0] * 7,
                 minimizer_kwargs=dict(
                     bounds=[(-1, 1)] * 7, ),
@@ -132,24 +133,25 @@ class CRNGibbsDataset:
         """So I don't have to re-load the data each time I modify this class."""
         new_ds = cls(
             sim=ds.sim,
-            goal_concs=ds.goal_concs,
+            goal=ds.goal,
             df=ds.df,
         )
         new_ds._fake_goal = ds._fake_goal
         return new_ds
 
     @classmethod
-    def from_sim(cls, sim, num_energies, **kwargs):
+    def from_sim(cls, sim, crn, num_energies, **kwargs):
         """Creates an empty dataset using a simulator function."""
         dic = sim([0] * num_energies)
 
-        conc_dict = flatten_dictionary(dic, prefix=('concs',))
-        mindex_len = len(next(iter(conc_dict)))
-        gibbs_col_tupes = [('gibbs', f'G{ind}') + ('',) * (mindex_len - 2) for ind in range(1, num_energies + 1)]
+        sample_dict = flatten_dictionary(dic, prefix=('samples',))
+        mindex_len = len(next(iter(sample_dict)))
+        gibbs_col_tupes = [('gibbs', f'G{ind}') + ('',) * (mindex_len - 2)
+                           for ind in range(1, num_energies + 1)]
         score_tupe = [('score',) + ('',) * (mindex_len - 1)]
 
         col_index = pd.Index(
-            list(conc_dict.keys()) + gibbs_col_tupes + score_tupe
+            list(sample_dict.keys()) + gibbs_col_tupes + score_tupe
         )
 
         df = pd.DataFrame(
@@ -157,9 +159,14 @@ class CRNGibbsDataset:
         )
         return cls(
             sim=sim,
+            crn=crn,
             df=df,
             **kwargs,
         )
+
+    @property
+    def sm(self):
+        return self.crn.species
 
     @property
     def scores(self):
@@ -170,25 +177,25 @@ class CRNGibbsDataset:
         return self.df['gibbs']
 
     @property
-    def concs(self):
-        return self.df['concs']
+    def samples(self):
+        return self.df['samples']
 
     def empty(self):
         self.df.drop(self.df.index, inplace=True)
 
     def fake_goal(self, goal_gibbs):
         """Makes fake goal data."""
-        self.goal_concs = {}
+        self.goal = {}
         goal = self._simulate(goal_gibbs)
         goal['score'] = 0
         self._fake_goal = goal
-        self.set_goal(self._fake_goal['concs'])
+        self.set_goal(self._fake_goal['samples'])
         return goal
 
-    def set_goal(self, goal_concs):
+    def set_goal(self, goal):
         """Sets the goal concentrations and re-scores the dataframe."""
-        self.goal_concs = goal_concs
-        self.df['score'] = self._score(self.df['concs'])
+        self.goal = goal
+        self.df['score'] = self._score(self.df['samples'])
 
     def score(self, *gibbs):
         """Check the score at the given Gibbs energies.
@@ -210,7 +217,7 @@ class CRNGibbsDataset:
         """Plot the given row."""
         # Simulate all the XPSs we need
         observables = []
-        row = self.df.loc[ridx]['concs']
+        row = self.df.loc[ridx]['samples']
 
         # We're going to create title_and_concs, which is a list of
         #  names for each observable and the concentrations for it.
@@ -229,15 +236,14 @@ class CRNGibbsDataset:
 
         for title, concs in title_and_concs:
             xps = XPSExperiment(
-                species_manager=sm,
+                species_manager=self.sm,
                 # experimental=exp,
-                sim_concs={specie: concs[specie.name] for specie in sm.symbols if specie.name in concs},
+                sim_concs={specie: concs[specie.name] for specie in self.sm.symbols
+                           if specie.name in concs},
                 autoresample=False,
             )
 
-            observables.append((xps.resample(
-                species=[o, oh, h2o, h2o_multi, o_h_h2o],
-            ), title))
+            observables.append((xps.resample(), title))
 
         # Make enough plots for all of them
         fig, axes = plt.subplots(
@@ -279,26 +285,26 @@ class CRNGibbsDataset:
 
     def _simulate(self, gibbs):
         """Simulates and scores the system with those energies."""
-        concs_raw = flatten_dictionary(self.sim(gibbs))
+        samples_raw = flatten_dictionary(self.sim(gibbs))
 
         row = pd.Series(
             index=self.df.columns,
             dtype=np.float64,
         )
 
-        for key, value in concs_raw.items():
-            row[('concs',) + key] = value
+        for key, value in samples_raw.items():
+            row[('samples',) + key] = value
         row['gibbs'] = gibbs
-        row['score'] = self._score(row['concs'])
+        row['score'] = self._score(row['samples'])
         return row
 
-    def _score(self, concs):
+    def _score(self, samples):
         """Scores energies by via sum of log difference squared.
 
-        If goal_concs is empty, will return 0."""
+        If goal is empty, will return 0."""
         score = 0
-        for key, gconc in self.goal_concs.items():
-            score += np.power(np.log(gconc) - np.log(concs[key]), 2)
+        for key, gconc in self.goal.items():
+            score += np.power(np.log(gconc) - np.log(samples[key]), 2)
         return score
 
     def _repr_html_(self):

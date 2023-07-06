@@ -14,7 +14,6 @@ from dtcs.optim.gibbs import CRNGibbsDataset
 from dtcs.optim.sys_gen import system_generator
 
 
-# TODO(Andrew) move this to abc
 class CRNSpecABC(SymSpec):
 
     _rxn_sys_cls = RxnSystemABC
@@ -86,22 +85,22 @@ class CRNSpecABC(SymSpec):
 
     def fit_gibbs(
             self,
-            goal_concs,
+            sample_at_ev,
             gibbs_to_rates,
             num_energies,
             **system_kwargs
     ):
         sys = system_generator(
-            self,
-            self.species,
-            gibbs_to_rates,
+            crn=self,
+            sample_at_ev=sample_at_ev,
+            gibbs_to_rates=gibbs_to_rates,
             **system_kwargs,
         )
 
         dsg = CRNGibbsDataset.from_sim(
             sim=sys,
+            crn=self,
             num_energies=num_energies,
-            goal_concs=goal_concs,
         )
 
         return dsg
