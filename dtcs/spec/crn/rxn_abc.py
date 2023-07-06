@@ -63,6 +63,7 @@ class RxnABC(SymSpec):
         return symbols
 
     @property
+    @util.depreciate
     def rate(self):  # TODO(Andrew): Remove, for bodge
         return self.rate_constant
 
@@ -71,6 +72,7 @@ class RxnABC(SymSpec):
         return str(self)
 
     @property
+    @util.depreciate
     def reactant_symbols(self):
         """
         A list of free symbols.
@@ -80,6 +82,7 @@ class RxnABC(SymSpec):
         return [s for s in self.reactants.free_symbols]
 
     @property
+    @util.depreciate
     def product_symbols(self):
         """
         A list of free symbols.
