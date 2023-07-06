@@ -10,6 +10,8 @@ import os
 import sys
 import warnings
 
+from dtcs import config
+
 # Hide the pygame support prompt before importing dtcs.
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = 'hide'
 
@@ -24,16 +26,17 @@ os.environ['LBLCRN_DO_ECHO'] = 'false'
 _DATA_FILES_PATH = sys.prefix + '/dtcs/'
 
 # Master version information. Modifying this should update everything else.
-__version__ = '0.1.4/2022-09-19'
+__version__ = '0.1.5/2023-07-06'
 
 # Enable depreciation warnings
-warnings.filterwarnings('default', category=DeprecationWarning,
+warnings.filterwarnings(config.depr_warnings,
+                        category=DeprecationWarning,
                         module='dtcs')
 
 from dtcs._logger import dtcs_echo_on, dtcs_echo_off
-import dtcs._resources as dtcs_resources
-import dtcs._examples as dtcs_examples
-from dtcs._help import *
+import dtcs.resources as dtcs_resources
+import dtcs.examples as dtcs_examples
+from dtcs.help import *
 
 # Make the following names fake so that `from dtcs import *` doesn't
 # create mysterious (or conflicting) variables.
@@ -48,12 +51,6 @@ def __getattr__(name: str):
         return dtcs_echo_on
     elif name == 'echo_off':
         return dtcs_echo_off
-    elif name == 'examples':
-        return dtcs_examples
-    elif name == 'help':
-        return dtcs_help
-    elif name == 'resources':
-        return dtcs_resources
     else:
         raise AttributeError(f'module \'{__name__}\' '
                              f'has no attribute \'{name}\'')
@@ -67,3 +64,14 @@ def __setattr__(name: str, value):
             os.environ['LBLCRN_DO_ECHO'] = 'false'
     else:
         super().__setattr__(name, value)
+
+
+__all__ = [
+    'dtcs_docs',
+    'dtcs_echo_off',
+    'dtcs_echo_on',
+    'dtcs_docs',
+    'dtcs_examples',
+    'dtcs_help',
+    'dtcs_resources',
+]
