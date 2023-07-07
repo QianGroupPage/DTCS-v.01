@@ -21,7 +21,7 @@ from dtcs.spec.crn.sym_abc import SymSpec, ChemInfo
 from dtcs.common.const import K, P, DG, GIBBS_ENERGY, PRESSURE, TEMPERATURE, \
     PRETTY_SUBS
 
-Relation: TypeAlias = Union[sym.Expr, Callable, float]
+Relation: TypeAlias = Union[sym.Expr, Callable, str, float]
 
 _logger = logging.getLogger(__name__)
 
@@ -47,7 +47,6 @@ class RxnABC(SymSpec):
             products: Optional[sym.Expr], *,
             k: Optional[Relation] = None,
             dg: Optional[Relation] = None,
-            ktype: Optional[str] = None,
             **kwargs):
 
         """Create a new reaction by giving equation of the reactants.
@@ -61,8 +60,6 @@ class RxnABC(SymSpec):
             products: The right-hand side of the chemical reaction.
             k: The rate constant.
             dg: The Gibbs free energy of the reaction.
-            ktype: If you're calculating k using one of the default methods,
-                supply this. Currently 'basic' and 'adsorption' are supported.
         """
         super().__init__(**kwargs)
 
@@ -81,20 +78,11 @@ class RxnABC(SymSpec):
         self.products = products if isinstance(products, sym.Expr) \
             else sym.sympify(0)
 
-        # There are a lot of possiblities for inputs of k and dG.
-        if (k is not None) and (ktype is not None):
-            raise TypeError('Do not supply both ktype and k.')
-        elif (isinstance(k, (Callable, sym.Expr)) or ktype) and (dg is None):
-            # The left clause indicates that they want to calculate the rate
-            raise TypeError('Cannot calculate rate without gibbs energy')
-        elif (k is None) and (ktype is None) and (dg is None):
-            # They don't have to supply any rate or gibbs information
-            self._rate_info = self._gibbs_info = None
-        else:
-            # We now know that they want to calculate the rate, and that
-            #  it should be possible, so we save everything.
-            self._rate_info = k if k is not None else DG_TO_RATE[ktype or 'basic']
-            self._gibbs_info = dg
+        # If the rate is going to be calculated, we need gibbs energy
+        if isinstance(k, (Callable, sym.Expr, str)) and (dg is None):
+            raise TypeError('Cannot calculate rate without gibbs energy.')
+        self._rate_info = k if (dg is None or k is not None) else 'basic'
+        self._gibbs_info = dg
 
     # --- Properties ----------------------------------------------------------
     @property
@@ -111,7 +99,7 @@ class RxnABC(SymSpec):
 
     @property
     def _is_sym_rate(self) -> bool:
-        return isinstance(self._rate_info, sym.Expr)
+        return isinstance(self._rate_info, (sym.Expr, str))
 
     @property
     def _is_no_rate(self) -> bool:
@@ -139,16 +127,17 @@ class RxnABC(SymSpec):
         symbols = set()
         symbols.update(self.reactants.free_symbols)
         symbols.update(self.products.free_symbols)
-        if self._is_sym_rate: symbols.update(self._rate_info.free_symbols)
+        if self._is_sym_rate:
+            symbols.update(_parse_sym_rate(self._rate_info).free_symbols)
         return symbols
 
     def rename(self, mapping: Mapping):
         self.reactants = self.reactants.subs(mapping)
         self.products = self.products.subs(mapping)
         if self._is_sym_rate:
-            self._rate_info = self._rate_info.subs(mapping)
+            self._rate_info = _parse_sym_rate(self._rate_info).subs(mapping)
 
-    # --- Serialization -----------------------------------------------------
+    # --- Serialization -------------------------------------------------------
     def as_dict(self, sanitize=True) -> dict:
         """Return a MSON-serializable dict representation."""
         raise NotImplementedError()
@@ -168,7 +157,7 @@ class RxnABC(SymSpec):
         d['k'] = d.pop('rate_constant')
         return super(RxnABC, cls).from_dict(d)
 
-    # --- Representation -----------------------------------------------------
+    # --- Representation ------------------------------------------------------
     def _repr_latex_(self) -> Optional[str]:
         # Create a string for the gibbs energy beforehand
         unit_dg = sym.latex(config.units['energy'])
@@ -186,7 +175,7 @@ class RxnABC(SymSpec):
         elif self._is_func_rate:
             st += dg_string + r', \ k\! \sim \! \Delta G$'
         elif self._is_sym_rate:
-            rate_info = self._rate_info.subs(PRETTY_SUBS)
+            rate_info = _parse_sym_rate(self._rate_info).subs(PRETTY_SUBS)
             st += dg_string + r', \ k\! = \! ' + f'{sym.latex(rate_info)}$'
         else:
             st += '$'
@@ -303,8 +292,6 @@ class RevRxnABC(RxnABC):
             k: Optional[Relation] = None,
             k2: Optional[Relation] = None,
             dg: Optional[Relation] = None,
-            ktype: Optional[str] = None,
-            ktype2: Optional[str] = None,
             **kwargs
     ):
         """Create a reversible reaction by giving equation.
@@ -319,9 +306,6 @@ class RevRxnABC(RxnABC):
             k2: Optional, the rate constant for the reverse reaction. If not
                 supplied, it's assumed to be 1/k.
             dg: The Gibbs free energy of the reaction.
-            ktype: If you're calculating k using one of the default methods,
-                supply this. Currently 'basic' and 'adsorption' are supported.
-            ktype2: ktype for the reverse reaction.
         """
 
         super().__init__(
@@ -329,25 +313,18 @@ class RevRxnABC(RxnABC):
             products=products,
             k=k,
             dg=dg,
-            ktype=ktype,
+            **kwargs,
         )
         # --- Class Variables ---
         self._rev_rate_info: Optional[Relation]
 
         # --- Initialize ---
-        if (k2 is not None) and (ktype2 is not None):
-            raise TypeError('Do not supply both ktype2 and k2.')
-        elif (k2 is not None) or (ktype2 is not None):
-            # They are explicitly supplying k2 information
-            if self._is_no_rate:
-                raise TypeError('Do not supply k2 or ktype2 without sufficient '
-                                'information to calculate k1.')
-            # We have a working k1, so let's save k2's information.
-            self._rev_rate_info = k2 if k2 is not None \
-                else DG_TO_RATE[ktype2]
-        else:
-            # The plan is to have k2 = 1/k in this situation, if k exists.
-            self._rev_rate_info = None
+        if k2 is not None and self._is_no_rate:
+            raise TypeError('Do not supply k2 without k1.')
+        elif isinstance(k2, (Callable, sym.Expr, str)) and (dg is None):
+            raise TypeError('Cannot calculate rev. rate without gibbs energy.')
+
+        self._rev_rate_info = k2
 
     # --- Properties ----------------------------------------------------------
     @property
@@ -360,7 +337,7 @@ class RevRxnABC(RxnABC):
 
     @property
     def _is_sym_rev_rate(self) -> bool:
-        return isinstance(self._rev_rate_info, sym.Expr)
+        return isinstance(self._rev_rate_info, (sym.Expr, str))
 
     @property
     def _is_no_rev_rate(self) -> bool:
@@ -405,13 +382,13 @@ class RevRxnABC(RxnABC):
     def get_symbols(self) -> Set[sym.Symbol]:
         symbols = super().get_symbols()
         if self._is_sym_rev_rate:
-            symbols.update(self._rev_rate_info.free_symbols)
+            symbols.update(_parse_sym_rate(self._rev_rate_info).free_symbols)
         return symbols
 
     def rename(self, mapping: Mapping):
         super().rename(mapping)
         if self._is_sym_rev_rate:
-            self._rev_rate_info = self._rev_rate_info.subs(mapping)
+            self._rev_rate_info = _parse_sym_rate(self._rev_rate_info).subs(mapping)
 
     # --- Serialization -----------------------------------------------------
     @classmethod
@@ -438,7 +415,7 @@ class RevRxnABC(RxnABC):
         if self._is_fixed_rev_rate:
             rev_rate_str = r', \ k_-\! = \! ' + f'{self.get_rev_rate():.3f}$'
         elif self._is_sym_rev_rate:
-            rev_rate_info = self._rev_rate_info.subs(PRETTY_SUBS)
+            rev_rate_info = _parse_sym_rate(self._rev_rate_info).subs(PRETTY_SUBS)
             rev_rate_str = r', \ k_-\! = \! ' + f'{sym.latex(rev_rate_info)}$'
         elif self._is_func_rev_rate:
             rev_rate_str = r', \ k_-\! \sim \! \Delta G$'
@@ -451,7 +428,7 @@ class RevRxnABC(RxnABC):
         elif self._is_func_rate:
             st += dg_string + r', \ k\! \sim \! \Delta G' + rev_rate_str
         elif self._is_sym_rate:
-            rate_info = self._rate_info.subs(PRETTY_SUBS)
+            rate_info = _parse_sym_rate(self._rate_info).subs(PRETTY_SUBS)
             st += dg_string
             st += r', \ k\! = \! ' + f'{sym.latex(rate_info)}'
             st += rev_rate_str
@@ -514,12 +491,9 @@ class RxnSystemABC(SymSpec, SpecCollection):
     """TODO"""
 
     def __init__(self, *components, **kwargs):
-        """TODO: Old
+        """Create a new reaction system.
 
-        Create a new reaction system. Requires a SpeciesManager.
-
-        Accepts Rxns, Revrxns, Concs, Schedules, Terms, ConcEqs,
-        ConcDiffEq.
+        Accepts Rxns, Revrxns, Concs, Schedules, Terms, ConcEqs, ConcDiffEqs.
 
         If you have a function returning a collection of the above, you do
         not have to worry about unpacking the collection: it will unpack and
@@ -548,24 +522,10 @@ class RxnSystemABC(SymSpec, SpecCollection):
                         enumerate(sorted(list(symbols), key=lambda s: str(s)))}
         self._symbol_index: Dict[sym.Symbol, int] = symbol_index
 
+    # --- Properties ----------------------------------------------------------
     @property
     def reactions(self) -> List[RxnABC]:
         return self.by_subclass()[RxnABC]
-
-    def get_symbols(self) -> Set[sym.Symbol]:
-        return set(self.symbol_index.keys())
-
-    @property
-    @util.depreciate
-    def symbol_index(self):
-        return self._symbol_index
-
-    @util.depreciate
-    def get_symbols_ordered(self) -> List[sym.Symbol]:
-        symbols = [None] * len(self.get_symbols())
-        for symbol in self.get_symbols():
-            symbols[self.symbol_index[symbol]] = symbol
-        return symbols
 
     @property
     def species(self) -> List[str]:
@@ -575,6 +535,7 @@ class RxnSystemABC(SymSpec, SpecCollection):
     def species_symbols(self):
         return [sym.Symbol(name) for name in self.species]
 
+    # --- Chemistry -----------------------------------------------------------
     def get_rates(self):
         rates = []
         for reaction in self.reactions:
@@ -603,6 +564,10 @@ class RxnSystemABC(SymSpec, SpecCollection):
                 elem.rate_constant = rates[index]
                 index += 1
         return rsys
+
+    # --- Utility -------------------------------------------------------------
+    def get_symbols(self) -> Set[sym.Symbol]:
+        return set(self.symbol_index.keys())
 
     def rename(self, mapping: Mapping):
         for comp in self.elements:
@@ -637,6 +602,7 @@ class RxnSystemABC(SymSpec, SpecCollection):
                         enumerate(sorted(list(symbols), key=lambda s: str(s)))}
         self._symbol_index: Dict[sym.Symbol, int] = symbol_index
 
+    # --- Serialization -------------------------------------------------------
     @classmethod
     def from_dict(cls, d: dict):
         decode = MontyDecoder().process_decoded
@@ -645,6 +611,7 @@ class RxnSystemABC(SymSpec, SpecCollection):
                              d['symbol_index'].items()}
         return super(RxnSystemABC, cls).from_dict(d)
 
+    # --- Representation ------------------------------------------------------
     def _repr_latex_(self) -> Optional[str]:
         latex = r'$ \text{Reaction System: } \newline \begin{gathered}'
         for index, rxn in enumerate(self.reactions):
@@ -664,10 +631,35 @@ class RxnSystemABC(SymSpec, SpecCollection):
     def __repr__(self):
         return f'{self.__class__.__name__}(components={repr(self.elements)})'
 
+    # --- Depreciated ---------------------------------------------------------
+    @property
+    @util.depreciate
+    def symbol_index(self):
+        return self._symbol_index
+
+    @util.depreciate
+    def get_symbols_ordered(self) -> List[sym.Symbol]:
+        symbols = [None] * len(self.get_symbols())
+        for symbol in self.get_symbols():
+            symbols[self.symbol_index[symbol]] = symbol
+        return symbols
+
+
+def _parse_sym_rate(expr_or_key: Union[sym.Expr, str]):
+    """Given a sympy rate expression or string corresponding to a default,
+    give a sympy rate expression via looking up any defaults."""
+    if isinstance(expr_or_key, str):
+        return DG_TO_RATE[expr_or_key]
+    elif isinstance(expr_or_key, sym.Expr):
+        return expr_or_key
+    else:
+        raise TypeError(f'Invalid type {type(expr_or_key)}')
+
 
 @functools.lru_cache(maxsize=127)
-def _lambdify_dg_to_rate(expr: sym.Expr):
+def _lambdify_dg_to_rate(expr: Union[sym.Expr, str]):
     """Turns a sympy expression expression of DG, P, and K into a function."""
+    expr = _parse_sym_rate(expr)
     gibbs, time, pressure, temp = sym.symbols('gibbs time pressure temp')
 
     dg_to_rate_expr = expr.subs({
