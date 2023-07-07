@@ -107,6 +107,10 @@ class SpecABC(monty.json.MSONable):
     def spec(self):
         return _SpecView(self.__dict__)
 
+    def _repr_latex_(self) -> Optional[str]:
+        if hasattr(self, 'latex'):
+            return f'${self.latex()}$'
+
     def __str__(self):
         if self.spec:
             spec_str = ''

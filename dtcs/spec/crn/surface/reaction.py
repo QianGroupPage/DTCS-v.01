@@ -152,6 +152,8 @@ class SurfaceRevRxn(SurfaceRxn):
     Its use is to be quickly unpacked into two SurfaceRxns.
     """
 
+    _rxn_cls = SurfaceRxn
+
     def __init__(self, reactants: Tuple[sym.Symbol], products: Tuple[sym.Symbol], k1: float, k2: float = None):
         """
         Create a reversible surface reaction by giving tuple of the reactants, the tuple of the products,

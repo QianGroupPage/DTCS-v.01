@@ -1,5 +1,7 @@
 """Constants, mostly sympy-based, for the whole projec to depend on."""
 
+from typing import Optional
+
 from sympy.physics import units
 import sympy as sym
 
@@ -17,3 +19,23 @@ PRETTY_SUBS = {
     TIME: sym.Symbol('t'),
     units.boltzmann: sym.Symbol('k_B')
 }
+
+def k_names(idx: Optional[int] = None):
+    if idx is None: return 'k', 'κ'
+    elif idx >= 0: return f'k_{idx}', f'κ_{idx}'
+
+def k_map(idx: Optional[int] = None):
+    k_forward, k_reverse = k_names()
+    k_forward_dx, k_reverse_dx = k_names(idx)
+    if idx is None:
+        # With no index, it swaps forward and reverse
+        return {
+            k_forward: k_reverse_dx,
+            k_reverse: k_forward_dx,
+        }
+    else:
+        # With an index, it adds the
+        return {
+            k_forward: k_forward_dx,
+            k_reverse: k_reverse_dx,
+        }

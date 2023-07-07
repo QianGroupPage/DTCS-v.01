@@ -42,11 +42,11 @@ class Term(ChemExpression):  # TODO(Andrew) Document here & beyond.
     Incompatible with: ConcEq, ConcDiffEq
     """
 
-    def _repr_latex_(self):
+    def latex(self):
         expr = pretty_sym_subs(self.expression, fmt=r'[{}]')
-        return r'$ \frac{d}{dt} ' + \
+        return r'\frac{d}{dt} ' + \
                rf' \left [{latex_map[self.symbol.name]} \right ]' + \
-               rf' \sim {expr}$'
+               rf' \sim {expr}'
 
     def __str__(self):
         return f'term: [{self.symbol}]\' = ... + {self.expression}'
@@ -61,10 +61,10 @@ class ConcEq(ChemExpression):
     Incompatible with: Term, ConcDiffEq, Schedule, Conc
     """
 
-    def _repr_latex_(self):
+    def latex(self):
         expr = pretty_sym_subs(self.expression, fmt=r'[{}]')
-        return rf'$ \left [{latex_map[self.symbol.name]} \right ]' + \
-               rf' = {expr}$'
+        return rf'\left [{latex_map[self.symbol.name]} \right ]' + \
+               rf' = {expr}'
 
     def __str__(self):
         return f'[{self.symbol}] = {self.expression}'
@@ -80,11 +80,11 @@ class ConcDiffEq(ChemExpression):
     Incompatible with: Term, ConcEq,
     """
 
-    def _repr_latex_(self):
+    def latex(self):
         expr = pretty_sym_subs(self.expression, fmt=r'[{}]')
-        return r'$ \frac{d}{dt} ' + \
+        return r'\frac{d}{dt} ' + \
                rf' \left [{latex_map[self.symbol.name]} \right ]' + \
-               rf' = {expr}$'
+               rf' = {expr}'
 
     def __str__(self):
         return f'[{self.symbol}]\' = {self.expression}'

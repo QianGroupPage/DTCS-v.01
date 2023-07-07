@@ -25,7 +25,7 @@ class BulkCRNSpec(CRNSpecABC):
     def __init__(self,
                  *elements,
                  time: int = 10,
-                 max_step: float = 0.01,
+                 max_step: float = 0.1,
                  rsys: BulkRxnSystem = None,
                  species: SpeciesManager = None,
                  **kwargs):
@@ -33,54 +33,46 @@ class BulkCRNSpec(CRNSpecABC):
                          rsys=rsys,
                          species=species,)
         self.time = time
-        self.max_step = 0.1
+        self.max_step = max_step
 
     def simulate(
             self: BulkCRNSpec,
-            #rsys: BulkRxnSystem = None,
             time: Optional[float] = None,
+            pressure: Optional[float] = None,
+            temperature: Optional[float] = None,
+            rates: Optional[Dict] = None,
             end_when_settled: bool = False,
-            #title: str = "",
-            #species: List[sym.Symbol] = None,
-            #ignore: List[sym.Symbol] = None,
-            #x_range: Optional[np.ndarray] = None,
-            #scale_factor: float = None,
-            #experimental: pd.Series = None,
-            #gas_interval: Tuple[float, float] = None,
-            #contam_spectra: Optional[Dict[sym.Symbol, pd.Series]] = None,
-            #deconv_species: Optional[List[sym.Symbol]] = None,
-            #autoresample: bool = True,
-            #autoscale: bool = True,
-            **options
+            **options,
         ):
         """Simulate the given reaction system over time.
 
         Args:
-            TODO: add rest
-            #rsys: ReactionsSystem, the reaction system to simulate
             time: The time until which to simulate.
-            species: The species to include in the XPS.
-            ignore: The species to not include in the XPS.
-            autoresample: Decides if the XPS resamples on edits.
-            autoscale: Decides if the XPS will automatically scale the gaussians and envelope to match the experimental data.
-            experimental: The experimental value of the XPS.
-            gas_interval: The interval in which the peak of the gas phase is in the XPS.
-            scale_factor: The scale factor by which to scale the simulated gaussians in the XPS.
-            title: The name to give the XPS, used in plotting.
             options: Forwarded to scipy.integrate.solve_ivp
+            TODO
 
         Returns:
-            An XPSExperiment with the simulation results as well as a CRNTimeSeries object with the time series data.
+            A CRNTimeSeries object with time series data.
         """
+        self.rsys: BulkRxnSystem
+
         time = time or self.time
+        # pressure = pressure or self.pressure
+        # temperature = temperature or self.temperature
+        rates = rates or self.rsys.get_rates(pressure, temperature)
+        # TODO: Throw an error if they ask for rates and temp/pressure
         end_when_settled = end_when_settled or (time is None)
 
         sol_t, sol_y = bulk_crn.solve_rsys_ode(
-            rsys=self.rsys,
+            evolution_func=self.rsys.get_evolution_function(rates),
+            concentration_func=self.rsys.get_concentration_function(),
+            schedule=self.rsys.schedule,
+            species=self.rsys.species,
             time_max=time,
             end_when_settled=end_when_settled,
-            max_step=self.max_step,
-            **options)
+            # max_step=self.max_step,
+            **options
+        )
         cts = CRNTimeSeries(sol_t, sol_y, copy.deepcopy(self))
 
         return cts

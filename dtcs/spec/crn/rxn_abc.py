@@ -6,7 +6,6 @@ from numbers import Number
 import copy
 import functools
 import logging
-import math
 
 import sympy as sym
 from sympy.physics import units
@@ -15,11 +14,12 @@ from sympy.parsing import sympy_parser
 
 from dtcs import config
 from dtcs.common import util
+from dtcs.common import const
 from dtcs.common.display import pretty_sym_subs
 from dtcs.spec.spec_abc import SpecCollection
 from dtcs.spec.crn.sym_abc import SymSpec, ChemInfo, ChemExpression
 from dtcs.common.const import K, P, DG, GIBBS_ENERGY, PRESSURE, TEMPERATURE, \
-    PRETTY_SUBS
+    PRETTY_SUBS, RESERVED_SYMBOLS
 
 Relation: TypeAlias = Union[sym.Expr, Callable, str, float]
 
@@ -158,27 +158,27 @@ class RxnABC(SymSpec):
         return super(RxnABC, cls).from_dict(d)
 
     # --- Representation ------------------------------------------------------
-    def _repr_latex_(self) -> Optional[str]:
+    def latex(self, k_idx: Optional[int] = None) -> str:
+        k_forward, _ = const.k_names(k_idx)
+
         # Create a string for the gibbs energy beforehand
         unit_dg = sym.latex(config.units['energy'])
         dg_string = None if self.get_gibbs() is None else \
             r'\, @ \ \Delta G\! = \! ' + f'{self.get_gibbs():.3f}\\, {unit_dg}'
 
         # First we display the reaction
-        st = '$' + pretty_sym_subs(self.reactants) \
+        st = '' + pretty_sym_subs(self.reactants) \
              + r' \longrightarrow ' \
              + pretty_sym_subs(self.products)
 
         # Choose to display k or dG, whichever is a number
         if self._is_fixed_rate:
-            st += r'\, @ \ k\! = \! ' + f'{self.get_rate():.3f}$'
+            st += rf'\, @ \ {k_forward}\! = \! {self.get_rate():.3f}'
         elif self._is_func_rate:
-            st += dg_string + r', \ k\! \sim \! \Delta G$'
+            st += dg_string + rf', \ {k_forward}\! \sim \! \Delta G'
         elif self._is_sym_rate:
             rate_info = _parse_sym_rate(self._rate_info).subs(PRETTY_SUBS)
-            st += dg_string + r', \ k\! = \! ' + f'{sym.latex(rate_info)}$'
-        else:
-            st += '$'
+            st += dg_string + rf', \ {k_forward}\! = \! {sym.latex(rate_info)}'
 
         return st
 
@@ -285,6 +285,8 @@ class RevRxnABC(RxnABC):
     Its use is to be quickly unpacked into two Rxns.
     """
 
+    _rxn_cls = RxnABC
+
     def __init__(
             self,
             reactants: Optional[sym.Expr],
@@ -367,16 +369,16 @@ class RevRxnABC(RxnABC):
             dg_to_rate = _lambdify_dg_to_rate(self._rate_info)
             return dg_to_rate(-1 * self.get_gibbs(), pressure, temperature)
 
-    def to_rxns(self) -> Tuple[RxnABC, RxnABC]:
+    def to_rxns(self) -> Tuple[_rxn_cls, _rxn_cls]:
         gibbs_info = self._gibbs_info and -1 * self._gibbs_info
         rev_rate_info = self._rev_rate_info if not self._is_no_rev_rate else (
             1 / self._rate_info if self._is_fixed_rate else self._rate_info
         )
 
-        return RxnABC(self.reactants, self.products,
-                      k=self._rate_info, dg=self._gibbs_info), \
-               RxnABC(self.products, self.reactants,
-                      k=rev_rate_info, dg=gibbs_info)
+        return self._rxn_cls(self.reactants, self.products,
+                             k=self._rate_info, dg=self._gibbs_info), \
+               self._rxn_cls(self.products, self.reactants,
+                             k=rev_rate_info, dg=gibbs_info)
 
     # --- Utility -----------------------------------------------------
     def get_symbols(self) -> Set[sym.Symbol]:
@@ -398,39 +400,41 @@ class RevRxnABC(RxnABC):
         return super(RevRxnABC, cls).from_dict(d)
 
     # --- Representation -----------------------------------------------------
-    def _repr_latex_(self) -> Optional[str]:
+    def latex(self, k_idx: Optional[int] = None) -> str:
+        k_forward, k_reverse = const.k_names(k_idx)
+
         # Create a string for the gibbs energy beforehand
         unit_dg = sym.latex(config.units['energy'])
         dg_string = None if self.get_gibbs() is None else \
             r'\, @ \ \Delta G\! = \! ' + f'{self.get_gibbs():.3f}\\, {unit_dg}'
 
         # First we display the reaction
-        st = '$' + pretty_sym_subs(self.reactants) \
+        st = pretty_sym_subs(self.reactants) \
              + r' \longleftrightarrow ' \
              + pretty_sym_subs(self.products)
 
         # Create the reverse rate's string in advance so we can add it by
         #  casework later and not have to worry we're doing the wrong one.
-        rev_rate_str = '$'
+        rev_rate_str = ''
         if self._is_fixed_rev_rate:
-            rev_rate_str = r', \ k_-\! = \! ' + f'{self.get_rev_rate():.3f}$'
+            rev_rate_str = rf', \ {k_reverse}\! = \! {self.get_rev_rate():.3f}'
         elif self._is_sym_rev_rate:
             rev_rate_info = _parse_sym_rate(self._rev_rate_info).subs(PRETTY_SUBS)
-            rev_rate_str = r', \ k_-\! = \! ' + f'{sym.latex(rev_rate_info)}$'
+            rev_rate_str = rf', \ {k_reverse}\! = \! {sym.latex(rev_rate_info)}'
         elif self._is_func_rev_rate:
-            rev_rate_str = r', \ k_-\! \sim \! \Delta G$'
+            rev_rate_str = rf', \ {k_reverse}\! \sim \! \Delta G'
 
         if self._is_fixed_rate:
-            st += r'\, @ \ k\! = \! ' + f'{self.get_rate():.3f}'
+            st += rf'\, @ \ {k_forward}\! = \! {self.get_rate():.3f}'
             st += rev_rate_str
         elif self._is_func_rate and self._is_func_rev_rate:
-            st += dg_string + r', \ k, k_-\! \sim \! \Delta G$'
+            st += dg_string + rf', \ {k_forward}, {k_reverse}\! \sim \! \Delta G'
         elif self._is_func_rate:
-            st += dg_string + r', \ k\! \sim \! \Delta G' + rev_rate_str
+            st += dg_string + rf', \ {k_forward}\! \sim \! \Delta G' + rev_rate_str
         elif self._is_sym_rate:
             rate_info = _parse_sym_rate(self._rate_info).subs(PRETTY_SUBS)
             st += dg_string
-            st += r', \ k\! = \! ' + f'{sym.latex(rate_info)}'
+            st += rf', \ {k_forward}\! = \! {sym.latex(rate_info)}'
             st += rev_rate_str
         else:
             st += rev_rate_str
@@ -515,40 +519,53 @@ class RxnSystemABC(SymSpec, SpecCollection):
         symbols = set()
         for component in self.elements:
             symbols.update(component.get_symbols())
-        self._species = sorted([str(symbol) for symbol in symbols])
-
-        # TODO: Remove this when possible
-        symbol_index = {symbol: index for index, symbol in
-                        enumerate(sorted(list(symbols), key=lambda s: str(s)))}
-        self._symbol_index: Dict[sym.Symbol, int] = symbol_index
+        # Remove non-species like time, pressure, and temperature.
+        symbols -= set(RESERVED_SYMBOLS)
+        self._species = tuple(sorted([str(symbol) for symbol in symbols]))
 
     # --- Properties ----------------------------------------------------------
     @property
     def reactions(self) -> List[RxnABC]:
+        # TODO: We are heavily trusting that this will not change.
         return self.by_subclass()[RxnABC]
 
     @property
     def network(self) -> List[Union[RxnABC, ChemExpression]]:
-        return self.by_subclass()[RxnABC] + self.by_subclass()[ChemExpression]
+        return self.reactions + self.by_subclass()[ChemExpression]
 
     @property
-    def species(self) -> List[str]:
+    def species(self) -> Tuple[str]:
+        # TODO: We are heavily trusting that this will not change.
         return self._species
 
     @property
-    def species_symbols(self):
-        return [sym.Symbol(name) for name in self.species]
+    def rates(self) -> Tuple[str]:
+        return tuple(self.get_rates().keys())
+
+    @property
+    def species_symbols(self) -> Tuple[sym.Symbol]:
+        return tuple(sym.Symbol(name) for name in self.species)
+
+    @property
+    def rate_symbols(self) -> Tuple[sym.Symbol]:
+        return tuple(sym.Symbol(name) for name in self.rates)
 
     # --- Chemistry -----------------------------------------------------------
-    def get_rates(self):
-        rates = []
-        for reaction in self.reactions:
+    def get_rates(self,
+                  pressure: float = config.ref_tp['pressure'],
+                  temperature: float = config.ref_tp['temperature']):
+        """Gets the rates from each of the reactions. This function relies on
+        self.reactions not changing in order."""
+        rates = {}
+        for index, reaction in enumerate(self.reactions):
+            k_forward, k_reverse = const.k_names(index)
+            rates[k_forward] = reaction.get_rate(pressure, temperature)
             if isinstance(reaction, RevRxnABC):
-                rates.append((reaction.rate_constant, reaction.rate_constant_reverse))
-            else:
-                rates.append(reaction.rate_constant)
+                rates[k_reverse] = reaction.get_rev_rate(pressure, temperature)
         return rates
 
+    # TODO: Needs to be updated
+    @util.depreciate
     def subs_rates(self, rates):
         """
         TODO(Andrew)
@@ -599,12 +616,9 @@ class RxnSystemABC(SymSpec, SpecCollection):
         symbols = set()
         for component in self.elements:
             symbols.update(component.get_symbols())
+        # Remove non-species like time, pressure, and temperature.
+        symbols -= RESERVED_SYMBOLS
         self._species = sorted([str(symbol) for symbol in symbols])
-
-        # TODO: Remove this when possible
-        symbol_index = {symbol: index for index, symbol in
-                        enumerate(sorted(list(symbols), key=lambda s: str(s)))}
-        self._symbol_index: Dict[sym.Symbol, int] = symbol_index
 
     # --- Serialization -------------------------------------------------------
     @classmethod
@@ -616,13 +630,19 @@ class RxnSystemABC(SymSpec, SpecCollection):
         return super(RxnSystemABC, cls).from_dict(d)
 
     # --- Representation ------------------------------------------------------
-    def _repr_latex_(self) -> Optional[str]:
-        latex = r'$ \text{Reaction System: } \newline \begin{gathered}'
-        for index, rxn in enumerate(self.network):
+    def latex(self) -> Optional[str]:
+        latex = r'\text{Reaction System: } \newline \begin{gathered}'
+        for index, elem in enumerate(self.network):
+            # If it's a reaction, let's number the rates
+            elem_latex = (
+                elem.latex(k_idx=index)
+                if isinstance(elem, RxnABC)
+                else elem.latex()
+            )
             latex += f'({index}) & ' \
-                     + rxn._repr_latex_()[1:-1] \
+                     + elem_latex \
                      + r' \newline '
-        latex += r' \end{gathered} $'
+        latex += r' \end{gathered}'
         return latex
 
     def __str__(self):
@@ -639,7 +659,7 @@ class RxnSystemABC(SymSpec, SpecCollection):
     @property
     @util.depreciate
     def symbol_index(self):
-        return self._symbol_index
+        return {sym.Symbol(name): index for index, name in enumerate(self._species)}
 
     @util.depreciate
     def get_symbols_ordered(self) -> List[sym.Symbol]:

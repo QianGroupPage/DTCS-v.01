@@ -24,29 +24,29 @@ Usage:
     mathematica project.
 """
 
-from typing import List, Tuple
+from typing import List, Optional
+import collections
 
 import sympy as sym
 
+from dtcs.common import util
+from dtcs.common import const
 from dtcs.spec.crn.rxn_abc import RxnABC, RevRxnABC
 from dtcs.spec.crn.bulk.conditions import Term
 
-
 class BulkRxn(RxnABC):
 
-    def to_terms_nok(self, k_name: str):
+    def to_terms(self):
         # Get the lefts and right
         # Here we're assuming that reactants and products are linear.
         lefts = self.reactants.as_coefficients_dict()
         rights = self.products.as_coefficients_dict()
 
-        # Make a dict (symbol : term), initializing each to 0.
-        term_dict = {}
-        for symbol in self.get_symbols():
-            term_dict[symbol] = sym.sympify(0)
+        # Make a dict (symbol : term), all initially 0.
+        term_dict = collections.defaultdict(lambda: sym.sympify(0))
 
         # Make the common part of all the terms
-        common_part = sym.Symbol(k_name)
+        common_part = sym.Symbol(const.k_names()[0])
         for symbol in self.reactants.free_symbols:
             common_part *= (symbol ** lefts[symbol])
 
@@ -67,7 +67,8 @@ class BulkRxn(RxnABC):
 
     # TODO(Andrew): To reduce duplicate code, maybe make this depend on
     #  to_terms_nok. There's just an issue with name conflicts.
-    def to_terms(self) -> List[Term]:
+    @util.depreciate
+    def to_terms_with_rates(self) -> List[Term]:
         """Create a list of terms from the reaction.
 
         Each term is essentially the reaction rate but positive or negative,
@@ -110,17 +111,17 @@ class BulkRxn(RxnABC):
 
 class BulkRevRxn(BulkRxn, RevRxnABC):
 
-    def to_rxns(self) -> Tuple[BulkRxn, BulkRxn]:
-        return BulkRxn(self.reactants, self.products,
-                       k=self.rate_constant), \
-               BulkRxn(self.products, self.reactants,
-                       k=self.rate_constant_reverse)
+    _rxn_cls = BulkRxn
 
-    def to_terms_nok(self, k_name: str):
+    def to_terms(self):
         rxns = self.to_rxns()
-        return [*rxns[0].to_terms_nok(k_name),
-                *rxns[1].to_terms_nok(f'{k_name}^*')]
+        k_forward, k_reverse = const.k_names()
+        k_map = {k_forward: k_reverse}
+        forward_terms = rxns[0].to_terms()
+        reverse_terms = [term.subs(k_map) for term in rxns[1].to_terms()]
+        return [*forward_terms, *reverse_terms]
 
-    def to_terms(self) -> List[Term]:
+    @util.depreciate
+    def to_terms_with_rates(self) -> List[Term]:
         rxns = self.to_rxns()
-        return [*rxns[0].to_terms(), *rxns[1].to_terms()]
+        return [*rxns[0].to_terms_with_rates(), *rxns[1].to_terms_with_rates()]

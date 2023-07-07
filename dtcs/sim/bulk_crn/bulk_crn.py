@@ -8,13 +8,25 @@ Usage:
     Mostly internal.
 """
 
+from typing import Callable, Dict, List, TypeAlias
 import collections
 
 import numpy as np
 from scipy import integrate
 
 
-def solve_rsys_ode(rsys, time_max: float, end_when_settled: bool, method: str='LSODA', **options):
+Time: TypeAlias = float
+
+
+def solve_rsys_ode(
+        evolution_func: Callable,
+        concentration_func: Callable,
+        schedule: Dict[Time, Dict[str, float]],
+        species: List[str],
+        time_max: float,
+        end_when_settled: bool,
+        method: str='LSODA',
+        **options):
     """Simulate the given reaction system over time.
 
     Private in case we want to add multiple possible solving methods.
@@ -28,14 +40,12 @@ def solve_rsys_ode(rsys, time_max: float, end_when_settled: bool, method: str='L
         A Solution object describing the solution.
     """
 
-    ode_func = rsys.get_ode_functions()
-    num_species = len(rsys.get_symbols())
-
+    num_species = len(species)
     # schedule, a dictionary {time : [amount to add for species no. index]}
-    schedule = collections.defaultdict(lambda: [0] * num_species)
-    for index in range(num_species):
-        for time, amount in rsys.scheduler[index].unpack():
-            schedule[time][index] += amount
+    # schedule = collections.defaultdict(lambda: [0] * num_species)
+    # for index in range(num_species):
+    #     for time, amount in rsys.scheduler[index].unpack():
+    #         schedule[time][index] += amount
 
     # This is an ordered list of all the times at which we add/remove stuff.
     time_breaks = sorted(schedule.keys())
@@ -52,14 +62,14 @@ def solve_rsys_ode(rsys, time_max: float, end_when_settled: bool, method: str='L
             next_time = time_max
 
         # Add the respective amounts for this timestep.
-        for index, amount in enumerate(schedule[current_time]):
-            current_concs[index] += amount
+        for index, specie in enumerate(species):
+            current_concs[index] += schedule[current_time][specie]
 
         events = None
         if end_when_settled:
             events = settle_event_creator()
 
-        partial_sol = integrate.solve_ivp(ode_func,  (current_time, next_time),
+        partial_sol = integrate.solve_ivp(evolution_func,  (current_time, next_time),
                                           current_concs, method=method, events=events, **options)
 
         # Add the partial solution to the whole solution.
@@ -76,9 +86,8 @@ def solve_rsys_ode(rsys, time_max: float, end_when_settled: bool, method: str='L
         current_time = next_time
 
     # Set y for concentration equations, which the ODE solver does't calculate.
-    for index, func in rsys.get_conc_functions().items():
-        for tindex in range(sol_t.size):
-            sol_y[index][tindex] = func(sol_t[tindex], sol_y[:, tindex])
+    for index in range(sol_y.shape[1]):
+        sol_y[:, index] = concentration_func(sol_t[index], sol_y[:, index])
 
     return sol_t, sol_y
 
