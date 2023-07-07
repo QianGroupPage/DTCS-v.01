@@ -16,7 +16,7 @@ Usage:
 """
 
 from __future__ import annotations
-from typing import List, Union
+from typing import List, Optional, Union
 
 import sympy as sym
 
@@ -28,18 +28,33 @@ from dtcs.spec.spec_abc import Spec, SpecCollection
 class Species(Spec):
     """TODO"""
 
-    def __init__(self, name, color='', **kwargs):
+    def __init__(self,
+                 name: str,
+                 color: Optional[str] = None,
+                 latex: Optional[str] = None,
+                 **kwargs):
         """TODO"""
         super().__init__(name=name, **kwargs)
         if color:
             # Add color to the spec so it serializes
+            # TODO: Get the more up-to-date color from color_map during
+            #  serialization.
             self.spec['color'] = color
             # Use the global color tracking
             color_map[self.name] = color
+        if latex:
+            # Add color to the spec so it serializes
+            self.spec['latex'] = latex
+            # Use the global color tracking
+            latex_map[self.name] = latex
 
     @property
     def color(self):
         return color_map[self.name]
+
+    @property
+    def latex(self):
+        return latex_map[self.name]
 
 
 class SpeciesManager(SpecCollection):

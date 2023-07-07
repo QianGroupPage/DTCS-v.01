@@ -15,7 +15,7 @@ from sympy.parsing import sympy_parser
 
 from dtcs import config
 from dtcs.common import util
-from dtcs.common.display import latex_map
+from dtcs.common.display import pretty_sym_subs
 from dtcs.spec.spec_abc import SpecCollection
 from dtcs.spec.crn.sym_abc import SymSpec, ChemInfo
 from dtcs.common.const import K, P, DG, GIBBS_ENERGY, PRESSURE, TEMPERATURE, \
@@ -165,9 +165,9 @@ class RxnABC(SymSpec):
             r'\, @ \ \Delta G\! = \! ' + f'{self.get_gibbs():.3f}\\, {unit_dg}'
 
         # First we display the reaction
-        st = '$' + latex_map.sym_subs(self.reactants) \
+        st = '$' + pretty_sym_subs(self.reactants) \
              + r' \longrightarrow ' \
-             + latex_map.sym_subs(self.products)
+             + pretty_sym_subs(self.products)
 
         # Choose to display k or dG, whichever is a number
         if self._is_fixed_rate:
@@ -189,7 +189,7 @@ class RxnABC(SymSpec):
         return f'{self.__class__.__name__}' \
                f'(reactants={repr(self.reactants)}, ' \
                f'products={repr(self.products)}, ' \
-               f'k={repr(self._rate_info)}), ' \
+               f'k={repr(self._rate_info)}, ' \
                f'dg={repr(self._gibbs_info)})'
 
     # --- Depreciated ---------------------------------------------------------
@@ -405,9 +405,9 @@ class RevRxnABC(RxnABC):
             r'\, @ \ \Delta G\! = \! ' + f'{self.get_gibbs():.3f}\\, {unit_dg}'
 
         # First we display the reaction
-        st = '$' + latex_map.sym_subs(self.reactants) \
+        st = '$' + pretty_sym_subs(self.reactants) \
              + r' \longleftrightarrow ' \
-             + latex_map.sym_subs(self.products)
+             + pretty_sym_subs(self.products)
 
         # Create the reverse rate's string in advance so we can add it by
         #  casework later and not have to worry we're doing the wrong one.
@@ -444,8 +444,8 @@ class RevRxnABC(RxnABC):
         return f'{self.__class__.__name__}' \
                f'(reactants={repr(self.reactants)}, ' \
                f'products={repr(self.products)}, ' \
-               f'k={repr(self._rate_info)}), ' \
-               f'k2={repr(self._rev_rate_info)}), ' \
+               f'k={repr(self._rate_info)}, ' \
+               f'k2={repr(self._rev_rate_info)}, ' \
                f'dg={repr(self._gibbs_info)})'
 
     # --- Depreciated ---------------------------------------------------------
@@ -615,7 +615,7 @@ class RxnSystemABC(SymSpec, SpecCollection):
     def _repr_latex_(self) -> Optional[str]:
         latex = r'$ \text{Reaction System: } \newline \begin{gathered}'
         for index, rxn in enumerate(self.reactions):
-            latex += f'({index + 1}) & ' \
+            latex += f'({index}) & ' \
                      + rxn._repr_latex_()[1:-1] \
                      + r' \newline '
         latex += r' \end{gathered} $'

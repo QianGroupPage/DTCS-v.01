@@ -123,12 +123,6 @@ class _ColorManagerSingleton(_ManagerSingleton):
 class _LatexManagerSingleton(_ManagerSingleton):
     """A singleton to manage the latex expressions for species."""
 
-    def sym_subs(self, expr: sym.Expr) -> str:
-        """Substitute species in a sympy expression with their Latex value."""
-        species_map = {sym.Symbol(key): sym.Symbol(value)
-                       for key, value in self.items()}
-        return sym.latex(expr.subs(species_map))
-
     def _get_value(self, name: Union[str, sym.Symbol],
                    color: bool = True) -> str:
         """Get the Latex corresponding to the name from _map. If there is none,
@@ -161,6 +155,14 @@ class _LatexManagerSingleton(_ManagerSingleton):
         name = util.symbol_to_name(name)
         self._set_value(name, name)
         return self._get_value(name)
+
+
+def pretty_sym_subs(expr: sym.Expr) -> str:
+    """Substitute species in a sympy expression with their Latex value."""
+    # species_map = {sym.Symbol(key): self[key] for key in self}
+    species_map = {sym.Symbol(key): sym.Symbol(latex_map[key])
+                   for key in set(latex_map.keys()) | set(color_map.keys())}
+    return sym.latex(expr.subs(species_map))
 
 
 color_map = _ColorManagerSingleton()

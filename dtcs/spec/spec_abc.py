@@ -148,8 +148,7 @@ class Spec(SpecABC):
         super().__init__(**kwargs)
 
 
-class SpecCollection(Spec,
-                     collections.abc.MutableSequence):
+class SpecCollection(Spec, collections.abc.MutableSequence):
     """A class used to store and manage a collection of input elements.
 
     Attributes:
@@ -282,14 +281,3 @@ class SpecCollection(Spec,
         if not isinstance(item, str):
             raise TypeError('Checking containment accepts names only.')
         return item in self._names
-
-    # TODO(Andrew) implement iteritems ?
-
-    # @property
-    # def values_by_name(self) -> Dict:
-    #     """Make a dictionary from the name of an element to the element.
-    #
-    #     Returns:
-    #         a dictionary mapping of element name -> element value.
-    #     """
-    #     return {ele.name: ele.value for ele in self.elements}
