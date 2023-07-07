@@ -23,15 +23,11 @@ class CRNSpecABC(SymSpec):
                  *components,
                  rsys: RxnSystemABC = None,
                  species: SpeciesManager = None,
-                 sim_type: str = None,  # TODO(Andrew) Remove
                  **kwargs):
         super().__init__(**kwargs)
 
         self.rsys: RxnSystemABC = rsys
         self.sm: SpeciesManager = species
-        if sim_type:  # So as to not override any default
-            warnings.warn('sim_type parameter is depreciated.', DeprecationWarning)
-            self.sim_type = sim_type
 
         # If they give it components like it's a RxnSystem, deal with it
         rsys_components = []

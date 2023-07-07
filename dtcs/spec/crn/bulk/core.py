@@ -28,12 +28,10 @@ class BulkCRNSpec(CRNSpecABC):
                  max_step: float = 0.01,
                  rsys: BulkRxnSystem = None,
                  species: SpeciesManager = None,
-                 sim_type: str = None,
                  **kwargs):
         super().__init__(*elements,
                          rsys=rsys,
-                         species=species,
-                         sim_type='bulk')
+                         species=species,)
         self.time = time
         self.max_step = 0.1
 

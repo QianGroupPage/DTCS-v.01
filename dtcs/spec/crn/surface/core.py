@@ -40,8 +40,7 @@ class SurfaceCRNSpec(CRNSpecABC):
                  **kwargs):
         super().__init__(*components,
                          rsys=rsys,
-                         species=species,
-                         sim_type='surface')
+                         species=species,)
         self.time = time
         self.runs = runs
         self.size = size
