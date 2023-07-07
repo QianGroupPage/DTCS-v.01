@@ -50,13 +50,14 @@ class BulkRxnSystem(RxnSystemABC):
         schedules: The Schedules and Concs passed during initialization.
         conc_eqs: The ConcEqs in the system.
         conc_diffeqs: The ConcDiffEqs in the system.
-        species_manager: The SpeciesManager the system uses.
         symbol_index: A dictionary {sym.Symbol: int} to keep track of the order
             of the symbols.
         scheduler: A comprehensive Schedule of the system, has entries (which
             might be Conc(species, 0) for each species which isn't set by a
             ConcEq.
     """
+
+    # --- Utility Properties --------------------------------------------------
     @property
     def conc_eqs(self) -> List[ConcEq]:
         return self.by_subclass()[ConcEq]
@@ -85,18 +86,7 @@ class BulkRxnSystem(RxnSystemABC):
     def schedules(self) -> List[Schedule]:
         return self.by_subclass()[Schedule]
 
-    # @property
-    # def color_index(self):
-    #     return {index: self.elements[index].color for index in range(len(self))}
-
-    @property
-    @util.depreciate
-    def scheduler(self) -> List[Schedule]:
-        scheduler = [Conc(symbol, 0) for symbol in self.species_symbols]
-        for schedule in self.schedules:
-            scheduler[self.symbol_index[schedule.symbol]] = schedule
-        return scheduler
-
+    # --- Simulation Aids -----------------------------------------------------
     @property
     def schedule(self) -> Dict[float, Dict[str, float]]:
         scheduler = defaultdict(lambda: defaultdict(float))
@@ -168,6 +158,47 @@ class BulkRxnSystem(RxnSystemABC):
 
         return conc_eq_funcs
 
+    # --- Representation ------------------------------------------------------
+    @feature('jupyter')
+    def display_ode_expressions(self):
+        """TODO"""
+
+        time = sym.symbols('t')
+        diffs = self.get_ode_expressions()
+        symbols = self.species_symbols
+
+        eq_tuples = list(zip(symbols, diffs))
+        eqs = []
+
+        for symbol, deriv in eq_tuples:
+            eqs.append(sym.Eq(sym.Derivative(symbol, time), deriv,
+                              evaluate=False))
+
+        # Display as concentrations
+        conc_subs = {symbol: sym.Symbol(f'[{latex_map[symbol]}]')
+                     for symbol in self.species_symbols}
+        for eq in eqs:
+            display.display(eq.subs(conc_subs))
+
+    def __str__(self):
+        s = self.__class__.__name__ + ' with components:\n'
+        for component in self.elements:
+            comp_lines = str(component).splitlines()
+            s += ''.join([f'\t{line}\n' for line in comp_lines])
+        return s[:-1]
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}(components={repr(self.elements)})'
+
+    # --- Depreciated ---------------------------------------------------------
+    @property
+    @util.depreciate
+    def scheduler(self) -> List[Schedule]:
+        scheduler = [Conc(symbol, 0) for symbol in self.species_symbols]
+        for schedule in self.schedules:
+            scheduler[self.symbol_index[schedule.symbol]] = schedule
+        return scheduler
+
     # TODO(Andrew) look at
     @util.depreciate
     def get_colors(self):
@@ -236,6 +267,169 @@ class BulkRxnSystem(RxnSystemABC):
                 # TODO: using a string as key here, whereas all other keys are symbol.symbols
                 self.color_index[marker_name] = color
         return self.color_index
+
+    @util.depreciate
+    def text(self) -> str:
+        """Return a text representation of the reaction system, describing the chemical equations in
+        natural language."""
+        text: str = ""
+        for rxn in self.reactions:
+            text += rxn.text() + " "
+        return text[:-1]
+
+    @util.depreciate
+    def id(self):
+        """Return a unique identifier for the reactions in this system.
+
+        This identifier does not ignore concentrations or reaction constants. The order of reactions
+        (and whether they are formed as reversible or pairs of regular reactions) also do not
+        matter.
+        """
+        f = []
+        for c in self.elements:
+            if isinstance(c, BulkRxn):
+                f.extend(c.id())
+            elif isinstance(c, conditions.Schedule):
+                f.append(repr(c)) # TODO(rithvik): This is a hack
+        return "_".join(sorted(f))
+
+    @util.depreciate
+    def fingerprint(self):
+        """Return a unique fingerprint for the reactions in this system.
+
+        This identifier ignores concentrations and reaction constants. The order of reactions
+        (and whether they are formed as reversible or pairs of regular reactions) also do not
+        matter.
+        """
+        f = []
+        for c in self.elements:
+            if isinstance(c, BulkRxn):
+                f.extend(c.fingerprint())
+        return "_".join(sorted(f))
+
+    @property
+    @util.depreciate
+    def ode(self):
+        """
+        Return the list of ODE expressions.
+        """
+        return self.get_ode_expressions()
+
+    @util.depreciate
+    def show_ode(self):
+        """
+        Print the ODEs line by line.
+        """
+        for e in self.ode:
+            print(e)
+
+    @util.depreciate
+    def tp_enum(self, dft_outputs: Optional[Dict[str, str]] = None):
+        """
+        Build a new TP relation class based on DFT calculations.
+
+        :dft_ios: a dictionary from reaction name to the corresponding DFT output file path.
+        """
+        self.tprate_relation = {}
+        for name, dft_io in dft_outputs.items():
+            rxn = self.elements_by_name[name]
+            if isinstance(rxn, BulkRevRxn):
+                self.tprate_relation[rxn.name] = TPRateRelation(tp_file=dft_io,
+                                                                init_temp=self.temperature.value,
+                                                                init_pressure=self.pressure.value,
+                                                                # TODO: bug-proof this
+                                                                adsorption=[0] if rxn.is_adsorption(self.species_manager) else [1],
+                                                                desorption=[0] if rxn.is_desorption(self.species_manager) else [1],
+                                                                # TODO: include Surface Rxns
+                                                                init_constants=[rxn.rate_constant, rxn.rate_constant])
+            else:
+                self.tprate_relation[rxn.name] = TPRateRelation(tp_file=dft_io,
+                                                                init_temp=self.temperature.value,
+                                                                init_pressure=self.pressure.value,
+                                                                adsorption=[0] if rxn.is_adsorption(self.species_manager)  else [],
+                                                                desorption=[0] if rxn.is_desorption(self.species_manager)  else [],
+                                                                # TODO: include Surface Rxns
+                                                                init_constants=[rxn.rate_constant])
+        self.tpconc_relation = {}
+        for s in self.schedules:
+            if self.species_manager.is_gas(s.symbol):
+                self.tpconc_relation[s.symbol] = IdealGasLawRelation(p_in_torr=self.pressure.value,
+                                                                     n=s.initial_concentration,
+                                                                     t=self.temperature.value)
+
+    @util.depreciate
+    def tp_next_rsys(self,
+                     t=None,
+                     total_p=None,
+                     partial_pressures=None,
+                     include_rules=False,
+                     inplace=False):
+        """
+        Return a new Rsys following same TP relation.
+
+
+        :param partial_pressures: a dictionary from a gas species to its partial pressure.
+                                  if total_p is set, partial_pressure is a percentage of its value;
+                                  otherwise, use the original temperature value;
+                                  if a gas species does not appear in this dictionary, we assume it has same pressure
+                                  as the partial pressure.
+        :param include_rules: if set to True, apply partial pressures to adsorptions and desorptions involving the only
+                              relevant gas.
+        :return: if inplace, return None; otherwise, return a RxnSystem.
+        """
+        if total_p is None:
+            total_p = self.pressure.value
+        if t is None:
+            t = self.temperature.value
+
+        # Ensure that partial pressure is a dictionary from species name to a floating number.
+        new_partial_pressures = defaultdict(lambda: 1)
+        if partial_pressures:
+            for k, v in partial_pressures.items():
+                if isinstance(k, sym.Symbol):
+                    new_partial_pressures[k.name] = v
+                else:
+                    new_partial_pressures[k] = v
+        partial_pressures = new_partial_pressures
+
+        # TODO: check this step
+        next_constants = {}
+        for name, r in self.tprate_relation.items():
+            # TODO: try to trouble shoot the following lines.
+            sorption_species = self.elements_by_name[name].sorption_species(sm=self.species_manager)
+            if include_rules and sorption_species.name in partial_pressures:
+                pressure = total_p * partial_pressures[sorption_species.name]
+                if pressure == 0:
+                    pressure = 1e-15
+                print(f"{str(self.elements_by_name[name])} at partial pressure {partial_pressures[sorption_species.name]}")
+            else:
+                pressure = total_p
+
+
+            next_constants[name] = r.constants(temp=t, pressure=pressure)
+        next_rsys = self if inplace else copy.deepcopy(self)
+        for name, next_constants in next_constants.items():
+            rxn = next_rsys.elements_by_name[name]
+            if rxn.is_reversible:
+                rxn.set_rates(rate=next_constants[0], rate_reverse=next_constants[1])
+            else:
+                rxn.set_rate(rate=next_constants[0])
+        next_rsys.temperature.value = t
+        next_rsys.pressure.value = total_p
+
+        # Reset gas molecular count, assuming that volume is constant.
+        for s in next_rsys.schedules:
+            if next_rsys.species_manager.is_gas(s.symbol):
+                partial_pressure = total_p * partial_pressures[s.symbol.name]
+                print(f"{s.symbol} has a partial pressure of {partial_pressures[s.symbol.name]}")
+
+
+                new_n = next_rsys.tpconc_relation[s.symbol].calculate_n(p=partial_pressure, t=t)
+                s.update_conc(func=lambda x: new_n, inplace=True)
+        if inplace:
+            return
+        else:
+            return next_rsys
 
     # TODO(Andrew) Uncomment when I install the dependencies
     # def _add_to_network_graph(self, r, p, w):
@@ -435,198 +629,3 @@ class BulkRxnSystem(RxnSystemABC):
     #     self._add_to_network_graph(rxn.reactants.free_symbols, rxn.products.free_symbols, rxn.rate_constant)
     #
     #     return True, ""
-
-    @feature('jupyter')
-    def display_ode_expressions(self):
-        """TODO"""
-
-        time = sym.symbols('t')
-        diffs = self.get_ode_expressions()
-        symbols = self.species_symbols
-
-        eq_tuples = list(zip(symbols, diffs))
-        eqs = []
-
-        for symbol, deriv in eq_tuples:
-            eqs.append(sym.Eq(sym.Derivative(symbol, time), deriv,
-                              evaluate=False))
-
-        # Display as concentrations
-        conc_subs = {symbol: sym.Symbol(f'[{latex_map[symbol]}]')
-                     for symbol in self.species_symbols}
-        for eq in eqs:
-            display.display(eq.subs(conc_subs))
-
-    @util.depreciate
-    def text(self) -> str:
-        """Return a text representation of the reaction system, describing the chemical equations in
-        natural language."""
-        text: str = ""
-        for rxn in self.reactions:
-            text += rxn.text() + " "
-        return text[:-1]
-
-    def __str__(self):
-        s = self.__class__.__name__ + ' with components:\n'
-        for component in self.elements:
-            comp_lines = str(component).splitlines()
-            s += ''.join([f'\t{line}\n' for line in comp_lines])
-        return s[:-1]
-
-    def __repr__(self):
-        return f'{self.__class__.__name__}(components={repr(self.elements)})'
-
-    @util.depreciate
-    def id(self):
-        """Return a unique identifier for the reactions in this system.
-
-        This identifier does not ignore concentrations or reaction constants. The order of reactions
-        (and whether they are formed as reversible or pairs of regular reactions) also do not
-        matter.
-        """
-        f = []
-        for c in self.elements:
-            if isinstance(c, BulkRxn):
-                f.extend(c.id())
-            elif isinstance(c, conditions.Schedule):
-                f.append(repr(c)) # TODO(rithvik): This is a hack
-        return "_".join(sorted(f))
-
-    @util.depreciate
-    def fingerprint(self):
-        """Return a unique fingerprint for the reactions in this system.
-
-        This identifier ignores concentrations and reaction constants. The order of reactions
-        (and whether they are formed as reversible or pairs of regular reactions) also do not
-        matter.
-        """
-        f = []
-        for c in self.elements:
-            if isinstance(c, BulkRxn):
-                f.extend(c.fingerprint())
-        return "_".join(sorted(f))
-
-    @property
-    @util.depreciate
-    def ode(self):
-        """
-        Return the list of ODE expressions.
-        """
-        return self.get_ode_expressions()
-
-    @util.depreciate
-    def show_ode(self):
-        """
-        Print the ODEs line by line.
-        """
-        for e in self.ode:
-            print(e)
-
-    @util.depreciate
-    def tp_enum(self, dft_outputs: Optional[Dict[str, str]] = None):
-        """
-        Build a new TP relation class based on DFT calculations.
-
-        :dft_ios: a dictionary from reaction name to the corresponding DFT output file path.
-        """
-        self.tprate_relation = {}
-        for name, dft_io in dft_outputs.items():
-            rxn = self.elements_by_name[name]
-            if isinstance(rxn, BulkRevRxn):
-                self.tprate_relation[rxn.name] = TPRateRelation(tp_file=dft_io,
-                                                                init_temp=self.temperature.value,
-                                                                init_pressure=self.pressure.value,
-                                                                # TODO: bug-proof this
-                                                                adsorption=[0] if rxn.is_adsorption(self.species_manager) else [1],
-                                                                desorption=[0] if rxn.is_desorption(self.species_manager) else [1],
-                                                                # TODO: include Surface Rxns
-                                                                init_constants=[rxn.rate_constant, rxn.rate_constant])
-            else:
-                self.tprate_relation[rxn.name] = TPRateRelation(tp_file=dft_io,
-                                                                init_temp=self.temperature.value,
-                                                                init_pressure=self.pressure.value,
-                                                                adsorption=[0] if rxn.is_adsorption(self.species_manager)  else [],
-                                                                desorption=[0] if rxn.is_desorption(self.species_manager)  else [],
-                                                                # TODO: include Surface Rxns
-                                                                init_constants=[rxn.rate_constant])
-        self.tpconc_relation = {}
-        for s in self.schedules:
-            if self.species_manager.is_gas(s.symbol):
-                self.tpconc_relation[s.symbol] = IdealGasLawRelation(p_in_torr=self.pressure.value,
-                                                                     n=s.initial_concentration,
-                                                                     t=self.temperature.value)
-
-    @util.depreciate
-    def tp_next_rsys(self,
-                     t=None,
-                     total_p=None,
-                     partial_pressures=None,
-                     include_rules=False,
-                     inplace=False):
-        """
-        Return a new Rsys following same TP relation.
-
-
-        :param partial_pressures: a dictionary from a gas species to its partial pressure.
-                                  if total_p is set, partial_pressure is a percentage of its value;
-                                  otherwise, use the original temperature value;
-                                  if a gas species does not appear in this dictionary, we assume it has same pressure
-                                  as the partial pressure.
-        :param include_rules: if set to True, apply partial pressures to adsorptions and desorptions involving the only
-                              relevant gas.
-        :return: if inplace, return None; otherwise, return a RxnSystem.
-        """
-        if total_p is None:
-            total_p = self.pressure.value
-        if t is None:
-            t = self.temperature.value
-
-        # Ensure that partial pressure is a dictionary from species name to a floating number.
-        new_partial_pressures = defaultdict(lambda: 1)
-        if partial_pressures:
-            for k, v in partial_pressures.items():
-                if isinstance(k, sym.Symbol):
-                    new_partial_pressures[k.name] = v
-                else:
-                    new_partial_pressures[k] = v
-        partial_pressures = new_partial_pressures
-
-        # TODO: check this step
-        next_constants = {}
-        for name, r in self.tprate_relation.items():
-            # TODO: try to trouble shoot the following lines.
-            sorption_species = self.elements_by_name[name].sorption_species(sm=self.species_manager)
-            if include_rules and sorption_species.name in partial_pressures:
-                pressure = total_p * partial_pressures[sorption_species.name]
-                if pressure == 0:
-                    pressure = 1e-15
-                print(f"{str(self.elements_by_name[name])} at partial pressure {partial_pressures[sorption_species.name]}")
-            else:
-                pressure = total_p
-
-
-            next_constants[name] = r.constants(temp=t, pressure=pressure)
-        next_rsys = self if inplace else copy.deepcopy(self)
-        for name, next_constants in next_constants.items():
-            rxn = next_rsys.elements_by_name[name]
-            if rxn.is_reversible:
-                rxn.set_rates(rate=next_constants[0], rate_reverse=next_constants[1])
-            else:
-                rxn.set_rate(rate=next_constants[0])
-        next_rsys.temperature.value = t
-        next_rsys.pressure.value = total_p
-
-        # Reset gas molecular count, assuming that volume is constant.
-        for s in next_rsys.schedules:
-            if next_rsys.species_manager.is_gas(s.symbol):
-                partial_pressure = total_p * partial_pressures[s.symbol.name]
-                print(f"{s.symbol} has a partial pressure of {partial_pressures[s.symbol.name]}")
-
-
-                new_n = next_rsys.tpconc_relation[s.symbol].calculate_n(p=partial_pressure, t=t)
-                s.update_conc(func=lambda x: new_n, inplace=True)
-        if inplace:
-            return
-        else:
-            return next_rsys
-

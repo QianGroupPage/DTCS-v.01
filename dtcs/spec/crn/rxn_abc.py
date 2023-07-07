@@ -17,7 +17,7 @@ from dtcs import config
 from dtcs.common import util
 from dtcs.common.display import pretty_sym_subs
 from dtcs.spec.spec_abc import SpecCollection
-from dtcs.spec.crn.sym_abc import SymSpec, ChemInfo
+from dtcs.spec.crn.sym_abc import SymSpec, ChemInfo, ChemExpression
 from dtcs.common.const import K, P, DG, GIBBS_ENERGY, PRESSURE, TEMPERATURE, \
     PRETTY_SUBS
 
@@ -528,6 +528,10 @@ class RxnSystemABC(SymSpec, SpecCollection):
         return self.by_subclass()[RxnABC]
 
     @property
+    def network(self) -> List[Union[RxnABC, ChemExpression]]:
+        return self.by_subclass()[RxnABC] + self.by_subclass()[ChemExpression]
+
+    @property
     def species(self) -> List[str]:
         return self._species
 
@@ -614,7 +618,7 @@ class RxnSystemABC(SymSpec, SpecCollection):
     # --- Representation ------------------------------------------------------
     def _repr_latex_(self) -> Optional[str]:
         latex = r'$ \text{Reaction System: } \newline \begin{gathered}'
-        for index, rxn in enumerate(self.reactions):
+        for index, rxn in enumerate(self.network):
             latex += f'({index}) & ' \
                      + rxn._repr_latex_()[1:-1] \
                      + r' \newline '

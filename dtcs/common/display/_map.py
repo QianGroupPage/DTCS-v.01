@@ -157,10 +157,10 @@ class _LatexManagerSingleton(_ManagerSingleton):
         return self._get_value(name)
 
 
-def pretty_sym_subs(expr: sym.Expr) -> str:
+def pretty_sym_subs(expr: sym.Expr, fmt='{}') -> str:
     """Substitute species in a sympy expression with their Latex value."""
     # species_map = {sym.Symbol(key): self[key] for key in self}
-    species_map = {sym.Symbol(key): sym.Symbol(latex_map[key])
+    species_map = {sym.Symbol(key): sym.Symbol(fmt.format(latex_map[key]))
                    for key in set(latex_map.keys()) | set(color_map.keys())}
     return sym.latex(expr.subs(species_map))
 
