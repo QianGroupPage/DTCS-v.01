@@ -30,7 +30,7 @@ class SymSpec(Spec):
 
     def subs(self, mapping: Mapping):
         """Return a copy with substituted symbols."""
-        clone = copy.copy(self)
+        clone = copy.deepcopy(self)
         clone.rename(mapping)
         return clone
 

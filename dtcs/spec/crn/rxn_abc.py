@@ -1,21 +1,35 @@
 """"""
-import math
-from typing import Optional, Set, Mapping, Dict, Tuple, List
+from typing import Callable, Dict, List, Mapping, Optional, Set, TypeAlias, \
+    Tuple, Union
+from numbers import Number
 
-import logging
 import copy
+import functools
+import logging
+import math
 
 import sympy as sym
+from sympy.physics import units
 from monty.json import jsanitize, MontyDecoder
 from sympy.parsing import sympy_parser
 
+from dtcs import config
 from dtcs.common import util
 from dtcs.common.display import latex_map
 from dtcs.spec.spec_abc import SpecCollection
 from dtcs.spec.crn.sym_abc import SymSpec, ChemInfo
+from dtcs.common.const import K, P, DG, GIBBS_ENERGY, PRESSURE, TEMPERATURE, \
+    PRETTY_SUBS
 
+Relation: TypeAlias = Union[sym.Expr, Callable, float]
 
 _logger = logging.getLogger(__name__)
+
+DG_TO_RATE = {
+    'basic': sym.exp(-0.1 * DG / (units.boltzmann * K)),
+    'adsorption': P / (0.1 * units.torr) * \
+                  sym.exp(-0.1 * DG / (units.boltzmann * K)),
+}
 
 
 class RxnABC(SymSpec):
@@ -27,8 +41,15 @@ class RxnABC(SymSpec):
         rate_constant: A float, the rate constant of the chemical reaction.
     """
 
-    def __init__(self, reactants: Optional[sym.Expr],
-                 products: Optional[sym.Expr], k: float, **kwargs):
+    def __init__(
+            self,
+            reactants: Optional[sym.Expr],
+            products: Optional[sym.Expr], *,
+            k: Optional[Relation] = None,
+            dg: Optional[Relation] = None,
+            ktype: Optional[str] = None,
+            **kwargs):
+
         """Create a new reaction by giving equation of the reactants.
 
         This is intended to look like reactants -> products @ rate k. That is,
@@ -39,37 +60,159 @@ class RxnABC(SymSpec):
             reactants: The left-hand side of the chemical reaction.
             products: The right-hand side of the chemical reaction.
             k: The rate constant.
+            dg: The Gibbs free energy of the reaction.
+            ktype: If you're calculating k using one of the default methods,
+                supply this. Currently 'basic' and 'adsorption' are supported.
         """
         super().__init__(**kwargs)
-        self.rate_constant = k
 
+        # --- Class Variables ---
+        self._gibbs_info: Optional[Relation]
+        self._rate_info: Optional[Relation]
+        self.reactants: sym.Expr
+        self.products: sym.Expr
+
+        # --- Initialize ---
         # Note that the type suggestion is Optional[sym.Expr].
         # It is possible that the user could pass None or 0 or 1 in.
         # Hence, sanitize input
-        if not isinstance(reactants, sym.Expr):
-            self.reactants = sym.sympify(0)
-        else:
-            self.reactants = reactants
+        self.reactants = reactants if isinstance(reactants, sym.Expr) \
+            else sym.sympify(0)
+        self.products = products if isinstance(products, sym.Expr) \
+            else sym.sympify(0)
 
-        if not isinstance(products, sym.Expr):
-            self.products = sym.sympify(0)
+        # There are a lot of possiblities for inputs of k and dG.
+        if (k is not None) and (ktype is not None):
+            raise TypeError('Do not supply both ktype and k.')
+        elif (isinstance(k, (Callable, sym.Expr)) or ktype) and (dg is None):
+            # The left clause indicates that they want to calculate the rate
+            raise TypeError('Cannot calculate rate without gibbs energy')
+        elif (k is None) and (ktype is None) and (dg is None):
+            # They don't have to supply any rate or gibbs information
+            self._rate_info = self._gibbs_info = None
         else:
-            self.products = products
+            # We now know that they want to calculate the rate, and that
+            #  it should be possible, so we save everything.
+            self._rate_info = k if k is not None else DG_TO_RATE[ktype or 'basic']
+            self._gibbs_info = dg
 
+    # --- Properties ----------------------------------------------------------
+    @property
+    def name(self):  # TODO: Used internally, does it need to be unique?
+        return str(self)
+
+    @property
+    def _is_fixed_rate(self) -> bool:
+        return isinstance(self._rate_info, Number)
+
+    @property
+    def _is_func_rate(self) -> bool:
+        return isinstance(self._rate_info, Callable)
+
+    @property
+    def _is_sym_rate(self) -> bool:
+        return isinstance(self._rate_info, sym.Expr)
+
+    @property
+    def _is_no_rate(self) -> bool:
+        return self._rate_info is None
+
+    # --- Chemistry -----------------------------------------------------------
+    def get_rate(
+            self,
+            pressure: float = config.ref_tp['pressure'],
+            temperature: float = config.ref_tp['temperature']
+    ) -> Optional[float]:
+        if self._is_fixed_rate:
+            return float(self._rate_info)
+        elif self._is_func_rate:
+            return self._rate_info(self.get_gibbs(), pressure, temperature)
+        elif self._is_sym_rate:
+            dg_to_rate = _lambdify_dg_to_rate(self._rate_info)
+            return dg_to_rate(self.get_gibbs(), pressure, temperature)
+
+    def get_gibbs(self):
+        return self._gibbs_info
+
+    # --- Utility -----------------------------------------------------
     def get_symbols(self) -> Set[sym.Symbol]:
         symbols = set()
         symbols.update(self.reactants.free_symbols)
         symbols.update(self.products.free_symbols)
+        if self._is_sym_rate: symbols.update(self._rate_info.free_symbols)
         return symbols
+
+    def rename(self, mapping: Mapping):
+        self.reactants = self.reactants.subs(mapping)
+        self.products = self.products.subs(mapping)
+        if self._is_sym_rate:
+            self._rate_info = self._rate_info.subs(mapping)
+
+    # --- Serialization -----------------------------------------------------
+    def as_dict(self, sanitize=True) -> dict:
+        """Return a MSON-serializable dict representation."""
+        raise NotImplementedError()
+        d = super().as_dict(sanitize=False)
+        d['reactants'] = str(d['reactants'])
+        d['products'] = str(d['products'])
+        if sanitize:
+            d = jsanitize(d, strict=True)
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict):
+        """Load from a dict representation."""
+        raise NotImplementedError()
+        d['reactants'] = sympy_parser.parse_expr(d['reactants'])
+        d['products'] = sympy_parser.parse_expr(d['products'])
+        d['k'] = d.pop('rate_constant')
+        return super(RxnABC, cls).from_dict(d)
+
+    # --- Representation -----------------------------------------------------
+    def _repr_latex_(self) -> Optional[str]:
+        # Create a string for the gibbs energy beforehand
+        unit_dg = sym.latex(config.units['energy'])
+        dg_string = None if self.get_gibbs() is None else \
+            r'\, @ \ \Delta G\! = \! ' + f'{self.get_gibbs():.3f}\\, {unit_dg}'
+
+        # First we display the reaction
+        st = '$' + latex_map.sym_subs(self.reactants) \
+             + r' \longrightarrow ' \
+             + latex_map.sym_subs(self.products)
+
+        # Choose to display k or dG, whichever is a number
+        if self._is_fixed_rate:
+            st += r'\, @ \ k\! = \! ' + f'{self.get_rate():.3f}$'
+        elif self._is_func_rate:
+            st += dg_string + r', \ k\! \sim \! \Delta G$'
+        elif self._is_sym_rate:
+            rate_info = self._rate_info.subs(PRETTY_SUBS)
+            st += dg_string + r', \ k\! = \! ' + f'{sym.latex(rate_info)}$'
+        else:
+            st += '$'
+
+        return st
+
+    def __str__(self):
+        return f'{self.reactants} -> {self.products}'
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}' \
+               f'(reactants={repr(self.reactants)}, ' \
+               f'products={repr(self.products)}, ' \
+               f'k={repr(self._rate_info)}), ' \
+               f'dg={repr(self._gibbs_info)})'
+
+    # --- Depreciated ---------------------------------------------------------
+    @property
+    @util.depreciate
+    def rate_constant(self):
+        return self.get_rate()
 
     @property
     @util.depreciate
     def rate(self):  # TODO(Andrew): Remove, for bodge
         return self.rate_constant
-
-    @property
-    def name(self):
-        return str(self)
 
     @property
     @util.depreciate
@@ -90,27 +233,6 @@ class RxnABC(SymSpec):
         :return: a list of symbols on the reactant side.
         """
         return [s for s in self.products.free_symbols]
-
-    def rename(self, mapping: Mapping):
-        self.reactants.subs(mapping)
-        self.products.subs(mapping)
-
-    def as_dict(self, sanitize=True) -> dict:
-        """Return a MSON-serializable dict representation."""
-        d = super().as_dict(sanitize=False)
-        d['reactants'] = str(d['reactants'])
-        d['products'] = str(d['products'])
-        if sanitize:
-            d = jsanitize(d, strict=True)
-        return d
-
-    @classmethod
-    def from_dict(cls, d: dict):
-        """Load from a dict representation."""
-        d['reactants'] = sympy_parser.parse_expr(d['reactants'])
-        d['products'] = sympy_parser.parse_expr(d['products'])
-        d['k'] = d.pop('rate_constant')
-        return super(RxnABC, cls).from_dict(d)
 
     @util.depreciate
     def text(self) -> str:
@@ -138,29 +260,13 @@ class RxnABC(SymSpec):
             conjunction, units, end_comma = "", "units", ","
             if len(items) <= 2:
                 end_comma = ""
-            if i == len(items)-1 and len(items) > 1:
+            if i == len(items) - 1 and len(items) > 1:
                 conjunction, end_comma = "and ", ""
             if coeff == 1:
                 units = "unit"
             text += f"{conjunction}{coeff} {units} of {symbol}{end_comma} "
 
         return text[:-1]
-
-    def _repr_latex_(self) -> Optional[str]:
-        return '$' + latex_map.sym_subs(self.reactants) \
-               + r' \longrightarrow ' \
-               + latex_map.sym_subs(self.products) \
-               + r'\ \ @ k\! = \! ' + f'{self.rate_constant:.3f}' \
-               + '$'
-
-    def __str__(self):
-        return f'{self.reactants} -> {self.products} @ k={self.rate_constant}'
-
-    def __repr__(self):
-        return f'{self.__class__.__name__}' \
-               f'(reactants={repr(self.reactants)}, ' \
-               f'products={repr(self.products)}, ' \
-               f'k={self.rate_constant})'
 
     @util.depreciate
     def id(self):
@@ -190,9 +296,17 @@ class RevRxnABC(RxnABC):
     Its use is to be quickly unpacked into two Rxns.
     """
 
-    def __init__(self, reactants: Optional[sym.Expr],
-                 products: Optional[sym.Expr], k: float,
-                 k2: Optional[float] = None, **kwargs):
+    def __init__(
+            self,
+            reactants: Optional[sym.Expr],
+            products: Optional[sym.Expr],
+            k: Optional[Relation] = None,
+            k2: Optional[Relation] = None,
+            dg: Optional[Relation] = None,
+            ktype: Optional[str] = None,
+            ktype2: Optional[str] = None,
+            **kwargs
+    ):
         """Create a reversible reaction by giving equation.
 
         This is intended to look like reactants <-> products @ rate k1,
@@ -204,46 +318,166 @@ class RevRxnABC(RxnABC):
             k: The rate constant.
             k2: Optional, the rate constant for the reverse reaction. If not
                 supplied, it's assumed to be 1/k.
+            dg: The Gibbs free energy of the reaction.
+            ktype: If you're calculating k using one of the default methods,
+                supply this. Currently 'basic' and 'adsorption' are supported.
+            ktype2: ktype for the reverse reaction.
         """
 
-        super().__init__(reactants=reactants, products=products, k=k, **kwargs)
-        self.rate_constant_reverse = k2 or 1 / self.rate_constant
+        super().__init__(
+            reactants=reactants,
+            products=products,
+            k=k,
+            dg=dg,
+            ktype=ktype,
+        )
+        # --- Class Variables ---
+        self._rev_rate_info: Optional[Relation]
+
+        # --- Initialize ---
+        if (k2 is not None) and (ktype2 is not None):
+            raise TypeError('Do not supply both ktype2 and k2.')
+        elif (k2 is not None) or (ktype2 is not None):
+            # They are explicitly supplying k2 information
+            if self._is_no_rate:
+                raise TypeError('Do not supply k2 or ktype2 without sufficient '
+                                'information to calculate k1.')
+            # We have a working k1, so let's save k2's information.
+            self._rev_rate_info = k2 if k2 is not None \
+                else DG_TO_RATE[ktype2]
+        else:
+            # The plan is to have k2 = 1/k in this situation, if k exists.
+            self._rev_rate_info = None
+
+    # --- Properties ----------------------------------------------------------
+    @property
+    def _is_fixed_rev_rate(self) -> bool:
+        return isinstance(self._rev_rate_info, Number)
+
+    @property
+    def _is_func_rev_rate(self) -> bool:
+        return isinstance(self._rev_rate_info, Callable)
+
+    @property
+    def _is_sym_rev_rate(self) -> bool:
+        return isinstance(self._rev_rate_info, sym.Expr)
+
+    @property
+    def _is_no_rev_rate(self) -> bool:
+        return self._rev_rate_info is None
+
+    # --- Chemistry -----------------------------------------------------------
+    def get_rev_rate(
+            self,
+            pressure: float = config.ref_tp['pressure'],
+            temperature: float = config.ref_tp['temperature']
+    ) -> Optional[float]:
+        if self._is_fixed_rev_rate:
+            return float(self._rev_rate_info)
+        elif self._is_func_rev_rate:
+            return self._rev_rate_info(-1 * self.get_gibbs(), pressure, temperature)
+        elif self._is_sym_rev_rate:
+            dg_to_rate = _lambdify_dg_to_rate(self._rev_rate_info)
+            return dg_to_rate(-1 * self.get_gibbs(), pressure, temperature)
+        # After we've tried using the supplied information about the reverse
+        #  reaction, we default to trying to invert the forward reaction.
+        elif self._is_fixed_rate:
+            # If rate 1 exists we can default to 1 / k1.
+            return float(1 / self._rate_info)
+        elif self._is_func_rate:
+            return self._rate_info(-1 * self.get_gibbs(), pressure, temperature)
+        elif self._is_sym_rate:
+            dg_to_rate = _lambdify_dg_to_rate(self._rate_info)
+            return dg_to_rate(-1 * self.get_gibbs(), pressure, temperature)
 
     def to_rxns(self) -> Tuple[RxnABC, RxnABC]:
-        return RxnABC(self.reactants, self.products, k=self.rate_constant), \
-               RxnABC(self.products, self.reactants, k=self.rate_constant_reverse)
+        gibbs_info = self._gibbs_info and -1 * self._gibbs_info
+        rev_rate_info = self._rev_rate_info if not self._is_no_rev_rate else (
+            1 / self._rate_info if self._is_fixed_rate else self._rate_info
+        )
 
+        return RxnABC(self.reactants, self.products,
+                      k=self._rate_info, dg=self._gibbs_info), \
+               RxnABC(self.products, self.reactants,
+                      k=rev_rate_info, dg=gibbs_info)
+
+    # --- Utility -----------------------------------------------------
+    def get_symbols(self) -> Set[sym.Symbol]:
+        symbols = super().get_symbols()
+        if self._is_sym_rev_rate:
+            symbols.update(self._rev_rate_info.free_symbols)
+        return symbols
+
+    def rename(self, mapping: Mapping):
+        super().rename(mapping)
+        if self._is_sym_rev_rate:
+            self._rev_rate_info = self._rev_rate_info.subs(mapping)
+
+    # --- Serialization -----------------------------------------------------
     @classmethod
     def from_dict(cls, d: dict):
+        raise NotImplementedError()
         d['k2'] = d.pop('rate_constant_reverse')
         return super(RevRxnABC, cls).from_dict(d)
 
+    # --- Representation -----------------------------------------------------
     def _repr_latex_(self) -> Optional[str]:
-        latex = '$' + latex_map.sym_subs(self.reactants) \
-               + r' \longleftrightarrow ' \
-               + latex_map.sym_subs(self.products) \
-               + r'\ \ @ k\! = \! ' + f'{self.rate_constant:.3f}' \
+        # Create a string for the gibbs energy beforehand
+        unit_dg = sym.latex(config.units['energy'])
+        dg_string = None if self.get_gibbs() is None else \
+            r'\, @ \ \Delta G\! = \! ' + f'{self.get_gibbs():.3f}\\, {unit_dg}'
 
-        if not math.isclose(
-                self.rate_constant,
-                1 / self.rate_constant_reverse,
-                rel_tol=1e-3
-        ):
-            latex += r', k_-\! = \! ' + f'{self.rate_constant_reverse:.3f}' \
+        # First we display the reaction
+        st = '$' + latex_map.sym_subs(self.reactants) \
+             + r' \longleftrightarrow ' \
+             + latex_map.sym_subs(self.products)
 
-        latex += '$'
-        return latex
+        # Create the reverse rate's string in advance so we can add it by
+        #  casework later and not have to worry we're doing the wrong one.
+        rev_rate_str = '$'
+        if self._is_fixed_rev_rate:
+            rev_rate_str = r', \ k_-\! = \! ' + f'{self.get_rev_rate():.3f}$'
+        elif self._is_sym_rev_rate:
+            rev_rate_info = self._rev_rate_info.subs(PRETTY_SUBS)
+            rev_rate_str = r', \ k_-\! = \! ' + f'{sym.latex(rev_rate_info)}$'
+        elif self._is_func_rev_rate:
+            rev_rate_str = r', \ k_-\! \sim \! \Delta G$'
+
+        if self._is_fixed_rate:
+            st += r'\, @ \ k\! = \! ' + f'{self.get_rate():.3f}'
+            st += rev_rate_str
+        elif self._is_func_rate and self._is_func_rev_rate:
+            st += dg_string + r', \ k, k_-\! \sim \! \Delta G$'
+        elif self._is_func_rate:
+            st += dg_string + r', \ k\! \sim \! \Delta G' + rev_rate_str
+        elif self._is_sym_rate:
+            rate_info = self._rate_info.subs(PRETTY_SUBS)
+            st += dg_string
+            st += r', \ k\! = \! ' + f'{sym.latex(rate_info)}'
+            st += rev_rate_str
+        else:
+            st += rev_rate_str
+
+        return st
 
     def __str__(self):
-        return f'{self.reactants} <-> {self.products} ' \
-               f'@ k={self.rate_constant}, k2={self.rate_constant_reverse}'
+        return f'{self.reactants} <-> {self.products}'
 
     def __repr__(self):
         return f'{self.__class__.__name__}' \
                f'(reactants={repr(self.reactants)}, ' \
                f'products={repr(self.products)}, ' \
-               f'k={self.rate_constant}, k2={self.rate_constant_reverse})'
+               f'k={repr(self._rate_info)}), ' \
+               f'k2={repr(self._rev_rate_info)}), ' \
+               f'dg={repr(self._gibbs_info)})'
 
+    # --- Depreciated ---------------------------------------------------------
+    @property
+    @util.depreciate
+    def rate_constant_reverse(self):
+        return self.get_rev_rate()
+
+    @util.depreciate
     def set_rates(self, rate: float, rate_reverse: Optional[float]) -> None:
         """
         Set the rate and its reverse.
@@ -257,20 +491,23 @@ class RevRxnABC(RxnABC):
             rate_reverse = 1 / rate
         self.rate_constant_reverse = rate_reverse
 
+    @util.depreciate
     def id(self):
         """Return a unique identifier for this reaction
         This identifier is intentionally designed to return the same result as if
         same reversible reaction formed with two Rxns.
         """
-        return [f'{self.reactants}->{self.products}@{self.rate_constant}',f'{self.products}->{self.reactants}@{self.rate_constant_reverse}']
+        return [f'{self.reactants}->{self.products}@{self.rate_constant}',
+                f'{self.products}->{self.reactants}@{self.rate_constant_reverse}']
 
+    @util.depreciate
     def fingerprint(self):
         """Return a unique identifier for this reaction, ignoring the reaction constants.
 
         This fingerprint is intentionally designed to return the same result as fingerprinting the
         same reversible reaction formed with two Rxns.
         """
-        return [f'{self.reactants}->{self.products}',f'{self.products}->{self.reactants}']
+        return [f'{self.reactants}->{self.products}', f'{self.products}->{self.reactants}']
 
 
 class RxnSystemABC(SymSpec, SpecCollection):
@@ -426,3 +663,22 @@ class RxnSystemABC(SymSpec, SpecCollection):
 
     def __repr__(self):
         return f'{self.__class__.__name__}(components={repr(self.elements)})'
+
+
+@functools.lru_cache(maxsize=127)
+def _lambdify_dg_to_rate(expr: sym.Expr):
+    """Turns a sympy expression expression of DG, P, and K into a function."""
+    gibbs, time, pressure, temp = sym.symbols('gibbs time pressure temp')
+
+    dg_to_rate_expr = expr.subs({
+        GIBBS_ENERGY: gibbs * config.units['energy'],
+        PRESSURE: pressure * config.units['pressure'],
+        TEMPERATURE: temp * config.units['temperature'],
+    })
+
+    dg_to_rate_expr = units.convert_to(dg_to_rate_expr, config.unit_system)
+
+    return sym.lambdify(
+        args=(gibbs, pressure, temp),
+        expr=dg_to_rate_expr,
+    )
