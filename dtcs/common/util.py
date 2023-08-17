@@ -156,3 +156,15 @@ def feature(extra, error=False):
             return func(*args, **kwargs)
         return decorated_func
     return requires_decorator
+
+
+def flatten_dictionary(dic, prefix=tuple()):
+    # Base case
+    if not isinstance(dic, dict):
+        return {prefix: dic}
+
+    out_dict = {}
+    for key, value in dic.items():
+        sub_dict = flatten_dictionary(value, prefix=prefix + (key,))
+        out_dict.update(sub_dict)
+    return out_dict

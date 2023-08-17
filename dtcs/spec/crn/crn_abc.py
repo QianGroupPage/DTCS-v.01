@@ -12,7 +12,7 @@ from dtcs.spec.species import SpeciesManager
 from dtcs.optim.gp import evaluate
 
 from dtcs.optim.gibbs import CRNGibbsDataset
-from dtcs.optim.sys_gen import system_generator
+from dtcs.optim.sys_gen import system_generator, xps_generator
 
 
 class CRNSpecABC(SymSpec):
@@ -61,6 +61,12 @@ class CRNSpecABC(SymSpec):
     def get_rates(self):
         return self.rsys.get_rates()
 
+    def subs_gibbs(self, gibbs):
+        """TODO(Andrew)"""
+        crn = copy.deepcopy(self)
+        crn.rsys = self.rsys.subs_gibbs(gibbs)
+        return crn
+
     def subs_rates(self, rates):
         """TODO(Andrew)"""
         crn = copy.deepcopy(self)
@@ -82,14 +88,13 @@ class CRNSpecABC(SymSpec):
     def fit_gibbs(
             self,
             sample_at_ev,
-            gibbs_to_rates,
+            # gibbs_to_rates,
             num_energies,
             **system_kwargs
     ):
         sys = system_generator(
             crn=self,
             sample_at_ev=sample_at_ev,
-            gibbs_to_rates=gibbs_to_rates,
             **system_kwargs,
         )
 
@@ -97,6 +102,12 @@ class CRNSpecABC(SymSpec):
             sim=sys,
             crn=self,
             num_energies=num_energies,
+        )
+
+        # TODO(Andrew): This is a bodge for testing
+        dsg._xps = xps_generator(
+            crn=self,
+            **system_kwargs,
         )
 
         return dsg

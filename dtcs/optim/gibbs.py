@@ -6,24 +6,13 @@ import numpy as np
 import pandas as pd
 from IPython import display
 
+from dtcs.common.util import flatten_dictionary
 from dtcs.twin.xps import XPSExperiment
 
 import scipy
 from datetime import datetime
 from dtcs.optim.gp.core import kernel_l2_single_task
 from gpcam.autonomous_experimenter import AutonomousExperimenterGP
-
-
-def flatten_dictionary(dic, prefix=tuple()):
-    # Base case
-    if not isinstance(dic, dict):
-        return {prefix: dic}
-
-    out_dict = {}
-    for key, value in dic.items():
-        sub_dict = flatten_dictionary(value, prefix=prefix + (key,))
-        out_dict.update(sub_dict)
-    return out_dict
 
 
 class CRNGibbsDataset:
@@ -53,6 +42,7 @@ class CRNGibbsDataset:
         # self.gibbs_cols = list(ds.gibbs.columns.droplevel(1).droplevel(1))
         self.set_goal(goal if goal is not None else {})
 
+    # --- Optimization Routines -----------------------------------------------
     def optimize_bh(
             self,
             fit: float = 1e-2,
@@ -128,6 +118,7 @@ class CRNGibbsDataset:
         )
         return exp
 
+    # --- Constructors --------------------------------------------------------
     @classmethod
     def from_dataset(cls, ds):
         """So I don't have to re-load the data each time I modify this class."""
@@ -164,6 +155,7 @@ class CRNGibbsDataset:
             **kwargs,
         )
 
+    # --- Properties ----------------------------------------------------------
     @property
     def sm(self):
         return self.crn.sm
@@ -180,6 +172,11 @@ class CRNGibbsDataset:
     def samples(self):
         return self.df['samples']
 
+    @property
+    def best(self):
+        return self.df.sort_values(by='score').iloc[0]
+
+    # --- Utility -------------------------------------------------------------
     def empty(self):
         self.df.drop(self.df.index, inplace=True)
 
@@ -213,55 +210,27 @@ class CRNGibbsDataset:
             self._sim_notarized(gibbs, ridx)
             return self[ridx]['score'].iloc[0]
 
-    def plot(self, ridx):
-        """Plot the given row."""
-        # Simulate all the XPSs we need
-        observables = []
-        row = self.df.loc[ridx]['samples']
+    def plot(self, ridx=None):
+        """Plot the given row. Defaults to the best one."""
+        row = self.df.loc[ridx]['samples'] if ridx else self.best
 
-        # We're going to create title_and_concs, which is a list of
-        #  names for each observable and the concentrations for it.
-        #  It's more complicated if there's more than one condition.
-        title_and_concs = []
-        if row.index.nlevels > 1:
-            # This groups by all but the last level in the series, which is the concentrations.
-            for cond, series in row.groupby(level=tuple(range(row.index.nlevels))[:-1]):
-                if not isinstance(cond, tuple):
-                    cond = (cond,)
-                concs = series[cond]
-                title_and_concs.append((', '.join(cond), concs))
-        else:
-            # If there's only one set of conditions, it's easy
-            title_and_concs = [('System', row)]
+        # TODO: This currently relies on a bodge
+        xpss = flatten_dictionary(self._xps(row['gibbs']))
 
-        for title, concs in title_and_concs:
-            xps = XPSExperiment(
-                species_manager=self.sm,
-                # experimental=exp,
-                sim_concs={specie: concs[specie.name] for specie in self.sm.symbols
-                           if specie.name in concs},
-                autoresample=False,
-            )
-
-            observables.append((xps.resample(), title))
-
-        # Make enough plots for all of them
         fig, axes = plt.subplots(
-            len(observables), 1,
-            figsize=(8, 2.5 * len(observables)),
-            gridspec_kw=dict(
-                hspace=0.5
-            )
+            len(xpss), 1,
+            sharex=True,
+            figsize=(10, 2 * len(xpss)),
         )
-        # If there's on plot, wrap it
-        axes = axes if isinstance(axes, Iterable) else (axes,)
 
-        for (xo, title), ax in zip(observables, axes):
+        for (conds, xps), ax in zip(xpss.items(), axes):
+            xo = xps.resample()
+            xo.title = ', '.join(conds)
+
             xo.plot(
                 ax=ax,
-                deconv_gaussians=False,
             )
-            ax.set_title(title)
+            ax.get_legend().remove()
 
     @staticmethod
     def _default_printer(dsg, gibbs, ridx):

@@ -566,23 +566,46 @@ class RxnSystemABC(SymSpec, SpecCollection):
 
     # TODO: Needs to be updated
     @util.depreciate
-    def subs_rates(self, rates):
-        """
-        TODO(Andrew)
+    def subs_gibbs(self, gibbs):
+        """Returns a copy with new Gibbs energies from each of the reactions.
+        This function relies on self.reactions not changing in order.
         """
         rsys = copy.deepcopy(self)
         index = 0
-        for elem in rsys.elements:
-            if isinstance(elem, RevRxnABC):
-                if isinstance(rates[index], tuple):
-                    elem.rate_constant = rates[index][0]
-                    elem.rate_constant_reverse = rates[index][1]
+        for rxn in rsys.reactions:
+            if isinstance(rxn, RevRxnABC):
+                if isinstance(gibbs[index], tuple):
+                    rxn._gibbs_info = gibbs[index][0]
+                    rxn._gibbs_info = gibbs[index][1]
                 else:
-                    elem.rate_constant = rates[index]
-                    elem.rate_constant_reverse = 1 / rates[index]
+                    rxn._gibbs_info = gibbs[index]
+                    rxn._gibbs_info = -gibbs[index]
                 index += 1
-            elif isinstance(elem, RxnABC):
-                elem.rate_constant = rates[index]
+            elif isinstance(rxn, RxnABC):
+                rxn._gibbs_info = gibbs[index]
+                index += 1
+        return rsys
+
+    # TODO: Needs to be updated
+    @util.depreciate
+    def subs_rates(self, rates):
+        """
+        Returns a copy with new rates from each of the reactions. This function
+        relies on self.reactions not changing in order.
+        """
+        rsys = copy.deepcopy(self)
+        index = 0
+        for rxn in rsys.reactions:
+            if isinstance(rxn, RevRxnABC):
+                if isinstance(rates[index], tuple):
+                    rxn.rate_constant = rates[index][0]
+                    rxn.rate_constant_reverse = rates[index][1]
+                else:
+                    rxn.rate_constant = rates[index]
+                    rxn.rate_constant_reverse = 1 / rates[index]
+                index += 1
+            elif isinstance(rxn, RxnABC):
+                rxn.rate_constant = rates[index]
                 index += 1
         return rsys
 
