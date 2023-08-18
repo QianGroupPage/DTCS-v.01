@@ -119,7 +119,7 @@ EXTRAS = {
         'jupyter',
     ],
 
-    'matproj': ['atomate', 'gpcam'],
+    'matproj': ['atomate', 'gpcam', 'pymongo'],
 
     'scrn-video': [
         'pygame',

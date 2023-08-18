@@ -23,6 +23,7 @@ class CRNSpecABC(SymSpec):
                  *components,
                  rsys: RxnSystemABC = None,
                  species: SpeciesManager = None,
+                 sim_type: str = None,  # TODO(Andrew) Remove
                  **kwargs):
         super().__init__(**kwargs)
 
