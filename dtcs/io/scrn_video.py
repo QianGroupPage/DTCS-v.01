@@ -1,31 +1,34 @@
 """TODO(Andrew)"""
 
 import copy
-import math
-
-import matplotlib.pyplot as plt
-import pygame
-
-from dtcs.sim.surface_crn.surface_crns.views.grid_display import (
-    HexGridDisplay, ParallelEmulatedSquareGridDisplay, SquareGridDisplay)
-from dtcs.sim.surface_crn.surface_crns.views.coord_grid_display import \
-    CoordGridDisplay
-from dtcs.sim.surface_crn.hex_grid_with_intersect import HexGridPlusIntersectionDisplay
-from dtcs.sim.surface_crn.surface_crns.views.legend_display import LegendDisplay
-from dtcs.sim.surface_crn.surface_crns.views.text_display import TextDisplay
-from dtcs.sim.surface_crn.surface_crns.views.time_display import TimeDisplay
-
-from dtcs.sim.surface_crn.surface_crns.simulators.queue_simulator import QueueSimulator
-from dtcs.sim.surface_crn.surface_crns.pygbutton import *
-
 import logging
-_logger = logging.getLogger(__name__)
-
+import math
 import os
 
-import cv2
+_logger = logging.getLogger(__name__)
+
+import matplotlib.pyplot as plt
 import numpy as np
 
+pygame = False
+try:
+    import pygame
+    from dtcs.sim.surface_crn.surface_crns.views.grid_display import (
+        HexGridDisplay, ParallelEmulatedSquareGridDisplay, SquareGridDisplay)
+    from dtcs.sim.surface_crn.surface_crns.views.coord_grid_display import \
+        CoordGridDisplay
+    from dtcs.sim.surface_crn.hex_grid_with_intersect import HexGridPlusIntersectionDisplay
+    from dtcs.sim.surface_crn.surface_crns.views.legend_display import LegendDisplay
+    from dtcs.sim.surface_crn.surface_crns.views.text_display import TextDisplay
+    from dtcs.sim.surface_crn.surface_crns.views.time_display import TimeDisplay
+
+    from dtcs.sim.surface_crn.surface_crns.simulators.queue_simulator import QueueSimulator
+    from dtcs.sim.surface_crn.surface_crns.pygbutton import *
+except ModuleNotFoundError:
+    _logger.info('Didn\'t load module pygame')
+
+try: import cv2
+except ModuleNotFoundError: _logger.info('Didn\'t load module cv2')
 
 MOVIE_SUBDIRECTORY = 'movies'
 FRAME_SUBDIRECTORY = 'frames'
@@ -38,10 +41,11 @@ BLACK = (0, 0, 0)
 # time_font = time_font = pygame.font.SysFont(pygame.font.get_default_font(), 24)
 # import matplotlib
 # time_font = time_font = pygame.font.SysFont(matplotlib.rcParams['font.family'], 24)
-time_font = time_font = pygame.font.SysFont('arialttf', 24)
 TEXT_X_BUFFER = 10
 TEXT_Y_BUFFER = 5
-TEXT_HEIGHT = time_font.get_linesize() + 2 * TEXT_Y_BUFFER
+if pygame:
+    time_font = pygame.font.SysFont('arialttf', 24)
+    TEXT_HEIGHT = time_font.get_linesize() + 2 * TEXT_Y_BUFFER
 button_width = 60
 button_height = 30
 button_buffer = 5

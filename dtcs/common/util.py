@@ -137,6 +137,16 @@ def _missing_dependency(extra):
     return False
 
 
+@functools.lru_cache(maxsize=128)
+def feature_loaded(extra):
+    for module in EXTRAS[extra]:
+        try:
+            importlib.import_module(module)
+        except ModuleNotFoundError:
+            return False
+    return True
+
+
 def feature(extra, error=False):
     if extra not in EXTRAS:
         raise ValueError(f'{extra} is not a dtcs extra feature.')
