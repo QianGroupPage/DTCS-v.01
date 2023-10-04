@@ -261,7 +261,9 @@ class XPSObservable(monty.json.MSONable):
     # --- Plotting -----------------------------------------------------------
 
     def plot(self, ax: plt.Axes = None,
+             legend: bool = True,
              only: bool = False,
+             title: Optional[Union[str, bool]] = None,
              species: Optional[Union[List[sym.Symbol], sym.Symbol]] = None,
              ignore: Optional[Union[List[sym.Symbol], sym.Symbol]] = None,
              peak_lines: Optional[Union[dict, bool]] = None,
@@ -292,6 +294,7 @@ class XPSObservable(monty.json.MSONable):
         # Some switches count for more than one thing.
         #  We ignore these switches if they aren't explicitly specified.
         # I don't care if this goes against PEP 8 this would be a mess!
+        if title is None: title = not ax.get_title()
         if gaussians is not None:
             default = gaussians or isinstance(gaussians, dict)
             if sim_gaussians is None: sim_gaussians = default
@@ -558,12 +561,15 @@ class XPSObservable(monty.json.MSONable):
             _ = pop_special_args(exp_clean_args)
             ax.plot(self.x_range, self.exp_clean, **exp_clean_args)
 
-        ax.legend()
-        # TODO: This overrides whatever title they set for the axis
-        #  beforehand. Make it an option which XPSExperiment/CRNTimeSeries
-        #  passes itself?
-        ax.set_title(self.title)
-        ax.invert_xaxis()  # XPS Plots are backwards
+        # Set a legend
+        if legend: ax.legend()
+
+        # Set the title, if desired
+        if isinstance(title, str): ax.set_title(title)
+        elif title: ax.set_title(self.title)
+
+        # XPS Plots are backwards
+        ax.invert_xaxis()
         return ax
 
     # --- Data Analysis ------------------------------------------------------
