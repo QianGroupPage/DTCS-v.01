@@ -26,7 +26,7 @@ Example:
 
 from __future__ import annotations
 
-from typing import Dict, List, Tuple, Union, Optional
+from typing import Dict, List, Tuple, Union, Optional, Collection
 
 import bisect
 import os
@@ -183,7 +183,11 @@ class CRNTimeSeries(twin_abc.Experiment):
 
     # --- Plotting -----------------------------------------------------------
 
-    def _plot(self, ax: plt.Axes, species: List[sym.Symbol], legend=True,
+    def _plot(self,
+              ax: plt.Axes,
+              species: List[sym.Symbol],
+              legend: bool = True,
+              t_lines: Optional[Union[float, Tuple]] = None,
               **kwargs):
         """Plot the reaction network time series.
 
@@ -193,13 +197,21 @@ class CRNTimeSeries(twin_abc.Experiment):
             **kwargs: Forwarded.
         """
 
+        # Plot each species
         for i, name in enumerate(species):
             if isinstance(name, str):
                 species[i] = sym.Symbol(name)
             specie = species[i]
             self.df[specie].plot(ax=ax, color=color_map[specie], **kwargs)
-            if legend:
-                ax.legend()
+
+        if legend:
+            ax.legend()
+
+        if t_lines:
+            if not isinstance(t_lines, Collection):
+                t_lines = (t_lines, )
+            for time in t_lines:
+                ax.axvline(x=time, color='black')
 
 # --- Utility -------------------------------------------------------------
 
@@ -460,7 +472,7 @@ class SurfaceCRNTimeSeries(CRNTimeSeries):
         ax_spectrum.spines['right'].set_visible(False)
 
         # --- Display the time series ---
-        scts.plot(ax=ax_timeseries, legend=False)
+        scts.plot(ax=ax_timeseries, legend=False, t_lines=(time,))
         ax_timeseries.spines['top'].set_visible(False)
         ax_timeseries.spines['right'].set_visible(False)
 
