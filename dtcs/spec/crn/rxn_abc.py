@@ -520,7 +520,7 @@ class RxnSystemABC(SymSpec, SpecCollection):
         for component in self.elements:
             symbols.update(component.get_symbols())
         # Remove non-species like time, pressure, and temperature.
-        symbols -= set(RESERVED_SYMBOLS)
+        symbols -= RESERVED_SYMBOLS
         self._species = tuple(sorted([str(symbol) for symbol in symbols]))
 
     # --- Properties ----------------------------------------------------------
