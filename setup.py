@@ -83,7 +83,7 @@ if __name__ == '__main__':
             # Materials Project-Adjacent
             'matproj': ['atomate', 'pymongo'],
             # gpCAM
-            'gpcam': ['gpcam'],
+            'gpcam': ['gpcam==7.2.5'],
             # Dependencies for making the Surface CRN video
             'scrn-video': ['pygame', 'opencv-python', 'Pillow'],
         },
