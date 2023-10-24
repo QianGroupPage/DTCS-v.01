@@ -48,7 +48,6 @@ class CoordGridDisplay(object):
         self.fig_dpi = 100
 
         self.recalculate_display_sizes()
-        # print(self.display_width, self.display_height)
 
     def recalculate_display_sizes(self):
 
@@ -107,7 +106,7 @@ class CoordGridDisplay(object):
             x_pos, y_pos: X and Y coordinates of the upper-left corner of this
                             grid relative to parent_surface.
         """
-        self.x_pos = x_pos - 200
+        self.x_pos = x_pos
         self.y_pos = y_pos
 
         # print(f"Desired width {width}; desired height {height}")

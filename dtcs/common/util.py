@@ -11,6 +11,9 @@ import pandas as pd
 import numpy as np
 import sympy as sym
 from matplotlib import colors
+from matplotlib import patches as mpatches
+
+from dtcs.common.display import color_map, latex_map
 
 
 def weave(*threads):
@@ -115,16 +118,10 @@ def depreciate(func):
 
 
 EXTRAS = {
-    'jupyter': [
-        'jupyter',
-    ],
-
-    'matproj': ['atomate', 'gpcam', 'pymongo'],
-
-    'scrn-video': [
-        'pygame',
-        'opencv-python',
-    ],
+    'jupyter': ['jupyter'],
+    'matproj': ['atomate', 'pymongo'],
+    'gpcam': ['gpcam'],
+    'scrn-video': ['pygame', 'opencv-python', 'Pillow'],
 }
 
 @functools.lru_cache(maxsize=128)
@@ -178,3 +175,15 @@ def flatten_dictionary(dic, prefix=tuple()):
         sub_dict = flatten_dictionary(value, prefix=prefix + (key,))
         out_dict.update(sub_dict)
     return out_dict
+
+
+def get_legend_patches(species):
+    patch_info = {}
+    for specie in species:
+        color = color_map[specie]
+        label = fr'${latex_map._get_value(specie, color=False)}$'
+        patch_info[label] = color
+    patches = [mpatches.Patch(color=color, label=label)
+               for label, color in
+               sorted(patch_info.items(), key=lambda x: x[0])]
+    return patches

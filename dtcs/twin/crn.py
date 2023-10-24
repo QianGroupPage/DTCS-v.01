@@ -26,12 +26,13 @@ Example:
 
 from __future__ import annotations
 
-from typing import Dict, List, Tuple, Union, Optional
+from typing import Dict, List, Tuple, Union, Optional, Collection
 
 import bisect
 import os
 
 from matplotlib import pyplot as plt
+from matplotlib import gridspec
 import monty.json
 import numpy as np
 import pandas as pd
@@ -182,7 +183,12 @@ class CRNTimeSeries(twin_abc.Experiment):
 
     # --- Plotting -----------------------------------------------------------
 
-    def _plot(self, ax: plt.Axes, species: List[sym.Symbol], **kwargs):
+    def _plot(self,
+              ax: plt.Axes,
+              species: List[sym.Symbol],
+              legend: bool = True,
+              t_lines: Optional[Union[float, Tuple]] = None,
+              **kwargs):
         """Plot the reaction network time series.
 
         Args:
@@ -191,12 +197,21 @@ class CRNTimeSeries(twin_abc.Experiment):
             **kwargs: Forwarded.
         """
 
+        # Plot each species
         for i, name in enumerate(species):
             if isinstance(name, str):
                 species[i] = sym.Symbol(name)
             specie = species[i]
             self.df[specie].plot(ax=ax, color=color_map[specie], **kwargs)
+
+        if legend:
             ax.legend()
+
+        if t_lines:
+            if not isinstance(t_lines, Collection):
+                t_lines = (t_lines, )
+            for time in t_lines:
+                ax.axvline(x=time, color='black')
 
 # --- Utility -------------------------------------------------------------
 
@@ -423,82 +438,111 @@ class SurfaceCRNTimeSeries(CRNTimeSeries):
         return self_df
 
     @staticmethod
-    def _video_plot(scts, run, time,
-                    res_x=400, figsize=(8, 12)):
+    def _plot_video(
+            surf_img, scts, run, time,
+            figsize=(12, 5),
+            legend=True,
+            title=None,
+    ):
+        # --- Create a figure and a complicated gridspec for subplots ---
+        # Calculate aspect ratio to not distort image
+        surf_height, surf_width, _ = surf_img.shape
+        fig_width, fig_height = figsize
+        width_ratio = max(1 / (surf_height / surf_width * fig_width / fig_height - 1), 1)
 
-        fig, (ax1, ax2) = plt.subplots(
-            2, 1,
-            figsize=figsize,
-            dpi=res_x // figsize[0],
-        )
+        # Make the figure and the grid specification
+        fig = plt.figure(figsize=figsize, tight_layout=True)
+        gs = gridspec.GridSpec(2, 2, width_ratios=[width_ratio, 1])
 
+        # Add the subplots
+        ax_surf = fig.add_subplot(gs[:, 0])
+        ax_spectrum = fig.add_subplot(gs[0, 1])
+        ax_timeseries = fig.add_subplot(gs[1, 1])
+
+        # --- Display the image of the surface ---
+        ax_surf.imshow(surf_img)
+        ax_surf.axis('off')
+
+        # --- Display the XPS Spectrum ---
         scts.xps_with(
             run=run,
             t=time,
-        ).plot(ax=ax1)
+        ).plot(ax=ax_spectrum, legend=False, title=False)
+        ax_spectrum.spines['top'].set_visible(False)
+        ax_spectrum.spines['right'].set_visible(False)
 
-        scts.plot(ax=ax2)
+        # --- Display the time series ---
+        scts.plot(ax=ax_timeseries, legend=False, t_lines=(time,))
+        ax_timeseries.spines['top'].set_visible(False)
+        ax_timeseries.spines['right'].set_visible(False)
 
-        return fig
+        # --- Title and legend and so on ---
+        if title is None: title = 't={0:.2f}'
+        if title:
+            fig.suptitle(title.format(time), fontsize=16)
 
-    def make_image(
+        if legend:
+            legend_patches = util.get_legend_patches(scts.species)
+            fig.legend(handles=legend_patches, loc='upper left')
+
+        # --- Return ---
+        return fig, [ax_surf, ax_spectrum, ax_timeseries]
+
+    def plot_image(
             self,
             run: int = 0,
             time: int = -1,
-
-            plot: Union[bool, callable] = True,
-            plot_kwargs: Optional[dict] = None,
-
-            img_dir: str = '.',
+            plot: Optional[callable] = None,
+            surface_img_dpi: float = 200,
+            **plot_kwargs,
     ):
+        # scrn_video.make_scrn_images doesn't handle t=-1
+        time = time if time > 0 else self.time_max
+
         # Default plotting function
-        if plot and not callable(plot):
-            plot = self._video_plot
+        if not plot: plot = self._plot_video
 
-        # Make the image
-        output_path = scrn_video.make_scrn_image(
-            scrn=self,
+        images, width, height = scrn_video.make_scrn_images(
+            scts=self,
             run=run,
-            time=time,
-
-            plot=plot,
-            plot_kwargs=plot_kwargs,
-
-            output_dir=img_dir,
+            frame_times=(time,),
+            dpi=surface_img_dpi,
         )
 
-        print(f'Wrote to {os.path.relpath(output_path)}')
-        try:
-            from IPython.display import Image
-
-            return Image(filename=output_path)
-        except ModuleNotFoundError:
-            return
-
+        return plot(
+            surf_img=images[time],
+            scts=self,
+            run=run,
+            time=time,
+            **plot_kwargs,
+        )
 
     def make_video(
             self,
             run: int = 0,
 
-            frames_per_timestep=10,
-
-            plot: Union[bool, callable] = True,
-            plot_kwargs: Optional[dict] = None,
-
             frames_dir: str = 'frames',  # TODO(Andrew) option to delete when done?
-            video_dir: str = 'video',
+            output_fname: str = 'output',
+            frames_per_timestep=10,
+            frames_per_second=2,
+            surface_img_dpi=200,
+
+            plot_func: Optional[callable] = None,
+            **plot_kwargs
     ):
         # Default plotting function
-        if plot and not callable(plot):
-            plot = self._video_plot
+        if not plot_func: plot_func = self._plot_video
 
         output_path = scrn_video.make_scrn_video(
-            scrn=self,
+            scts=self,
+            plot_func=plot_func,
             run=run,
+            frames_dir=frames_dir,
+            output_fname=output_fname,
             frames_per_timestep=frames_per_timestep,
-            plot=plot,
-            plot_kwargs=plot_kwargs,
-            output_dir=frames_dir,
+            frames_per_second=frames_per_second,
+            surface_img_dpi=surface_img_dpi,
+            **plot_kwargs
         )
 
         print(f'Wrote to {os.path.relpath(output_path)}')

@@ -26,7 +26,7 @@ os.environ['LBLCRN_DO_ECHO'] = 'false'
 _DATA_FILES_PATH = sys.prefix + '/dtcs/'
 
 # Master version information. Modifying this should update everything else.
-__version__ = '0.1.5/2023-07-06'
+__version__ = '2023.10.24dev0'
 
 # Enable depreciation warnings
 warnings.filterwarnings(config.depr_warnings,

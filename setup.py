@@ -62,6 +62,8 @@ if __name__ == '__main__':
                                'tables/mechanisms/data']},
         data_files=data_files,
         install_requires=[
+            # Meta
+            'setuptools',
             # Misc.
             'sympy',
             # Data Science
@@ -77,16 +79,13 @@ if __name__ == '__main__':
         ],
         extras_require={
             # Jupyter Notebook integration
-            'jupyter': [
-                'jupyter',
-            ],
+            'jupyter': ['jupyter'],
             # Materials Project-Adjacent
-            'matproj': ['atomate', 'gpcam', 'pymongo'],
+            'matproj': ['atomate', 'pymongo'],
+            # gpCAM
+            'gpcam': ['gpcam'],
             # Dependencies for making the Surface CRN video
-            'scrn-video': [
-                'pygame',
-                'opencv-python',
-            ],
+            'scrn-video': ['pygame', 'opencv-python', 'Pillow'],
         },
         long_description=readme,
     )
