@@ -12,9 +12,14 @@ import collections
 import copy
 import warnings
 
+try: from IPython import display
+except ModuleNotFoundError: pass
+
 import monty.json
 
 import dtcs
+from dtcs.common import util
+from dtcs.common.display import ctk
 
 
 class _SpecView(collections.abc.MutableMapping):
@@ -107,9 +112,29 @@ class SpecABC(monty.json.MSONable):
     def spec(self):
         return _SpecView(self.__dict__)
 
+    @util.feature('jupyter')
+    def _ipython_display_(self):
+        # Find what IPython would display if not for Crystal Toolkit
+        mimebundle, metadata = ctk.format_workaround(
+            self, exclude=('application/json', 'text/plain')
+        )
+        if not mimebundle:
+            # Without Crystal Toolkit, we have nothing to display,
+            #  so let's go with Crystal Toolkit's option.
+            # In particular, they implement application/json for MSON objects.
+            mimebundle, metadata = ctk.format_workaround(self)
+        display.publish_display_data(mimebundle, metadata)
+
     def _repr_latex_(self) -> Optional[str]:
-        if hasattr(self, 'latex'):
+        if not hasattr(self, 'latex'):
+            # This will default to other representations
+            return None
+        elif callable(self.latex):
+            # We don't make LaTeX a property because some subclasses might
+            #  want to add default arguments, and that could get complicated.
             return f'${self.latex()}$'
+        else:
+            return f'${self.latex}$'
 
     def __str__(self):
         if self.spec:
