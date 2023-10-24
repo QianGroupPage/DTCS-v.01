@@ -1,18 +1,23 @@
 
-from collections.abc import Iterable
+import logging
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from IPython import display
 
-from dtcs.common.util import flatten_dictionary
-from dtcs.twin.xps import XPSExperiment
+from dtcs.common import util
 
 import scipy
 from datetime import datetime
 from dtcs.optim.gp.core import kernel_l2_single_task
-from gpcam.autonomous_experimenter import AutonomousExperimenterGP
+
+
+_logger = logging.getLogger(__name__)
+
+
+try: from gpcam.autonomous_experimenter import AutonomousExperimenterGP
+except ModuleNotFoundError: _logger.info('Didn\'t load module gpcam')
 
 
 class CRNGibbsDataset:
@@ -70,6 +75,7 @@ class CRNGibbsDataset:
         except KeyboardInterrupt:
             pass
 
+    @util.feature('gpcam')
     def optimize_gp(
             self,
             num_energies,  # TODO
@@ -135,7 +141,7 @@ class CRNGibbsDataset:
         """Creates an empty dataset using a simulator function."""
         dic = sim([0] * num_energies)
 
-        sample_dict = flatten_dictionary(dic, prefix=('samples',))
+        sample_dict = util.flatten_dictionary(dic, prefix=('samples',))
         mindex_len = len(next(iter(sample_dict)))
         gibbs_col_tupes = [('gibbs', f'G{ind}') + ('',) * (mindex_len - 2)
                            for ind in range(1, num_energies + 1)]
@@ -215,7 +221,7 @@ class CRNGibbsDataset:
         row = self.df.loc[ridx]['samples'] if ridx else self.best
 
         # TODO: This currently relies on a bodge
-        xpss = flatten_dictionary(self._xps(row['gibbs']))
+        xpss = util.flatten_dictionary(self._xps(row['gibbs']))
 
         fig, axes = plt.subplots(
             len(xpss), 1,
@@ -254,7 +260,7 @@ class CRNGibbsDataset:
 
     def _simulate(self, gibbs):
         """Simulates and scores the system with those energies."""
-        samples_raw = flatten_dictionary(self.sim(gibbs))
+        samples_raw = util.flatten_dictionary(self.sim(gibbs))
 
         row = pd.Series(
             index=self.df.columns,

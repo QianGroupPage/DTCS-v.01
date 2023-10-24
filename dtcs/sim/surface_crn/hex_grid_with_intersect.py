@@ -2,11 +2,13 @@ import math
 import warnings
 
 import numpy as np
-import pygame
 
 from dtcs.sim.surface_crn.surface_crns.base.node import Node
 from dtcs.sim.surface_crn.surface_crns.models.grids import HexGrid
 from dtcs.sim.surface_crn.surface_crns.views.grid_display import HexGridDisplay
+
+try: import pygame
+except ModuleNotFoundError: pass
 
 
 class HexGridPlusIntersections(HexGrid):

@@ -1,4 +1,6 @@
-import pygame
+try: import pygame
+except ModuleNotFoundError: pass
+
 
 from dtcs.sim.surface_crn.surface_crns.constants import *
 from dtcs.sim.surface_crn.surface_crns.ordered_dict import OrderedDict

@@ -2,7 +2,9 @@ import math
 
 import matplotlib
 import matplotlib.backends.backend_agg as agg
-import pygame
+
+try: import pygame
+except ModuleNotFoundError: pass
 
 
 class CoordGridDisplay(object):

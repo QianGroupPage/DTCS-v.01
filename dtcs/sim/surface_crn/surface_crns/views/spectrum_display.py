@@ -1,6 +1,7 @@
 import math
 
-import pygame
+try: import pygame
+except ModuleNotFoundError: pass
 
 
 class SpectrumDisplay(object):

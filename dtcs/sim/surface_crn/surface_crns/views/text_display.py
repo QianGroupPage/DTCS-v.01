@@ -1,4 +1,5 @@
-import pygame
+try: import pygame
+except ModuleNotFoundError: pass
 
 
 class TextDisplay(object):

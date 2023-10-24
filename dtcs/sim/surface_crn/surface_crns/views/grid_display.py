@@ -1,6 +1,8 @@
 import math
 
-import pygame
+try: import pygame
+except ModuleNotFoundError: pass
+
 
 """
 Classes for creating and updating pygame surfaces based on simulation data.
