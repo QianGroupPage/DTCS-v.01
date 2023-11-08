@@ -52,8 +52,9 @@ class QueueSimulator:
             self.rxns_by_rule_str = {}
             for rxn in self.rxns.surface_rxns:
                 if rxn.is_reversible:
-                    self.rxns_by_rule_str[rxn.forward_surface_rxn.surface_engine_str] = rxn.forward_surface_rxn
-                    self.rxns_by_rule_str[rxn.backward_surface_rxn.surface_engine_str] = rxn.backward_surface_rxn
+                    forward_rxn, backward_rxn = rxn.to_rxns()
+                    self.rxns_by_rule_str[forward_rxn.surface_engine_str] = forward_rxn
+                    self.rxns_by_rule_str[backward_rxn.surface_engine_str] = backward_rxn
                 else:
                     self.rxns_by_rule_str[rxn.surface_engine_str] = rxn
             # self.surface_rxns_objects_by_rule = {rule: self.rxns_by_rule_str[str(rule)] for rule in self.rule_set}

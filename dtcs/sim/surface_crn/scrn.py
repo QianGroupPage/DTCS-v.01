@@ -1,8 +1,10 @@
 """TODO(Andrew)
 """
 
+from dtcs.common import util
 from dtcs.sim.surface_crn.surface_crns.simulators.queue_simulator import QueueSimulator
 from dtcs.sim.surface_crn.surface_crns.simulators.event_history import EventHistory
+from dtcs.sim.surface_crn.surface_crns.base.transition_rule import TransitionRule
 
 
 def simulate_scrn_single_nodisplay(
@@ -13,10 +15,17 @@ def simulate_scrn_single_nodisplay(
         rng_seed,
         opts,
 ):
+    reactions = [rxn.to_rxns() if hasattr(rxn, 'to_rxns') else rxn for rxn in rsys.reactions]
+    transition_rules = []
+    for rxn in util.flat(reactions):
+        reactants = [react.name for react in rxn.reactants]
+        products = [prod.name for prod in rxn.products]
+        transition_rules.append(TransitionRule(reactants, products, rxn.get_rate()))
+
     # Make the simulator
     simulator = QueueSimulator(
         surface=init_surface,
-        transition_rules=opts.transition_rules,
+        transition_rules=transition_rules,
         seed=rng_seed,
         group_selection_seed=rng_seed * 2,  # TODO(Andrew) how many different seed options should I give?
         simulation_duration=time_max,

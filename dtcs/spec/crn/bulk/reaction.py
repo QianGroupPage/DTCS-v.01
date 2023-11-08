@@ -24,18 +24,35 @@ Usage:
     mathematica project.
 """
 
-from typing import List, Optional
+from typing import List, Mapping, Optional, Set
 import collections
 
 import sympy as sym
 
-from dtcs.common import util
-from dtcs.common import const
+from dtcs.common import util, const, display
 from dtcs.spec.crn.rxn_abc import RxnABC, RevRxnABC
 from dtcs.spec.crn.bulk.conditions import Term
 
 class BulkRxn(RxnABC):
 
+    # --- Abstract Method Implementations -------------------------------------
+    def get_symbols(self) -> Set[sym.Symbol]:
+        symbols = super().get_symbols()
+        symbols.update(self.reactants.free_symbols)
+        symbols.update(self.products.free_symbols)
+        return symbols
+
+    def rename(self, mapping: Mapping):
+        super().rename(mapping)
+        self.reactants = self.reactants.subs(mapping)
+        self.products = self.products.subs(mapping)
+
+    def _latex_rxn(self) -> str:
+        return '' + display.pretty_sym_subs(self.reactants) \
+               + r' \longrightarrow ' \
+               + display.pretty_sym_subs(self.products)
+
+    # --- Used by Bulk Reaction System ----------------------------------------
     def to_terms(self):
         # Get the lefts and right
         # Here we're assuming that reactants and products are linear.
@@ -120,6 +137,11 @@ class BulkRevRxn(BulkRxn, RevRxnABC):
         forward_terms = rxns[0].to_terms()
         reverse_terms = [term.subs(k_map) for term in rxns[1].to_terms()]
         return [*forward_terms, *reverse_terms]
+
+    def _latex_rxn(self, k_idx: Optional[int] = None) -> str:
+        return display.pretty_sym_subs(self.reactants) \
+               + r' \longleftrightarrow ' \
+               + display.pretty_sym_subs(self.products)
 
     @util.depreciate
     def to_terms_with_rates(self) -> List[Term]:

@@ -1,29 +1,26 @@
 """"""
-from typing import Callable, Dict, List, Mapping, Optional, Set, TypeAlias, \
-    Tuple, Union
+import functools
+from typing import Callable, Dict, List, Mapping, Optional, Set, Tuple, Union, TypeAlias
+from abc import ABC, abstractmethod
 from numbers import Number
 
 import copy
-import functools
 import logging
 
 import sympy as sym
-from sympy.physics import units
 from monty.json import jsanitize, MontyDecoder
 from sympy.parsing import sympy_parser
+from sympy.physics import units
 
 from dtcs import config
-from dtcs.common import util
-from dtcs.common import const
-from dtcs.common.display import pretty_sym_subs
+from dtcs.common import util, const, display
 from dtcs.spec.spec_abc import SpecCollection
 from dtcs.spec.crn.sym_abc import SymSpec, ChemInfo, ChemExpression
-from dtcs.common.const import K, P, DG, GIBBS_ENERGY, PRESSURE, TEMPERATURE, \
-    PRETTY_SUBS, RESERVED_SYMBOLS
-
-Relation: TypeAlias = Union[sym.Expr, Callable, str, float]
+from dtcs.common.const import RESERVED_SYMBOLS, DG, K, P, GIBBS_ENERGY, PRESSURE, TEMPERATURE
 
 _logger = logging.getLogger(__name__)
+
+Relation: TypeAlias = Union[sym.Expr, Callable, str, float]
 
 DG_TO_RATE = {
     'basic': sym.exp(-0.1 * DG / (units.boltzmann * K)),
@@ -32,7 +29,7 @@ DG_TO_RATE = {
 }
 
 
-class RxnABC(SymSpec):
+class RxnABC(SymSpec, ABC):
     """A chemical reaction with reactants, products, and a rate constant.
 
     Attributes:
@@ -123,17 +120,18 @@ class RxnABC(SymSpec):
         return self._gibbs_info
 
     # --- Utility -----------------------------------------------------
+    @abstractmethod
     def get_symbols(self) -> Set[sym.Symbol]:
+        """Returns a set of all the sympy Symbols used in the reaction."""
         symbols = set()
-        symbols.update(self.reactants.free_symbols)
-        symbols.update(self.products.free_symbols)
         if self._is_sym_rate:
             symbols.update(_parse_sym_rate(self._rate_info).free_symbols)
         return symbols
 
+    @abstractmethod
     def rename(self, mapping: Mapping):
-        self.reactants = self.reactants.subs(mapping)
-        self.products = self.products.subs(mapping)
+        """According to the mapping, changes the names of all the sympy
+        symbols or other relevant text-based components of the reaction."""
         if self._is_sym_rate:
             self._rate_info = _parse_sym_rate(self._rate_info).subs(mapping)
 
@@ -158,7 +156,14 @@ class RxnABC(SymSpec):
         return super(RxnABC, cls).from_dict(d)
 
     # --- Representation ------------------------------------------------------
+    @abstractmethod
+    def _latex_rxn(self) -> str:
+        """Get a LaTeX representation of the reaction, without worrying about
+        the rate constants or gibbs energies. Don't add $ around it."""
+        raise NotImplementedError()
+
     def latex(self, k_idx: Optional[int] = None) -> str:
+        """Gets a LaTeX representation of the reaction, without $ around it."""
         k_forward, _ = const.k_names(k_idx)
 
         # Create a string for the gibbs energy beforehand
@@ -167,9 +172,7 @@ class RxnABC(SymSpec):
             r'\, @ \ \Delta G\! = \! ' + f'{self.get_gibbs():.3f}\\, {unit_dg}'
 
         # First we display the reaction
-        st = '' + pretty_sym_subs(self.reactants) \
-             + r' \longrightarrow ' \
-             + pretty_sym_subs(self.products)
+        st = self._latex_rxn()
 
         # Choose to display k or dG, whichever is a number
         if self._is_fixed_rate:
@@ -177,7 +180,7 @@ class RxnABC(SymSpec):
         elif self._is_func_rate:
             st += dg_string + rf', \ {k_forward}\! \sim \! \Delta G'
         elif self._is_sym_rate:
-            rate_info = _parse_sym_rate(self._rate_info).subs(PRETTY_SUBS)
+            rate_info = _parse_sym_rate(self._rate_info).subs(const.PRETTY_SUBS)
             st += dg_string + rf', \ {k_forward}\! = \! {sym.latex(rate_info)}'
 
         return st
@@ -298,7 +301,7 @@ class RevRxnABC(RxnABC):
     ):
         """Create a reversible reaction by giving equation.
 
-        This is intended to look like reactants <-> products @ rate k1,
+        This is intended to look like reactants <-> products @ rate k,
         with the reverse rate k2.
 
         Args:
@@ -322,7 +325,7 @@ class RevRxnABC(RxnABC):
 
         # --- Initialize ---
         if k2 is not None and self._is_no_rate:
-            raise TypeError('Do not supply k2 without k1.')
+            raise TypeError('Do not supply k2 without k.')
         elif isinstance(k2, (Callable, sym.Expr, str)) and (dg is None):
             raise TypeError('Cannot calculate rev. rate without gibbs energy.')
 
@@ -361,7 +364,7 @@ class RevRxnABC(RxnABC):
         # After we've tried using the supplied information about the reverse
         #  reaction, we default to trying to invert the forward reaction.
         elif self._is_fixed_rate:
-            # If rate 1 exists we can default to 1 / k1.
+            # If rate 1 exists we can default to 1 / k.
             return float(1 / self._rate_info)
         elif self._is_func_rate:
             return self._rate_info(-1 * self.get_gibbs(), pressure, temperature)
@@ -400,7 +403,14 @@ class RevRxnABC(RxnABC):
         return super(RevRxnABC, cls).from_dict(d)
 
     # --- Representation -----------------------------------------------------
+    @abstractmethod
+    def _latex_rxn(self) -> str:
+        """Get a LaTeX representation of the reaction, without worrying about
+        the rate constants or gibbs energies. Don't add $ around it."""
+        raise NotImplementedError()
+
     def latex(self, k_idx: Optional[int] = None) -> str:
+        """Gets a LaTeX representation of the reaction, without $ around it."""
         k_forward, k_reverse = const.k_names(k_idx)
 
         # Create a string for the gibbs energy beforehand
@@ -409,9 +419,7 @@ class RevRxnABC(RxnABC):
             r'\, @ \ \Delta G\! = \! ' + f'{self.get_gibbs():.3f}\\, {unit_dg}'
 
         # First we display the reaction
-        st = pretty_sym_subs(self.reactants) \
-             + r' \longleftrightarrow ' \
-             + pretty_sym_subs(self.products)
+        st = self._latex_rxn()
 
         # Create the reverse rate's string in advance so we can add it by
         #  casework later and not have to worry we're doing the wrong one.
@@ -419,7 +427,7 @@ class RevRxnABC(RxnABC):
         if self._is_fixed_rev_rate:
             rev_rate_str = rf', \ {k_reverse}\! = \! {self.get_rev_rate():.3f}'
         elif self._is_sym_rev_rate:
-            rev_rate_info = _parse_sym_rate(self._rev_rate_info).subs(PRETTY_SUBS)
+            rev_rate_info = _parse_sym_rate(self._rev_rate_info).subs(const.PRETTY_SUBS)
             rev_rate_str = rf', \ {k_reverse}\! = \! {sym.latex(rev_rate_info)}'
         elif self._is_func_rev_rate:
             rev_rate_str = rf', \ {k_reverse}\! \sim \! \Delta G'
@@ -432,7 +440,7 @@ class RevRxnABC(RxnABC):
         elif self._is_func_rate:
             st += dg_string + rf', \ {k_forward}\! \sim \! \Delta G' + rev_rate_str
         elif self._is_sym_rate:
-            rate_info = _parse_sym_rate(self._rate_info).subs(PRETTY_SUBS)
+            rate_info = _parse_sym_rate(self._rate_info).subs(const.PRETTY_SUBS)
             st += dg_string
             st += rf', \ {k_forward}\! = \! {sym.latex(rate_info)}'
             st += rev_rate_str
@@ -705,7 +713,7 @@ def _parse_sym_rate(expr_or_key: Union[sym.Expr, str]):
 
 @functools.lru_cache(maxsize=127)
 def _lambdify_dg_to_rate(expr: Union[sym.Expr, str]):
-    """Turns a sympy expression expression of DG, P, and K into a function."""
+    """Turns a sympy.Expr expression of DG, P, and K into a function."""
     expr = _parse_sym_rate(expr)
     gibbs, time, pressure, temp = sym.symbols('gibbs time pressure temp')
 

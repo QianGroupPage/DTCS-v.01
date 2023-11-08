@@ -155,7 +155,7 @@ class SurfaceCRNSpec(CRNSpecABC):
         # TODO(Andrew): Replace with a simple dict which I supply
         def site_species_map(sm, specie_name):
             site_species_map = {}
-            for species in sm.sm:
+            for species in sm:
                 site_species_map[species.name] = species.site
 
             if specie_name in site_species_map:
@@ -172,8 +172,8 @@ class SurfaceCRNSpec(CRNSpecABC):
             #  SiteName: [list of (species, coverage) pairs]
             coverage_info = collections.defaultdict(list)
             for cov in rsys.by_subclass()[Coverage]:
-                coverage_info[self.sm[cov.sm].site].append(
-                    (cov.sm, cov.coverage))
+                coverage_info[self.sm[cov.species].site].append(
+                    (cov.species, cov.coverage))
 
             init_surface_state = surface.make_state(
                 coverage_info=coverage_info,
