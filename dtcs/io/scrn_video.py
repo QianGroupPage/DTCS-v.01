@@ -23,7 +23,7 @@ except ModuleNotFoundError: _logger.info('Didn\'t load module cv2')
 try: from PIL import Image
 except ModuleNotFoundError: _logger.info('Didn\'t load module Pillow')
 
-if util.feature_loaded('scrn-video'):
+if util.feature_loaded('scrn-image'):
     from dtcs.sim.surface_crn.surface_crns.views.grid_display import (
         HexGridDisplay, ParallelEmulatedSquareGridDisplay, SquareGridDisplay)
     from dtcs.sim.surface_crn.surface_crns.views.coord_grid_display import \

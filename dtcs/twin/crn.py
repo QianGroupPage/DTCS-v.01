@@ -488,7 +488,7 @@ class SurfaceCRNTimeSeries(CRNTimeSeries):
         # --- Return ---
         return fig, [ax_surf, ax_spectrum, ax_timeseries]
 
-    @util.feature('scrn-video')
+    @util.feature('scrn-image')
     def plot_image(
             self,
             run: int = 0,

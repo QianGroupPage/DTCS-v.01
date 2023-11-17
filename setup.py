@@ -84,8 +84,10 @@ if __name__ == '__main__':
             'matproj': ['atomate', 'pymongo'],
             # gpCAM
             'gpcam': ['gpcam==7.2.5'],
-            # Dependencies for making the Surface CRN video
-            'scrn-video': ['pygame', 'opencv-python', 'Pillow'],
+            # Dependencies for making the Surface CRN image
+            'scrn-image': ['pygame', 'Pillow'],
+            # Dependencies for making SCRN images into a video
+            'scrn-video': ['pygame', 'Pillow', 'opencv-python'],
         },
         long_description=readme,
     )

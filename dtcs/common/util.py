@@ -121,7 +121,8 @@ EXTRAS = {
     'jupyter': ['jupyter'],
     'matproj': ['atomate', 'pymongo'],
     'gpcam': ['gpcam'],
-    'scrn-video': ['pygame', 'opencv-python', 'Pillow'],
+    'scrn-image': ['pygame', 'PIL'],
+    'scrn-video': ['pygame', 'PIL', 'cv2'],
 }
 
 @functools.lru_cache(maxsize=128)
