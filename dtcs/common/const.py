@@ -5,15 +5,15 @@ from typing import Optional
 from sympy.physics import units
 import sympy as sym
 
-T = TIME = sym.Symbol('\mathbf{t}')
-P = PRESSURE = sym.Symbol('\mathbf{P}')
-K = TEMPERATURE = sym.Symbol('\mathbf{T}')
-DG = GIBBS_ENERGY = sym.Symbol('\mathbf{\Delta G}')
+T = TIME = sym.Symbol(r'\mathbf{t}')
+P = PRESSURE = sym.Symbol(r'\mathbf{P}')
+K = TEMPERATURE = sym.Symbol(r'\mathbf{T}')
+DG = GIBBS_ENERGY = sym.Symbol(r'\mathbf{\Delta G}')
 
 RESERVED_SYMBOLS = {T, P, K, DG}
 
 PRETTY_SUBS = {
-    GIBBS_ENERGY: sym.Symbol('\Delta G'),
+    GIBBS_ENERGY: sym.Symbol(r'\Delta G'),
     PRESSURE: sym.Symbol('P'),
     TEMPERATURE: sym.Symbol('T'),
     TIME: sym.Symbol('t'),
