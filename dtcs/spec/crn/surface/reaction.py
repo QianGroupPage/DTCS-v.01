@@ -72,7 +72,7 @@ class SurfaceRxn(BulkRxn):
 
         self.reactants = tuple(self.reactants)
         self.products = tuple(self.products)
-        self.rate_constant = property(self.rate_constant, rate_constant)                                                  #property rate_constant of surfacerevrxn object has no setter
+        self.rate_constant = k                                             #property rate_constant of surfacerevrxn object has no setter
         self.is_reversible = False
 
     # TODO: reactants are input as symbols and need sm to get the species object.
@@ -106,10 +106,6 @@ class SurfaceRxn(BulkRxn):
         :return: a str representation in exact same style output by the Surface CRN engine.
         """
         return self.reactants_str + " --> " + self.products_str
-
-    @rate_constant.setter
-    def rate_constant(self, k):
-        self.rate_constant = k
 
     def is_adsorption(self, sm, gas=None):
         """
