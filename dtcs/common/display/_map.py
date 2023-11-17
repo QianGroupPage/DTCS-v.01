@@ -137,7 +137,7 @@ class _LatexManagerSingleton(_ManagerSingleton):
             latex = self._default(name)
 
         if color:
-            latex = r'\textcolor{' + color_map[name] + '}{' + latex + '}'
+            latex = r'\color{' + color_map[name] + '}{' + latex + '}'
 
         return latex
 
