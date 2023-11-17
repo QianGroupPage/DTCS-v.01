@@ -148,7 +148,7 @@ class CoordGridDisplay(object):
         backend = matplotlib.rcParams['backend']
         matplotlib.use("Agg")
         # TODO: determine if this solves the issue with inconsistent font.
-        matplotlib.rcParams["font.family"] = "arial"
+        # matplotlib.rcParams["font.family"] = "arial"
         import matplotlib.pyplot as plt
         # Set the fig_size to be the same as the display surface.
         plt.gcf().set_dpi(self.fig_dpi)
