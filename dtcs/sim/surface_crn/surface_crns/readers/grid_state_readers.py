@@ -37,5 +37,5 @@ def parse_grid_state_stream(grid_state_stream):
         if len(new_row) == 1:
             new_row = new_row[0].split(',')
         grid_state.append(new_row)
-    grid_state = np.array(grid_state).transpose()
+    grid_state = np.array(grid_state, dtype=object).transpose()
     return grid_state

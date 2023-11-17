@@ -370,7 +370,9 @@ class VoronoiGraph:
         arr = []
         for k in sorted(index_dict):
             arr.append(index_dict[k])
-        return np.array(arr)
+        import dtcs
+        dtcs.debug = arr
+        return np.array(arr, dtype=object)
 
     def compute_vertex_points(self):
         """
