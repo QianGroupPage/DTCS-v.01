@@ -526,7 +526,7 @@ class SurfaceCRNTimeSeries(CRNTimeSeries):
             frames_dir: str = 'frames',  # TODO(Andrew) option to delete when done?
             output_fname: str = 'output',
             frames_per_timestep=10,
-            frames_per_second=2,
+            frames_per_second=None,
             surface_img_dpi=200,
 
             plot_func: Optional[callable] = None,
@@ -534,6 +534,8 @@ class SurfaceCRNTimeSeries(CRNTimeSeries):
     ):
         # Default plotting function
         if not plot_func: plot_func = self._plot_video
+        # Default to realtime
+        if frames_per_second is None: frames_per_second = frames_per_timestep
 
         output_path = scrn_video.make_scrn_video(
             scts=self,
@@ -551,14 +553,9 @@ class SurfaceCRNTimeSeries(CRNTimeSeries):
         try:
             from IPython import display
 
-            return display.HTML(
-                f'<div align="middle">' +
-                f'<video width="80%" controls>' +
-                f'<source src="{os.path.relpath(output_path)}" type="video/mp4">' +
-                f'</video></div>'
-            )
+            return display.Video(os.path.relpath(output_path))
         except ModuleNotFoundError:
-            return
+            return os.path.relpath(output_path)
 
     def as_dict(self):
         raise NotImplementedError()
