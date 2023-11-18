@@ -94,12 +94,12 @@ def _make_imgbuf_from_plot(
     return image_rgb256, (image_rgb256.shape[1], image_rgb256.shape[0])
 
 
-def _make_video(frames, fps, out_file='output.mp4'):
+def _make_video(frames, fps, out_file, fourcc):
     frame_dims = Image.open(frames[0]).size
 
     out = cv2.VideoWriter(
         filename=out_file,
-        fourcc=cv2.VideoWriter_fourcc(*'LMP4'),
+        fourcc=cv2.VideoWriter_fourcc(*fourcc),
         fps=fps,
         frameSize=frame_dims,
     )
@@ -199,13 +199,14 @@ def make_scrn_images(
 def make_scrn_video(
     scts,
     plot_func,
-    run: int = 0,
+    run: int,
 
-    frames_dir: str = 'frames',  # TODO(Andrew) option to delete when done?
-    output_fname: str = 'output',
-    frames_per_timestep=10,
-    frames_per_second=2,
-    surface_img_dpi=200,
+    frames_dir: str,  # TODO(Andrew) option to delete when done?
+    output_fname: str,
+    frames_per_timestep: int,
+    frames_per_second: int,
+    surface_img_dpi: int,
+    fourcc: str,
 
     **plot_kwargs
 ):
@@ -251,6 +252,7 @@ def make_scrn_video(
         frame_filepaths,
         fps=frames_per_second,
         out_file=output_fname + '.mp4',
+        fourcc=fourcc,
     )
 
 

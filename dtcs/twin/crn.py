@@ -528,6 +528,7 @@ class SurfaceCRNTimeSeries(CRNTimeSeries):
             frames_per_timestep=10,
             frames_per_second=None,
             surface_img_dpi=200,
+            fourcc='vp09',
 
             plot_func: Optional[callable] = None,
             **plot_kwargs
@@ -546,7 +547,8 @@ class SurfaceCRNTimeSeries(CRNTimeSeries):
             frames_per_timestep=frames_per_timestep,
             frames_per_second=frames_per_second,
             surface_img_dpi=surface_img_dpi,
-            **plot_kwargs
+            fourcc=fourcc,
+            **plot_kwargs,
         )
 
         print(f'Wrote to {os.path.relpath(output_path)}')
