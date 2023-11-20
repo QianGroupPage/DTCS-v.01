@@ -1,4 +1,5 @@
 
+from collections.abc import Sequence
 import logging
 
 import matplotlib.pyplot as plt
@@ -79,6 +80,7 @@ class CRNGibbsDataset:
     def optimize_gp(
             self,
             num_energies,  # TODO
+            iterations=100,
     ):
         NUM_ENERGIES = num_energies
 
@@ -118,10 +120,14 @@ class CRNGibbsDataset:
         )
 
         exp.train()
-        exp.go(
-            N=10000,
-            acq_func_opt_setting=lambda _: 'global'  # lambda number: 'global' if number % 2 == 0 else 'global',
-        )
+        try:
+            exp.go(
+                N=iterations,
+                # lambda number: 'global' if number % 2 == 0 else 'global',
+                acq_func_opt_setting=lambda _: 'global'
+            )
+        except KeyboardInterrupt:
+            pass
         return exp
 
     # --- Constructors --------------------------------------------------------
@@ -216,28 +222,45 @@ class CRNGibbsDataset:
             self._sim_notarized(gibbs, ridx)
             return self[ridx]['score'].iloc[0]
 
-    def plot(self, ridx=None, **kwargs):
+    def plot(self, ridx=None, legend=True, xps_args=None, **kwargs):
         """Plot the given row. Defaults to the best one."""
         row = self.df.loc[ridx]['samples'] if ridx else self.best
 
         # TODO: This currently relies on a bodge
         xpss = util.flatten_dictionary(self._xps(row['gibbs']))
 
+        # --- Digest xps args ---
+        num_plots = len(xpss)
+        if not isinstance(xps_args, Sequence):
+            xps_args = [xps_args] * num_plots
+        if len(xps_args) != num_plots:
+            raise ValueError(
+                f'You supplied a list of argument dictionaries, but you gave a'
+                f'list of length {len(xps_args)}, not {num_plots}.'
+            )
+        xps_args = list(xps_args)  # I'm going to modify it.
+
+        # --- Make a stack of axes ---
         fig, axes = plt.subplots(
             len(xpss), 1,
             sharex=True,
-            figsize=(10, 2 * len(xpss)),
+            figsize=(10, 2 * num_plots),
         )
 
+        # --- Plot all the spectrums ---
         for (conds, xps), ax in zip(xpss.items(), axes):
-            xo = xps.resample()
+            xo = xps.resample(**xps_args.pop(0))  # Lock step
             xo.title = ', '.join(conds)
-
             xo.plot(
                 ax=ax,
+                legend=False,
                 **kwargs,
             )
-            ax.get_legend().remove()
+
+        # --- Make a legend ---
+        if legend:
+            legend_patches = util.get_legend_patches(xps.species)
+            fig.legend(handles=legend_patches, loc='upper right')
 
         return axes
 
