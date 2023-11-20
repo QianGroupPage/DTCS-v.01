@@ -216,7 +216,7 @@ class CRNGibbsDataset:
             self._sim_notarized(gibbs, ridx)
             return self[ridx]['score'].iloc[0]
 
-    def plot(self, ridx=None):
+    def plot(self, ridx=None, **kwargs):
         """Plot the given row. Defaults to the best one."""
         row = self.df.loc[ridx]['samples'] if ridx else self.best
 
@@ -235,8 +235,11 @@ class CRNGibbsDataset:
 
             xo.plot(
                 ax=ax,
+                **kwargs,
             )
             ax.get_legend().remove()
+
+        return axes
 
     @staticmethod
     def _default_printer(dsg, gibbs, ridx):

@@ -21,10 +21,11 @@ Example:
 """
 
 from __future__ import annotations
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, TypeAlias, Union
 
 import copy
 import json
+import logging
 import warnings
 
 from matplotlib import pyplot as plt
@@ -43,15 +44,15 @@ from dtcs.spec.model_input.relations import TPRateRelation
 from dtcs.twin import twin_abc
 from dtcs.spec import species
 from dtcs.common import util
-from dtcs import _logger
 CRNTimeSeries: TypeAlias = 'CRNTimeSeries'
 
 
 _REQUIRED = 'required'
 _OPTIONAL = 'optional'
+_logger = logging.getLogger(__name__)
 
 
-class XPSObservable(monty.json.MSONable):
+class XPSObservable(twin_abc.Experiment):
     """TODO"""
 
     # Settings for the column names
@@ -72,11 +73,16 @@ class XPSObservable(monty.json.MSONable):
     def __init__(self, df: pd.DataFrame,
                  species_manager: species.SpeciesManager,
                  title: str = ''):
-        self.df: pd.DataFrame = df
+        super().__init__()
+        self.df: Optional[pd.DataFrame] = df
         self.species_manager: species.SpeciesManager = species_manager
         self.title: str = title
 
     # --- Accessors ----------------------------------------------------------
+    @property
+    def species(self) -> List[sym.Symbol]:
+        return self.species_manager.symbols
+
     @property
     def x_range(self) -> Optional[np.ndarray]:
         """The x-values, energies, on which there is data."""
@@ -257,7 +263,7 @@ class XPSObservable(monty.json.MSONable):
 
     # --- Plotting -----------------------------------------------------------
 
-    def plot(self, ax: plt.Axes = None,
+    def plot(self, ax: plt.Axes = None, *,
              legend: bool = True,
              only: bool = False,
              title: Optional[Union[str, bool]] = None,
@@ -277,16 +283,45 @@ class XPSObservable(monty.json.MSONable):
              deconv_envelope: Optional[Union[dict, bool]] = None,
              deconv_gaussians: Optional[Union[dict, bool]] = None,
              ) -> plt.Axes:
-        """TODO"""
+        """Plot the XPS Observable. For most arguments, if you supply a boolean
+        instead of a dictionary, it toggles whether or not to plot that at all.
+        
+        Args:
+            ax: The matplotlib axis to plot on.
+            legend: If true, will add a legend. Defaults to true.
+            only: If true, will only plot what you explicitly say to. Defaults
+                to false.
+            title: The title for the plot. May have a default.
+            species: Species to plot; if supplied, will only plot those species.
+                If not supplied, will default to all species.
+            ignore: Species to ignore; by default, will plot all species except
+                those supplied.
+            peak_lines: Arguments for the peak lines, forwarded to plt.axvline.
+            gaussians: Arguments to give to all gaussians, sent to plt.fill.
+            simulated: Arguments for both the simulated envelope and peaks.
+            sim_envelope: Arguments for the simulated envelope, sent to plt.plot.
+            sim_gaussians: Arguments for simulated gaussians, sent to plt.fill.
+            experimental: Arguments for both experimental envelopes, sent to
+                plt.plot.
+            exp_clean: Arguments for the clean experimental envelope, sent to
+                plt.plot.
+            exp_raw: Arguments for the raw experimental envelope, sent to
+                plt.plot.
+            gas_phase: Arguments for the gas phase peaks, sent to plt.fill.
+            contaminants: Arguments for the contaminant peaks, sent to plt.fill.
+            deconvoluted: Arguments for both the deconvoluted envelope and peaks.
+            deconv_envelope: Arguments for the deconvolution's envelope,
+                sent to plt.plot.
+            deconv_gaussians: Arguments for the deconvolution, sent to plt.fill.
+
+        Returns:
+            The axis which was plotted on.
+        """
         # --- Parse Arguments ------------------------------------------------
         if ax is None:
             ax = plt.gca()
 
-        species = twin_abc._get_species_not_ignored(
-            species,
-            ignore,
-            self.species_manager.symbols,
-        )
+        species = self._get_species_not_ignored(species, ignore)
 
         # Some switches count for more than one thing.
         #  We ignore these switches if they aren't explicitly specified.
@@ -321,6 +356,9 @@ class XPSObservable(monty.json.MSONable):
         if contaminants is None: contaminants = not only
         if deconv_envelope is None: deconv_envelope = not only
         if deconv_gaussians is None: deconv_gaussians = not only
+
+        # Get the title
+        title = self.title if isinstance(title, bool) and title else title
 
         # Get the gaussians we're going to be plotting
         sim_gauss_species = []
@@ -362,7 +400,7 @@ class XPSObservable(monty.json.MSONable):
         peak_line_args = dict(
             ymin=0.05,
             ymax=1,
-            linestyle='dashed',
+            linestyle='dashdot',
             linewidth=1
         )
         # Args: sim_envelope
@@ -371,7 +409,7 @@ class XPSObservable(monty.json.MSONable):
             label='Sim. Envelope',
             color='#663d3d',
             linestyle='--',
-            linewidth=3,
+            linewidth=2,
         )
         # Args: exp_clean
         exp_clean_args = copy.copy(experimental_args)
@@ -465,17 +503,24 @@ class XPSObservable(monty.json.MSONable):
         # Function to retrieve with arguments not to be passed to pyplot,
         #  you must let it modify the dict you give it, or else it'll pass
         #  bad arguments to pyplot.
+        _logger.debug('Plotting XPS Spectrum with inputs:')
+
         def pop_special_args(args_dict):
             brightness = 1.0
             if 'brightness' in args_dict:
                 brightness = args_dict.pop('brightness')
             return brightness
 
+        _logger.debug(f'\tPlotting species: {species_to_plot}')
+        _logger.debug(f'\tShow peak lines: {peak_lines}')
         if peak_lines and species_to_plot:
+            _logger.debug(f'\tPeak line args: {peak_line_args}')
             brightness = pop_special_args(peak_line_args)
             for specie in species_to_plot:
                 for orbital in self.species_manager[specie].orbitals:
-                    if orbital.binding_energy not in self.x_range:
+                    if not (min(self.x_range) <
+                            orbital.binding_energy <
+                            max(self.x_range)):
                         continue
                     color = self.species_manager[specie].color
                     color = util.scale_color_brightness(color, brightness)
@@ -484,11 +529,23 @@ class XPSObservable(monty.json.MSONable):
                                color=color,
                                **peak_line_args)
 
+        _logger.debug(
+            f'\tShow gas phase: {gas_phase and self.gas_phase}'
+            + (' (gas phase unknown)' if self.gas_phase is None else '')
+        )
         if gas_phase and self.gas_phase is not None:
+            _logger.debug(f'\tGas phase args: {gas_phase_args}')
             _ = pop_special_args(gas_phase_args)
             ax.fill(self.x_range, self.gas_phase, **gas_phase_args)
 
-        if sim_gaussians and sim_gauss_species:
+        plot_sim_gaussians = bool(sim_gaussians and sim_gauss_species)
+        _logger.debug(
+            f'\tPlot simulated peaks: {plot_sim_gaussians}'
+            + (f'; {sim_gauss_species}' if sim_gauss_species
+               else ' (no simulated species to plot)')
+        )
+        if plot_sim_gaussians:
+            _logger.debug(f'\tSimulated peak args: {sim_gauss_args}')
             brightness = pop_special_args(sim_gauss_args)
 
             # Sort so that the shorter peaks are first
@@ -506,7 +563,14 @@ class XPSObservable(monty.json.MSONable):
                         color=color,
                         **sim_gauss_args)
 
-        if deconv_gaussians and deconv_gauss_species:
+        plot_deconv_gaussians = bool(deconv_gaussians and deconv_gauss_species)
+        _logger.debug(
+            f'\tPlot deconvoluted peaks: {plot_sim_gaussians}'
+            + (f'; {deconv_gauss_species}' if deconv_gauss_species
+               else ' (no deconvoluted species to plot)')
+        )
+        if plot_deconv_gaussians:
+            _logger.debug(f'\tDeconvoluted peak args: {deconv_gauss_args}')
             brightness = pop_special_args(deconv_gauss_args)
 
             # Sort so that the shorter peaks are first
@@ -524,7 +588,14 @@ class XPSObservable(monty.json.MSONable):
                         color=color,
                         **deconv_gauss_args)
 
-        if contaminants and contam_gauss_species:
+        plot_contaminants = bool(contaminants and contam_gauss_species)
+        _logger.debug(
+            f'\tPlot contaminant peaks: {plot_contaminants}'
+            + (f'; {contam_gauss_species}' if contam_gauss_species
+               else ' (no contaminants to plot)')
+        )
+        if plot_contaminants:
+            _logger.debug(f'\tContaminant peak args: {contam_args}')
             brightness = pop_special_args(contam_args)
 
             # Sort so that the shorter peaks are first
@@ -542,28 +613,59 @@ class XPSObservable(monty.json.MSONable):
                         color=color,
                         **contam_args)
 
-        if deconv_envelope and self.deconv_envelope is not None:
+        plot_deconv_envelope = bool(deconv_envelope and
+                                    self.deconv_envelope is not None)
+        _logger.debug(
+            f'\tPlot envelope of deconvolution: {plot_deconv_envelope}'
+            + (f'' if self.deconv_envelope is not None
+               else ' (no envelope to plot)')
+        )
+        if plot_deconv_envelope:
+            _logger.debug(f'\tDeconvolution envelope args: {deconv_env_args}')
             _ = pop_special_args(deconv_env_args)
             ax.plot(self.x_range, self.deconv_envelope, **deconv_env_args)
 
-        if sim_envelope and self.sim_envelope is not None:
+        plot_sim_envelope = bool(sim_envelope and self.sim_envelope is not None)
+        _logger.debug(
+            f'\tPlot simulated envelope: {plot_sim_envelope}'
+            + (f'' if self.sim_envelope is not None
+               else ' (no envelope to plot)')
+        )
+        if plot_sim_envelope:
+            _logger.debug(f'\tSimulated envelope args: {envelope_args}')
             _ = pop_special_args(envelope_args)
             ax.plot(self.x_range, self.sim_envelope, **envelope_args)
 
-        if exp_raw and self.exp_raw is not None:
+        plot_exp_raw = bool(exp_raw and self.exp_raw is not None)
+        _logger.debug(
+            f'\tPlot raw experimental: {plot_exp_raw}'
+            + (f'' if self.exp_raw is not None
+               else ' (no raw experimental to plot)')
+        )
+        if plot_exp_raw:
+            _logger.debug(f'\tRaw experimental envelope args: {exp_raw_args}')
             _ = pop_special_args(exp_raw_args)
             ax.plot(self.x_range, self.exp_raw, **exp_raw_args)
 
-        if exp_clean and self.exp_clean is not None:
+        plot_exp_clean = bool(exp_clean and self.exp_clean is not None)
+        _logger.debug(
+            f'\tPlot clean experimental: {plot_exp_clean}'
+            + (f'' if self.exp_clean is not None
+               else ' (no clean experimental to plot)')
+        )
+        if plot_exp_clean:
+            _logger.debug(f'\tClean experimental envelope args: '
+                          f'{plot_exp_clean}')
             _ = pop_special_args(exp_clean_args)
             ax.plot(self.x_range, self.exp_clean, **exp_clean_args)
 
         # Set a legend
+        _logger.debug(f'\tPlot legend: {legend}')
         if legend: ax.legend()
 
         # Set the title, if desired
-        if isinstance(title, str): ax.set_title(title)
-        elif title: ax.set_title(self.title)
+        _logger.debug(f'\tSetting title: {title}')
+        if title: ax.set_title(title)
 
         # XPS Plots are backwards
         ax.invert_xaxis()
@@ -606,7 +708,7 @@ class XPSObservable(monty.json.MSONable):
         return integrate.trapz(self.sim_envelope, self.x_range)
 
 
-class XPSExperiment(twin_abc.Experiment, XPSObservable):
+class XPSExperiment(XPSObservable):
     """A container for a simulated observable of an XPS experiment.
 
     Attributes:
@@ -640,9 +742,7 @@ class XPSExperiment(twin_abc.Experiment, XPSObservable):
 
         Args: TODO
         """
-        super().__init__()
-        XPSObservable.__init__(self, species_manager=species_manager,
-                               df=None, title=title)
+        super().__init__(species_manager=species_manager, df=None, title=title)
 
         # --- Parse Arguments ------------------------------------------------
         # Require either sim_concs or experimental
@@ -667,9 +767,10 @@ class XPSExperiment(twin_abc.Experiment, XPSObservable):
             species.extend(contam_spectra.keys())
             species.extend(deconv_species)
             if not species:
-                _logger.echo(f'No species specified to '
-                           f'{self.__class__.__name__}(), so all species in '
-                           f'the SpeciesManager will be included.')
+                _logger.debug(
+                    f'No species specified to {self.__class__.__name__}(), so'
+                    f' all species in the SpeciesManager will be included.'
+                )
                 species = species_manager.species
 
         # Default scale factor to 1
@@ -798,7 +899,7 @@ class XPSExperiment(twin_abc.Experiment, XPSObservable):
     def _autoresample(self):
         """Does an overwriting resample, if necessary."""
         if self.autoresample:
-            _logger.echo('Auto-resampling data...')
+            _logger.info('Auto-resampling data...')
             self.resample(overwrite=True)
 
     # --- Calculations -------------------------------------------------------
@@ -963,10 +1064,8 @@ class XPSExperiment(twin_abc.Experiment, XPSObservable):
             raise ValueError('Deconvolution requires more than zero species.')
         elif deconvolute is None:
             # Default deconvolute to experimental
-            deconvolute = experimental
-            if deconvolute:
-                deconvolute = _logger.prompt_yn('Deconvolute experimental?',
-                                                default=True)
+            if experimental:
+                deconvolute = True
 
         # --- X-Range --------------------------------------------------------
         # Handle: x_range
@@ -1082,8 +1181,8 @@ class XPSExperiment(twin_abc.Experiment, XPSObservable):
                 species_manager=self.species_manager,
                 species=species_to_plot,
             )
-            _logger.echo(f'Using automatically-generated x-range '
-                       f'[{x_range[0]}, ..., {x_range[-1]}]...')
+            _logger.debug(f'Using automatically-generated x-range '
+                          f'[{x_range[0]}, ..., {x_range[-1]}]...')
 
         # --- Make Empty DataFrame -------------------------------------------
         # I add all of the columns early for sorting reasons;
@@ -1115,11 +1214,10 @@ class XPSExperiment(twin_abc.Experiment, XPSObservable):
 
         # --- Calculations ---------------------------------------------------
         if simulate:
-            if _logger.do_echo:
-                sim_concs_used = {specie: conc for specie, conc in
-                                  sim_concs.items() if specie in sim_species}
-                _logger.echo(f'Simulating XPS experiment for species with '
-                             f'concentrations {sim_concs_used}...')
+            sim_concs_used = {specie: conc for specie, conc in
+                              sim_concs.items() if specie in sim_species}
+            _logger.debug(f'Simulating XPS experiment for species with '
+                          f'concentrations {sim_concs_used}...')
             for sim_col in sim_cols:
                 # sim_col is a tuple (self._SIMULATED, specie)
                 sim_specie = sim_col[1]
@@ -1133,18 +1231,18 @@ class XPSExperiment(twin_abc.Experiment, XPSObservable):
             envelope = df[self._SIM_ENV]
 
         if experimental:
-            _logger.echo(f'Processing experimental data...')
+            _logger.debug(f'Processing experimental data...')
             df[self._EXP_CLEAN] = exp_data
             if self._EXP_CLEAN in df:
                 df[self._EXP_CLEAN] = exp_data.copy()
 
         if gas_phase:
-            _logger.echo(f'Calculating gas phase...')
+            _logger.debug(f'Calculating gas phase...')
             gas_gauss = self._get_gas_phase(x_range=x_range,
                                             exp_data=exp_data,
                                             gas_interval=gas_interval)
             df[self._GAS_PHASE] = gas_gauss
-            _logger.echo(f'Removing gas phase from experimental...')
+            _logger.debug(f'Removing gas phase from experimental...')
             df[self._EXP_CLEAN] -= df[self._GAS_PHASE]
 
         # Must go after simulate
@@ -1153,7 +1251,7 @@ class XPSExperiment(twin_abc.Experiment, XPSObservable):
             #  species_info = [self.species_manager[specie] for specie in species]
             scale_factor = self._get_autoscale(sim_envelope=envelope,
                                                exp_envelope=exp_data)
-            _logger.echo(f'Generating auto-scale factor {scale_factor}...')
+            _logger.debug(f'Generating auto-scale factor {scale_factor}...')
 
         # Must go after autoscale
         if contaminate or decontaminate:
@@ -1170,16 +1268,16 @@ class XPSExperiment(twin_abc.Experiment, XPSObservable):
                 )
                 contam_concs[cont_specie] = contam_conc
                 df[cont_col] = contamination
-                _logger.echo(f'Calculated contaminant concentrations at '
-                           f'{contam_concs}...')
+                _logger.debug(f'Calculated contaminant concentrations at '
+                              f'{contam_concs}...')
 
         if contaminate:
-            _logger.echo('Adding contaminants to simulated data...')
+            _logger.debug('Adding contaminants to simulated data...')
             for cont_col in contam_cols:
                 df[self._SIM_ENV] += df[cont_col]
 
         # Scale everything which needs to be scaled
-        _logger.echo(f'Scaling data by factor {scale_factor}...')
+        _logger.debug(f'Scaling data by factor {scale_factor}...')
         for sim_col in sim_cols:
             df[sim_col] *= scale_factor
         for cont_col in contam_cols:
@@ -1189,7 +1287,7 @@ class XPSExperiment(twin_abc.Experiment, XPSObservable):
 
         # Must happen after scaling
         if decontaminate:
-            _logger.echo('Removing contaminants from experimental data...')
+            _logger.debug('Removing contaminants from experimental data...')
             for cont_col in contam_cols:
                 df[self._EXP_CLEAN] -= df[cont_col]
 
@@ -1213,8 +1311,8 @@ class XPSExperiment(twin_abc.Experiment, XPSObservable):
                     conc=deconv_concs[dec_specie]
                 )
             df[self._DECONV_ENV] = df[deconv_cols].sum(axis=1)
-            _logger.echo(f'Deconvoluted experimental to get concentrations '
-                       f'{deconv_concs}...')
+            _logger.debug(f'Deconvoluted experimental to get concentrations '
+                          f'{deconv_concs}...')
 
             # More scaling
             for dec_col in deconv_cols:
@@ -1452,26 +1550,33 @@ class XPSExperiment(twin_abc.Experiment, XPSObservable):
         return gaussian
 
     # --- Plotting -----------------------------------------------------------
-
-    def _plot(self, ax: plt.Axes,
-              species: List[sym.Symbol],
-              # Args passed to resample
-              simulate: Optional[bool] = None,
-              autoscale: Optional[bool] = None,  # Resample only
-              experimental: Optional[bool] = None,
-              gas_phase: Optional[bool] = None,
-              decontaminate: Optional[bool] = None,  # TODO
-              contaminate: Optional[bool] = None,  # TODO
-              deconvolute: Optional[bool] = False,
-              augment: bool = False,
-              # Args passed only to plotter
-              # sim_gaussians: bool = True,
-              # envelope: bool = True,
-              # experimental_raw: bool = True,
-              # experimental_clean: bool = True,
-              # deconv_gaussians: bool = True,
-              # deconv_envelope: bool = True,
-              **kwargs,
+    @util.depreciate
+    def _plot(
+            self, ax: plt.Axes = None, *,
+            species: Optional[Union[List[sym.Symbol], sym.Symbol]] = None,
+            ignore: Optional[Union[List[sym.Symbol], sym.Symbol]] = None,
+            # Arguments passed to resample
+            autoscale: Optional[bool] = None,  # Resample only
+            decontaminate: Optional[bool] = None,  # TODO
+            contaminate: Optional[bool] = None,  # TODO
+            augment: bool = False,
+            legend: bool = True,
+            only: bool = False,
+            title: Optional[Union[str, bool]] = None,
+            # Arguments passed to plot and resample
+            peak_lines: Optional[Union[dict, bool]] = None,
+            gaussians: Optional[Union[dict, bool]] = None,
+            simulated: Optional[Union[dict, bool]] = None,
+            sim_envelope: Optional[Union[dict, bool]] = None,
+            sim_gaussians: Optional[Union[dict, bool]] = None,
+            experimental: Optional[Union[dict, bool]] = None,
+            exp_clean: Optional[Union[dict, bool]] = None,
+            exp_raw: Optional[Union[dict, bool]] = None,
+            gas_phase: Optional[Union[dict, bool]] = None,
+            contaminants: Optional[Union[dict, bool]] = None,
+            deconvoluted: Optional[Union[dict, bool]] = None,
+            deconv_envelope: Optional[Union[dict, bool]] = None,
+            deconv_gaussians: Optional[Union[dict, bool]] = None,
     ) -> plt.Axes:
         """Plot the XPS observable.
 
@@ -1481,50 +1586,52 @@ class XPSExperiment(twin_abc.Experiment, XPSObservable):
         Returns:
             The plt.Axes of the plot.
         """
-        # This makes an XPSObservable.
-        xps_obs = self.resample(
-            overwrite=False,
-            species=species,
-            simulate=simulate,
-            autoscale=autoscale,
-            experimental=experimental,
-            gas_phase=gas_phase,
-            decontaminate=decontaminate,
-            contaminate=contaminate,
-            deconvolute=deconvolute,
-            augment=augment,
-        )
-
         # Default behavior; yes I know there are shorter ways to do this, but
         # this is the most explicit.
-        if simulate is None:
-            simulate = True
-        if experimental is None:
-            experimental = True
-        if gas_phase is None:
-            gas_phase = True
-        if deconvolute is None:
-            deconvolute = True
+        if simulated is None: simulated = True
+        if experimental is None: experimental = bool(self.experimental)
+        if gas_phase is None: gas_phase = bool(self.gas_phase)
+        if deconvoluted is None: deconvoluted = True
         if decontaminate is None and contaminate is None:
             contaminants = True
         else:
             contaminants = decontaminate or contaminate
 
-        # XPSExperiment.plot is overridden by Experiment.plot, but
-        # this is an XPSObservable, so this doesn't make an infinite loop.
-        return xps_obs.plot(ax=ax,
-                            simulated=simulate,
-                            # sim_gaussians=sim_gaussians,
-                            # sim_envelope=envelope,
-                            experimental=experimental,
-                            # exp_raw=experimental_raw,
-                            # exp_clean=experimental_clean,
-                            gas_phase=gas_phase,
-                            deconvoluted=deconvolute,
-                            # deconv_gaussians=deconv_gaussians,
-                            # deconv_envelope=deconv_envelope,
-                            contaminants=contaminants,
-                            **kwargs)
+        # This makes an XPSObservable.
+        xps_obs = self.resample(
+            overwrite=False,
+            species=species,
+            simulate=simulated is not False,
+            autoscale=autoscale,
+            experimental=experimental is not False,
+            gas_phase=gas_phase is not False,
+            decontaminate=decontaminate,
+            contaminate=contaminate,
+            deconvolute=deconvoluted is not False,
+            augment=augment,
+        )
+
+        return xps_obs.plot(
+            ax=ax,
+            legend=legend,
+            only=only,
+            title=title,
+            species=species,
+            ignore=ignore,
+            peak_lines=peak_lines,
+            gaussians=gaussians,
+            simulated=simulated,
+            sim_envelope=sim_envelope,
+            sim_gaussians=sim_gaussians,
+            experimental=experimental,
+            exp_clean=exp_clean,
+            exp_raw=exp_raw,
+            gas_phase=gas_phase,
+            contaminants=contaminants,
+            deconvoluted=deconvoluted,
+            deconv_envelope=deconv_envelope,
+            deconv_gaussians=deconv_gaussians,
+        )
 
     # --- Utility -------------------------------------------------------------
 

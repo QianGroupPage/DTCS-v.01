@@ -443,7 +443,19 @@ class SurfaceCRNTimeSeries(CRNTimeSeries):
             figsize=(12, 5),
             legend=True,
             title=None,
+            spectrum_kwargs=None,
+            timeseries_kwargs=None,
     ):
+        # --- Default Arguments ---
+        spectrum_kwargs = dict(
+            legend=False,
+            title=False,
+            peak_lines=False,
+        ) | (spectrum_kwargs or {})
+        timeseries_kwargs = dict(
+            legend=False
+        ) | (timeseries_kwargs or {})
+
         # --- Create a figure and a complicated gridspec for subplots ---
         # Calculate aspect ratio to not distort image
         surf_height, surf_width, _ = surf_img.shape
@@ -467,12 +479,12 @@ class SurfaceCRNTimeSeries(CRNTimeSeries):
         scts.xps_with(
             run=run,
             t=time,
-        ).plot(ax=ax_spectrum, legend=False, title=False)
+        ).plot(ax=ax_spectrum, **spectrum_kwargs)
         ax_spectrum.spines['top'].set_visible(False)
         ax_spectrum.spines['right'].set_visible(False)
 
         # --- Display the time series ---
-        scts.plot(ax=ax_timeseries, legend=False, t_lines=(time,))
+        scts.plot(ax=ax_timeseries, t_lines=(time,), **timeseries_kwargs)
         ax_timeseries.spines['top'].set_visible(False)
         ax_timeseries.spines['right'].set_visible(False)
 

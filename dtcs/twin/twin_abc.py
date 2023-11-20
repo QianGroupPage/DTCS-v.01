@@ -23,9 +23,16 @@ class Experiment(monty.json.MSONable, abc.ABC):
         """Initialize required instance variables."""
         self.df = None
 
+    def _get_species_not_ignored(
+            self,
+            species: Union[sym.Symbol, List[sym.Symbol], None] = None,
+            ignore: Union[sym.Symbol, List[sym.Symbol], None] = None,
+    ):
+        return _get_species_not_ignored(species, ignore, self.species)
+
     # --- Plotting -----------------------------------------------------------
 
-    def plot(self, ax: Optional[plt.Axes] = None,
+    def plot(self, ax: Optional[plt.Axes] = None, *,
              species: Union[sym.Symbol, List[sym.Symbol], None] = None,
              ignore: Union[sym.Symbol, List[sym.Symbol], None] = None,
              **kwargs) -> plt.Axes:
@@ -41,13 +48,12 @@ class Experiment(monty.json.MSONable, abc.ABC):
         Returns:
             #TODO
         """
-        species = _get_species_not_ignored(species, ignore, self.species)
+        species = self._get_species_not_ignored(species, ignore)
         if ax is None:
             ax = plt.gca()
 
         return self._plot(species=species, ax=ax, **kwargs)
 
-    @abc.abstractmethod
     def _plot(self, ax: plt.Axes, species: List[sym.Symbol],
               **kwargs) -> plt.Axes:
         """Do the actual plotting legwork.
