@@ -1,5 +1,6 @@
 
 from collections.abc import Sequence
+import copy
 import logging
 
 import matplotlib.pyplot as plt
@@ -31,6 +32,7 @@ class CRNGibbsDataset:
         self.printer = self._default_printer
         self._fake_goal = None
         self._DEBUG_best_score = 1e10
+        self._DEBUG_best_energies = []
 
         # Make the dataframe
         if file_path:
@@ -46,7 +48,8 @@ class CRNGibbsDataset:
 
         # self.species = list(self.df['concs'].columns)
         # self.gibbs_cols = list(ds.gibbs.columns.droplevel(1).droplevel(1))
-        self.set_goal(goal if goal is not None else {})
+        if goal:
+            self.set_goal(goal)
 
     # --- Optimization Routines -----------------------------------------------
     def optimize_bh(
@@ -203,7 +206,12 @@ class CRNGibbsDataset:
 
     def set_goal(self, goal):
         """Sets the goal concentrations and re-scores the dataframe."""
-        self.goal = goal
+        self.goal = pd.Series(goal)
+        # Normalize the goal data
+        for cond, data in self.goal.groupby(
+                level=range(self.goal.index.nlevels - 1)
+        ):
+            self.goal[cond] = data / np.max(data)
         self.df['score'] = self._score(self.df['samples'])
 
     def score(self, *gibbs):
@@ -224,7 +232,7 @@ class CRNGibbsDataset:
 
     def plot(self, ridx=None, legend=True, xps_args=None, **kwargs):
         """Plot the given row. Defaults to the best one."""
-        row = self.df.loc[ridx]['samples'] if ridx else self.best
+        row = self.df.loc[ridx] if ridx else self.best
 
         # TODO: This currently relies on a bodge
         xpss = util.flatten_dictionary(self._xps(row['gibbs']))
@@ -273,6 +281,20 @@ class CRNGibbsDataset:
         print(f'Energies: {gibbs_str}')
         print(f'Current Best: {dsg._DEBUG_best_score}')
 
+    @staticmethod
+    def _best_printer(dsg, gibbs=None, ridx=None):
+        display.clear_output(wait=True)
+
+        print(f'Simulating #{len(dsg.df)}')
+        if ridx:
+            print(f'Row Index #{ridx}')
+        if gibbs:
+            gibbs_str = ', '.join(f'{gibb:.3f}' for gibb in gibbs)
+            print(f'Energies: {gibbs_str}')
+        print(f'Current Best: {dsg._DEBUG_best_score}')
+        best_str = ', '.join(f'{gibb:.3f}' for gibb in dsg._DEBUG_best_energies)
+        print(f'Best Energies: {best_str}')
+
     def _sim_notarized(self, gibbs, ridx):
         """Simulates and records output."""
         self.printer(self, gibbs, ridx)
@@ -283,6 +305,7 @@ class CRNGibbsDataset:
         score = float(row['score'])
         if score < self._DEBUG_best_score:
             self._DEBUG_best_score = score
+            self._DEBUG_best_energies = gibbs
 
     def _simulate(self, gibbs):
         """Simulates and scores the system with those energies."""
