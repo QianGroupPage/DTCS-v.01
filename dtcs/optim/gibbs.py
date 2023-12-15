@@ -24,9 +24,10 @@ except ModuleNotFoundError: _logger.info('Didn\'t load module gpcam')
 
 class CRNGibbsDataset:
 
-    def __init__(self, sim, crn, goal=None, file_path=None, df=None):
+    def __init__(self, sim, crn, num_energies, goal=None, file_path=None, df=None):
         self.sim = sim  # This should be a property of crn
         self.crn = crn
+        self.num_energies = num_energies
         self.goal = {}
         self.df = None
         self.printer = self._default_printer
@@ -71,9 +72,9 @@ class CRNGibbsDataset:
         try:
             scipy.optimize.basinhopping(
                 func=lambda x: self.score(*x),
-                x0=[0] * 7,
+                x0=[0] * self.num_energies,
                 minimizer_kwargs=dict(
-                    bounds=[(-1, 1)] * 7, ),
+                    bounds=[(-1, 1)] * self.num_energies, ),
                 callback=local_minima_callback,
             )
         except KeyboardInterrupt:
@@ -167,6 +168,7 @@ class CRNGibbsDataset:
             sim=sim,
             crn=crn,
             df=df,
+            num_energies=num_energies,
             **kwargs,
         )
 
