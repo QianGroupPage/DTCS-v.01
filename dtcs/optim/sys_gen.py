@@ -39,6 +39,7 @@ def system_generator_conc(
     conds = conds or tuple(itertools.product(temperatures, pressures, times))
 
     def rescale_concs(raw):
+
         peak_dict = defaultdict(float)
         for specie, conc in raw.items():
             if specie.name == 'H2Og':
@@ -94,6 +95,7 @@ def system_generator(
         crn,
         # gibbs_to_rates,
         sample_at_ev,
+        species=None,
         temperatures=(298,),  # K
         pressures=(0.1,),  # Torr
         times=(-1,),
@@ -124,7 +126,7 @@ def system_generator(
         # TODO: This rescaling is not well-integrated
         scaled_samples = dict()
         for time in times:
-            xo = cts_g.xps_with(t=time, autoresample=False).resample(x_range=sample_at_ev)
+            xo = cts_g.xps_with(t=time, species=species, autoresample=False).resample(x_range=sample_at_ev)
 
             scaled_samples[time] = rescale_samples(xo.sim_envelope)
         return scaled_samples

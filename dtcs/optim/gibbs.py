@@ -232,6 +232,7 @@ class CRNGibbsDataset:
             self._sim_notarized(gibbs, ridx)
             return self[ridx]['score'].iloc[0]
 
+
     def plot(self, ridx=None, legend=True, xps_args=None, **kwargs):
         """Plot the given row. Defaults to the best one."""
         row = self.df.loc[ridx] if ridx else self.best
@@ -300,7 +301,6 @@ class CRNGibbsDataset:
     def _sim_notarized(self, gibbs, ridx):
         """Simulates and records output."""
         self.printer(self, gibbs, ridx)
-
         row = self._simulate(gibbs)
         self.df.loc[ridx] = row
 
@@ -312,7 +312,6 @@ class CRNGibbsDataset:
     def _simulate(self, gibbs):
         """Simulates and scores the system with those energies."""
         samples_raw = util.flatten_dictionary(self.sim(gibbs))
-
         row = pd.Series(
             index=self.df.columns,
             dtype=np.float64,
