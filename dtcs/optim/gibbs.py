@@ -277,7 +277,7 @@ class CRNGibbsDataset:
 
     @staticmethod
     def _default_printer(dsg, gibbs, ridx):
-        display.clear_output(wait=True)
+        #display.clear_output(wait=True)
         gibbs_str = ', '.join(f'{gibb:.3f}' for gibb in gibbs)
         print(f'Simulating #{len(dsg.df)}')
         print(f'Row Index #{ridx}')
@@ -286,7 +286,7 @@ class CRNGibbsDataset:
 
     @staticmethod
     def _best_printer(dsg, gibbs=None, ridx=None):
-        display.clear_output(wait=True)
+        #display.clear_output(wait=True)
 
         print(f'Simulating #{len(dsg.df)}')
         if ridx:
@@ -329,6 +329,8 @@ class CRNGibbsDataset:
         If goal is empty, will return 0."""
         score = 0
         for key, gconc in self.goal.items():
+            print("goal: " + str(gconc) + 'current: ' + str(samples[key]))
+            print(samples(key))
             score += np.power(np.log(gconc) - np.log(samples[key]), 2)
         return score
 
