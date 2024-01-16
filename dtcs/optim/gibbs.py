@@ -226,6 +226,7 @@ class CRNGibbsDataset:
 
         # Check if we have that data already
         ridx = hash(gibbs)
+        print(self[ridx])
         try:
             print('saved')
             return self[ridx]['score'].iloc[0]
