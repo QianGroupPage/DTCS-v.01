@@ -228,7 +228,6 @@ class CRNGibbsDataset:
         ridx = hash(gibbs)
         #print(self[ridx])
         try:
-            print('saved')
             return self[ridx]['score'].iloc[0]
         except KeyError as err:
             print('not saved')
@@ -305,6 +304,7 @@ class CRNGibbsDataset:
         """Simulates and records output."""
         self.printer(self, gibbs, ridx)
 
+        print('about to simulate')
         row = self._simulate(gibbs)
         self.df.loc[ridx] = row
 
@@ -316,7 +316,7 @@ class CRNGibbsDataset:
     def _simulate(self, gibbs):
         """Simulates and scores the system with those energies."""
         samples_raw = util.flatten_dictionary(self.sim(gibbs))
-
+        print('raw samples from sim ' + samples_raw)
         row = pd.Series(
             index=self.df.columns,
             dtype=np.float64,
