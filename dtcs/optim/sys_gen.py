@@ -114,6 +114,9 @@ def system_generator(
     conds = conds or tuple(itertools.product(temperatures, pressures, times))
 
     def rescale_samples(raw):
+        print(str(raw))
+        print()
+        print(np.max(raw))
         return raw / np.max(raw)
 
     def _sim_at_conds(crn, gibbs, temp, pressure, times: tuple):
