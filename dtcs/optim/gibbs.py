@@ -227,8 +227,10 @@ class CRNGibbsDataset:
         # Check if we have that data already
         ridx = hash(gibbs)
         try:
+            print('saved')
             return self[ridx]['score'].iloc[0]
         except KeyError as err:
+            print('not saved')
             self._sim_notarized(gibbs, ridx)
             return self[ridx]['score'].iloc[0]
 
