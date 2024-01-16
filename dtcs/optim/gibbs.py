@@ -230,7 +230,8 @@ class CRNGibbsDataset:
             return self[ridx]['score'].iloc[0]
         except KeyError as err:
             self._sim_notarized(gibbs, ridx)
-            return self[ridx]['score'].iloc[0]
+            #return self[ridx]['score'].iloc[0]
+            return 1
 
     def plot(self, ridx=None, legend=True, xps_args=None, **kwargs):
         """Plot the given row. Defaults to the best one."""
