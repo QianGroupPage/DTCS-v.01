@@ -114,9 +114,9 @@ def system_generator(
     conds = conds or tuple(itertools.product(temperatures, pressures, times))
 
     def rescale_samples(raw):
-        print(str(raw))
-        print()
-        print(np.max(raw))
+        #print(str(raw))
+        #print()
+        #print(np.max(raw))
         return raw / np.max(raw)
 
     def _sim_at_conds(crn, gibbs, temp, pressure, times: tuple):
@@ -129,7 +129,7 @@ def system_generator(
         # TODO: This rescaling is not well-integrated
         scaled_samples = dict()
         for time in times:
-            xo = cts_g.xps_with(t=time, autoresample=False).resample(x_range=sample_at_ev)
+            xo = cts_g.xps_with(t=time, species=[h2o, oh_combined, o_combined, h2o_hbond_combined, h2o_multi], autoresample=False).resample(x_range=sample_at_ev)
 
             scaled_samples[time] = rescale_samples(xo.sim_envelope)
         return scaled_samples
