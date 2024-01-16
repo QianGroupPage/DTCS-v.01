@@ -280,7 +280,7 @@ class CRNGibbsDataset:
 
     @staticmethod
     def _default_printer(dsg, gibbs, ridx):
-        display.clear_output(wait=True)
+        #display.clear_output(wait=True)
         gibbs_str = ', '.join(f'{gibb:.3f}' for gibb in gibbs)
         print(f'Simulating #{len(dsg.df)}')
         print(f'Row Index #{ridx}')
