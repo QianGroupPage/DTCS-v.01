@@ -39,6 +39,7 @@ def system_generator_conc(
     conds = conds or tuple(itertools.product(temperatures, pressures, times))
 
     def rescale_concs(raw):
+
         peak_dict = defaultdict(float)
         for specie, conc in raw.items():
             if specie.name == 'H2Og':
@@ -61,6 +62,7 @@ def system_generator_conc(
         scaled_concs = dict()
         for time in times:
             scaled_concs[time] = rescale_concs(cts_g.at(time))
+            print(cts_g.at(time))
         return scaled_concs
 
     def system(gibbs):
