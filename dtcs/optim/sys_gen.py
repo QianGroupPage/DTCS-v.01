@@ -62,7 +62,6 @@ def system_generator_conc(
         scaled_concs = dict()
         for time in times:
             scaled_concs[time] = rescale_concs(cts_g.at(time))
-            print(cts_g.at(time))
         return scaled_concs
 
     def system(gibbs):
@@ -115,9 +114,6 @@ def system_generator(
     conds = conds or tuple(itertools.product(temperatures, pressures, times))
 
     def rescale_samples(raw):
-        #print(str(raw))
-        #print()
-        #print(np.max(raw))
         return raw / np.max(raw)
 
     def _sim_at_conds(crn, gibbs, temp, pressure, times: tuple):

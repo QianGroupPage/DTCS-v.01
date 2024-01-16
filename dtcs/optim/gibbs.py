@@ -226,11 +226,9 @@ class CRNGibbsDataset:
 
         # Check if we have that data already
         ridx = hash(gibbs)
-        #print(self[ridx])
         try:
             return self[ridx]['score'].iloc[0]
         except KeyError as err:
-            print('not saved')
             self._sim_notarized(gibbs, ridx)
             return self[ridx]['score'].iloc[0]
 
@@ -279,7 +277,7 @@ class CRNGibbsDataset:
 
     @staticmethod
     def _default_printer(dsg, gibbs, ridx):
-        #display.clear_output(wait=True)
+        display.clear_output(wait=True)
         gibbs_str = ', '.join(f'{gibb:.3f}' for gibb in gibbs)
         print(f'Simulating #{len(dsg.df)}')
         print(f'Row Index #{ridx}')
@@ -303,8 +301,6 @@ class CRNGibbsDataset:
     def _sim_notarized(self, gibbs, ridx):
         """Simulates and records output."""
         self.printer(self, gibbs, ridx)
-
-        print('about to simulate')
         row = self._simulate(gibbs)
         self.df.loc[ridx] = row
 
@@ -316,7 +312,6 @@ class CRNGibbsDataset:
     def _simulate(self, gibbs):
         """Simulates and scores the system with those energies."""
         samples_raw = util.flatten_dictionary(self.sim(gibbs))
-        print('raw samples from sim ' + str(samples_raw))
         row = pd.Series(
             index=self.df.columns,
             dtype=np.float64,
