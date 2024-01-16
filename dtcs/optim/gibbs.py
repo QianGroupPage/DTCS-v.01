@@ -330,7 +330,6 @@ class CRNGibbsDataset:
         score = 0
         for key, gconc in self.goal.items():
             print("goal: " + str(gconc) + 'current: ' + str(samples[key]))
-            print(samples(key))
             score += np.power(np.log(gconc) - np.log(samples[key]), 2)
         return score
 
