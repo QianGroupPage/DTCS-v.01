@@ -126,8 +126,10 @@ def system_generator(
         # TODO: This rescaling is not well-integrated
         scaled_samples = dict()
         for time in times:
-            xo = cts_g.xps_with(t=time, species=species, autoresample=False).resample(x_range=sample_at_ev)
-
+            if(species == None):
+                xo = cts_g.xps_with(t=time, autoresample=False).resample(x_range=sample_at_ev)
+            else:
+                xo = cts_g.xps_with(t=time, species=species, autoresample=False).resample(x_range=sample_at_ev)
             scaled_samples[time] = rescale_samples(xo.sim_envelope)
         return scaled_samples
 
