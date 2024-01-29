@@ -338,3 +338,7 @@ class CRNGibbsDataset:
     def __getitem__(self, key):
         """Forwards to df.loc.__getitem__."""
         return self.df.loc[key]
+    
+    def single_env_init(self, temperature=298, pressure=0.1, time=10, energies=[533.2, 532.2, 531.6, 530.9, 530.0]):
+        self.df['samples'].columns = pd.MultiIndex.from_tuples(((str(pressure)+"Torr "+str(temperature)+"K "+str(time)+"s ", energies[0]), (str(pressure)+"Torr "+str(temperature)+"K "+str(time)+"s ", energies[1]), (str(pressure)+"Torr "+str(temperature)+"K "+str(time)+"s ", energies[2]), (str(pressure)+"Torr "+str(temperature)+"K "+str(time)+"s ", energies[3]), (str(pressure)+"Torr "+str(temperature)+"K "+str(time)+"s ", energies[4])))
+        return (self.df['samples'].columns == pd.MultiIndex.from_tuples(((str(pressure)+"Torr "+str(temperature)+"K "+str(time)+"s ", energies[0]), (str(pressure)+"Torr "+str(temperature)+"K "+str(time)+"s ", energies[1]), (str(pressure)+"Torr "+str(temperature)+"K "+str(time)+"s ", energies[2]), (str(pressure)+"Torr "+str(temperature)+"K "+str(time)+"s ", energies[3]), (str(pressure)+"Torr "+str(temperature)+"K "+str(time)+"s ", energies[4]))))
