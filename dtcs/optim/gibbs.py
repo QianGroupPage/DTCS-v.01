@@ -216,7 +216,7 @@ class CRNGibbsDataset:
             ):
                 self.goal[cond] = data / np.max(data)
         else:
-            self.goal = self.goal / self.goal / np.max(self.goal)
+            self.goal = self.goal / np.max(self.goal)
         self.df['score'] = self._score(self.df['samples'])
 
     def score(self, *gibbs):
