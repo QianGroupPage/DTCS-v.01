@@ -131,7 +131,6 @@ def make_scrn_images(
     simulator = QueueSimulator(
         surface=surface,
         rxns=scts,  # TODO(Andrew) Can I remove this? What's it for?
-        sm=sm
     )
 
     # --- Get the display of the surface --------------------------------------
