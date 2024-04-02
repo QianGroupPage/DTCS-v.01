@@ -117,6 +117,7 @@ def make_scrn_images(
         frame_times,
         run=0,
         dpi=100,
+        sm=None
 ):
     frame_time_queue = sorted(frame_times)
 
@@ -130,6 +131,7 @@ def make_scrn_images(
     simulator = QueueSimulator(
         surface=surface,
         rxns=scts.rsys,  # TODO(Andrew) Can I remove this? What's it for?
+        sm=sm
     )
 
     # --- Get the display of the surface --------------------------------------
@@ -208,6 +210,7 @@ def make_scrn_video(
     surface_img_dpi: int,
     fourcc: str,
 
+    sm=None,
     **plot_kwargs
 ):
     # --- Prepare to save output ----------------------------------------------
@@ -229,6 +232,7 @@ def make_scrn_video(
         run=run,
         frame_times=frame_times,
         dpi=surface_img_dpi,
+        sm=sm
     )
 
     # --- Plot each image and save to file ------------------------------------

@@ -520,6 +520,7 @@ class SurfaceCRNTimeSeries(CRNTimeSeries):
             run=run,
             frame_times=(time,),
             dpi=surface_img_dpi,
+            sm=None
         )
 
         return plot(
@@ -543,6 +544,7 @@ class SurfaceCRNTimeSeries(CRNTimeSeries):
             fourcc='vp09',
 
             plot_func: Optional[callable] = None,
+            sm=None,
             **plot_kwargs
     ):
         # Default plotting function
@@ -561,6 +563,7 @@ class SurfaceCRNTimeSeries(CRNTimeSeries):
             surface_img_dpi=surface_img_dpi,
             fourcc=fourcc,
             **plot_kwargs,
+            sm=sm
         )
 
         print(f'Wrote to {os.path.relpath(output_path)}')
