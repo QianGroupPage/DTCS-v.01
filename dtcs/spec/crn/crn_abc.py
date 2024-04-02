@@ -91,11 +91,13 @@ class CRNSpecABC(SymSpec):
             sample_at_ev,
             # gibbs_to_rates,
             num_energies,
+            species_for_xps,
             **system_kwargs
     ):
         sys = system_generator(
             crn=self,
             sample_at_ev=sample_at_ev,
+            species=species_for_xps,
             **system_kwargs,
         )
 
