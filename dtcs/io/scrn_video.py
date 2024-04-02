@@ -130,7 +130,7 @@ def make_scrn_images(
     # Make a dummy simulation
     simulator = QueueSimulator(
         surface=surface,
-        rxns=scts.rsys,  # TODO(Andrew) Can I remove this? What's it for?
+        rxns=scts,  # TODO(Andrew) Can I remove this? What's it for?
         sm=sm
     )
 

@@ -33,8 +33,8 @@ class QueueSimulator:
 
         self.simulation_duration = simulation_duration
         self.surface = surface
-        self.sm = sm
-        self.rxns = rxns
+        self.sm = rxns.species
+        self.rxns = rxns.rsys
         self.add_groups()
 
         self.init_state = surface.get_global_state()
