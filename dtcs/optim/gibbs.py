@@ -1,4 +1,3 @@
-
 from collections.abc import Sequence
 import copy
 import logging
@@ -24,9 +23,10 @@ except ModuleNotFoundError: _logger.info('Didn\'t load module gpcam')
 
 class CRNGibbsDataset:
 
-    def __init__(self, sim, crn, goal=None, file_path=None, df=None):
+    def __init__(self, sim, crn, num_energies, goal=None, file_path=None, df=None):
         self.sim = sim  # This should be a property of crn
         self.crn = crn
+        self.num_energies = num_energies
         self.goal = {}
         self.df = None
         self.printer = self._default_printer
@@ -71,9 +71,9 @@ class CRNGibbsDataset:
         try:
             scipy.optimize.basinhopping(
                 func=lambda x: self.score(*x),
-                x0=[0] * 7,
+                x0=[0] * self.num_energies,
                 minimizer_kwargs=dict(
-                    bounds=[(-1, 1)] * 7, ),
+                    bounds=[(-1, 1)] * self.num_energies, ),
                 callback=local_minima_callback,
             )
         except KeyboardInterrupt:
@@ -167,6 +167,7 @@ class CRNGibbsDataset:
             sim=sim,
             crn=crn,
             df=df,
+            num_energies=num_energies,
             **kwargs,
         )
 
@@ -208,10 +209,13 @@ class CRNGibbsDataset:
         """Sets the goal concentrations and re-scores the dataframe."""
         self.goal = pd.Series(goal)
         # Normalize the goal data
-        for cond, data in self.goal.groupby(
-                level=range(self.goal.index.nlevels - 1)
-        ):
-            self.goal[cond] = data / np.max(data)
+        if(self.goal.index.nlevels-1):
+            for cond, data in self.goal.groupby(
+                    level=range(self.goal.index.nlevels - 1)
+            ):
+                self.goal[cond] = data / np.max(data)
+        else:
+            self.goal = self.goal / np.max(self.goal)
         self.df['score'] = self._score(self.df['samples'])
 
     def score(self, *gibbs):
@@ -229,6 +233,7 @@ class CRNGibbsDataset:
         except KeyError as err:
             self._sim_notarized(gibbs, ridx)
             return self[ridx]['score'].iloc[0]
+
 
     def plot(self, ridx=None, legend=True, xps_args=None, **kwargs):
         """Plot the given row. Defaults to the best one."""
@@ -298,7 +303,6 @@ class CRNGibbsDataset:
     def _sim_notarized(self, gibbs, ridx):
         """Simulates and records output."""
         self.printer(self, gibbs, ridx)
-
         row = self._simulate(gibbs)
         self.df.loc[ridx] = row
 
@@ -310,7 +314,6 @@ class CRNGibbsDataset:
     def _simulate(self, gibbs):
         """Simulates and scores the system with those energies."""
         samples_raw = util.flatten_dictionary(self.sim(gibbs))
-
         row = pd.Series(
             index=self.df.columns,
             dtype=np.float64,
