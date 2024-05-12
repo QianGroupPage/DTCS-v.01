@@ -572,49 +572,33 @@ class RxnSystemABC(SymSpec, SpecCollection):
                 rates[k_reverse] = reaction.get_rev_rate(pressure, temperature)
         return rates
 
-    # TODO: Needs to be updated
-    @util.depreciate
     def subs_gibbs(self, gibbs):
         """Returns a copy with new Gibbs energies from each of the reactions.
         This function relies on self.reactions not changing in order.
         """
         rsys = copy.deepcopy(self)
-        index = 0
-        for rxn in rsys.reactions:
-            if isinstance(rxn, RevRxnABC):
-                if isinstance(gibbs[index], tuple):
-                    rxn._gibbs_info = gibbs[index][0]
-                    rxn._gibbs_info = gibbs[index][1]
-                else:
-                    rxn._gibbs_info = gibbs[index]
-                    rxn._gibbs_info = -gibbs[index]
-                index += 1
-            elif isinstance(rxn, RxnABC):
-                rxn._gibbs_info = gibbs[index]
-                index += 1
+        for index, rxn in enumerate(rsys.reactions):
+            rxn._gibbs_info = gibbs[index]
         return rsys
 
-    # TODO: Needs to be updated
-    @util.depreciate
     def subs_rates(self, rates):
         """
         Returns a copy with new rates from each of the reactions. This function
         relies on self.reactions not changing in order.
         """
         rsys = copy.deepcopy(self)
-        index = 0
-        for rxn in rsys.reactions:
+        for index, rxn in enumerate(rsys.reactions):
+            key_forward, key_reverse = const.k_names(index)
+
+            # Simple part: set the forward rate
+            rxn._rate_info = rates[key_forward]
+
+            # Complicated part: set the reverse rate.
+            #  We need to check if it's a reversible reaction, and if the
+            #  user supplied rates[key_reverse] at all.
+            #  Luckily, it's okay if ._rev_rate_info is None.
             if isinstance(rxn, RevRxnABC):
-                if isinstance(rates[index], tuple):
-                    rxn.rate_constant = rates[index][0]
-                    rxn.rate_constant_reverse = rates[index][1]
-                else:
-                    rxn.rate_constant = rates[index]
-                    rxn.rate_constant_reverse = 1 / rates[index]
-                index += 1
-            elif isinstance(rxn, RxnABC):
-                rxn.rate_constant = rates[index]
-                index += 1
+                rxn._rev_rate_info = rates.get(key_reverse)
         return rsys
 
     # --- Utility -------------------------------------------------------------
