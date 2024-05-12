@@ -39,6 +39,7 @@ def system_generator_conc(
     conds = conds or tuple(itertools.product(temperatures, pressures, times))
 
     def rescale_concs(raw):
+
         peak_dict = defaultdict(float)
         for specie, conc in raw.items():
             if specie.name == 'H2Og':
@@ -131,7 +132,6 @@ def system_generator(
                 xo = cts_g.xps_with(t=time, species=species, autoresample=False).resample(x_range=sample_at_ev)
             scaled_samples[time] = rescale_samples(xo.sim_envelope)
         return scaled_samples
-
 
     def system(gibbs):
         # Simulate the CRN
