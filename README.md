@@ -5,11 +5,11 @@ A chemical reaction network solver
 if you are using Anaconda:
 
     conda install git pip
-    git clone https://github.com/AndrewBogdan/lbl-crn
+    git clone https://github.com/QainGroupPage/DTCS-v.01
 
 if you are using normal Python:
 
-    pip install git+https://github.com/AndrewBogdan/lbl-crn
+    pip install git+https://github.com/QainGroupPage/DTCS-v.01
 
 Once it's installed (it might take a while), run
 `python -m dtcs --version`
@@ -49,7 +49,7 @@ And then to plot the gaussian:
 
     time_series.xps.plot()
 
-You can download this example [here](https://github.com/AndrewBogdan/lbl-crn/blob/master/examples/predator_prey.ipynb)
+You can download this example [here](https://github.com/QainGroupPage/DTCS-v.01/blob/master/examples/predator_prey.ipynb)
 (except not right now you can't because we're editing stuff).
 
 ## More Information
