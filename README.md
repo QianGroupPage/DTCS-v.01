@@ -43,8 +43,7 @@ See reference here: https://pubs.acs.org/doi/full/10.1021/jacs.8b13672
     
 First, you need to make a SpeciesManager to keep track of all your species.
 Then, you can create some species.
-    # The Species Manager lets us define species by specifying a name, as well as the sort of 'signature' of the species we're defining 
-    # (in this case, orbital information and binding energies)
+The Species Manager lets us define species by specifying a name, as well as the 'signature' of the species we're defining, for example, the XPS binding energy locations
     sm = XPSSpeciesManager()
     h2o_g = sm.make_species('H2O_g', 535.0, color='gray', latex='H_2O_g')
     o2_g = sm.make_species('O2_g', 535.0, color='gray', latex='O_{2g}')
@@ -55,10 +54,9 @@ Then, you can create some species.
     o_h2o = sm.make_species('O-H2O_{hb}', 0, color='black', latex='O\!-\!H_2O^*') #531.6
     h2o_multi = sm.make_species('multiH2O', 533.2, color='magenta', latex='H_2O_{multi}^*')
 
-    # We need to combine the OH in OH and OH-H2O, combine O in O and O-H2O, combine H2O_O and H2O_OH to form H2O_hb
-    oh_combined = sm.make_species('OH_combined', 530.9, color='red', latex='OH combined^*')
-    o_combined = sm.make_species('O_combined', 530.0, color='aqua', latex='O combined^*')
-    h2o_hbond_combined = sm.make_species('H2O_{hb}_combined', 531.6, color='black', latex='H_2O_{hb} combined^*')
+    oh_combined = sm.make_species('OH_combined', 530.9, color='red', latex='OH combined^*')  # We need to combine the OH in OH and OH-H2O
+    o_combined = sm.make_species('O_combined', 530.0, color='aqua', latex='O combined^*')    # combine O in O and O-H2O
+    h2o_hbond_combined = sm.make_species('H2O_{hb}_combined', 531.6, color='black', latex='H_2O_{hb} combined^*') # combine H2O_O and H2O_OH to form H2O_hb
 
     sm
     
