@@ -101,5 +101,10 @@ And then to plot the APXPS spectra with selected surface species:
 
 
 ## More Information
-For more information, a quickstart guide, examples, and the api reference, 
-please refer to the [documentation]()
+DTCS v.01 is under Noncost/Academic license. Any unauthorized distributions are prohibited.
+If you are interested in using DTCS v.01, please contact Dr.Jin Qian (jqian2@lbl.gov) at LBNL.
+https://qiangrouppage.lbl.gov/
+
+## Key developers to DTCS v.01 are:
+Jin Qian, Sid Menon, Andrew Bogdan
+We also acknowledge Asmita Jana, Ethan Crumlin, Rebecca Hamlyn, and Johannes Mahl for their insightful discussions
