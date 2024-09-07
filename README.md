@@ -102,7 +102,9 @@ And then to plot the APXPS spectra with selected surface species:
 
 
 ## More Information
-DTCS v.01 is under Noncost/Academic license. Any unauthorized distributions are prohibited.
+DTCS v.01 is under Non-cost/Academic license. 
+Unauthorized distributions are prohibited.
+However, we welcome collaborations and charge no cost for academics. 
 If you are interested in using DTCS v.01, please contact Dr.Jin Qian (jqian2@lbl.gov) at LBNL.
 https://qiangrouppage.lbl.gov/
 
