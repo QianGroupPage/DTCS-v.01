@@ -18,7 +18,7 @@ conda activate dtcs-3.11
 ```
 If this worked, you should see `(dtcs-3.11)` before your cursor in your shell. Then, you should install the package, with some additional dependencies.
 ```
-pip install git+https://github.com/QianGroupPage/DTCS-v.01
+pip install git+https://github.com/QianGroupPage/DTCS-v.01@demo-fixes
 pip install opencv-python Pillow pygame pymatgen gpcam==7.2.5 fvgp==3.2.7
 pip install numpy==1.26.2
 conda install -c anaconda ipykernel
