@@ -1,0 +1,46 @@
+# pyproject.toml for DTCS
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dtcs"
+version = "2024.9.30.dev0"
+description = "LBL Chemical Reaction Network Simulator"
+license = {file = "LICENSE.txt"}
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "sympy",
+    "numpy < 2",
+    "pandas",
+    "matplotlib",
+    "scipy",
+    "ase",
+    "click",
+    "monty",
+]
+
+[project.optional-dependencies]
+jupyter = ["jupyter"]
+matproj = ["atomate", "pymongo"]
+gpcam = ["gpcam==7.2.5", "fvgp==3.2.7"]
+scrn-image = ["pygame", "Pillow"]
+scrn-video = ["pygame", "Pillow", "opencv-python"]
+demo = ["opencv-python", "Pillow", "pygame", "pymatgen", "gpcam==7.2.5", "fvgp==3.2.7"]
+
+[project.urls]
+homepage = "https://github.com/QianGroupPage/DTCS-v.01"
+repository = "https://github.com/QianGroupPage/DTCS-v.01"
+
+[tool.setuptools.package-data]
+dtcs = ["resources/*.csv"]
+
+[tool.setuptools.data-files]
+"etc/dtcs" = [
+    "examples/**.py",
+    "examples/**.ipynb",
+    "examples/data/*",
+    "examples/objects/*.json",
+]

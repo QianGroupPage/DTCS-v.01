@@ -7,7 +7,7 @@ from sympy.physics import units
 
 # Whether or not dtcs should warn about depreciated methods
 #  'default' will warn, 'ignore' will ignore.
-depr_warnings = 'default'
+depr_warnings = 'ignore'
 
 # Default unit system
 units = {

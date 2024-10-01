@@ -6,6 +6,7 @@
 - Has master __version__ copy
 """
 
+import importlib.metadata
 import os
 import sys
 import warnings
@@ -25,8 +26,8 @@ os.environ['LBLCRN_DO_ECHO'] = 'false'
 # Needs to exist before importing dtcs._examples
 _DATA_FILES_PATH = sys.prefix + '/dtcs/'
 
-# Master version information. Modifying this should update everything else.
-__version__ = '2024.5.12dev2'
+# Pull version information from the pyproject.toml
+__version__ = importlib.metadata.version("dtcs")
 
 # Enable depreciation warnings
 warnings.filterwarnings(config.depr_warnings,

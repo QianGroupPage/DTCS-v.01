@@ -20,7 +20,6 @@ import glob
 import json
 import os
 
-import pkg_resources
 import monty.json
 
 import dtcs
@@ -71,6 +70,9 @@ def _read_example(name: str) -> str:
     Returns:
         The str of the file examples/objects/{name}.json
     """
+    # Moved into the function to suppress a deprecation warning.
+    import pkg_resources
+
     # Get the path to the data file.
     ex_path = EXAMPLE_OBJS_DIR + name + EXAMPLE_OBJS_TYPE
 
