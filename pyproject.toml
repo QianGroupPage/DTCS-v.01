@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dtcs"
-version = "2024.9.30.dev0"
+version = "2024.9.30.dev0+demo"
 description = "LBL Chemical Reaction Network Simulator"
 license = {file = "LICENSE.txt"}
 readme = "README.md"
