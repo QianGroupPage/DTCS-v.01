@@ -1,17 +1,23 @@
-"""TODO
-"""
+from typing import List
+from dtcs.spec.species import Species
 
-from dtcs.spec.spec_old import Species
 
-__author__ = 'Andrew Bogdan'
-__email__ = 'andrewbogdan@lbl.gov'
+__author__ = "Rahul Khorana"
 
 
 class IRSpecies(Species):
-    """TODO"""
+    """
+    Address each species as a dictionary.
+    Integrated into -> twin -> xps.py
 
-    _schema = [
-        'vis_relax',
-        'vis_born',
-        'vis_fconsts',
-    ]
+    """
+
+    def __init__(self, speciesList: List):
+        self.sl = speciesList  # species list -> for each species is a dictionary
+        # dictionary: (number -> location, intensity)
+        # for each species -> generate standard spectra
+        # units: IR -> transmittance; wavenumber cm^-1
+
+    def plot_spectra(self):
+        """plot the IR spectra -> list of separate graphs"""
+        return
