@@ -48,7 +48,12 @@ class IRSignature(Spec):
 
 
 class IRSpecies(Species):
-    def __init__(self, name: str, ir_signature: Tuple[List[IRSignature] | IRSignature]):
+    def __init__(
+        self,
+        name: str,
+        ir_signature: Tuple[List[IRSignature] | IRSignature],
+        is_visible: bool = False,
+    ):
         """
         # species list -> for each species is a dictionary
         # dictionary: (number -> location, intensity)
@@ -60,6 +65,7 @@ class IRSpecies(Species):
         assert (isinstance(ir_signature, list) and len(ir_signature) > 0) or isinstance(
             ir_signature, IRSignature
         )
+        assert isinstance(is_visible, bool)
         if isinstance(ir_signature, list):
             for i in range(len(ir_signature)):
                 ith_species = ir_signature[i]
@@ -67,6 +73,7 @@ class IRSpecies(Species):
         if isinstance(ir_signature, IRSignature):
             ir_signature = [ir_signature]
         self.species_list = ir_signature
+        self.is_visible = is_visible
 
     def plot_spectra(self):
         """plot the IR spectra -> list of separate graphs"""

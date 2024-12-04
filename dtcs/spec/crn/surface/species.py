@@ -14,6 +14,7 @@ import dtcs
 from dtcs.common import util
 from dtcs.spec.crn.surface.marker import Marker
 from dtcs.spec.species import Species, SpeciesManager
+
 # from dtcs.spec.xps import XPSSpecies, XPSSpeciesManager, XPSOrbital as Orbital
 
 
@@ -25,16 +26,18 @@ class SurfaceSpecies(Species):
         orbitals: A list of Orbitals.
     """
 
-    def __init__(self,
-                 name: str,
-                 color: Union[Tuple[int],
-                              List[int], str] = None,
-                 parent=None,
-                 site: sym.Symbol = None,
-                 include_sub_species: bool=False,
-                 size: int = 1,
-                 is_gas: bool=False,
-                 **kwargs,):
+    def __init__(
+        self,
+        name: str,
+        color: Union[Tuple[int], List[int], str] = None,
+        parent=None,
+        site: sym.Symbol = None,
+        include_sub_species: bool = False,
+        size: int = 1,
+        is_gas: bool = False,
+        is_visible: bool = False,
+        **kwargs,
+    ):
         super().__init__(
             name=name,
             color=color,
@@ -44,9 +47,11 @@ class SurfaceSpecies(Species):
         self.is_gas = is_gas
         if not self.is_gas:
             if site is None:
-                raise TypeError('Must supply site for non-gaseous species.')
+                raise TypeError("Must supply site for non-gaseous species.")
             self.site = site.name
             self.size = size
+
+        self.is_visible = is_visible
 
         # TODO(Andrew): Old stuff following
         # self.name_without_suffix = name
@@ -58,8 +63,14 @@ class SurfaceSpecies(Species):
         # if include_sub_species and self.site and self.site != Site.default:
 
     @util.depreciate
-    def create_sub_species(self, suffix: str = "", color: Union[Tuple[int], List[int], str] = "", entire_name: str ="",
-                           orbitals: Union[Orbital, List[Orbital]] = None, site: Site = None):
+    def create_sub_species(
+        self,
+        suffix: str = "",
+        color: Union[Tuple[int], List[int], str] = "",
+        entire_name: str = "",
+        orbitals: Union[Orbital, List[Orbital]] = None,
+        site: Site = None,
+    ):
         if not entire_name:
             if site:
                 suffix = site.name
@@ -71,19 +82,30 @@ class SurfaceSpecies(Species):
             self.name = f"{self.name_without_suffix}_{Site.default}"
 
         elif suffix:
-            raise Exception(f"Both suffix={suffix} and entire_name {entire_name} provided to " +
-                            f"create_sub_species_function")
+            raise Exception(
+                f"Both suffix={suffix} and entire_name {entire_name} provided to "
+                + f"create_sub_species_function"
+            )
         if not color:
             color = self.color
         if orbitals is None:
             orbitals = self.orbitals
 
-        sub_species = SurfaceSpecies(entire_name, orbitals, color=color, parent=self, site=site, include_sub_species=False)
+        sub_species = SurfaceSpecies(
+            entire_name,
+            orbitals,
+            color=color,
+            parent=self,
+            site=site,
+            include_sub_species=False,
+        )
         sub_species.name_without_suffix = self.name_without_suffix
 
         if entire_name in self.sub_species:
-            raise Exception(f"species {self.name} already has sub species {repr(self.sub_species[entire_name])} " +
-                            f"with name {entire_name}.")
+            raise Exception(
+                f"species {self.name} already has sub species {repr(self.sub_species[entire_name])} "
+                + f"with name {entire_name}."
+            )
         else:
             self.sub_species[entire_name] = sub_species
         return sub_species
@@ -97,7 +119,9 @@ class SurfaceSpecies(Species):
         if name in self.sub_species:
             return self.sub_species[name]
         else:
-            raise Exception(f"SurfaceSpecies {self.name} doesn't have a sub-species with name {name}.")
+            raise Exception(
+                f"SurfaceSpecies {self.name} doesn't have a sub-species with name {name}."
+            )
 
     @util.depreciate
     def sub_species_by_suffix(self, suffix: str):
@@ -144,8 +168,8 @@ class LegacySurfaceSpeciesManager(SpeciesManager):
     _species_cls = SurfaceSpecies
 
     @util.depreciate
-    def __init__(self, *args, name='', **kwargs):
-        name = name or f'Collection of {self._species_cls.__name__}'
+    def __init__(self, *args, name="", **kwargs):
+        name = name or f"Collection of {self._species_cls.__name__}"
         super().__init__(*args, name=name, **kwargs)
 
         self._species = {sym.Symbol(ele): ele for ele in self.elements}
@@ -220,7 +244,9 @@ class LegacySurfaceSpeciesManager(SpeciesManager):
     #     return symbol
 
     @util.depreciate
-    def drop_marker(self, species_symbol: Union[sym.Symbol, Site], marker_name: str, color: str=""):
+    def drop_marker(
+        self, species_symbol: Union[sym.Symbol, Site], marker_name: str, color: str = ""
+    ):
         """
 
         It's possible to mark two different species under the same name.
@@ -232,8 +258,12 @@ class LegacySurfaceSpeciesManager(SpeciesManager):
             for marker in self._markers[marker_name]:
                 if marker.sm.name == str(species_symbol):
                     return marker
-        new_marker = Marker(species_symbol.name, marker_name, species_symbol=sym.Symbol(species_symbol.name),
-                            color=color)
+        new_marker = Marker(
+            species_symbol.name,
+            marker_name,
+            species_symbol=sym.Symbol(species_symbol.name),
+            color=color,
+        )
         if marker_name in self._markers:
             self._markers[marker_name].append(new_marker)
         else:
@@ -256,7 +286,9 @@ class LegacySurfaceSpeciesManager(SpeciesManager):
         return all_markers
 
     @util.depreciate
-    def name_be(self, name: str, value: float, orbital_name: str = "1S", color="") -> None:
+    def name_be(
+        self, name: str, value: float, orbital_name: str = "1S", color=""
+    ) -> None:
         """
         name: the name for the binding energy
         value: numerical value of the binding energy
@@ -414,7 +446,9 @@ class LegacySurfaceSpeciesManager(SpeciesManager):
             species = self.species_from_symbol(sy)
             if len(species.orbitals) != 1:
                 # TODO
-                raise Exception("Our system currently doesn't support multiple orbitals")
+                raise Exception(
+                    "Our system currently doesn't support multiple orbitals"
+                )
             be = species.orbitals[0].binding_energy
             if be in self.be_name_dict:
                 be_name_symbol = sym.Symbol(self.be_name_dict[be])
@@ -464,9 +498,9 @@ class LegacySurfaceSpeciesManager(SpeciesManager):
         decode = monty.json.MontyDecoder().process_decoded
 
         species_dict = {}
-        for name, species in d['species'].items():
+        for name, species in d["species"].items():
             species_dict[sym.Symbol(name)] = decode(species)
-        d['species'] = species_dict
+        d["species"] = species_dict
 
         return cls(**d)
 
@@ -474,14 +508,14 @@ class LegacySurfaceSpeciesManager(SpeciesManager):
         return item in self._species
 
     def __str__(self):
-        s = self.__class__.__name__ + ' with species:\n'
+        s = self.__class__.__name__ + " with species:\n"
         for species in self._species.values():
             species_lines = str(species).splitlines()
-            s += ''.join([f'\t{line}\n' for line in species_lines])
+            s += "".join([f"\t{line}\n" for line in species_lines])
         return s
 
     def __repr__(self):
-        return f'{self.__class__.__name__}(species={repr(self._species)})'
+        return f"{self.__class__.__name__}(species={repr(self._species)})"
 
     # sp = make_species
     # get = symbol_from_name
