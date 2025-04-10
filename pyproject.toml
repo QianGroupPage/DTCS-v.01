@@ -15,7 +15,7 @@ dependencies = [
     "sympy",
     "numpy < 2",
     "pandas",
-    "matplotlib",
+    "matplotlib < 3.10",
     "scipy",
     "ase",
     "click",
