@@ -9,6 +9,7 @@ from dtcs.sim.surface_crn.surface_crns.base.transition_rule import TransitionRul
 
 def simulate_scrn_single_nodisplay(
         rsys,
+        species_manager,
         species_names,
         init_surface,
         time_max,
@@ -30,6 +31,7 @@ def simulate_scrn_single_nodisplay(
         group_selection_seed=rng_seed * 2,  # TODO(Andrew) how many different seed options should I give?
         simulation_duration=time_max,
         rxns=rsys,
+        sm=species_manager,
     )
 
     # Prepare to store data while simulating

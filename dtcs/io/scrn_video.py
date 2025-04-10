@@ -130,7 +130,10 @@ def make_scrn_images(
     # Make a dummy simulation
     simulator = QueueSimulator(
         surface=surface,
-        rxns=scts,  # TODO(Andrew) Can I remove this? What's it for?
+        # TODO: These is only here because of bad API design requiring the entire data
+        #  set to be passed around instead of just the necessary data.
+        rxns=scts.rsys,
+        sm=scts.species_manager,
     )
 
     # --- Get the display of the surface --------------------------------------

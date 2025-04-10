@@ -188,6 +188,10 @@ class SurfaceCRNSpec(CRNSpecABC):
 
             times, species_counts, event_history = simulate_scrn_single_nodisplay(
                 rsys=rsys,  # TODO(Andrew) unpack this so sim can be spec-blind
+                # TODO(Andrew) A bunch of operations for the sizing of species still
+                #  relies on having the species manager. I'm putting this option in as
+                #  a temporary hack to get this working for the demo.
+                species_manager=self.sm,
                 species_names=species_names,
                 init_surface=init_surface,
                 time_max=time,
