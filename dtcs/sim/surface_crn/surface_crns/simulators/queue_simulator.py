@@ -20,7 +20,7 @@ class QueueSimulator:
     """
 
     def __init__(self, surface=None, transition_rules=None, seed=None, group_selection_seed=None,
-                 simulation_duration=100, rxns=None):
+                 simulation_duration=100, rxns=None, sm=None):
         self.debugging = False
         if transition_rules is None:
             self.rule_set = []
@@ -33,7 +33,7 @@ class QueueSimulator:
 
         self.simulation_duration = simulation_duration
         self.surface = surface
-        self.sm = rxns.species_manager
+        self.sm = rxns.species
         self.rxns = rxns
         self.add_groups()
 

@@ -1,0 +1,31 @@
+*** License Agreement ***
+Lawrence Berkeley National Laboratory
+ACADEMIC, NONPROFIT, INTERNAL, RESEARCH & DEVELOPMENT, NON-COMMERCIAL USE ONLY,
+LICENSE
+Digital Twin for Chemical Science (DTCS) v0.01 Copyright (c) 2024, The Regents of the University
+of California, through Lawrence Berkeley National Laboratory (“Berkeley Lab”) subject to receipt
+of any required approvals from the U.S. Dept. of Energy. All rights reserved.
+Redistribution and use in source and binary forms, with or without modification, are permitted
+provided that the following conditions are met:
+(1) Redistributions of source code must retain the above copyright notice, this list of conditions
+and the following disclaimer.
+(2) Redistributions in binary form must reproduce the above copyright notice, this list of
+conditions and the following disclaimer in the documentation and/or other materials provided
+with the distribution.
+(3) Neither the name of the University of California, Berkeley Lab, U.S. Dept. of Energy nor the
+names of its contributors may be used to endorse or promote products derived from this
+software without specific prior written permission of Berkeley Lab.
+(4) Use of the software, in source or binary form is for INTERNAL USE, RESEARCH &
+DEVELOPMENT, NON-COMMERCIAL USE, purposes ONLY. User must be an accredited academic
+institution or a nonprofit. All commercial use rights for the software are reserved by Berkeley
+Lab. A separate commercial use license is available from Berkeley Lab at IPO@lbl.gov
+(5) User agrees to indemnify, defend, and hold harmless Berkeley Lab, the U.S. Government, the
+software developers, the software sponsors, and their agents, officers, and employees, against
+any and all claims, suits, losses, damage, costs, fees, and expenses arising out of or in connection
+with this Agreement. User agrees to pay all costs incurred by Berkeley Lab in enforcing this
+provision, including reasonable attorney fees.
+(6) In the event User creates any bug fixes, patches, upgrades, updates, modifications, derivative
+works or enhancements to the source code or binary code of the software ("Enhancements")
+User hereby grants Berkeley Lab and the U.S. Government a paid-up, non-exclusive, irrevocable,
+worldwide license in the Enhancements to reproduce, prepare derivative works, distribute copies
+to the public, perform publicly and display publicly, and to permit others to do so.

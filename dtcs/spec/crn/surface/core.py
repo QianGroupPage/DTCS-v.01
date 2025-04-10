@@ -1,6 +1,7 @@
 """TODO"""
 
 from __future__ import annotations
+from typing import Optional
 
 import collections
 import copy
@@ -80,37 +81,6 @@ class SurfaceCRNSpec(CRNSpecABC):
         self.COLORMAP.update({site: color_map.rgb256(site) for site
                               in self.surface.sites})
 
-        # Ye's
-        # self.movie_title = 'SCRN Simulation'
-        # self.speedup_factor = 0.5
-        # self.debug = False
-        # self.fps = 1
-        # self.display_text = True
-        # self.pixels_per_node = 80
-        # self.wrap_grid = False
-        # self.rng_seed = random.randrange(1024)
-        # self.max_duration = time
-        # self.capture_directory = 'video path'
-        #
-        # self.capture_rate
-        # self.COLORMAP
-        # self.simulation_type
-        # if self.simulation_type
-        #     self.update_rule
-        # elif self.simulation_type
-        #     self.transition_rules
-        # self.surface_geometry
-        # self.grid_type
-        # if self.grid_type
-        #     self.emulation_colormap
-        #     self.horizontal_buffer
-        #     self.vertical_buffer
-        #     self.cell_height
-        #     self.cell_width
-        #     self.representative_cell_x
-        #     self.representative_cell_y
-        # self.init_state
-
     # dtcs.twin.crn
     def simulate(
             self: SurfaceCRNSpec,
@@ -119,8 +89,12 @@ class SurfaceCRNSpec(CRNSpecABC):
             species: SpeciesManager = None,
 
             surface: Surface = None,
+            rates: Optional[Dict] = None,
 
             time: float = None,
+            pressure: Optional[float] = None,
+            temperature: Optional[float] = None,
+
             num_runs: int = None,
             initial_state_seed: int = None,  # TODO(Andrew) should there be separate seeds?
             # the initial state should be different across different runs, right?
@@ -137,10 +111,14 @@ class SurfaceCRNSpec(CRNSpecABC):
         species_names = rsys.species
 
         time = time or self.time
+        rates = rates or self.rsys.get_rates(pressure, temperature)
         num_runs = num_runs or self.runs  # TODO(Andrew) change name
 
         initial_state_seed = initial_state_seed or self.initial_state_seed
         simulation_rng_seed = simulation_rng_seed or self.simulation_rng_seed
+
+        # --- Make a reaction system --------------------------------------
+        rsys = rsys.subs_rates(rates)
 
         # --- Run num_runs simulations ------------------------------------
         runs_init_surfaces = []

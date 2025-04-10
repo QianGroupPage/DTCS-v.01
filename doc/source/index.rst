@@ -27,11 +27,11 @@ If you are using Anaconda::
 
     conda install pip
     conda install git
-    pip install git+https://github.com/AndrewBogdan/lbl-crn
+    pip install git+https://github.com/QainGroupPage/DTCS-v.01
 
 If you are using normal Python::
 
-    pip install git+https://github.com/AndrewBogdan/lbl-crn
+    pip install git+https://github.com/QainGroupPage/DTCS-v.01
 
 Once it's installed (it might take a while), run ``python -m dtcs --version``
 to check if everything installed.

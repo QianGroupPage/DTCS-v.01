@@ -67,7 +67,7 @@ if __name__ == '__main__':
             # Misc.
             'sympy',
             # Data Science
-            'numpy',
+            'numpy < 2',
             'pandas',
             'matplotlib',
             'scipy',
