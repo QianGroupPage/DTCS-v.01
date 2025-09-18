@@ -16,7 +16,9 @@ For Windows, we recommend using Windows Subsystem for Linux (WSL) that allows th
 Make sure you are using Python 3.11 or above (try `python --version`)
 In the current version, Python 3.11.7 is our default environment that has been tested most recently (24th April 2025)
 
-Create a virtual environment. Run the following _in the demo directory_:
+Download and unzip DTCS_Demo_2025_04_10.zip from this repo. 
+
+Create a virtual environment. Run the following command _in the demo directory_:
 ```sh
 python -m venv --prompt "dtcs" .venv
 source .venv/bin/activate
