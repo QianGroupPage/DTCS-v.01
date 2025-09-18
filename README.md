@@ -1,14 +1,72 @@
 # Digital Twin for Chemical Sciences (DTCS v.01) 
-https://chemrxiv.org/engage/chemrxiv/article-details/66a07bb05101a2ffa8cc83ad
+
+[article and citation] https://www.nature.com/articles/s43588-025-00857-y
+[breifing] https://www.nature.com/articles/s43588-025-00859-w
+[full article] https://chemrxiv.org/engage/chemrxiv/article-details/684a4f6d1a8f9bdab5b375a8
 
 Directly visualizing chemical trajectories offers novel insights into catalysts, gas phase reactions, photo-induced dynamics, and quantum information processing. Identifying and tracking the exchange of matter to observe the creation and annihilation of chemical species is best achieved by closely coupling theory and experiment. We developed Digital Twin for Chemical Science (DTCS) v.01, a platform that mimics advanced characterization instruments, including those at Scientific User Facilities. DTCS v.01 addresses challenges in data acquisition, analysis, and model-driven interpretation via a physics-based, AI-accelerated approach. We validated this concept with ambient pressure X-ray Photoelectron Spectroscopy (APXPS) observations using a ubiquitous metal-water interfacial scenario, i.e., Ag/H2O, as a representative example. The inputs of DTCS v.01 are designed to mirror the experimental chemists' workflows, and the outputs can be directly compared to and are constantly updated from the experimental data. This integrated theoretical and experimental platform enhances user accessibility and facilitates the acquisition of standardized mechanistic insights.
 
-## How to Install
-Assuming that you're reading this in a Jupyter Notebook, that means you've already got Python up-and-running. Our project, Digital Twin for Computational Science (DTCS) is a Python package, but it's not yet on the [Python Package Index (PyPi)](https://pypi.org/) or [Anaconda's Package Index](https://anaconda.org/anaconda/repo), so you need to install it manually.
+## How to Install (new)
+
+DTCS can be installed in Linux, MacOS, and Windows operating systems.
+For Windows, we recommend using Windows Subsystem for Linux (WSL) that allows the use of Linux environment from within Windows. 
+
+Make sure you are using Python 3.11 or above (try `python --version`)
+In the current version, Python 3.11.7 is our default environment that has been tested most recently (24th April 2025)
+
+Create a virtual environment. Run the following _in the demo directory_:
+```sh
+python -m venv --prompt "dtcs" .venv
+source .venv/bin/activate
+```
+
+Now you should see (dtcs) in your prompt
+
+Install the dependencies in a streamlined fashion. All dependencies and their versions are specified under the requirements.txt. For the purpose of this demo we want to make sure that you have exactly the environment this was tested on.
+
+```sh
+pip install -r ./requirements.txt
+pip install "dtcs-2025.4.10.dev1+demo-py3-none-any.whl[demo]"
+```
+
+Finally, you need to add a kernel specification to your Jupyter notebook interface.
+
+```sh
+python -m ipykernel install --user --name dtcs-demo --display-name "DTCS Demo"
+python -m jupyter kernelspec list
+```
+
+You should see `dtcs-demo` in that list of kernels now.
+Then you can run Jupyter and open the demo notebook:
+
+```sh
+python -m jupyter notebook
+```
+
+Make sure you select `DTCS Demo` as the working kernel.
+
+**Important Notes**
+
+1. If you have multiple python installations, make sure you choose python 3.11 (or above) by replacing python with python3 or python3.11 resulting in the following commands.
+```sh
+python3 -m venv --prompt "dtcs" .venv
+python3 -m ipykernel install --user --name dtcs-demo --display-name "DTCS Demo"
+python3 -m jupyter kernelspec list
+python3 -m jupyter notebook
+```
+
+2. If you have multiple pip installations, make sure you choose pip 3.11 (or above) by replacing pip with pip3 or pip3.11 resulting in the following commands.
+```sh
+pip3 install -r ./requirements.txt
+pip3 install "dtcs-2025.4.10.dev1+demo-py3-none-any.whl[demo]"
+```
+
+3. If you use a macOS x86_64 (Intel), you may get an error while installing torch 2.6.0. In that case, replace torch==2.6.0 with torch==2.0.0 in the requirements.txt file and reinstall.
+
 
 **If you want to use DTCS on NERSC JupyterLab** , it's highly recommended to create a seperate conda environment with
 ```
-module load python
+module load python/3.11
 conda create --name dtcs-3.11 python=3.11
 ```
 
@@ -116,3 +174,4 @@ https://qiangrouppage.lbl.gov/
 Jin Qian, Sid Menon, Andrew Bogdan
 
 We also acknowledge Asmita Jana, Ethan Crumlin, Rebecca Hamlyn, and Johannes Mahl for their insightful discussions
+
