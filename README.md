@@ -1,8 +1,10 @@
 # Digital Twin for Chemical Sciences (DTCS v.01) 
 
-## [article and citation] https://www.nature.com/articles/s43588-025-00857-y
-## [breifing] https://www.nature.com/articles/s43588-025-00859-w
-## [full article] https://chemrxiv.org/engage/chemrxiv/article-details/684a4f6d1a8f9bdab5b375a8
+[article and citation] https://www.nature.com/articles/s43588-025-00857-y
+
+[breifing] https://www.nature.com/articles/s43588-025-00859-w
+
+[full article] https://chemrxiv.org/engage/chemrxiv/article-details/684a4f6d1a8f9bdab5b375a8
 
 Directly visualizing chemical trajectories offers novel insights into catalysts, gas phase reactions, photo-induced dynamics, and quantum information processing. Identifying and tracking the exchange of matter to observe the creation and annihilation of chemical species is best achieved by closely coupling theory and experiment. We developed Digital Twin for Chemical Science (DTCS) v.01, a platform that mimics advanced characterization instruments, including those at Scientific User Facilities. DTCS v.01 addresses challenges in data acquisition, analysis, and model-driven interpretation via a physics-based, AI-accelerated approach. We validated this concept with ambient pressure X-ray Photoelectron Spectroscopy (APXPS) observations using a ubiquitous metal-water interfacial scenario, i.e., Ag/H2O, as a representative example. The inputs of DTCS v.01 are designed to mirror the experimental chemists' workflows, and the outputs can be directly compared to and are constantly updated from the experimental data. This integrated theoretical and experimental platform enhances user accessibility and facilitates the acquisition of standardized mechanistic insights.
 
