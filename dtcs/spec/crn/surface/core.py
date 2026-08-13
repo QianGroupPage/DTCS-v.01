@@ -5,6 +5,7 @@ from typing import Optional
 
 import collections
 import copy
+import sys
 
 from dtcs.common.display import color_map
 from dtcs.spec.crn.surface.api_adapt import generate_manifest_stream, \
@@ -118,6 +119,7 @@ class SurfaceCRNSpec(CRNSpecABC):
         simulation_rng_seed = simulation_rng_seed or self.simulation_rng_seed
 
         # --- Make a reaction system --------------------------------------
+        sys.setrecursionlimit(10000) # prevent recursion limit error on deepcopy
         rsys = rsys.subs_rates(rates)
 
         # --- Run num_runs simulations ------------------------------------
