@@ -307,7 +307,7 @@ class CRNGibbsDataset:
         row = self._simulate(gibbs)
         self.df.loc[ridx] = row
 
-        score = float(row['score'])
+        score = float(row['score'].iloc[0])
         if score < self._DEBUG_best_score:
             self._DEBUG_best_score = score
             self._DEBUG_best_energies = gibbs
